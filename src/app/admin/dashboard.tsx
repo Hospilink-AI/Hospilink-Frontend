@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ScrollView, StyleSheet, useWindowDimensions, View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
 
 import StatCard from '@/component/cards/admin/Dashboard/StatCard';
 import RecentRequests from '@/component/cards/admin/Dashboard/RecentRequest';
@@ -25,51 +26,53 @@ export default function Dashboard() {
   const [stats, setStats] = useState<StatData[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const router = useRouter();
+
   useEffect(() => {
     const fetchDashboardStats = async () => {
       try {
         const response = await adminAPI.getStatsAdminDashboard();
-        
+
         // Note: If adminAPI uses Axios, you should use `response.data` instead of `response.json()`
         // If it uses native fetch, leave it as `await response.json()`
-        const json = await response; 
+        const json = await response;
 
         if (json.success) {
           const data = json.data;
 
           // 3. Map the API response to the StatCard prop structure
           const mappedStats: StatData[] = [
-            { 
-              icon: '🏥', 
-              label: 'Total Hospitals', 
-              value: data.totalHospitals.count.toString(), 
-              badge: data.totalHospitals.changeLabel, 
-              badgeColor: data.totalHospitals.trend === 'up' ? '#22C55E' : '#EF4444', 
-              badgeType: 'percent' 
+            {
+              icon: '🏥',
+              label: 'Total Hospitals',
+              value: data.totalHospitals.count.toString(),
+              badge: data.totalHospitals.changeLabel,
+              badgeColor: data.totalHospitals.trend === 'up' ? '#22C55E' : '#EF4444',
+              badgeType: 'percent'
             },
-            { 
-              icon: '👨‍⚕️', 
-              label: 'Medical Staff', 
-              value: data.medicalStaff.count.toString(), 
-              badge: data.medicalStaff.changeLabel, 
-              badgeColor: data.medicalStaff.trend === 'up' ? '#22C55E' : '#EF4444', 
-              badgeType: 'percent' 
+            {
+              icon: '👨‍⚕️',
+              label: 'Medical Staff',
+              value: data.medicalStaff.count.toString(),
+              badge: data.medicalStaff.changeLabel,
+              badgeColor: data.medicalStaff.trend === 'up' ? '#22C55E' : '#EF4444',
+              badgeType: 'percent'
             },
-            { 
-              icon: '📋', 
-              label: 'Pending Verifications', 
-              value: data.pendingVerifications.count.toString(), 
+            {
+              icon: '📋',
+              label: 'Pending Verifications',
+              value: data.pendingVerifications.count.toString(),
               badge: data.pendingVerifications.status.charAt(0).toUpperCase() + data.pendingVerifications.status.slice(1),
-              badgeColor: '#EF4444', 
-              badgeType: 'tag' 
+              badgeColor: '#EF4444',
+              badgeType: 'tag'
             },
-            { 
-              icon: '📌', 
-              label: 'Active Duties', 
-              value: data.activeDuties.count.toString(), 
+            {
+              icon: '📌',
+              label: 'Active Duties',
+              value: data.activeDuties.count.toString(),
               badge: data.activeDuties.status.charAt(0).toUpperCase() + data.activeDuties.status.slice(1),
-              badgeColor: '#3B82F6', 
-              badgeType: 'tag' 
+              badgeColor: '#3B82F6',
+              badgeType: 'tag'
             },
           ];
 
@@ -95,16 +98,20 @@ export default function Dashboard() {
       <View style={styles.quickActions}>
         <Text style={styles.quickActionsTitle}>Quick Actions</Text>
         <View style={styles.quickActionsButtons}>
-          <TouchableOpacity style={styles.createDutyButton}>
+          <TouchableOpacity
+            style={styles.createDutyButton}
+            onPress={() => router.push('/admin/create-duty')} // <-- Update this path to match your actual file structure
+            activeOpacity={0.8}
+          >
             <Text style={styles.createDutyIcon}>➕</Text>
             <Text style={styles.createDutyText}>Create Duty</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={styles.viewMapButton}>
             <Text style={styles.viewMapIcon}>🗺️</Text>
             <Text style={styles.viewMapText}>View Map</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={styles.emergencyButton}>
             <Text style={styles.emergencyIcon}>🚨</Text>
             <Text style={styles.emergencyText}>Emergency</Text>
@@ -119,7 +126,7 @@ export default function Dashboard() {
       ]}>
         {/* 4. Show a loader or map over the new `stats` state */}
         {loading ? (
-           
+
           <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center', minHeight: 150 }}>
             <ActivityIndicator size="large" color="#3B82F6" />
           </View>
@@ -155,12 +162,12 @@ export default function Dashboard() {
 }
 
 const styles = StyleSheet.create({
-  screen: { 
-    flex: 1, 
-    backgroundColor: '#F3F4F6' 
+  screen: {
+    flex: 1,
+    backgroundColor: '#F3F4F6'
   },
-  content: { 
-    padding: 16 
+  content: {
+    padding: 16
   },
 
   // Quick Actions
@@ -245,26 +252,26 @@ const styles = StyleSheet.create({
   },
 
   // Stat grids
-  statsGrid: { 
-    marginBottom: 16 
+  statsGrid: {
+    marginBottom: 16
   },
-  statsGridMobile: { 
-    flexDirection: 'row', 
-    flexWrap: 'wrap', 
-    gap: 10 
+  statsGridMobile: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10
   },
-  statsRowDesktop: { 
-    flexDirection: 'row', 
-    gap: 12 
+  statsRowDesktop: {
+    flexDirection: 'row',
+    gap: 12
   },
 
   // Layouts
-  mainRowDesktop: { 
-    flexDirection: 'row', 
-    gap: 14, 
-    alignItems: 'flex-start' 
+  mainRowDesktop: {
+    flexDirection: 'row',
+    gap: 14,
+    alignItems: 'flex-start'
   },
-  mainColMobile: { 
-    gap: 12 
+  mainColMobile: {
+    gap: 12
   },
 });

@@ -276,6 +276,7 @@ const NavConfig: NavConfigType = {
     { label: "Document Verification", icon: "shield-checkmark-outline", route: "/admin/document-verification" },
     { label: "Duty Tracking", icon: "calendar-outline", route: "/admin/duty-overnight" },
     { label: "Live Tracking", icon: "locate-outline", route: "/admin/live-tracking" },
+    { label: "Live Monitoring", icon: "eye-outline", route: "/admin/live-monitoring" },
     { label: "Activity Logs", icon: "reload-outline", route: "/admin/activity-logs" },
   ],
 };

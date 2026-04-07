@@ -1,6 +1,3 @@
-
-
-// with better Edity modal
 import { COLORS } from "@/constant/colors";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -85,6 +82,7 @@ interface Props {
   jobRoleValue?: string | null;
   city?:       string | null;
   area?:       string | null;
+  profilePicture?: string | null;
   // callback to refresh parent after save
   onProfileUpdated?: (updatedProfile: any) => void;
 }
@@ -92,11 +90,13 @@ interface Props {
 export default function ProfileHeader({
   name, role, badges, onEdit, isMobile,
   phone, email, isVerified = false, isComplete = false,
-  jobRoleValue, city, area, onProfileUpdated,
+  jobRoleValue, city, area, onProfileUpdated,profilePicture
 }: Props) {
   const { width } = useWindowDimensions();
   const isDesktop = Platform.OS === "web" && width > 900;
 
+  
+  const [uploadingImage, setUploadingImage] = useState(false); // New loading state for images
   const [imageUri,      setImageUri]      = useState<string | null>(null);
   const [showImageMenu, setShowImageMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -173,6 +173,31 @@ export default function ProfileHeader({
     }
   };
 
+  // Generic function to handle the API call for uploading
+  const processImageUpload = async (uri: string) => {
+    try {
+      setUploadingImage(true);
+      // Immediately set it locally for a snappy UI feel
+      setImageUri(uri); 
+
+      // Hit your backend
+      const res = await profileAPI.uploadProfilePicture(uri);
+      
+      if (res.success) {
+        // Update with the official S3 URL from your backend
+        setImageUri(res.profilePicture); 
+        onProfileUpdated?.({ profilePicture: res.profilePicture }); // Optional: update parent state
+      }
+    } catch (error) {
+      console.error("Upload failed:", error);
+      alert("Failed to upload profile picture.");
+      // Revert the image if upload failed
+      setImageUri(profilePicture ?? null);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleUpload = async () => {
     setShowImageMenu(false);
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -181,7 +206,9 @@ export default function ProfileHeader({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true, aspect: [1, 1], quality: 0.8,
     });
-    if (!result.canceled && result.assets[0]) setImageUri(result.assets[0].uri);
+    if (!result.canceled && result.assets[0]) {
+      await processImageUpload(result.assets[0].uri);
+    }
   };
 
   const handleCamera = async () => {
@@ -189,10 +216,27 @@ export default function ProfileHeader({
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") { Alert.alert("Permission required", "Please allow camera access."); return; }
     const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.8 });
-    if (!result.canceled && result.assets[0]) setImageUri(result.assets[0].uri);
+    if (!result.canceled && result.assets[0]) {
+      await processImageUpload(result.assets[0].uri);
+    }
   };
 
-  const handleRemove = () => { setShowImageMenu(false); setImageUri(null); };
+  const handleRemove = async () => {
+    setShowImageMenu(false);
+    try {
+      setUploadingImage(true);
+      const res = await profileAPI.deleteProfilePicture();
+      if (res.success) {
+        setImageUri(null);
+        onProfileUpdated?.({ profilePicture: null }); // Optional: update parent state
+      }
+    } catch (error) {
+      console.error("Delete failed:", error);
+      alert("Failed to delete profile picture.");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   return (
     <View style={styles.card}>

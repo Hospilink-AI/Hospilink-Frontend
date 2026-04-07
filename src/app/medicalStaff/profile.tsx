@@ -160,35 +160,14 @@ const statsRow2 = stats.slice(2, 4);
     );
   }
 
+  const displayProfilePicture = apiProfile?.profilePicture ?? null;
+
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={[styles.content, isMobile && styles.contentMobile]}
       showsVerticalScrollIndicator={false}
     >
-      {/* ── Profile Header — dynamic name, role, badges ── */}
-      {/* <ProfileHeader
-        name={displayName}
-        role={displayRole}
-        badges={profileData.badges}        // static
-        onEdit={() => {}}
-        isMobile={isMobile}
-      /> */}
-
-      {/* <ProfileHeader
-        name={displayName}
-        role={displayRole}
-        badges={profileData.badges}
-        onEdit={() => { }}
-        isMobile={isMobile}
-        phone={displayPhone}          // ← new
-        email={displayEmail}          // ← new
-        isVerified={isVerified}       // ← new
-        isComplete={isComplete}       // ← new
-      /> */}
-
-
-
       {/*  ── Update ProfileHeader call */}
       <ProfileHeader
         name={displayName}
@@ -202,7 +181,8 @@ const statsRow2 = stats.slice(2, 4);
         isComplete={isComplete}
         jobRoleValue={displayJobRoleValue}   
         city={displayCity}                  
-        area={displayArea}                   
+        area={displayArea}     
+        profilePicture={displayProfilePicture}              
         onProfileUpdated={(updated) => {     
           setApiProfile(updated);
         }}
