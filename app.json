@@ -27,7 +27,7 @@
       "package": "com.anonymous.Hospilinkfrontend"
     },
     "web": {
-      "output": "static",
+      "output": "single",
       "favicon": "./assets/Images/favicon.png"
     },
 

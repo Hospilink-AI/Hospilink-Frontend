@@ -106,15 +106,7 @@ export default function StatCards({ onExport }: StatCardsProps) {
         </TouchableOpacity>
       </View>
 
-      {/* Search */}
-      <View style={styles.searchBox}>
-        <Text style={styles.searchIcon}>🔍</Text>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search medical staff..."
-          placeholderTextColor="#9CA3AF"
-        />
-      </View>
+      
 
       {/* Error State */}
       {error && (

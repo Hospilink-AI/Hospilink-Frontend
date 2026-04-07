@@ -258,6 +258,39 @@ export const profileAPI = {
     return response.data;
   },
 
+  // Inside your profileAPI object:
+uploadProfilePicture: async (imageUri) => {
+  const formData = new FormData();
+  
+  // Extract filename and type from the URI
+  const filename = imageUri.split('/').pop() || 'profile.jpg';
+  const match = /\.(\w+)$/.exec(filename);
+  const type = match ? `image/${match[1]}` : `image/jpeg`;
+
+  // Append the image file to the form data
+  formData.append('profilePicture', {
+    uri: imageUri,
+    name: filename,
+    type,
+  });
+
+  // Replace `axios.post` with your actual fetch/axios instance
+  const response = await api.post('/api/profile/profile-picture', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+      // Add Authorization token header here if your axios instance doesn't do it automatically
+    },
+  });
+  return response.data;
+},
+
+deleteProfilePicture: async () => {
+  // Note: Your Postman screenshot showed a file attached to the DELETE request, 
+  // but standard REST APIs don't need the file to delete it (the auth token identifies the user).
+  const response = await api.delete('/api/profile/delete-picture');
+  return response.data;
+}
+
 
 };
 
@@ -750,6 +783,85 @@ export const adminAPI = {
     });
     return response.data;
   },
+
+  // Get a simplified list of hospitals (supports search via params e.g., { name: 'ci' })
+  // Corresponds to /api/admin/hospitals-list and /api/admin/hospitals-list?name=ci
+  getHospitalsList: async (params = {}) => {
+    const response = await api.get('/api/admin/hospitals-list', { params });
+    return response.data;
+  },
+
+  // Get nearby medical staff for a specific hospital based on distance
+  // Corresponds to /api/admin/nearby-staff?hospital_id=...&distance=...
+  // getNearbyStaff: async (hospitalId, distance) => {
+  //   const response = await api.get('/api/admin/nearby-staff', {
+  //     params: {
+  //       hospital_id: hospitalId,
+  //       distance: distance
+  //     }
+  //   });
+  //   return response.data;
+  // },
+  // Update your API file to accept the 3rd parameter
+  getNearbyStaff: async (hospitalId, distance, role) => {
+    const params = {
+      hospital_id: hospitalId,
+      distance: distance
+    };
+
+    // Pass role only if it's explicitly selected (not empty string / default option)
+    if (role && role !== '') {
+      params.role = role;
+    }
+
+    const response = await api.get('/api/admin/nearby-staff', { params });
+    return response.data;
+  },
+
+  createDuty: async (payload) => {
+    const response = await api.post('/api/admin/create-duty', payload);
+    return response.data;
+  },
+
+
+  // ─── Hospitals List (For Dropdown Search) ──────────────────────────────
+  getHospitalsList: async (params = {}) => {
+    const response = await api.get('/api/admin/hospitals-list', { params });
+    return response.data;
+  },
+   
+
+  getDuty: async (dutyId) => {
+    const response = await api.get(`/api/admin/duties/${dutyId}`);
+    return response.data;
+  },
+  updatePublishedDuty: async (dutyId, payload) => {
+    const response = await api.patch(`/api/admin/duties/${dutyId}`, payload);
+    return response.data;
+  },
+
+  getActiveDuties : async () => {
+    const response = await api.get('/api/admin/active-duties')
+    return response.data;
+  },
+
+  getTrackStaffLocation : async (dutyId) => {
+        const response = await api.get(`/api/admin/duty-route-map/${dutyId}`)
+    return response.data;
+  },
+
+  getOvernightDuties :async () => {
+    const response = await api.get('/api/admin/overnight-duties')
+    return response.data;
+  },
+
+  getDutyHistory :async () => {
+    const response = await api.get('/api/admin/duty-history')
+    return response.data;
+  },
+
+
+
 
 
 }
