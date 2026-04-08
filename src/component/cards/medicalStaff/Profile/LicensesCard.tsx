@@ -31,16 +31,11 @@ interface DocTypeOption {
 const DOCUMENT_TYPES: DocTypeOption[] = [
   { value: "aadhaar-card",             label: "Aadhaar Card",                     group: "Identity"     },
   { value: "pan-card",                 label: "PAN Card",                         group: "Identity"     },
-  { value: "degree-certificate",       label: "Degree Certificate",               group: "Education"    },
   { value: "mcim-certificate",         label: "MCIM Certificate",                 group: "Education"    },
   { value: "ncim-certificate",         label: "NCIM Certificate",                 group: "Education"    },
   { value: "license-permit",           label: "License / Permit",                 group: "Licensing"    },
   { value: "resume-experience",        label: "Resume / Experience",              group: "Experience"   },
   { value: "recommendation-letter",    label: "Recommendation Letter (Optional)", group: "Experience"   },
-  { value: "registration-certificate", label: "Registration Certificate",         group: "Registration" },
-  { value: "nabh-certificate",         label: "NABH Certificate",                 group: "Registration" },
-  { value: "rohini-certificate",       label: "Rohini Certificate",               group: "Registration" },
-  { value: "cghs-certificate",         label: "CGHS Certificate",                 group: "Registration" },
 ];
 
 const GROUPS = ["Identity", "Education", "Licensing", "Experience", "Registration"];

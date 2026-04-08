@@ -52,9 +52,11 @@ type Credential = {
 const HOSPITAL_DOC_TYPES = [
   { label: "Aadhaar Card", value: "aadhaar-card" },
   { label: "PAN Card", value: "pan-card" },
-  { label: "Registration Certificate", value: "registration-certificate" },
+  { label: "NABH Certificate", value: "nabh-certificate" },
   { label: "CIN Certificate", value: "cin-certificate" },
   { label: "GST Certificate", value: "gst-certificate" },
+  {label:"ROHINI Certificate",value:"rohini-certificate"},
+  {label:"CGHS Certificate",value:"cghs-certificate"},
 ];
 
 type PickedFile = {

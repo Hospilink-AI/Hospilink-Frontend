@@ -72,6 +72,7 @@ export function adaptStaffToDoctor(staff: StaffMember): DoctorWithDistance {
     consultationFee: 0,
     phone: staff.phoneNumber,
     distanceKm: staff.distance,  // ✅ API already sends km directly
+    email:staff.user.email,
     location: {
       latitude: staff.location.latitude,
       longitude: staff.location.longitude,
