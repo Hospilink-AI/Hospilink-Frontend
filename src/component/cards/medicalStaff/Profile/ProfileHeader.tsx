@@ -90,14 +90,18 @@ interface Props {
 export default function ProfileHeader({
   name, role, badges, onEdit, isMobile,
   phone, email, isVerified = false, isComplete = false,
-  jobRoleValue, city, area, onProfileUpdated,profilePicture
+  jobRoleValue, city, area, profilePicture , onProfileUpdated 
 }: Props) {
   const { width } = useWindowDimensions();
   const isDesktop = Platform.OS === "web" && width > 900;
 
   
-  const [uploadingImage, setUploadingImage] = useState(false); // New loading state for images
-  const [imageUri,      setImageUri]      = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageUri,      setImageUri]      = useState<string | null>(profilePicture ?? null);
+
+  useEffect(() => {
+    setImageUri(profilePicture ?? null);
+  }, [profilePicture]);
   const [showImageMenu, setShowImageMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [saving,        setSaving]        = useState(false);
@@ -245,7 +249,7 @@ export default function ProfileHeader({
         {/* ── Avatar ── */}
         <View style={styles.avatarWrap}>
           {imageUri
-            ? <Image source={{ uri: imageUri }} style={styles.avatarImage} />
+            ? <Image source={{ uri:imageUri }} style={styles.avatarImage} />
             : <View style={styles.avatar}><Ionicons name="person" size={40} color="#94A3B8" /></View>
           }
           <View style={styles.onlineDot} />

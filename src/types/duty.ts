@@ -90,12 +90,15 @@ export interface Doctor {
   available: boolean;       // true = available right now
   consultationFee: number;  // INR
   phone: string;
+   email: string;  
   location: GeoLocation;
+
 }
 
 /** Doctor enriched with computed distance — used in UI */
 export interface DoctorWithDistance extends Doctor {
   distanceKm: number;
+  
 }
 
 

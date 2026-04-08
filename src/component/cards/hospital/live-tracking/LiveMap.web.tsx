@@ -155,6 +155,7 @@ const LiveMap: React.FC<LiveMapProps> = ({ hospital, doctors, rangeKm, onRefresh
             </span><br />
             📍 {doc.distanceKm.toFixed(1)} km away<br />
             📞 {doc.phone}<br />
+            📧 {doc.email} <br />
             <small style={{ color: '#777' }}>{doc.location.address}</small>
           </Popup>
         </Marker>

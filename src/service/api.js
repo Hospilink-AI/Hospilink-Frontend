@@ -258,41 +258,95 @@ export const profileAPI = {
     return response.data;
   },
 
-  // Inside your profileAPI object:
 uploadProfilePicture: async (imageUri) => {
-  const formData = new FormData();
-  
-  // Extract filename and type from the URI
-  const filename = imageUri.split('/').pop() || 'profile.jpg';
-  const match = /\.(\w+)$/.exec(filename);
-  const type = match ? `image/${match[1]}` : `image/jpeg`;
+    console.log("API CALLED: uploadProfilePicture");
 
-  // Append the image file to the form data
-  formData.append('profilePicture', {
-    uri: imageUri,
-    name: filename,
-    type,
-  });
+    // 1. Get Token
+    const token = Platform.OS === "web"
+      ? localStorage.getItem("hospilink_token")
+      : await AsyncStorage.getItem("hospilink_token");
 
-  // Replace `axios.post` with your actual fetch/axios instance
-  const response = await api.post('/api/profile/profile-picture', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-      // Add Authorization token header here if your axios instance doesn't do it automatically
-    },
-  });
-  return response.data;
-},
+    const formData = new FormData();
+    const fieldName = "profilePicture"; // Matches your backend / Postman
 
-deleteProfilePicture: async () => {
-  // Note: Your Postman screenshot showed a file attached to the DELETE request, 
-  // but standard REST APIs don't need the file to delete it (the auth token identifies the user).
-  const response = await api.delete('/api/profile/delete-picture');
-  return response.data;
+    // 2. Format File Payload (Web vs Native)
+    if (Platform.OS === "web") {
+      const res = await fetch(imageUri);
+      const rawBlob = await res.blob();
+      const mimeType = rawBlob.type || "image/jpeg";
+      const ext = mimeType.split("/")[1] || "jpg";
+      
+      const correctedBlob = new Blob([rawBlob], { type: mimeType });
+      formData.append(fieldName, correctedBlob, `profile.${ext}`);
+    } else {
+      // Extract filename and type for native
+      const filename = imageUri.split('/').pop() || 'profile.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : `image/jpeg`;
+
+      formData.append(fieldName, {
+        uri: Platform.OS === 'android' ? imageUri : imageUri.replace('file://', ''),
+        name: filename,
+        type: type,
+      });
+    }
+
+    // 3. Make Fetch Call
+    try {
+      const res = await fetch(`https://hospilinkv1backend.vercel.app/api/profile/profile-picture`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          // NO Content-Type — fetch sets multipart/form-data + boundary automatically
+        },
+        body: formData,
+      });
+
+      const data = await res.json();
+      console.log("UPLOAD SUCCESS:", data);
+
+      if (!res.ok) throw { response: { data } };
+      return data;
+    } catch (error) {
+      console.error("UPLOAD ERROR:", error?.response || error);
+      throw error;
+    }
+  },
+
+  // ────────────────────────────────────────────────────────────
+  // DELETE PROFILE PICTURE
+  // ────────────────────────────────────────────────────────────
+  deleteProfilePicture: async () => {
+    console.log("API CALLED: deleteProfilePicture");
+
+    const token = Platform.OS === "web"
+      ? localStorage.getItem("hospilink_token")
+      : await AsyncStorage.getItem("hospilink_token");
+
+    try {
+      const res = await fetch(`https://hospilinkv1backend.vercel.app/api/profile/delete-picture`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await res.json();
+      console.log("DELETE SUCCESS:", data);
+
+      if (!res.ok) throw { response: { data } };
+      return data;
+    } catch (error) {
+      console.error("DELETE ERROR:", error?.response || error);
+      throw error;
+    }
+  },
+
+ 
 }
 
 
-};
 
 
 // Duty API calls

@@ -161,6 +161,7 @@ const statsRow2 = stats.slice(2, 4);
   }
 
   const displayProfilePicture = apiProfile?.profilePicture ?? null;
+  console.log("URL of profile : ",displayProfilePicture)
 
   return (
     <ScrollView
@@ -184,7 +185,8 @@ const statsRow2 = stats.slice(2, 4);
         area={displayArea}     
         profilePicture={displayProfilePicture}              
         onProfileUpdated={(updated) => {     
-          setApiProfile(updated);
+          // setApiProfile((prev) => ({ ...prev, ...updated }));
+          setApiProfile((prev) => ({ ...(prev || {}), ...updated }));
         }}
       />
 

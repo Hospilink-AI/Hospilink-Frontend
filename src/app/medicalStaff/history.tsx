@@ -30,7 +30,7 @@ const formatEarnings = (amount: number) => {
 
 const formatHours = (hours: number) => {
   if (!hours) return "0h";
-  return `${hours}h`;
+  return `${hours}`;
 };
 
 // Function to convert snake_case to Title Case
@@ -152,7 +152,7 @@ const earningsData = duties.map((duty) => ({
                   title:    duty.formattedRole || formatRole(duty.staffRole) || "Duty",
                   hospital: duty.hospital?.hospitalLegalName || "—",
                   date:     formatDate(duty.date),
-                  hours:    duty.duration ? `${duty.duration}h` : "—",
+                  hours:    duty.duration ? `${duty.duration}` : "—",
                   price:    duty.totalPayment ? formatEarnings(duty.totalPayment) : "—",
                   rating:   duty.rating?.rating ?? 0,
                   status:   duty.status ?? "Completed",
