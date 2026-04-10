@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { adminAPI } from '@/service/api';
+import { useTrackingReceiver } from '@/hooks/useTrackingReceiver';
 
 // ── Leaflet icon setup ────────────────────────────────────────────────────────
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -160,6 +161,10 @@ export default function StaffTrackingDashboard() {
   
   // Set loading to false initially so it waits for user selection
   const [loading, setLoading] = useState(false);
+
+  const liveLocations = useTrackingReceiver({
+  hospitalId: selectedHospital?._id ?? selectedHospital?.id,
+});
 
   useEffect(() => {
     adminAPI.getHospitalsList().then((res: any) => {

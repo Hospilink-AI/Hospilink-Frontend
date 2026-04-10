@@ -33,7 +33,7 @@ interface Duty {
   staff: {
     id?: string;
     name: string;
-  };
+  } | null;
   timing: {
     urgency: string;
     startTime: string;
@@ -45,7 +45,7 @@ interface Duty {
   distance: {
     distanceText: string;
     estimatedTimeText: string;
-  };
+  } | null;
   totalPayment: number | string;
 }
 // ───────────────────────────────────────────────────────────────────────
@@ -116,6 +116,13 @@ export default function LiveMonitoring() {
 
   const renderDutyCard = (duty: Duty) => {
     const { dutyId, formattedRole, hospital, staff, status, distance } = duty;
+    
+    // Skip rendering if staff is null
+    if (!staff) {
+      console.log('⚠️ [LiveMonitoring] Skipping duty with null staff:', dutyId);
+      return null;
+    }
+    
     const visuals = getStatusVisuals(status.status);
     
     // Generate a mock ID based on duty ID if staff ID isn't cleanly available
@@ -147,12 +154,12 @@ export default function LiveMonitoring() {
         {/* Stats Row (Estimated Time | Distance) */}
         <View style={styles.statsContainer}>
           <View style={styles.statColumn}>
-            <Text style={styles.statValue}>{distance.estimatedTimeText || '-- mins'}</Text>
+            <Text style={styles.statValue}>{distance?.estimatedTimeText || '-- mins'}</Text>
             <Text style={styles.statLabel}>ESTIMATED</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statColumn}>
-            <Text style={styles.statValue}>{distance.distanceText || '-- km'}</Text>
+            <Text style={styles.statValue}>{distance?.distanceText || '-- km'}</Text>
             <Text style={styles.statLabel}>DISTANCE</Text>
           </View>
         </View>

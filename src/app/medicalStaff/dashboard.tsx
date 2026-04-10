@@ -358,21 +358,24 @@ import { COLORS } from "@/constant/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    useWindowDimensions,
-    View,
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import { dutyAPI, profileAPI } from "../../service/api";
+import { useLocationTracker } from '@/hooks/useLocationTracker';
 
 interface Duty {
   _id?: string;
   id?: string;
   title: string;
+  hospitalId?: string;
   hospital: string;
+  assignedTo?: string;
   distance: string;
   time: string;
   price: string;
@@ -433,6 +436,8 @@ export default function Dashboard() {
     fetchUpcomingDuties();
     fetchOngoingDuties();
   };
+
+
 
   // ── PATCH /api/profile/staff-availability
   const handleToggleAvailability = async () => {
@@ -587,7 +592,9 @@ export default function Dashboard() {
           id: job._id,
           title: job.formattedRole || "Medical Duty",
           hospital: job.hospital?.hospitalLegalName || "Hospital",
+          hospitalId: job.hospital?.user?._id,
           time: `${job.startTime || "N/A"} - ${job.endTime || "N/A"}`,
+          assignedTo: job.assignedTo,
           price: `₹${job.totalPayment || 0}`,
           date: new Date(job.date).toLocaleDateString("en-US", {
             month: "short",
@@ -595,6 +602,7 @@ export default function Dashboard() {
             year: "numeric",
           }),
           status: job.status,
+
         }));
 
       setOngoingDuties(transformed);
@@ -604,6 +612,30 @@ export default function Dashboard() {
       setOngoingLoading(false);
     }
   };
+
+ 
+
+  // inside Dashboard component, after you fetch ongoingDuties:
+  // const activeOngoing = ongoingDuties[0]; // first active duty
+  const activeOngoing = ongoingDuties[3];
+
+  console.log('📊 [Dashboard] Active ongoing duty:', activeOngoing);
+  console.log('📊 [Dashboard] Tracking params:', {
+    dutyId: activeOngoing?._id,
+    staffId: activeOngoing?.assignedTo,
+    hospitalId: activeOngoing?.hospitalId,
+    active: !!activeOngoing && (activeOngoing.status === 'enroute' || activeOngoing.status === 'in-progress'),
+  });
+
+  useLocationTracker({
+    dutyId: activeOngoing?._id ?? '',
+    staffId: activeOngoing?.assignedTo ?? '',
+    hospitalId: activeOngoing?.hospitalId ?? '',
+    active: !!activeOngoing &&
+      (activeOngoing.status === 'enroute' || activeOngoing.status === 'in-progress'),
+  });
+
+
 
   // Fetch duties when component mounts and when available status changes
   useEffect(() => {
@@ -618,7 +650,7 @@ export default function Dashboard() {
   useEffect(() => {
     fetchEarnings();
   }, []);
-  
+
   // Get Average Rating
   useEffect(() => {
     fetchDashboardOverview();
@@ -633,6 +665,13 @@ export default function Dashboard() {
   useEffect(() => {
     fetchOngoingDuties();
   }, []);
+
+  console.log('📊 [Dashboard] Current state:', {
+    ongoingDutiesCount: ongoingDuties.length,
+    upcomingDutiesCount: upcomingDuties.length,
+    availableDutiesCount: duties.length,
+    available,
+  });
 
   return (
     <ScrollView

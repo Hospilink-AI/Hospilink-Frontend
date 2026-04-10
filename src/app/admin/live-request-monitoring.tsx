@@ -13,6 +13,8 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { adminAPI } from '@/service/api';
 import { decodePolyline } from '@/utils/polylineDecoderA';
+import { useTrackingReceiver } from '@/hooks/useTrackingReceiver';
+
 
 const isWeb = typeof window !== 'undefined' && !!window.document;
 
@@ -27,42 +29,74 @@ interface StatusHistory {
 }
 interface ApiData {
   staff: {
+    _id?: string;
+    id?: string;
     name: string;
-    email: string;
-    mobileNumber: string;
-    skills: string[];
-    avgRating: number;
-    address: string;
-    location: { latitude: number; longitude: number; lastUpdated: string };
-  };
+    email?: string;
+    userName?: string;
+    mobileNumber?: string;
+    skills?: string[];
+    avgRating?: number;
+    address?: string;
+    coordinates?: {
+      coordinates: {
+        latitude: number;
+        longitude: number;
+      };
+      type?: string;
+    };
+    location?: { latitude: number; longitude: number; lastUpdated?: string };
+    realTimeLocation?: any;
+  } | null;
   duty: {
     dutyId: string;
-    dutyRole: string;
-    hospitalName: string;
+    dutyRole?: string;
+    role?: string;
+    formattedRole?: string;
+    hospitalName?: string;
     startTime: string;
     endTime: string;
     date: string;
     description: string;
     totalPayment: number;
     status: string;
-    statusHistory: StatusHistory[];
+    statusHistory?: StatusHistory[];
   };
   hospital: {
     id: string;
     name: string;
-    address: string;
+    address?: string;
     location: string;
-    coordinates: { latitude: number; longitude: number };
+    coordinates: {
+      coordinates: {
+        latitude: number;
+        longitude: number;
+      };
+      type?: string;
+    };
   };
-  route: {
+  route?: {
     distanceText: string;
     durationText: string;
     stepPolylines: string[];
   };
-  tracking: {
+  distance?: {
+    distance: number;
+    distanceText: string;
+    estimatedTime: number;
+    estimatedTimeText: string;
+  };
+  tracking?: {
     isRealTime: boolean;
-    lastUpdate: string;
-    estimatedArrival: string;
+    lastUpdate: string | null;
+    estimatedArrival?: string;
+    source?: string;
+  };
+  timing?: {
+    date: string;
+    startTime: string;
+    endTime: string;
+    urgency: string;
   };
 }
 // ───────────────────────────────────────────────────────────────────────
@@ -171,17 +205,26 @@ export default function LiveRequestMonitoring() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  console.log('📊 [LiveRequestMonitoring] Component initialized with dutyId:', dutyId);
+
+  const liveLocations = useTrackingReceiver({ dutyId: dutyId as string });
+
+
   const fetchDutyRoute = async () => {
     try {
+      console.log('🔄 [LiveRequestMonitoring] Fetching duty route for dutyId:', dutyId);
       if (!data) setLoading(true); 
       const response = await adminAPI.getTrackStaffLocation(dutyId as string);
+      console.log('✅ [LiveRequestMonitoring] Duty route response:', response);
       if (response.success) {
         setData(response.data);
+        console.log('✅ [LiveRequestMonitoring] Data set successfully');
       } else {
+        console.log('❌ [LiveRequestMonitoring] Failed to load duty information');
         setError('Failed to load duty information');
       }
     } catch (err) {
-      console.error('Error fetching duty route:', err);
+      console.error('❌ [LiveRequestMonitoring] Error fetching duty route:', err);
       setError('Error loading duty information');
     } finally {
       setLoading(false);
@@ -190,9 +233,14 @@ export default function LiveRequestMonitoring() {
 
   useEffect(() => {
     if (dutyId) {
+      console.log('🔄 [LiveRequestMonitoring] Setting up duty route fetching');
       fetchDutyRoute();
       const interval = setInterval(fetchDutyRoute, 30000);
-      return () => clearInterval(interval);
+      console.log('⏱️ [LiveRequestMonitoring] Set up 30-second refresh interval');
+      return () => {
+        console.log('🧹 [LiveRequestMonitoring] Clearing refresh interval');
+        clearInterval(interval);
+      };
     }
   }, [dutyId]);
 
@@ -219,6 +267,7 @@ export default function LiveRequestMonitoring() {
   }
 
   if (error || !data) {
+    console.log('❌ [LiveRequestMonitoring] Error or no data:', { error, hasData: !!data });
     return (
       <View style={styles.centerContainer}>
         <Text style={styles.errorText}>{error || 'No data available'}</Text>
@@ -229,7 +278,110 @@ export default function LiveRequestMonitoring() {
     );
   }
 
-  const { staff, duty, hospital, route: routeData, tracking } = data;
+  // Additional safety check for required data
+  if (!data.duty || !data.hospital) {
+    console.log('⚠️ [LiveRequestMonitoring] Incomplete data:', {
+      hasStaff: !!data.staff,
+      hasDuty: !!data.duty,
+      hasHospital: !!data.hospital,
+      hasRoute: !!data.route
+    });
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#3B82F6" />
+        <Text style={styles.loadingText}>Loading complete data...</Text>
+      </View>
+    );
+  }
+
+  // Handle null staff case
+  if (!data.staff) {
+    console.log('⚠️ [LiveRequestMonitoring] Staff is null for this duty');
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.errorText}>No staff assigned to this duty yet</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={() => router.back()}>
+          <Text style={styles.retryButtonText}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const { staff, duty, hospital, route: routeData, tracking, distance, timing } = data;
+
+  console.log('📊 [LiveRequestMonitoring] Destructured data:', { 
+    hasStaff: !!staff, 
+    hasDuty: !!duty, 
+    hasHospital: !!hospital, 
+    hasRoute: !!routeData,
+    hasDistance: !!distance,
+    hasTiming: !!timing
+  });
+
+  // Extract coordinates from nested structure
+  const getStaffCoordinates = () => {
+    console.log('📍 [getStaffCoordinates] Staff object:', staff);
+    
+    if (staff?.coordinates?.coordinates) {
+      const coords = {
+        latitude: staff.coordinates.coordinates.latitude,
+        longitude: staff.coordinates.coordinates.longitude
+      };
+      console.log('✅ [getStaffCoordinates] Found in coordinates.coordinates:', coords);
+      return coords;
+    }
+    
+    if (staff?.location) {
+      const coords = {
+        latitude: staff.location.latitude,
+        longitude: staff.location.longitude
+      };
+      console.log('✅ [getStaffCoordinates] Found in location:', coords);
+      return coords;
+    }
+    
+    console.log('❌ [getStaffCoordinates] No coordinates found');
+    return null;
+  };
+
+  const getHospitalCoordinates = () => {
+    console.log('🏥 [getHospitalCoordinates] Hospital object:', hospital);
+    
+    // Check for nested structure first (coordinates.coordinates)
+    if (hospital?.coordinates?.coordinates) {
+      const coords = {
+        latitude: hospital.coordinates.coordinates.latitude,
+        longitude: hospital.coordinates.coordinates.longitude
+      };
+      console.log('✅ [getHospitalCoordinates] Found in nested coordinates.coordinates:', coords);
+      return coords;
+    }
+    
+    // Check for flat structure (coordinates.latitude)
+    if (hospital?.coordinates?.latitude && hospital?.coordinates?.longitude) {
+      const coords = {
+        latitude: hospital.coordinates.latitude,
+        longitude: hospital.coordinates.longitude
+      };
+      console.log('✅ [getHospitalCoordinates] Found in flat coordinates:', coords);
+      return coords;
+    }
+    
+    console.log('❌ [getHospitalCoordinates] No coordinates found');
+    return null;
+  };
+
+  const staffCoordinates = getStaffCoordinates();
+  const hospitalCoordinates = getHospitalCoordinates();
+
+  console.log('📍 [LiveRequestMonitoring] Extracted coordinates:', {
+    staff: staffCoordinates,
+    hospital: hospitalCoordinates
+  });
+
+  // Get duty role and status - MUST BE DECLARED BEFORE USE
+  const dutyRole = duty.formattedRole || duty.dutyRole || duty.role || 'Medical Staff';
+  const dutyStatus = (duty as any).status?.status || duty.status || 'unknown';
 
   const timelineSteps = [
     { key: 'available', label: 'Posted', icon: 'checkmark' },
@@ -240,9 +392,9 @@ export default function LiveRequestMonitoring() {
   ];
   
   const currentStatusMap: Record<string, number> = {
-    'available': 0, 'assigned': 2, 'enroute': 3, 'in-progress': 4, 'completed': 4
+    'available': 0, 'assigned': 1, 'accepted': 2, 'enroute': 3, 'in-progress': 4, 'completed': 5
   };
-  const currentStepIndex = currentStatusMap[duty.status] ?? 0;
+  const currentStepIndex = currentStatusMap[dutyStatus] ?? 0;
 
   const sortedHistory = [...(duty.statusHistory || [])].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
@@ -252,6 +404,47 @@ export default function LiveRequestMonitoring() {
     if (reason.toLowerCase().includes('hospital')) return `Admin / ${hospitalName}`;
     return staffName;
   };
+
+  // Get live coordinates from socket or fallback to last known location
+  // Add comprehensive null checks
+  let staffId: string | undefined;
+  
+  if (staff) {
+    staffId = staff.id || staff._id;
+    console.log('📊 [LiveRequestMonitoring] Staff object exists');
+  } else {
+    console.log('⚠️ [LiveRequestMonitoring] Staff object is null/undefined');
+  }
+  
+  console.log('📊 [LiveRequestMonitoring] Staff data:', staff);
+  console.log('📊 [LiveRequestMonitoring] Staff ID:', staffId);
+  console.log('📊 [LiveRequestMonitoring] Live locations received:', liveLocations);
+  
+  const staffLiveCoord = staffId && liveLocations[staffId]
+    ? liveLocations[staffId]
+    : staffCoordinates;
+  
+  // Determine coordinate source
+  const coordinateSource = staffId && liveLocations[staffId] 
+    ? '🔴 LIVE (WebSocket)' 
+    : '📍 STATIC (Profile)';
+  
+  console.log('📍 [LiveRequestMonitoring] Staff live coord:', staffLiveCoord);
+  console.log('📍 [LiveRequestMonitoring] Coordinate source:', coordinateSource);
+  console.log('📍 [LiveRequestMonitoring] Using live data:', !!(staffId && liveLocations[staffId]));
+
+  // Calculate live update time and ETA
+  const lastUpdate = staffId && liveLocations[staffId]?.timestamp
+    ? new Date(liveLocations[staffId].timestamp! * 1000).toLocaleTimeString()
+    : 'Just now';
+
+  const liveETA = staffId && liveLocations[staffId]?.estimatedArrival
+    ? new Date(liveLocations[staffId].estimatedArrival! * 1000).toLocaleTimeString()
+    : distance?.estimatedTimeText || routeData?.durationText || '--';
+
+  console.log('⏰ [LiveRequestMonitoring] Last update:', lastUpdate);
+  console.log('🕒 [LiveRequestMonitoring] Live ETA:', liveETA);
+  console.log('📡 [LiveRequestMonitoring] Data source:', coordinateSource);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
@@ -303,7 +496,7 @@ export default function LiveRequestMonitoring() {
               <View style={styles.detailTextCol}>
                 <Text style={styles.detailLabel}>Hospital Name</Text>
                 <Text style={styles.detailValueBold}>{hospital.name}</Text>
-                <Text style={styles.detailSub}>{hospital.address.split(',')[0]}</Text>
+                <Text style={styles.detailSub}>{hospital.address?.split(',')[0] || hospital.location}</Text>
               </View>
             </View>
 
@@ -311,7 +504,7 @@ export default function LiveRequestMonitoring() {
               <View style={styles.iconBox} />
               <View style={styles.detailTextCol}>
                 <Text style={styles.detailLabel}>SHIFT TIME</Text>
-                <Text style={styles.detailValueBold}>{duty.startTime} - {duty.endTime}</Text>
+                <Text style={styles.detailValueBold}>{timing?.startTime || duty.startTime} - {timing?.endTime || duty.endTime}</Text>
                 <Text style={styles.detailSub}>Payment: ₹{duty.totalPayment}</Text>
               </View>
             </View>
@@ -320,7 +513,7 @@ export default function LiveRequestMonitoring() {
               <View style={styles.iconBox} />
               <View style={styles.detailTextCol}>
                 <Text style={styles.detailLabel}>ROLE REQUIRED</Text>
-                <Text style={styles.detailValueBold}>{duty.dutyRole.toUpperCase()}</Text>
+                <Text style={styles.detailValueBold}>{dutyRole.toUpperCase()}</Text>
                 <Text style={styles.detailSub}>Specialist</Text>
               </View>
             </View>
@@ -343,25 +536,69 @@ export default function LiveRequestMonitoring() {
               <View style={styles.livePulseDot} />
               <View>
                 <Text style={styles.mapStatusTitle}>Nurse Enroute</Text>
-                <Text style={styles.mapStatusSub}>Estimated arrival in {routeData.durationText || '--'}</Text>
+                <Text style={styles.mapStatusSub}>Estimated arrival in {liveETA || '--'}</Text>
               </View>
             </View>
             <View style={styles.mapStatusRight}>
               <Text style={styles.lastUpdatedLabel}>LAST UPDATED</Text>
-              <Text style={styles.lastUpdatedValue}>Just Now</Text>
+              <Text style={styles.lastUpdatedValue}>{lastUpdate}</Text>
             </View>
           </View>
 
           <View style={styles.mapWrapper}>
             {/* The Map */}
             <View style={styles.mapContainer}>
-              {isWeb ? (
-                <WebMap staffLocation={staff.location} hospitalLocation={hospital.coordinates} routePolylines={routeData.stepPolylines} status={duty.status} />
-              ) : (
-                <View style={styles.mapPlaceholder}>
-                  <Text style={{color: '#64748B'}}>Map view available on web version</Text>
-                </View>
-              )}
+              {(() => {
+                console.log('🗺️ [Map Render Check]', {
+                  isWeb,
+                  hasStaffLiveCoord: !!staffLiveCoord,
+                  staffLiveCoord,
+                  coordinateSource,
+                  hasHospitalCoordinates: !!hospitalCoordinates,
+                  hospitalCoordinates,
+                  hasRoutePolylines: !!(routeData?.stepPolylines),
+                  routePolylinesLength: routeData?.stepPolylines?.length || 0,
+                  dutyStatus
+                });
+
+                if (!isWeb) {
+                  return (
+                    <View style={styles.mapPlaceholder}>
+                      <Text style={{color: '#64748B'}}>Map view available on web version</Text>
+                    </View>
+                  );
+                }
+
+                if (!staffLiveCoord) {
+                  console.log('⚠️ [Map] Missing staff coordinates');
+                  return (
+                    <View style={styles.mapPlaceholder}>
+                      <ActivityIndicator size="large" color="#3B82F6" />
+                      <Text style={{color: '#64748B', marginTop: 12}}>Loading staff location...</Text>
+                    </View>
+                  );
+                }
+
+                if (!hospitalCoordinates) {
+                  console.log('⚠️ [Map] Missing hospital coordinates');
+                  return (
+                    <View style={styles.mapPlaceholder}>
+                      <ActivityIndicator size="large" color="#3B82F6" />
+                      <Text style={{color: '#64748B', marginTop: 12}}>Loading hospital location...</Text>
+                    </View>
+                  );
+                }
+
+                console.log('✅ [Map] All data available, rendering map');
+                return (
+                  <WebMap 
+                    staffLocation={staffLiveCoord} 
+                    hospitalLocation={hospitalCoordinates} 
+                    routePolylines={routeData?.stepPolylines || []} 
+                    status={dutyStatus} 
+                  />
+                );
+              })()}
             </View>
 
             {/* Horizontal Timeline placed relatively BELOW the map */}
@@ -422,20 +659,24 @@ export default function LiveRequestMonitoring() {
                       <Text style={styles.tagText}>{skill}</Text>
                     </View>
                   ))
-                ) :<Text style={styles.tagText}>No skills added</Text> }
+                ) : <Text style={styles.tagText}>No skills added</Text>}
               </View>
             </View>
 
             <View style={styles.staffSection}>
               <Text style={styles.sectionLabel}>CONTACT INFO</Text>
-              <View style={styles.contactRow}>
-                <Ionicons name="call-outline" size={14} color="#475569" />
-                <Text style={styles.contactText}>{staff.mobileNumber}</Text>
-              </View>
-              <View style={styles.contactRow}>
-                <Ionicons name="mail-outline" size={14} color="#475569" />
-                <Text style={styles.contactText}>{staff.email}</Text>
-              </View>
+              {staff.mobileNumber && (
+                <View style={styles.contactRow}>
+                  <Ionicons name="call-outline" size={14} color="#475569" />
+                  <Text style={styles.contactText}>{staff.mobileNumber}</Text>
+                </View>
+              )}
+              {staff.email && (
+                <View style={styles.contactRow}>
+                  <Ionicons name="mail-outline" size={14} color="#475569" />
+                  <Text style={styles.contactText}>{staff.email}</Text>
+                </View>
+              )}
             </View>
 
             <View style={styles.staffActionRow}>

@@ -1,6 +1,7 @@
 import { Stack } from "expo-router";
 import { Platform, View, useWindowDimensions } from "react-native";
 import { AuthProvider } from '@/context/AuthContext';
+import { SocketProvider } from "@/context/SocketContext";
 
 export default function RootLayout() {
   const { width } = useWindowDimensions();
@@ -20,15 +21,19 @@ export default function RootLayout() {
         alignSelf: "center",
         backgroundColor: "#dce6f5",   // match light theme page bg
       }}
-    >
+    > 
+     <SocketProvider>
       <AuthProvider>
+        
       <Stack
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: "#dce6f5" },
         }}
       />
+      
       </AuthProvider>
+      </SocketProvider>
     </View>
   );
 }
