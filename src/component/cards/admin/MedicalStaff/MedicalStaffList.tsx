@@ -362,7 +362,7 @@ function FilterBar({ search, setSearch, status, setStatus, role, setRole, verifi
 
         <View style={fb.group}>
           <Text style={fb.label}>JOB ROLE</Text>
-          <Dropdown label="JOB ROLE" value={role} options={JOB_ROLE_OPTIONS} onSelect={setRole} flat />
+          <Dropdown label="JOB ROLE" onSelect={setRole} value={role} options={JOB_ROLE_OPTIONS}  flat />
         </View>
 
         <View style={fb.divider} />
@@ -977,7 +977,7 @@ function ActionMenu({ visible, onClose, onReview, onVerify, onReject, anchorY, a
   const left = Math.max(8, anchorX - MENU_WIDTH + 30);
 
   const showVerify = verificationStatus !== 'verified';
-  const showReject = verificationStatus !== 'rejected';
+  const showReject = verificationStatus !== 'rejected' && verificationStatus !=='verified';
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -1190,7 +1190,7 @@ export default function MedicalStaffListSection() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const fetchStaff = async (page = 1) => {
+  const fetchStaff = async (page = 1, currentSearch = search, currentRole = role) => {
     try {
       setLoading(true);
       
@@ -1199,9 +1199,10 @@ export default function MedicalStaffListSection() {
         limit: '10'
       };
       
-      if (search) params.name = search;
-      if (role !== 'All Roles') {
-        params.role = role.toLowerCase().replace(/ /g, '_');
+      // Use the newly passed parameters instead of the state variables
+      if (currentSearch) params.search = currentSearch;
+      if (currentRole !== 'All Roles') {
+        params.role = currentRole.toLowerCase().replace(/ /g, '_');
       }
       
       const data = await adminAPI.getMedicalStaff(params);
@@ -1282,7 +1283,7 @@ export default function MedicalStaffListSection() {
     setStatus(statusDraft); 
     setRole(roleDraft); 
     setVerificationFilter(verificationDraft);
-    fetchStaff(1);
+    fetchStaff(1, searchDraft, roleDraft);
   };
   
   const handleClear = () => {
@@ -1294,7 +1295,7 @@ export default function MedicalStaffListSection() {
     setStatus('All Statuses');      
     setRole('All Roles');
     setVerificationFilter('All Verification');
-    fetchStaff(1);
+    fetchStaff(1, '', 'All Roles');
   };
 
   const handleNextPage = () => {

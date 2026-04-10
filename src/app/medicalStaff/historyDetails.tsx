@@ -173,7 +173,7 @@ export default function HistoryDetail() {
               </View>
               <View style={[styles.timeRow, styles.durationRow]}>
                 <Text style={styles.timeLabel}>Total Duration:</Text>
-                <Text style={styles.durationValue}>{duty.duration ? `${duty.duration}h` : "—"}</Text>
+                <Text style={styles.durationValue}>{duty.duration ? `${duty.duration}` : "—"}</Text>
               </View>
             </View>
           </View>

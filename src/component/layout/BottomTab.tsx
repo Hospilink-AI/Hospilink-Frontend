@@ -30,6 +30,8 @@ const NavConfig: NavConfigType = {
   hospital: [
     { label: "Dashboard", icon: "grid-outline",   route: "/hospital/dashboard" },
     {label: "Live Tracking", icon: "locate-outline", route: "/hospital/live-tracking" },
+    {label: "Live Monitoring", icon: "eye-outline", route: "/hospital/live-monitoring" },
+    {label:"Duty History", icon: "time-outline", route: "/hospital/duty-history" },
     { label: "Profile",   icon: "person-outline", route: "/hospital/profile"   },
   ],
    admin: [
