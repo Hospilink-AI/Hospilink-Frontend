@@ -616,16 +616,7 @@ export default function Dashboard() {
  
 
   // inside Dashboard component, after you fetch ongoingDuties:
-  // const activeOngoing = ongoingDuties[0]; // first active duty
-  const activeOngoing = ongoingDuties[3];
-
-  console.log('📊 [Dashboard] Active ongoing duty:', activeOngoing);
-  console.log('📊 [Dashboard] Tracking params:', {
-    dutyId: activeOngoing?._id,
-    staffId: activeOngoing?.assignedTo,
-    hospitalId: activeOngoing?.hospitalId,
-    active: !!activeOngoing && (activeOngoing.status === 'enroute' || activeOngoing.status === 'in-progress'),
-  });
+  const activeOngoing = ongoingDuties[0]; // first active duty
 
   useLocationTracker({
     dutyId: activeOngoing?._id ?? '',
@@ -665,13 +656,6 @@ export default function Dashboard() {
   useEffect(() => {
     fetchOngoingDuties();
   }, []);
-
-  console.log('📊 [Dashboard] Current state:', {
-    ongoingDutiesCount: ongoingDuties.length,
-    upcomingDutiesCount: upcomingDuties.length,
-    availableDutiesCount: duties.length,
-    available,
-  });
 
   return (
     <ScrollView

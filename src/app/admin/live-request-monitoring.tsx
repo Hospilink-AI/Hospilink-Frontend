@@ -205,26 +205,20 @@ export default function LiveRequestMonitoring() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  console.log('📊 [LiveRequestMonitoring] Component initialized with dutyId:', dutyId);
-
   const liveLocations = useTrackingReceiver({ dutyId: dutyId as string });
 
 
   const fetchDutyRoute = async () => {
     try {
-      console.log('🔄 [LiveRequestMonitoring] Fetching duty route for dutyId:', dutyId);
       if (!data) setLoading(true); 
       const response = await adminAPI.getTrackStaffLocation(dutyId as string);
-      console.log('✅ [LiveRequestMonitoring] Duty route response:', response);
       if (response.success) {
         setData(response.data);
-        console.log('✅ [LiveRequestMonitoring] Data set successfully');
       } else {
-        console.log('❌ [LiveRequestMonitoring] Failed to load duty information');
         setError('Failed to load duty information');
       }
     } catch (err) {
-      console.error('❌ [LiveRequestMonitoring] Error fetching duty route:', err);
+      console.error('❌ [API Error]:', err);
       setError('Error loading duty information');
     } finally {
       setLoading(false);
@@ -233,14 +227,9 @@ export default function LiveRequestMonitoring() {
 
   useEffect(() => {
     if (dutyId) {
-      console.log('🔄 [LiveRequestMonitoring] Setting up duty route fetching');
       fetchDutyRoute();
       const interval = setInterval(fetchDutyRoute, 30000);
-      console.log('⏱️ [LiveRequestMonitoring] Set up 30-second refresh interval');
-      return () => {
-        console.log('🧹 [LiveRequestMonitoring] Clearing refresh interval');
-        clearInterval(interval);
-      };
+      return () => clearInterval(interval);
     }
   }, [dutyId]);
 
@@ -267,7 +256,6 @@ export default function LiveRequestMonitoring() {
   }
 
   if (error || !data) {
-    console.log('❌ [LiveRequestMonitoring] Error or no data:', { error, hasData: !!data });
     return (
       <View style={styles.centerContainer}>
         <Text style={styles.errorText}>{error || 'No data available'}</Text>
@@ -280,12 +268,6 @@ export default function LiveRequestMonitoring() {
 
   // Additional safety check for required data
   if (!data.duty || !data.hospital) {
-    console.log('⚠️ [LiveRequestMonitoring] Incomplete data:', {
-      hasStaff: !!data.staff,
-      hasDuty: !!data.duty,
-      hasHospital: !!data.hospital,
-      hasRoute: !!data.route
-    });
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#3B82F6" />
@@ -296,7 +278,6 @@ export default function LiveRequestMonitoring() {
 
   // Handle null staff case
   if (!data.staff) {
-    console.log('⚠️ [LiveRequestMonitoring] Staff is null for this duty');
     return (
       <View style={styles.centerContainer}>
         <Text style={styles.errorText}>No staff assigned to this duty yet</Text>
@@ -309,77 +290,49 @@ export default function LiveRequestMonitoring() {
 
   const { staff, duty, hospital, route: routeData, tracking, distance, timing } = data;
 
-  console.log('📊 [LiveRequestMonitoring] Destructured data:', { 
-    hasStaff: !!staff, 
-    hasDuty: !!duty, 
-    hasHospital: !!hospital, 
-    hasRoute: !!routeData,
-    hasDistance: !!distance,
-    hasTiming: !!timing
-  });
-
   // Extract coordinates from nested structure
   const getStaffCoordinates = () => {
-    console.log('📍 [getStaffCoordinates] Staff object:', staff);
-    
     if (staff?.coordinates?.coordinates) {
-      const coords = {
+      return {
         latitude: staff.coordinates.coordinates.latitude,
         longitude: staff.coordinates.coordinates.longitude
       };
-      console.log('✅ [getStaffCoordinates] Found in coordinates.coordinates:', coords);
-      return coords;
     }
     
     if (staff?.location) {
-      const coords = {
+      return {
         latitude: staff.location.latitude,
         longitude: staff.location.longitude
       };
-      console.log('✅ [getStaffCoordinates] Found in location:', coords);
-      return coords;
     }
     
-    console.log('❌ [getStaffCoordinates] No coordinates found');
     return null;
   };
 
   const getHospitalCoordinates = () => {
-    console.log('🏥 [getHospitalCoordinates] Hospital object:', hospital);
-    
     // Check for nested structure first (coordinates.coordinates)
     if (hospital?.coordinates?.coordinates) {
-      const coords = {
+      return {
         latitude: hospital.coordinates.coordinates.latitude,
         longitude: hospital.coordinates.coordinates.longitude
       };
-      console.log('✅ [getHospitalCoordinates] Found in nested coordinates.coordinates:', coords);
-      return coords;
     }
     
     // Check for flat structure (coordinates.latitude)
     if (hospital?.coordinates?.latitude && hospital?.coordinates?.longitude) {
-      const coords = {
+      return {
         latitude: hospital.coordinates.latitude,
         longitude: hospital.coordinates.longitude
       };
-      console.log('✅ [getHospitalCoordinates] Found in flat coordinates:', coords);
-      return coords;
     }
     
-    console.log('❌ [getHospitalCoordinates] No coordinates found');
     return null;
   };
 
   const staffCoordinates = getStaffCoordinates();
   const hospitalCoordinates = getHospitalCoordinates();
 
-  console.log('📍 [LiveRequestMonitoring] Extracted coordinates:', {
-    staff: staffCoordinates,
-    hospital: hospitalCoordinates
-  });
-
-  // Get duty role and status - MUST BE DECLARED BEFORE USE
+  // Get duty role and status
   const dutyRole = duty.formattedRole || duty.dutyRole || duty.role || 'Medical Staff';
   const dutyStatus = (duty as any).status?.status || duty.status || 'unknown';
 
@@ -406,32 +359,47 @@ export default function LiveRequestMonitoring() {
   };
 
   // Get live coordinates from socket or fallback to last known location
-  // Add comprehensive null checks
   let staffId: string | undefined;
   
   if (staff) {
     staffId = staff.id || staff._id;
-    console.log('📊 [LiveRequestMonitoring] Staff object exists');
-  } else {
-    console.log('⚠️ [LiveRequestMonitoring] Staff object is null/undefined');
+    
+    if (!staffId && duty.statusHistory && duty.statusHistory.length > 0) {
+      const assignedHistory = duty.statusHistory.find(h => h.status === 'assigned');
+      if (assignedHistory) {
+        staffId = assignedHistory.changedBy;
+      }
+    }
   }
   
-  console.log('📊 [LiveRequestMonitoring] Staff data:', staff);
-  console.log('📊 [LiveRequestMonitoring] Staff ID:', staffId);
-  console.log('📊 [LiveRequestMonitoring] Live locations received:', liveLocations);
+  // Check if we have real-time location from API
+  const hasRealtimeFromAPI = staff?.location?.source === 'realtime';
+  const apiLocationAge = staff?.location?.lastUpdated 
+    ? Date.now() - staff.location.lastUpdated 
+    : null;
   
-  const staffLiveCoord = staffId && liveLocations[staffId]
-    ? liveLocations[staffId]
-    : staffCoordinates;
+  // Priority: WebSocket > API realtime > Static profile
+  let staffLiveCoord;
+  let coordinateSource;
   
-  // Determine coordinate source
-  const coordinateSource = staffId && liveLocations[staffId] 
-    ? '🔴 LIVE (WebSocket)' 
-    : '📍 STATIC (Profile)';
+  if (staffId && liveLocations[staffId]) {
+    // Use WebSocket data (highest priority)
+    staffLiveCoord = liveLocations[staffId];
+    coordinateSource = '🔴 LIVE (WebSocket)';
+  } else if (hasRealtimeFromAPI && apiLocationAge && apiLocationAge < 10000) {
+    // Use API realtime data if less than 10 seconds old
+    staffLiveCoord = {
+      latitude: staff.location.latitude,
+      longitude: staff.location.longitude
+    };
+    coordinateSource = '🟢 LIVE (API)';
+  } else {
+    // Fallback to static profile coordinates
+    staffLiveCoord = staffCoordinates;
+    coordinateSource = '📍 STATIC (Profile)';
+  }
   
-  console.log('📍 [LiveRequestMonitoring] Staff live coord:', staffLiveCoord);
-  console.log('📍 [LiveRequestMonitoring] Coordinate source:', coordinateSource);
-  console.log('📍 [LiveRequestMonitoring] Using live data:', !!(staffId && liveLocations[staffId]));
+  console.log('🗺️ [COORDINATE SOURCE]:', coordinateSource, staffLiveCoord);
 
   // Calculate live update time and ETA
   const lastUpdate = staffId && liveLocations[staffId]?.timestamp
@@ -441,10 +409,6 @@ export default function LiveRequestMonitoring() {
   const liveETA = staffId && liveLocations[staffId]?.estimatedArrival
     ? new Date(liveLocations[staffId].estimatedArrival! * 1000).toLocaleTimeString()
     : distance?.estimatedTimeText || routeData?.durationText || '--';
-
-  console.log('⏰ [LiveRequestMonitoring] Last update:', lastUpdate);
-  console.log('🕒 [LiveRequestMonitoring] Live ETA:', liveETA);
-  console.log('📡 [LiveRequestMonitoring] Data source:', coordinateSource);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
@@ -549,18 +513,6 @@ export default function LiveRequestMonitoring() {
             {/* The Map */}
             <View style={styles.mapContainer}>
               {(() => {
-                console.log('🗺️ [Map Render Check]', {
-                  isWeb,
-                  hasStaffLiveCoord: !!staffLiveCoord,
-                  staffLiveCoord,
-                  coordinateSource,
-                  hasHospitalCoordinates: !!hospitalCoordinates,
-                  hospitalCoordinates,
-                  hasRoutePolylines: !!(routeData?.stepPolylines),
-                  routePolylinesLength: routeData?.stepPolylines?.length || 0,
-                  dutyStatus
-                });
-
                 if (!isWeb) {
                   return (
                     <View style={styles.mapPlaceholder}>
@@ -570,7 +522,6 @@ export default function LiveRequestMonitoring() {
                 }
 
                 if (!staffLiveCoord) {
-                  console.log('⚠️ [Map] Missing staff coordinates');
                   return (
                     <View style={styles.mapPlaceholder}>
                       <ActivityIndicator size="large" color="#3B82F6" />
@@ -580,7 +531,6 @@ export default function LiveRequestMonitoring() {
                 }
 
                 if (!hospitalCoordinates) {
-                  console.log('⚠️ [Map] Missing hospital coordinates');
                   return (
                     <View style={styles.mapPlaceholder}>
                       <ActivityIndicator size="large" color="#3B82F6" />
@@ -589,7 +539,6 @@ export default function LiveRequestMonitoring() {
                   );
                 }
 
-                console.log('✅ [Map] All data available, rendering map');
                 return (
                   <WebMap 
                     staffLocation={staffLiveCoord} 
