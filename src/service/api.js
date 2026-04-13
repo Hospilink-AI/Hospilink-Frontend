@@ -252,6 +252,16 @@ export const profileAPI = {
     return response.data;
   },
 
+  // Send dashboard location permission status
+  sendDashboardLocationPermission: async (permissionGranted, latitude = null, longitude = null) => {
+    const payload = permissionGranted
+      ? { permissionGranted: true, latitude, longitude }
+      : { permissionGranted: false };
+
+    const response = await api.post('/api/profile/dashboard/location-permission', payload);
+    return response.data;
+  },
+
   // Get earnings data for dashboard
   getEarnings: async () => {
     const response = await api.get('/api/dashboard/earnings');

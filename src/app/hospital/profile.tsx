@@ -537,6 +537,7 @@ const Profile = () => {
   const [staffCount, setStaffCount] = useState("");
   const [services, setServices] = useState<string[]>([]);
   const [isProfileComplete, setIsProfileComplete] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState<string | null>(null);
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showImageMenu, setShowImageMenu] = useState(false);
@@ -588,7 +589,8 @@ const Profile = () => {
       setLocation(mapped.location || "Mumbai");
       setStaffCount(mapped.staffCount || "124");
       setServices(mapped.servicesAvailable?.length ? mapped.servicesAvailable : ["Emergency & Acute Care", "Diagnostics & Imaging", "Support Services"]);
-      setIsProfileComplete(mapped.isProfileComplete || true);
+      setIsProfileComplete(mapped.isProfileComplete || false);
+      setVerificationStatus(data?.profile?.verificationStatus ?? null);
       setProfilePicture(data?.profile?.profilePicture || null);
     } catch (err: any) {
       setApiError(err?.response?.data?.message ?? "Failed to load profile.");
@@ -733,12 +735,31 @@ const Profile = () => {
               <View>
                 <Text style={gSt.hospitalTitle}>{hospitalLegalName}</Text>
                 <Text style={gSt.hospitalSub}>Multispeciality Hospital • ICU Specialist</Text>
-                <View style={gSt.badgesWrap}>
+                {/* All badges + chips in one row */}
+                <View style={gSt.badgeRow}>
                   <View style={gSt.blueBadge}><Text style={gSt.blueBadgeTxt}>MD, FRCP</Text></View>
-                  <View style={gSt.greenBadge}><Ionicons name="checkmark-circle" size={12} color={GREEN} /><Text style={gSt.greenBadgeTxt}>Verified Profile</Text></View>
-                  <View style={gSt.grayBadge}><Ionicons name="call" size={12} color={TEXT_SECONDARY} /><Text style={gSt.grayBadgeTxt}>{STATIC_PHONE}</Text></View>
-                  <View style={gSt.grayBadge}><Ionicons name="mail" size={12} color={TEXT_SECONDARY} /><Text style={gSt.grayBadgeTxt}>{userEmail}</Text></View>
-                  {isProfileComplete && <View style={gSt.outlineBadge}><Ionicons name="checkmark-circle-outline" size={12} color={GREEN} /><Text style={gSt.outlineBadgeTxt}>Profile Complete</Text></View>}
+                  {verificationStatus === "verified" ? (
+                    <View style={gSt.greenBadge}>
+                      <Ionicons name="checkmark-circle" size={12} color={GREEN} />
+                      <Text style={gSt.greenBadgeTxt}>Verified Profile</Text>
+                    </View>
+                  ) : verificationStatus === "rejected" ? (
+                    <View style={[gSt.pill, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
+                      <Ionicons name="close-circle" size={12} color="#DC2626" />
+                      <Text style={[gSt.pillTxt, { color: "#DC2626" }]}>Rejected</Text>
+                    </View>
+                  ) : (
+                    <View style={[gSt.pill, { backgroundColor: "#FFFBEB", borderColor: "#FDE68A" }]}>
+                      <Ionicons name="time-outline" size={12} color="#A16207" />
+                      <Text style={[gSt.pillTxt, { color: "#A16207" }]}>Verification Under Process</Text>
+                    </View>
+                  )}
+                  <View style={gSt.completeBadge}>
+                    <Ionicons name="checkmark-done-circle" size={12} color="#15803D" />
+                    <Text style={gSt.completeBadgeTxt}>Profile Complete</Text>
+                  </View>
+                  <View style={gSt.grayBadge}><Ionicons name="call" size={11} color={TEXT_SECONDARY} /><Text style={gSt.grayBadgeTxt}>{STATIC_PHONE}</Text></View>
+                  <View style={gSt.grayBadge}><Ionicons name="mail" size={11} color={TEXT_SECONDARY} /><Text style={gSt.grayBadgeTxt}>{userEmail}</Text></View>
                 </View>
               </View>
             </View>
@@ -979,16 +1000,25 @@ const gSt = StyleSheet.create({
   avatarImage: { width: 70, height: 70, borderRadius: 35 },
   cameraBadge: { position: 'absolute', bottom: -2, right: -2, width: 26, height: 26, borderRadius: 13, backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: WHITE, zIndex: 10 },
   hospitalTitle: { fontSize: 22, fontWeight: '700', color: TEXT_PRIMARY, marginBottom: 4 },
-  hospitalSub: { fontSize: 13, color: TEXT_SECONDARY, marginBottom: 12 },
-  badgesWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  blueBadge: { backgroundColor: BLUE_LIGHT, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  hospitalSub: { fontSize: 13, color: TEXT_SECONDARY, marginBottom: 8 },
+  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6, flexWrap: 'wrap' },
+  chipRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  // shared pill base
+  pill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
+  pillTxt: { fontSize: 11, fontWeight: '600' },
+  blueBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: BLUE_LIGHT, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: "#BFDBFE" },
   blueBadgeTxt: { color: BLUE, fontSize: 11, fontWeight: '700' },
-  greenBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: GREEN_LIGHT, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
-  greenBadgeTxt: { color: GREEN, fontSize: 11, fontWeight: '700' },
-  grayBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F8FAFC', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: BORDER },
+  greenBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: GREEN_LIGHT, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: "#6EE7B7" },
+  greenBadgeTxt: { color: "#065F46", fontSize: 11, fontWeight: '700' },
+  grayBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F8FAFC', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: BORDER },
   grayBadgeTxt: { color: TEXT_SECONDARY, fontSize: 11, fontWeight: '600' },
-  outlineBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: GREEN_LIGHT },
+  completeBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F0FDF4', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: '#BBF7D0' },
+  completeBadgeTxt: { color: '#15803D', fontSize: 11, fontWeight: '700' },
+  incompleteBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FFFBEB', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: '#FDE68A' },
+  incompleteBadgeTxt: { color: '#B45309', fontSize: 11, fontWeight: '700' },
+  outlineBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: GREEN_LIGHT },
   outlineBadgeTxt: { color: GREEN, fontSize: 11, fontWeight: '600' },
+  badgesWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   editBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: BLUE, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
   editBtnTxt: { color: WHITE, fontSize: 13, fontWeight: '600' },
   outlineBtn: { borderWidth: 1, borderColor: BLUE, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },

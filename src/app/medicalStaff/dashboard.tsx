@@ -1,352 +1,3 @@
-// import ActionCard from "@/component/cards/medicalStaff/ActionCard";
-// import DutyCard from "@/component/cards/medicalStaff/Dashboard/DutyCard";
-// import StatsCard from "@/component/cards/medicalStaff/Dashboard/StatsCard";
-// import Toast from "@/component/common/Toast";
-// import ToggleSwitch from "@/component/common/ToggleSwitch";
-// import { COLORS } from "@/constant/colors";
-// import { duties } from "@/data/duties";
-// import { Ionicons } from "@expo/vector-icons";
-// import { useState } from "react";
-// import {
-//   ScrollView,
-//   StyleSheet,
-//   Text,
-//   TouchableOpacity,
-//   useWindowDimensions,
-//   View,
-// } from "react-native";
-
-// export default function Dashboard() {
-//   const [toast, setToast] = useState(false);
-//   const [showAll, setShowAll] = useState(false);
-//   const [available, setAvailable] = useState(true);
-
-
-
-//   const { width } = useWindowDimensions();
-//   const isMobile = width < 768;
-
-//   const visibleDuties = showAll ? duties : duties.slice(0, 2);
-
-//   const handleAccept = () => {
-//     setToast(true);
-//     setTimeout(() => setToast(false), 3000);
-//   };
-
-//   return (
-//     <ScrollView
-//       style={styles.container}
-//       contentContainerStyle={[styles.content, isMobile && styles.contentMobile]}
-//       showsVerticalScrollIndicator={false}
-//     >
-//       {toast && <Toast message="Duty Accepted Successfully!" />}
-
-//       {/* ── Active Duty Banner ───────────────────────────── */}
-//       <View style={styles.activeDutyCard}>
-//         <View style={styles.activeDutyTop}>
-//           <View style={styles.activeDutyLeft}>
-//             <View style={styles.activeDutyIconWrap}>
-//               <Ionicons name="time-outline" size={18} color={COLORS.primary} />
-//             </View>
-//             <View>
-//               <Text style={styles.activeDutyLabel}>ACTIVE DUTY</Text>
-//               <Text style={styles.activeDutyTitle}>
-//                 Emergency Nurse at City General Hospital
-//               </Text>
-//             </View>
-//           </View>
-//           <View style={styles.activeDutyRight}>
-//             <Text style={styles.activeDutyPercent}>65% Complete</Text>
-//             <Text style={styles.activeDutySep}>  |  </Text>
-//             {/* <Text style={styles.activeDutyTime}>Time Remaining: 2h 45m</Text> */}
-//           </View>
-//         </View>
-
-//         {/* Progress Bar */}
-//         <View style={styles.progressTrack}>
-//           <View style={[styles.progressFill, { width: "65%" }]} />
-//         </View>
-//       </View>
-
-//       {/* ── Available Banner ─────────────────────────────── */}
-//       <View style={[styles.availableBanner, !available && styles.unavailableBanner]}>
-//         <View style={styles.availableLeft}>
-//           <View style={[styles.availableDot, { backgroundColor: available ? COLORS.green : COLORS.red }]} />
-//           <View>
-//             <Text style={styles.availableTitle}>
-//               {available ? "Available" : "Unavailable"}
-//             </Text>
-//             <Text style={styles.availableSub}>
-//               {available
-//                 ? "Ready to receive new clinical duties"
-//                 : "You won't receive duty requests"}
-//             </Text>
-//           </View>
-//         </View>
-//         <ToggleSwitch enabled={available} onToggle={() => setAvailable(!available)} />
-//       </View>
-
-//       {/* ── Stats ────────────────────────────────────────── */}
-//       <View style={[styles.statsRow, isMobile && styles.statsRowMobile]}>
-//         <StatsCard
-//           icon="cash-outline"
-//           value="₹ 3,480"
-//           label="Total Earnings"
-//           trend="12%"
-//           trendUp
-//           isMobile={isMobile}
-//         />
-//         <StatsCard
-//           icon="briefcase-outline"
-//           value="14"
-//           label="Duties Completed"
-//           isMobile={isMobile}
-//         />
-//         <StatsCard
-//           icon="calendar-outline"
-//           value="2"
-//           label="Available Duties"
-//           isMobile={isMobile}
-//         />
-//         <StatsCard
-//           icon="star-outline"
-//           value="4.8"
-//           label="Avg. Rating"
-//           trend="0.2"
-//           trendUp
-//           isMobile={isMobile}
-//         />
-//       </View>
-
-//       {/* ── Nearby Opportunities ─────────────────────────── */}
-//       <View style={styles.sectionHeader}>
-//         <Text style={styles.sectionTitle}>Available Duties</Text>
-//         {!showAll && (
-//           <TouchableOpacity onPress={() => setShowAll(true)} activeOpacity={0.7}>
-//             <Text style={styles.viewAll}>View All</Text>
-//           </TouchableOpacity>
-//         )}
-//       </View>
-
-//       <View style={[styles.dutiesGrid, isMobile && styles.dutiesGridMobile]}>
-//         {visibleDuties.map((duty) => (
-//           <DutyCard
-//             key={duty.id}
-//             duty={duty}
-//             onAccept={handleAccept}
-//             isMobile={isMobile}
-//           />
-//         ))}
-//       </View>
-
-//       {/* ── Quick Actions ────────────────────────────────── */}
-//       <View style={styles.actionsRow}>
-//         <ActionCard
-//           icon="search-outline"
-//           label="Find Duties"
-//           iconBg="#EEF2FF"
-//           isMobile={isMobile}
-//         />
-//         <ActionCard
-//           icon="document-text-outline"
-//           label="My Documents"
-//           iconBg="#D1FAE5"
-//           isMobile={isMobile}
-//         />
-//         <ActionCard
-//           icon="help-circle-outline"
-//           label="Support Center"
-//           iconBg="#FEF3C7"
-//           isMobile={isMobile}
-//         />
-//       </View>
-//     </ScrollView>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: COLORS.background,
-//   },
-//   content: {
-//     padding: 24,
-//     paddingBottom: 40,
-//     gap: 20,
-//   },
-//   contentMobile: {
-//     padding: 16,
-//     gap: 16,
-//   },
-
-//   // ── Active Duty Card
-//   activeDutyCard: {
-//     backgroundColor: COLORS.white,
-//     borderRadius: 14,
-//     padding: 18,
-//     borderWidth: 1,
-//     borderColor: COLORS.border,
-//     shadowColor: "#000",
-//     shadowOpacity: 0.04,
-//     shadowRadius: 4,
-//     elevation: 2,
-//   },
-//   activeDutyTop: {
-//     flexDirection: "row",
-//     justifyContent: "space-between",
-//     alignItems: "flex-start",
-//     flexWrap: "wrap",
-//     gap: 8,
-//     marginBottom: 14,
-//   },
-//   activeDutyLeft: {
-//     flexDirection: "row",
-//     alignItems: "flex-start",
-//     gap: 12,
-//     flex: 1,
-//     minWidth: 0,           // ← add this so text can shrink
-//   },
-//   activeDutyIconWrap: {
-//     width: 36,
-//     height: 36,
-//     borderRadius: 10,
-//     backgroundColor: "#EEF2FF",
-//     alignItems: "center",
-//     justifyContent: "center",
-//   },
-//   activeDutyLabel: {
-//     fontSize: 11,
-//     color: COLORS.subText,
-//     fontWeight: "600",
-//     letterSpacing: 0.5,
-//     marginBottom: 2,
-//   },
-//   activeDutyTitle: {
-//     fontSize: 14,          // down from 15
-//     fontWeight: "700",
-//     color: COLORS.text,
-//     flexShrink: 1,
-//   },
-//   activeDutyRight: {
-//     flexDirection: "row",
-//     alignItems: "center",
-//     flexWrap: "wrap",     // ← allows wrapping
-//     gap: 4,
-//   },
-//   activeDutyPercent: {
-//     fontSize: 12,
-//     fontWeight: "700",
-//     color: COLORS.primary,
-//   },
-//   activeDutySep: {
-//     color: COLORS.border,
-//     fontSize: 12,
-//   },
-//   activeDutyTime: {
-//     fontSize: 12,
-//     color: COLORS.subText,
-//     fontWeight: "500",
-//   },
-//   progressTrack: {
-//     height: 8,
-//     backgroundColor: "#EEF2FF",
-//     borderRadius: 4,
-//     overflow: "hidden",
-//   },
-//   progressFill: {
-//     height: "100%",
-//     backgroundColor: COLORS.primary,
-//     borderRadius: 4,
-//   },
-
-//   // ── Available Banner
-//   availableBanner: {
-//     backgroundColor: "#F0FDF4",
-//     borderRadius: 14,
-//     padding: 16,
-//     flexDirection: "row",
-//     justifyContent: "space-between",
-//     alignItems: "center",
-//     borderWidth: 1,
-//     borderColor: "#BBF7D0",
-//   },
-//   unavailableBanner: {
-//     backgroundColor: "#FFF1F2",
-//     borderColor: "#FECDD3",
-//   },
-//   availableLeft: {
-//     flexDirection: "row",
-//     alignItems: "center",
-//     gap: 10,
-//   },
-//   availableDot: {
-//     width: 10,
-//     height: 10,
-//     borderRadius: 5,
-//   },
-//   availableTitle: {
-//     fontSize: 15,
-//     fontWeight: "700",
-//     color: COLORS.text,
-//   },
-//   availableSub: {
-//     fontSize: 12,
-//     color: COLORS.subText,
-//     marginTop: 2,
-//   },
-
-//   // ── Stats
-//   statsRow: {
-//     flexDirection: "row",
-//     gap: 12,
-//     flexWrap: "wrap",
-//   },
-//   statsRowMobile: {
-//     gap: 10,
-//     justifyContent: "space-between",
-//   },
-
-//   // ── Section Header
-//   sectionHeader: {
-//     flexDirection: "row",
-//     justifyContent: "space-between",
-//     alignItems: "center",
-//     marginTop: 4,
-//   },
-//   sectionTitle: {
-//     fontSize: 18,
-//     fontWeight: "700",
-//     color: COLORS.text,
-//   },
-//   viewAll: {
-//     fontSize: 14,
-//     color: COLORS.primary,
-//     fontWeight: "600",
-//   },
-
-//   // ── Duties Grid
-//   dutiesGrid: {
-//     flexDirection: "row",
-//     flexWrap: "wrap",
-//     gap: 16,
-//   },
-//   dutiesGridMobile: {
-//     flexDirection: "column",
-//   },
-
-//   // ── Actions Row
-//   actionsRow: {
-//     flexDirection: "row",
-//     gap: 14,
-//     marginTop: 4,
-//   },
-// });
-
-
-
-
-
-
 import ActionCard from "@/component/cards/medicalStaff/ActionCard";
 import DutyCard from "@/component/cards/medicalStaff/Dashboard/DutyCard";
 import OngoingDutyCard from "@/component/cards/medicalStaff/Dashboard/OngoingDutyCard";
@@ -356,18 +7,19 @@ import Toast from "@/component/common/Toast";
 import ToggleSwitch from "@/component/common/ToggleSwitch";
 import { COLORS } from "@/constant/colors";
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    useWindowDimensions,
-    View,
+  ActivityIndicator,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import { dutyAPI, profileAPI } from "../../service/api";
-
 
 interface Duty {
   _id?: string;
@@ -404,81 +56,129 @@ export default function Dashboard() {
     averagePerDuty: "0.0"
   });
   const [earningsLoading, setEarningsLoading] = useState(false);
-
   const [upcomingDuties, setUpcomingDuties] = useState<Duty[]>([]);
   const [upcomingLoading, setUpcomingLoading] = useState(false);
-
   const [ongoingDuties, setOngoingDuties] = useState<Duty[]>([]);
   const [ongoingLoading, setOngoingLoading] = useState(false);
-
   const [averageRating, setAverageRating] = useState<number>(0);
+
+  const router = useRouter();
+  const scrollViewRef = useRef<ScrollView>(null);
+  const availableDutiesRef = useRef<View>(null);
 
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
-
   const visibleDuties = showAll ? duties : duties.slice(0, 2);
 
-  // const handleAccept = () => {
+  // Get active duty (first ongoing duty)
+  const activeDuty = ongoingDuties.length > 0 ? ongoingDuties[0] : null;
+  
+  // Calculate progress based on status
+  const getProgress = (status: string | undefined) => {
+    switch (status) {
+      case 'assigned':
+        return { percent: 10, label: '10% Complete' };
+      case 'enroute':
+        return { percent: 50, label: '50% Complete' };
+      case 'in-progress':
+        return { percent: 85, label: '85% Complete' };
+      default:
+        return { percent: 0, label: '0% Complete' };
+    }
+  };
 
-  //   setToast(true);
-  //   setTimeout(() => setToast(false), 3000);
-  // };
+  const progress = activeDuty ? getProgress(activeDuty.status) : { percent: 0, label: 'No Active Duty' };
+
+  const handleFindDuties = () => {
+    setShowAll(true);
+    setTimeout(() => {
+      availableDutiesRef.current?.measure((x, y, width, height, pageX, pageY) => {
+        scrollViewRef.current?.scrollTo({ y: pageY - 80, animated: true });
+      });
+    }, 100);
+  };
+
+  
+
+  const checkLocationPermission = async () => {
+    try {
+      if (Platform.OS === 'web') {
+        const permissionStatus = await navigator.permissions?.query({ name: 'geolocation' as PermissionName });
+        
+        if (permissionStatus?.state === 'granted') {
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              await profileAPI.sendDashboardLocationPermission(
+                true,
+                position.coords.latitude as unknown as null,
+                position.coords.longitude as unknown as null
+              );
+            },
+            async () => {
+              await profileAPI.sendDashboardLocationPermission(false);
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+          );
+          return;
+        }
+
+        if (permissionStatus?.state === 'denied') {
+          await profileAPI.sendDashboardLocationPermission(false);
+          return;
+        }
+
+        if (permissionStatus?.state === 'prompt') {
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              await profileAPI.sendDashboardLocationPermission(
+                true,
+                position.coords.latitude as unknown as null,
+                position.coords.longitude as unknown as null
+              );
+            },
+            async () => {
+              await profileAPI.sendDashboardLocationPermission(false);
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+          );
+        }
+      }
+    } catch (error) {
+      await profileAPI.sendDashboardLocationPermission(false);
+    }
+  };
 
   const handleAccept = useCallback(async () => {
     setToast(true);
     setTimeout(() => setToast(false), 3000);
-    await fetchAvailableDuties();   // removes accepted duty from available list
-    await fetchUpcomingDuties();    // shows it in upcoming list
+    await fetchAvailableDuties();
+    await fetchUpcomingDuties();
   }, []);
 
-  // Refresh functions for status changes
   const refreshDuties = () => {
     fetchUpcomingDuties();
     fetchOngoingDuties();
   };
 
-
-
-  // ── PATCH /api/profile/staff-availability
   const handleToggleAvailability = async () => {
     const newValue = !available;
     setAvailable(newValue);
     setToggling(true);
     try {
       await profileAPI.toggleMedicalStaffAvailability(newValue);
-      console.log("✅ Availability toggled:", newValue);
     } catch (err: any) {
-      console.error("❌ Toggle failed:", err?.response?.data);
       setAvailable(!newValue);
     } finally {
       setToggling(false);
     }
   };
 
-  // ── GET /api/duties/available
   const fetchAvailableDuties = async () => {
     setLoading(true);
     setError(null);
     try {
       const response = await dutyAPI.getAvailableDuties();
-      console.log("✅ Available duties fetched:", response);
-
-      interface JobResponse {
-        _id: string;
-        staffRole?: string;
-        hospital?: {
-          hospitalLegalName?: string;
-        };
-        distanceText?: string;
-        distance?: number;
-        startTime?: string;
-        endTime?: string;
-        totalPayment?: number;
-        date: string;
-        urgency?: string;
-      }
-
-      const transformedDuties = (response.jobs || []).map((job: JobResponse) => ({
+      const transformedDuties = (response.jobs || []).map((job: any) => ({
         _id: job._id,
         id: job._id,
         title: job.staffRole?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || 'Medical Duty',
@@ -496,24 +196,20 @@ export default function Dashboard() {
       setDuties(transformedDuties);
       setTotalJobs(response.totalJobs || 0);
     } catch (err: any) {
-      console.error("❌ Failed to fetch duties:", err?.response?.data);
       setError(err?.response?.data?.message || "Failed to load duties");
     } finally {
       setLoading(false);
     }
   };
 
-  // fetch earnings
   const fetchEarnings = async () => {
     setEarningsLoading(true);
     try {
       const response = await profileAPI.getEarnings();
-      console.log("✅ Earnings data fetched:", response);
       if (response.success && response.data) {
         setEarnings(response.data);
       }
     } catch (err: any) {
-      console.error("❌ Failed to fetch earnings:", err?.response?.data);
     } finally {
       setEarningsLoading(false);
     }
@@ -524,36 +220,16 @@ export default function Dashboard() {
       const response = await profileAPI.getStaffOverview();
       setAverageRating(response.data?.profile?.averageRating || 0);
     } catch (err) {
-      console.error("❌ Failed to fetch dashboard overview:", err);
     }
   };
 
-  // ── GET /api/duties/my-upcoming (UPDATED)
   const fetchUpcomingDuties = async () => {
     setUpcomingLoading(true);
     try {
       const response = await dutyAPI.getMyUpcomingDuties();
-      console.log("✅ Upcoming duties fetched:", response);
-
-      interface UpcomingJobResponse {
-        _id: string;
-        formattedRole?: string;
-        hospital?: {
-          hospitalLegalName?: string;
-        };
-        startTime?: string;
-        endTime?: string;
-        totalPayment?: number;
-        date: string;
-        status?: string;
-        distanceText?: string;
-        distance?: number;
-      }
-
-      // Filter to only show duties with status 'assigned'
       const transformedDuties = (response.data || [])
-        .filter((job: UpcomingJobResponse) => job.status === 'assigned')
-        .map((job: UpcomingJobResponse) => ({
+        .filter((job: any) => job.status === 'assigned')
+        .map((job: any) => ({
           _id: job._id,
           id: job._id,
           title: job.formattedRole || "Medical Duty",
@@ -568,23 +244,17 @@ export default function Dashboard() {
           status: job.status,
           distanceText: job.distanceText || `${job.distance} km` || "N/A",
         }));
-
       setUpcomingDuties(transformedDuties);
     } catch (err: any) {
-      console.error("❌ Failed to fetch upcoming duties:", err?.response?.data);
     } finally {
       setUpcomingLoading(false);
     }
   };
 
-  // ── GET /api/duties/ongoing (UPDATED)
   const fetchOngoingDuties = async () => {
     setOngoingLoading(true);
     try {
       const res = await dutyAPI.getOngoingDuties();
-      console.log("✅ Ongoing duties:", res);
-
-      // Filter to only show duties with status 'enroute' or 'in-progress'
       const transformed = (res.data || [])
         .filter((job: any) => job.status === 'enroute' || job.status === 'in-progress')
         .map((job: any) => ({
@@ -602,25 +272,18 @@ export default function Dashboard() {
             year: "numeric",
           }),
           status: job.status,
-
         }));
-
       setOngoingDuties(transformed);
     } catch (err) {
-      console.error("❌ Failed to fetch ongoing duties:", err);
     } finally {
       setOngoingLoading(false);
     }
   };
 
- 
+  useEffect(() => {
+    checkLocationPermission();
+  }, []);
 
-  // inside Dashboard component, after you fetch ongoingDuties:
-  const activeOngoing = ongoingDuties[0]; // first active duty
-
-
-
-  // Fetch duties when component mounts and when available status changes
   useEffect(() => {
     if (available) {
       fetchAvailableDuties();
@@ -629,61 +292,57 @@ export default function Dashboard() {
     }
   }, [available]);
 
-  // Fetch earnings data when component mounts
   useEffect(() => {
     fetchEarnings();
-  }, []);
-
-  // Get Average Rating
-  useEffect(() => {
     fetchDashboardOverview();
-  }, []);
-
-  // fetching upcoming duties
-  useEffect(() => {
     fetchUpcomingDuties();
-  }, []);
-
-  // fetching Ongoing duties
-  useEffect(() => {
     fetchOngoingDuties();
   }, []);
 
   return (
     <ScrollView
+      ref={scrollViewRef}
       style={styles.container}
       contentContainerStyle={[styles.content, isMobile && styles.contentMobile]}
       showsVerticalScrollIndicator={false}
     >
       {toast && <Toast message="Duty Accepted Successfully!" />}
 
-      {/* ── Active Duty Banner ───────────────────────────── */}
-      <View style={styles.activeDutyCard}>
-        <View style={styles.activeDutyTop}>
-          <View style={styles.activeDutyLeft}>
-            <View style={styles.activeDutyIconWrap}>
-              <Ionicons name="time-outline" size={18} color={COLORS.primary} />
+      {activeDuty ? (
+        <View style={styles.activeDutyCard}>
+          <View style={styles.activeDutyTop}>
+            <View style={styles.activeDutyLeft}>
+              <View style={styles.activeDutyIconWrap}>
+                <Ionicons name="time-outline" size={18} color={COLORS.primary} />
+              </View>
+              <View>
+                <Text style={styles.activeDutyLabel}>ACTIVE DUTY</Text>
+                <Text style={styles.activeDutyTitle}>
+                  {activeDuty.title} at {activeDuty.hospital}
+                </Text>
+              </View>
             </View>
+            <View style={styles.activeDutyRight}>
+              <Text style={styles.activeDutyPercent}>{progress.label}</Text>
+              <Text style={styles.activeDutySep}>  |  </Text>
+            </View>
+          </View>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${progress.percent}%` }]} />
+          </View>
+        </View>
+      ) : (
+        <View style={styles.noActiveDutyCard}>
+          <View style={styles.noActiveDutyContent}>
+            <Ionicons name="briefcase-outline" size={24} color={COLORS.subText} />
             <View>
-              <Text style={styles.activeDutyLabel}>ACTIVE DUTY</Text>
-              <Text style={styles.activeDutyTitle}>
-                Emergency Nurse at City General Hospital
-              </Text>
+              <Text style={styles.noActiveDutyTitle}>No Active Duty</Text>
+              <Text style={styles.noActiveDutySub}>Accept a duty to start tracking</Text>
             </View>
           </View>
-          <View style={styles.activeDutyRight}>
-            <Text style={styles.activeDutyPercent}>65% Complete</Text>
-            <Text style={styles.activeDutySep}>  |  </Text>
-          </View>
         </View>
+      )}
 
-        {/* Progress Bar */}
-        <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, { width: "65%" }]} />
-        </View>
-      </View>
-
-      {/* ── Available Banner ── */}
       <View style={[styles.availableBanner, !available && styles.unavailableBanner]}>
         <View style={styles.availableLeft}>
           <View style={[styles.availableDot, { backgroundColor: available ? COLORS.green : COLORS.red }]} />
@@ -704,7 +363,6 @@ export default function Dashboard() {
         }
       </View>
 
-      {/* ── Stats ────────────────────────────────────────── */}
       <View style={[styles.statsRow, isMobile && styles.statsRowMobile]}>
         <StatsCard
           icon="cash-outline"
@@ -736,10 +394,9 @@ export default function Dashboard() {
         />
       </View>
 
-      {/* ── Available Duties ── */}
       {available ? (
         <>
-          <View style={styles.sectionHeader}>
+          <View style={styles.sectionHeader} ref={availableDutiesRef} collapsable={false}>
             <Text style={styles.sectionTitle}>Available Duties</Text>
             {!showAll && duties.length > 2 && (
               <TouchableOpacity onPress={() => setShowAll(true)} activeOpacity={0.7}>
@@ -798,7 +455,6 @@ export default function Dashboard() {
         </View>
       )}
 
-      {/* ── Upcoming Duties ── */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Upcoming Duties</Text>
       </View>
@@ -827,7 +483,6 @@ export default function Dashboard() {
         </View>
       )}
 
-      {/* Ongoing duties  */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Ongoing Duties</Text>
       </View>
@@ -856,24 +511,25 @@ export default function Dashboard() {
         </View>
       )}
 
-      {/* ── Quick Actions ────────────────────────────────── */}
       <View style={styles.actionsRow}>
-        <ActionCard
-          icon="search-outline"
-          label="Find Duties"
-          iconBg="#EEF2FF"
+        <ActionCard 
+          icon="search-outline" 
+          label="Find Duties" 
+          iconBg="#EEF2FF" 
           isMobile={isMobile}
+          onPress={handleFindDuties}
         />
-        <ActionCard
-          icon="document-text-outline"
-          label="My Documents"
-          iconBg="#D1FAE5"
+        <ActionCard 
+          icon="document-text-outline" 
+          label="My Documents" 
+          iconBg="#D1FAE5" 
           isMobile={isMobile}
+          onPress={() => router.push("/medicalStaff/profile")}
         />
-        <ActionCard
-          icon="help-circle-outline"
-          label="Support Center"
-          iconBg="#FEF3C7"
+        <ActionCard 
+          icon="help-circle-outline" 
+          label="Support Center" 
+          iconBg="#FEF3C7" 
           isMobile={isMobile}
         />
       </View>
@@ -885,8 +541,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   content: { padding: 24, paddingBottom: 40, gap: 20 },
   contentMobile: { padding: 16, gap: 16 },
-
-  // ── Active Duty Card
   activeDutyCard: { backgroundColor: COLORS.white, borderRadius: 14, padding: 18, borderWidth: 1, borderColor: COLORS.border, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
   activeDutyTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8, marginBottom: 14 },
   activeDutyLeft: { flexDirection: "row", alignItems: "flex-start", gap: 12, flex: 1, minWidth: 0 },
@@ -899,34 +553,48 @@ const styles = StyleSheet.create({
   activeDutyTime: { fontSize: 12, color: COLORS.subText, fontWeight: "500" },
   progressTrack: { height: 8, backgroundColor: "#EEF2FF", borderRadius: 4, overflow: "hidden" },
   progressFill: { height: "100%", backgroundColor: COLORS.primary, borderRadius: 4 },
-
-  // ── Available Banner
+  noActiveDutyCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 14,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  noActiveDutyContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  noActiveDutyTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: COLORS.text,
+  },
+  noActiveDutySub: {
+    fontSize: 12,
+    color: COLORS.subText,
+    marginTop: 2,
+  },
   availableBanner: { backgroundColor: "#F0FDF4", borderRadius: 14, padding: 16, flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderWidth: 1, borderColor: "#BBF7D0" },
   unavailableBanner: { backgroundColor: "#FFF1F2", borderColor: "#FECDD3" },
   availableLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
   availableDot: { width: 10, height: 10, borderRadius: 5 },
   availableTitle: { fontSize: 15, fontWeight: "700", color: COLORS.text },
   availableSub: { fontSize: 12, color: COLORS.subText, marginTop: 2 },
-
-  // ── Stats
   statsRow: { flexDirection: "row", gap: 12, flexWrap: "wrap" },
   statsRowMobile: { gap: 10, justifyContent: "space-between" },
-
-  // ── Section Header
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 4 },
   sectionTitle: { fontSize: 18, fontWeight: "700", color: COLORS.text },
   viewAll: { fontSize: 14, color: COLORS.primary, fontWeight: "600" },
-
-  // ── Duties Grid
   dutiesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 16 },
   dutiesGridMobile: { flexDirection: "column" },
-
-  // ── Unavailable empty state
   unavailableEmpty: { alignItems: "center", paddingVertical: 40, backgroundColor: COLORS.white, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, gap: 10 },
   unavailableEmptyTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text },
   unavailableEmptySub: { fontSize: 13, color: COLORS.subText, textAlign: "center", paddingHorizontal: 24 },
-
-  // ── Loading, Error, and Empty states
   loadingContainer: { alignItems: "center", paddingVertical: 40, backgroundColor: COLORS.white, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, gap: 12 },
   loadingText: { fontSize: 14, color: COLORS.subText, marginTop: 8 },
   errorContainer: { alignItems: "center", paddingVertical: 30, backgroundColor: COLORS.white, borderRadius: 14, borderWidth: 1, borderColor: COLORS.red, gap: 10 },
@@ -936,7 +604,5 @@ const styles = StyleSheet.create({
   emptyContainer: { alignItems: "center", paddingVertical: 40, backgroundColor: COLORS.white, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, gap: 10 },
   emptyTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text },
   emptySub: { fontSize: 13, color: COLORS.subText, textAlign: "center", paddingHorizontal: 24 },
-
-  // ── Actions Row
   actionsRow: { flexDirection: "row", gap: 14, marginTop: 4 },
 });

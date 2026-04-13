@@ -14,7 +14,9 @@ import {
     useWindowDimensions,
     View,
 } from "react-native";
-import { dutyAPI } from "../../service/api";
+import { dutyAPI, profileAPI } from "../../service/api";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const formatDate = (iso: string | null) => {
   if (!iso) return "—";
@@ -51,7 +53,8 @@ export default function History() {
   const [duties,   setDuties]   = useState<any[]>([]);
   const [loading,  setLoading]  = useState(true);
   const [showAll,  setShowAll]  = useState(false);
-  const [review , setReview] = useState(0)
+  const [review , setReview] = useState(0);
+  const [profileData, setProfileData] = useState<any>(null);
 
   // ────────────────────────────────────────────────────────────
   // GET /api/completed-duties
@@ -64,6 +67,9 @@ export default function History() {
         const res = await dutyAPI.getCompletedDuties();
         setSummary(res.summary);
         setDuties(res.duties ?? []);
+        
+        const profileRes = await profileAPI.getMyProfile();
+        setProfileData(profileRes);
       } catch (err) {
         console.error("❌ Failed to load history:", err);
       } finally {
@@ -88,6 +94,77 @@ const earningsData = duties.map((duty) => ({
   role: duty.formattedRole || formatRole(duty.staffRole) || "—",
   amount: formatEarnings(duty.totalPayment),
 }));
+
+  const downloadStatement = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    doc.setFillColor(37, 99, 235);
+    doc.rect(0, 0, pageWidth, 35, 'F');
+    
+    doc.setFillColor(255, 255, 255);
+    doc.rect(15, 10, 15, 15, 'F');
+    doc.setFillColor(37, 99, 235);
+    doc.rect(19, 12, 7, 11, 'F');
+    doc.rect(17, 16, 11, 3, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Hospilink', 35, 20);
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Healthcare Staffing Solutions', 35, 27);
+    
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Earnings Statement', 15, 50);
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    const staffName = profileData?.profile?.fullName || profileData?.user?.name || 'Medical Staff';
+    const generatedDate = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+    
+    doc.text(`Staff Name: ${staffName}`, 15, 60);
+    doc.text(`Generated: ${generatedDate}`, 15, 67);
+    doc.text(`Total Duties: ${totalDuties}`, 15, 74);
+    doc.text(`Total Earnings: ${totalEarnings}`, 15, 81);
+    
+    autoTable(doc, {
+      startY: 90,
+      head: [['Date', 'Hospital', 'Role', 'Amount']],
+      body: earningsData.map(item => [
+        item.date,
+        item.hospital,
+        item.role,
+        item.amount
+      ]),
+      theme: 'grid',
+      headStyles: {
+        fillColor: [37, 99, 235],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 10
+      },
+      bodyStyles: {
+        fontSize: 9
+      },
+      alternateRowStyles: {
+        fillColor: [245, 247, 250]
+      },
+      margin: { left: 15, right: 15 }
+    });
+    
+    const finalY = (doc as any).lastAutoTable.finalY || 90;
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text('This is a computer-generated document. No signature required.', pageWidth / 2, finalY + 15, { align: 'center' });
+    doc.text('\u00a9 2026 Hospilink. All rights reserved.', pageWidth / 2, finalY + 20, { align: 'center' });
+    
+    doc.save(`Hospilink_Earnings_Statement_${new Date().getTime()}.pdf`);
+  };
 
 
   // ── Loading screen
@@ -185,7 +262,7 @@ const earningsData = duties.map((duty) => ({
       {/* ── Recent Earnings — static, unchanged ── */}
       <View style={styles.earningsHeader}>
         <Text style={styles.sectionTitle}>Recent Earnings</Text>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={downloadStatement}>
           <Text style={styles.downloadText}>Download Statements</Text>
         </TouchableOpacity>
       </View>

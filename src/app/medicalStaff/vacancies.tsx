@@ -456,16 +456,15 @@ import VacancyStatCard from "@/component/cards/medicalStaff/Vacancies/VacancySta
 import { COLORS } from "@/constant/colors";
 import { vacancyStats } from "@/data/vacancies";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   useWindowDimensions,
-  View,
+  View
 } from "react-native";
 import { vacancyAPI } from "../../service/api";
 
@@ -481,6 +480,7 @@ interface PaginationMeta {
 export default function Vacancies() {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
+  const scrollRef = useRef<ScrollView>(null);
 
   // ── Search Bar State ──
   const [specialty, setSpecialty] = useState("");
@@ -535,47 +535,22 @@ export default function Vacancies() {
 
 
   // ── Fetch Jobs ──
-  // Uses getJobs for initial load / pagination / quick filters (fast, paginated)
-  // Uses getSearchStream for the search bar (AI-powered, SSE)
-  let hasData = false;
   const fetchJobs = useCallback(async (
     page: number,
     role: string,
     location: string,
-    useStream = false,
   ): Promise<void> => {
     setLoading(true);
     setError(null);
     try {
-      
-      if (useStream) {
-        // Search bar path → SSE stream
-        const result = await vacancyAPI.getSearchStream(role, location);
-        setJobs(result.jobs ?? []);
-        hasData = true;
-
-        // Stream doesn't return pagination — set a minimal fallback
-        setPagination(prev => ({
-          ...prev,
-          currentPage: 1,
-          totalPages: 1,
-          totalItems: result.jobs?.length ?? 0,
-          hasNextPage: false,
-          hasPrevPage: false,
-        }));
+      const json = await vacancyAPI.getJobs({ page, role, location });
+      if (json.status === 'success') {
+        setJobs(json.data.jobs);
+        setPagination(json.data.pagination);
       } else {
-        // Default path → paginated JSON
-        const json = await vacancyAPI.getJobs({ page, role, location });
-        if (json.status === 'success') {
-          setJobs(json.data.jobs);
-          setPagination(json.data.pagination);
-          hasData = true;
-        } else {
-          setError('Failed to load jobs.');
-        }
+        setError('Failed to load jobs.');
       }
     } catch (e: unknown) {
-      if (hasData) return;
       const err = e as { response?: { data?: { message?: string } } };
       setError(err?.response?.data?.message ?? 'Network error. Please try again.');
     } finally {
@@ -583,54 +558,25 @@ export default function Vacancies() {
     }
   }, []);
 
-  // Initial load
+  // Initial load - show all jobs
   useEffect(() => {
-    fetchJobs(1, '', '', false);
+    fetchJobs(1, '', '');
   }, [fetchJobs]);
 
 
-  // ── Search Bar Handler ──
-  // const handleSearch = async () => {
-  //   if (!bothFilled) return;
-  //   setIsSearching(true);
-  //   setActiveRole(specialty.trim());
-  //   setActiveLocation(location.trim());
-  //   await fetchJobs(1, specialty.trim(), location.trim());
-  //   setIsSearching(false);
-  // };
-  // Search bar → stream
-  const handleSearch = async () => {
-    if (!bothFilled) return;
-    setIsSearching(true);
-    setActiveRole(specialty.trim());
-    setActiveLocation(location.trim());
-    await fetchJobs(1, specialty.trim(), location.trim(), true); // ← useStream: true
-    setIsSearching(false);
-  };
+
 
   // ── QuickFilters Apply Handler ──
-  // const handleFilterApply = (filters: QuickFilterValues) => {
-  //   setActiveRole(filters.role);
-  //   setActiveLocation(filters.location);
-  //   fetchJobs(1, filters.role, filters.location);
-  // };
-
-  // Quick filters → paginated (fast, no stream needed)
   const handleFilterApply = (filters: QuickFilterValues) => {
     setActiveRole(filters.role);
     setActiveLocation(filters.location);
-    fetchJobs(1, filters.role, filters.location, false); // ← useStream: false
+    fetchJobs(1, filters.role, filters.location);
   };
 
   // ── Pagination ──
-  // const goToPage = (page: number) => {
-  //   if (page < 1 || page > pagination.totalPages) return;
-  //   fetchJobs(page, activeRole, activeLocation);
-  // };
-  // Pagination → paginated
   const goToPage = (page: number) => {
     if (page < 1 || page > pagination.totalPages) return;
-    fetchJobs(page, activeRole, activeLocation, false); // ← always paginated
+    fetchJobs(page, activeRole, activeLocation);
   };
 
   const getPageNumbers = (): (number | string)[] => {
@@ -656,105 +602,41 @@ export default function Vacancies() {
   const endItem = Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems);
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[styles.content, isMobile && styles.contentMobile]}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* ── Split Search Bar ── */}
-      <View style={styles.searchCard}>
-        <Text style={styles.searchTitle}>{"Find Healthcare Jobs"}</Text>
-        <View style={[styles.searchRow, isMobile && styles.searchRowMobile]}>
-
-          <View style={[styles.searchInputBox, specialty.length > 0 && styles.searchInputBoxActive, isMobile && styles.searchInputBoxFull]}>
-            <Ionicons name="medkit-outline" size={15} color={specialty.length > 0 ? COLORS.primary : COLORS.subText} style={styles.searchIcon} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Specialty or role..."
-              placeholderTextColor={COLORS.subText}
-              value={specialty}
-              onChangeText={setSpecialty}
-              onSubmitEditing={handleSearch}
-            />
-            {specialty.length > 0 && (
-              <TouchableOpacity onPress={() => setSpecialty("")} hitSlop={8}>
-                <Ionicons name="close-circle" size={15} color={COLORS.subText} />
-              </TouchableOpacity>
-            )}
+    <View style={styles.container}>
+      {/* ── Fixed: Stats ── */}
+      <View style={[styles.fixedTop, isMobile && styles.fixedTopMobile]}>
+        {isMobile ? (
+          <View style={styles.statsMobileGrid}>
+            <View style={styles.statsMobileRow}>
+              {statsRow1.map((s) => (
+                <VacancyStatCard key={s.id} icon={s.icon as any} iconBg={s.iconBg} iconColor={s.iconColor} value={s.value} label={s.label} trend={s.trend} trendColor={s.trendColor} isMobile />
+              ))}
+            </View>
+            <View style={styles.statsMobileRow}>
+              {statsRow2.map((s) => (
+                <VacancyStatCard key={s.id} icon={s.icon as any} iconBg={s.iconBg} iconColor={s.iconColor} value={s.value} label={s.label} trend={s.trend} trendColor={s.trendColor} isMobile />
+              ))}
+            </View>
           </View>
-
-          <View style={[styles.searchInputBox, location.length > 0 && styles.searchInputBoxActive, isMobile && styles.searchInputBoxFull]}>
-            <Ionicons name="location-outline" size={15} color={location.length > 0 ? COLORS.primary : COLORS.subText} style={styles.searchIcon} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="City or Area..."
-              placeholderTextColor={COLORS.subText}
-              value={location}
-              onChangeText={setLocation}
-              onSubmitEditing={handleSearch}
-            />
-            {location.length > 0 && (
-              <TouchableOpacity onPress={() => setLocation("")} hitSlop={8}>
-                <Ionicons name="close-circle" size={15} color={COLORS.subText} />
-              </TouchableOpacity>
-            )}
+        ) : (
+          <View style={styles.statsRow}>
+            {dynamicStats.map((s) => (
+              <VacancyStatCard key={s.id} icon={s.icon as any} iconBg={s.iconBg} iconColor={s.iconColor} value={s.value} label={s.label} trend={s.trend} trendColor={s.trendColor} />
+            ))}
           </View>
-
-          <TouchableOpacity
-            style={[styles.searchBtn, bothFilled ? styles.searchBtnActive : styles.searchBtnDisabled, isMobile && styles.searchBtnFull]}
-            onPress={handleSearch}
-            disabled={!bothFilled || isSearching}
-            activeOpacity={0.8}
-          >
-            {isSearching ? (
-              <>
-                <ActivityIndicator size="small" color="#fff" style={{ marginRight: 6 }} />
-                <Text style={styles.searchBtnText}>{"Searching..."}</Text>
-              </>
-            ) : (
-              <>
-                <Ionicons name="search" size={15} color={bothFilled ? "#fff" : COLORS.subText} style={{ marginRight: 6 }} />
-                <Text style={[styles.searchBtnText, !bothFilled && styles.searchBtnTextOff]}>{"Search"}</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-        {!bothFilled && (
-          <Text style={styles.searchHint}>
-            {!specialty.trim() && !location.trim()
-              ? "Enter a specialty and location to search"
-              : !specialty.trim() ? "Add a specialty to continue"
-                : "Add a location to continue"}
-          </Text>
         )}
       </View>
 
-      {/* ── Stats ── */}
-      {isMobile ? (
-        <View style={styles.statsMobileGrid}>
-          <View style={styles.statsMobileRow}>
-            {statsRow1.map((s) => (
-              <VacancyStatCard key={s.id} icon={s.icon} iconBg={s.iconBg} iconColor={s.iconColor} value={s.value} label={s.label} trend={s.trend} trendColor={s.trendColor} isMobile />
-            ))}
-          </View>
-          <View style={styles.statsMobileRow}>
-            {statsRow2.map((s) => (
-              <VacancyStatCard key={s.id} icon={s.icon} iconBg={s.iconBg} iconColor={s.iconColor} value={s.value} label={s.label} trend={s.trend} trendColor={s.trendColor} isMobile />
-            ))}
-          </View>
-        </View>
-      ) : (
-        <View style={styles.statsRow}>
-          {dynamicStats.map((s) => (
-            <VacancyStatCard key={s.id} icon={s.icon} iconBg={s.iconBg} iconColor={s.iconColor} value={s.value} label={s.label} trend={s.trend} trendColor={s.trendColor} />
-          ))}
-        </View>
-      )}
+      {/* ── Body: scrollable jobs + fixed filters ── */}
+      <View style={[styles.body, isMobile && styles.bodyMobile]}>
 
-      {/* ── Main Content + Filters ── */}
-      <View style={[styles.mainRow, isMobile && styles.mainRowMobile]}>
-        <View style={styles.leftCol}>
-
+        {/* Scrollable job list */}
+        <ScrollView
+          ref={scrollRef}
+          style={styles.leftCol}
+          contentContainerStyle={styles.leftColContent}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Header */}
           <View style={styles.featuredHeader}>
             <View>
@@ -799,7 +681,7 @@ export default function Vacancies() {
             <View style={styles.errorWrap}>
               <Ionicons name="alert-circle-outline" size={32} color="#EF4444" />
               <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity style={styles.retryBtn} onPress={() => fetchJobs(1, activeRole, activeLocation)}>
+              <TouchableOpacity style={styles.retryBtn} onPress={() => fetchJobs(pagination.currentPage, activeRole, activeLocation)}>
                 <Text style={styles.retryText}>{"Retry"}</Text>
               </TouchableOpacity>
             </View>
@@ -864,40 +746,70 @@ export default function Vacancies() {
               </TouchableOpacity>
             </View>
           )}
-        </View>
 
-        {/* Quick Filters */}
-        <View style={[styles.rightCol, isMobile && styles.rightColMobile]}>
-          <QuickFilters onApply={handleFilterApply} />
-        </View>
-      </View>
+          {/* ── Action Cards ── */}
+          <View style={[styles.actionsRow, isMobile && styles.actionsRowMobile]}>
+            <TouchableOpacity
+              style={styles.actionCard}
+              activeOpacity={0.8}
+              onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })}
+            >
+              <View style={[styles.actionIconWrap, { backgroundColor: "#EEF2FF" }]}>
+                <Ionicons name="search-outline" size={28} color={COLORS.primary} />
+              </View>
+              <Text style={styles.actionTitle}>Advanced Job Search</Text>
+              <Text style={styles.actionSub}>Find specific roles across 2,000+ facilities</Text>
+            </TouchableOpacity>
 
-      {/* ── Action Cards ── */}
-      <View style={[styles.actionsRow, isMobile && styles.actionsRowMobile]}>
-        <ActionCard icon="search-outline" iconBg="#EEF2FF" iconColor={COLORS.primary} title="Advanced Job Search" subtitle="Find specific roles across 2,000+ facilities" />
-        <ActionCard icon="document-attach-outline" iconBg="#D1FAE5" iconColor="#059669" title="Upload Your CV" subtitle="Get headhunted by top medical facilities" />
-        <ActionCard icon="notifications-outline" iconBg="#FEF3C7" iconColor="#D97706" title="Alert Settings" subtitle="Get instant mobile notifications for new jobs" />
+            <TouchableOpacity style={styles.actionCard} activeOpacity={0.8}>
+              <View style={[styles.actionIconWrap, { backgroundColor: "#D1FAE5" }]}>
+                <Ionicons name="document-attach-outline" size={28} color="#059669" />
+              </View>
+              <Text style={styles.actionTitle}>Upload Your CV</Text>
+              <Text style={styles.actionSub}>Get headhunted by top medical facilities</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.actionCard} activeOpacity={0.8}>
+              <View style={[styles.actionIconWrap, { backgroundColor: "#FEF3C7" }]}>
+                <Ionicons name="notifications-outline" size={28} color="#D97706" />
+              </View>
+              <Text style={styles.actionTitle}>Alert Settings</Text>
+              <Text style={styles.actionSub}>Get instant mobile notifications for new jobs</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+
+        {/* Fixed Quick Filters */}
+        {!isMobile && (
+          <View style={styles.rightCol}>
+            <QuickFilters onApply={handleFilterApply} />
+          </View>
+        )}
+
+        {/* Mobile: filters above list */}
+        {isMobile && (
+          <View style={styles.rightColMobile}>
+            <QuickFilters onApply={handleFilterApply} />
+          </View>
+        )}
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
-function ActionCard({ icon, iconBg, iconColor, title, subtitle }: any) {
-  return (
-    <TouchableOpacity style={styles.actionCard} activeOpacity={0.8}>
-      <View style={[styles.actionIconWrap, { backgroundColor: iconBg }]}>
-        <Ionicons name={icon} size={28} color={iconColor} />
-      </View>
-      <Text style={styles.actionTitle}>{title}</Text>
-      <Text style={styles.actionSub}>{subtitle}</Text>
-    </TouchableOpacity>
-  );
-}
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   content: { padding: 24, paddingBottom: 40, gap: 20 },
   contentMobile: { padding: 16, gap: 16 },
+
+  // Fixed top stats bar
+  fixedTop: { padding: 24, paddingBottom: 16, backgroundColor: COLORS.background },
+  fixedTopMobile: { padding: 16, paddingBottom: 12 },
+
+  // Body: row with scrollable left + fixed right
+  body: { flex: 1, flexDirection: "row", paddingHorizontal: 24, paddingBottom: 24, gap: 20 },
+  bodyMobile: { flexDirection: "column", paddingHorizontal: 16, paddingBottom: 16 },
 
   // Search
   searchCard: { backgroundColor: COLORS.white, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: COLORS.border, gap: 12, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },
@@ -925,9 +837,10 @@ const styles = StyleSheet.create({
   // Layout
   mainRow: { flexDirection: "row", gap: 20, alignItems: "flex-start" },
   mainRowMobile: { flexDirection: "column" },
-  leftCol: { flex: 1, gap: 14 },
+  leftCol: { flex: 1 },
+  leftColContent: { gap: 14, paddingBottom: 24 },
   rightCol: { width: 260, flexShrink: 0 },
-  rightColMobile: { width: "100%" },
+  rightColMobile: { width: "100%", marginBottom: 16 },
 
   // Header
   featuredHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
