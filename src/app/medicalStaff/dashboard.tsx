@@ -358,16 +358,16 @@ import { COLORS } from "@/constant/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  useWindowDimensions,
-  View,
+    ActivityIndicator,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    useWindowDimensions,
+    View,
 } from "react-native";
 import { dutyAPI, profileAPI } from "../../service/api";
-import { useLocationTracker } from '@/hooks/useLocationTracker';
+
 
 interface Duty {
   _id?: string;
@@ -617,14 +617,6 @@ export default function Dashboard() {
 
   // inside Dashboard component, after you fetch ongoingDuties:
   const activeOngoing = ongoingDuties[0]; // first active duty
-
-  useLocationTracker({
-    dutyId: activeOngoing?._id ?? '',
-    staffId: activeOngoing?.assignedTo ?? '',
-    hospitalId: activeOngoing?.hospitalId ?? '',
-    active: !!activeOngoing &&
-      (activeOngoing.status === 'enroute' || activeOngoing.status === 'in-progress'),
-  });
 
 
 
