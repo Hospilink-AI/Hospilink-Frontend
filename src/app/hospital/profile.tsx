@@ -1,4 +1,5 @@
 import * as DocumentPicker from "expo-document-picker";
+import * as ImagePicker from "expo-image-picker";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -16,23 +17,27 @@ import {
   TouchableOpacity,
   View,
   Linking,
+  Image,
+  useWindowDimensions,
 } from "react-native";
 import { profileAPI, documentAPI } from "../../service/api";
-import { Image, Dimensions, useWindowDimensions } from "react-native";
+import { Ionicons } from '@expo/vector-icons';
 
-// ─── Theme ────────────────────────────────────────────────────────────────────
+// ─── Theme Colors ─────────────────────────────────────────────────────────────
+const BLUE = "#2563EB";
+const BLUE_LIGHT = "#EFF6FF";
+const GREEN = "#10B981";
+const GREEN_LIGHT = "#DCFCE7";
 const ORANGE = "#F97316";
-const ORANGE_DARK = "#EA580C";
 const ORANGE_LIGHT = "#FFF7ED";
-const ORANGE_BORDER = "#FDBA74";
-const BLUE = "#3B82F6";
-const BORDER = "#E5E7EB";
-const BG = "#F8FAFC";
-const TEXT_PRIMARY = "#111827";
-const TEXT_SECONDARY = "#6B7280";
+const PURPLE_LIGHT = "#F3E8FF";
+const BORDER = "#E2E8F0";
+const BG = "#F4F7FB";
+const TEXT_PRIMARY = "#1E293B";
+const TEXT_SECONDARY = "#64748B";
 const WHITE = "#FFFFFF";
 const RED_BG = "#FEE2E2";
-const RED_TEXT = "#DC2626";
+const RED_TEXT = "#EF4444";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type CredStatus = "Verified" | "Expiring Soon" | "Expired" | "Pending";
@@ -55,8 +60,8 @@ const HOSPITAL_DOC_TYPES = [
   { label: "NABH Certificate", value: "nabh-certificate" },
   { label: "CIN Certificate", value: "cin-certificate" },
   { label: "GST Certificate", value: "gst-certificate" },
-  {label:"ROHINI Certificate",value:"rohini-certificate"},
-  {label:"CGHS Certificate",value:"cghs-certificate"},
+  { label: "ROHINI Certificate", value: "rohini-certificate" },
+  { label: "CGHS Certificate", value: "cghs-certificate" },
 ];
 
 type PickedFile = {
@@ -96,21 +101,16 @@ const fileIcon = (mime?: string): string => {
 
 function mapVerificationStatus(status: string): CredStatus {
   switch (status) {
-    case "verified":
-      return "Verified";
+    case "verified": return "Verified";
+    case "expiring-soon": return "Expiring Soon";
+    case "expired": return "Expired";
     case "manual-pending-verification":
     case "pending":
-      return "Pending";
-    case "expiring-soon":
-      return "Expiring Soon";
-    case "expired":
-      return "Expired";
     default:
       return "Pending";
   }
 }
 
-// ─── Fixed: uses documentId, uploadedAt, fileName, url from GET response ──────
 function mapAPIDocument(doc: any): Credential {
   const displayName =
     doc.documentType
@@ -166,237 +166,13 @@ const StatusBadge = ({ status }: { status: CredStatus }) => {
   );
 };
 const bSt = StyleSheet.create({
-  wrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 20,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    alignSelf: "flex-start",
-    gap: 5,
-  },
-  dot: { width: 7, height: 7, borderRadius: 4 },
-  text: { fontSize: 12, fontWeight: "600" },
-});
-
-// ─── Section Card ─────────────────────────────────────────────────────────────
-const SectionCard = ({
-  icon,
-  title,
-  children,
-  headerRight,
-}: {
-  icon: string;
-  title: string;
-  children: React.ReactNode;
-  headerRight?: React.ReactNode;
-}) => (
-  <View style={cSt.card}>
-    <View style={cSt.hdr}>
-      <View
-        style={{ flexDirection: "row", alignItems: "center", gap: 9, flex: 1 }}
-      >
-        <View style={cSt.iconWrap}>
-          <Text style={{ fontSize: 13 }}>{icon}</Text>
-        </View>
-        <Text style={cSt.title}>{title}</Text>
-      </View>
-      {headerRight}
-    </View>
-    <View style={cSt.divider} />
-    {children}
-  </View>
-);
-const cSt = StyleSheet.create({
-  card: {
-    backgroundColor: WHITE,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: BORDER,
-    padding: 16,
-    marginBottom: 14,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  hdr: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
-  iconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 7,
-    backgroundColor: ORANGE_LIGHT,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: ORANGE_BORDER,
-  },
-  title: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: TEXT_PRIMARY,
-    letterSpacing: -0.2,
-  },
-  divider: { height: 1, backgroundColor: BORDER, marginBottom: 14 },
-});
-
-// ─── Info Fields ──────────────────────────────────────────────────────────────
-const InfoField = ({
-  label,
-  value,
-  prefix,
-}: {
-  label: string;
-  value: string;
-  prefix?: string;
-}) => (
-  <View style={vMSt.group}>
-    <Text style={vMSt.label}>{label}</Text>
-    <View style={vMSt.box}>
-      {prefix ? (
-        <View style={vMSt.prefixRow}>
-          <View style={vMSt.prefixBox}>
-            <Text style={vMSt.prefixTxt}>{prefix}</Text>
-          </View>
-          <Text style={vMSt.valueWithPrefix} numberOfLines={1}>
-            {value || "—"}
-          </Text>
-        </View>
-      ) : (
-        <Text style={vMSt.value} numberOfLines={2}>
-          {value || "—"}
-        </Text>
-      )}
-    </View>
-  </View>
-);
-
-const InfoFieldFull = ({
-  label,
-  value,
-  prefix,
-}: {
-  label: string;
-  value: string;
-  prefix?: string;
-}) => (
-  <View style={vMSt.groupFull}>
-    <Text style={vMSt.label}>{label}</Text>
-    <View style={vMSt.box}>
-      {prefix ? (
-        <View style={vMSt.prefixRow}>
-          <View style={vMSt.prefixBox}>
-            <Text style={vMSt.prefixTxt}>{prefix}</Text>
-          </View>
-          <Text style={vMSt.valueWithPrefix} numberOfLines={1}>
-            {value || "—"}
-          </Text>
-        </View>
-      ) : (
-        <Text style={vMSt.value} numberOfLines={3}>
-          {value || "—"}
-        </Text>
-      )}
-    </View>
-  </View>
-);
-
-const InfoRow = InfoField;
-const InfoRowFull = InfoFieldFull;
-
-const vMSt = StyleSheet.create({
-  group: { flex: 1, marginBottom: 14 },
-  groupFull: { marginBottom: 14 },
-  label: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: TEXT_SECONDARY,
-    marginBottom: 5,
-    letterSpacing: 0.1,
-  },
-  box: {
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 8,
-    backgroundColor: WHITE,
-    minHeight: 42,
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  value: {
-    fontSize: 13.5,
-    color: TEXT_PRIMARY,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    lineHeight: 20,
-  },
-  prefixRow: { flexDirection: "row", alignItems: "center", minHeight: 42 },
-  prefixBox: {
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    backgroundColor: "#F3F4F6",
-    borderRightWidth: 1,
-    borderRightColor: BORDER,
-    alignSelf: "stretch",
-    justifyContent: "center",
-  },
-  prefixTxt: { fontSize: 13, color: TEXT_SECONDARY, fontWeight: "500" },
-  valueWithPrefix: {
-    flex: 1,
-    fontSize: 13.5,
-    color: TEXT_PRIMARY,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-});
-
-// ─── Department Tags – view mode ──────────────────────────────────────────────
-const DepartmentTagsView = ({ departments }: { departments: string[] }) => (
-  <View style={vMSt.groupFull}>
-    <Text style={vMSt.label}>Departments &amp; Services</Text>
-    {departments.length === 0 ? (
-      <Text style={{ fontSize: 13.5, color: TEXT_SECONDARY, fontStyle: "italic" }}>
-        No departments added.
-      </Text>
-    ) : (
-      <View style={tvSt.tagsWrap}>
-        {departments.map((dept) => (
-          <View key={dept} style={tvSt.tag}>
-            <Text style={tvSt.tagTxt}>{dept}</Text>
-          </View>
-        ))}
-      </View>
-    )}
-  </View>
-);
-const tvSt = StyleSheet.create({
-  tagsWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 2 },
-  tag: {
-    backgroundColor: "#EFF6FF",
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: "#BFDBFE",
-  },
-  tagTxt: { fontSize: 13, color: "#1D4ED8", fontWeight: "600" },
+  wrap: { flexDirection: "row", alignItems: "center", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5, alignSelf: "flex-start", gap: 6 },
+  dot: { width: 6, height: 6, borderRadius: 3 },
+  text: { fontSize: 11, fontWeight: "700" },
 });
 
 // ─── Labeled Input ────────────────────────────────────────────────────────────
-const LabeledInput = ({
-  label,
-  value,
-  onChangeText,
-  half,
-  placeholder,
-}: {
-  label: string;
-  value: string;
-  onChangeText: (t: string) => void;
-  half?: boolean;
-  placeholder?: string;
-}) => (
+const LabeledInput = ({ label, value, onChangeText, half, placeholder }: { label: string; value: string; onChangeText: (t: string) => void; half?: boolean; placeholder?: string; }) => (
   <View style={[iSt.group, half && iSt.half]}>
     <Text style={iSt.label}>{label}</Text>
     <TextInput
@@ -409,69 +185,28 @@ const LabeledInput = ({
   </View>
 );
 const iSt = StyleSheet.create({
-  group: { marginBottom: 12, flex: 1 },
+  group: { marginBottom: 16, flex: 1 },
   half: { flex: 1 },
-  label: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: TEXT_SECONDARY,
-    marginBottom: 5,
-    letterSpacing: 0.1,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 13.5,
-    color: TEXT_PRIMARY,
-    backgroundColor: WHITE,
-    minHeight: 42,
-  },
+  label: { fontSize: 12, fontWeight: "600", color: TEXT_SECONDARY, marginBottom: 6 },
+  input: { borderWidth: 1, borderColor: BORDER, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: TEXT_PRIMARY, backgroundColor: WHITE },
 });
 
 // ─── Dropdown ─────────────────────────────────────────────────────────────────
 const STAFF_OPTIONS = ["2-10", "11-50", "51-100", "100+"];
-
-const Dropdown = ({
-  label,
-  value,
-  options,
-  onSelect,
-}: {
-  label: string;
-  value: string;
-  options: string[];
-  onSelect: (v: string) => void;
-}) => {
+const Dropdown = ({ label, value, options, onSelect }: { label: string; value: string; options: string[]; onSelect: (v: string) => void; }) => {
   const [open, setOpen] = useState(false);
   return (
     <View style={[iSt.group, iSt.half, { zIndex: 10 }]}>
       <Text style={iSt.label}>{label}</Text>
       <TouchableOpacity style={dSt.btn} onPress={() => setOpen(!open)}>
         <Text style={dSt.val}>{value || "Select"}</Text>
-        <Text style={dSt.chev}>{open ? "▲" : "▼"}</Text>
+        <Ionicons name={open ? "chevron-up" : "chevron-down"} size={14} color={TEXT_SECONDARY} />
       </TouchableOpacity>
       {open && (
         <View style={dSt.menu}>
           {options.map((opt) => (
-            <TouchableOpacity
-              key={opt}
-              style={dSt.item}
-              onPress={() => {
-                onSelect(opt);
-                setOpen(false);
-              }}
-            >
-              <Text
-                style={[
-                  dSt.itemTxt,
-                  opt === value && { color: BLUE, fontWeight: "700" },
-                ]}
-              >
-                {opt}
-              </Text>
+            <TouchableOpacity key={opt} style={dSt.item} onPress={() => { onSelect(opt); setOpen(false); }}>
+              <Text style={[dSt.itemTxt, opt === value && { color: BLUE, fontWeight: "700" }]}>{opt}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -480,313 +215,91 @@ const Dropdown = ({
   );
 };
 const dSt = StyleSheet.create({
-  btn: {
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: WHITE,
-    minHeight: 42,
-  },
-  val: { fontSize: 13.5, color: TEXT_PRIMARY },
-  chev: { fontSize: 10, color: TEXT_SECONDARY },
-  menu: {
-    position: "absolute",
-    top: 70,
-    left: 0,
-    right: 0,
-    backgroundColor: WHITE,
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 8,
-    zIndex: 100,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  item: {
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-  },
-  itemTxt: { fontSize: 13.5, color: TEXT_PRIMARY },
+  btn: { borderWidth: 1, borderColor: BORDER, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12, flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: WHITE },
+  val: { fontSize: 14, color: TEXT_PRIMARY },
+  menu: { position: "absolute", top: 70, left: 0, right: 0, backgroundColor: WHITE, borderWidth: 1, borderColor: BORDER, borderRadius: 8, zIndex: 100, elevation: 8 },
+  item: { paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#F3F4F6" },
+  itemTxt: { fontSize: 14, color: TEXT_PRIMARY },
 });
 
-// ─── Clinical Services ────────────────────────────────────────────────────────
-const ALL_SERVICES = [
-  "Emergency Care",
-  "General Surgery",
-  "Cardiology",
-  "Neurology",
-  "Orthopedics",
-  "Pediatrics",
-  "Obstetrics & Gynecology",
-  "Internal Medicine",
-  "Radiology",
-  "Laboratory Services",
-  "Pharmacy",
-  "Physical Therapy",
-  "Mental Health",
-  "Oncology",
-  "Dermatology",
-  "Ophthalmology",
-  "ENT (Ear, Nose, Throat)",
-  "Urology",
-  "Gastroenterology",
-  "Pulmonology",
-];
-
 // ─── Department Tags – edit mode ──────────────────────────────────────────────
-const DepartmentTags = ({
-  departments,
-  setDepartments,
-}: {
-  departments: string[];
-  setDepartments: (d: string[]) => void;
-}) => {
+const ALL_SERVICES = ["Emergency Care", "General Surgery", "Cardiology", "Neurology", "Orthopedics", "Pediatrics", "Obstetrics & Gynecology", "Internal Medicine", "Radiology", "Laboratory Services"];
+const DepartmentTags = ({ departments, setDepartments }: { departments: string[]; setDepartments: (d: string[]) => void; }) => {
   const [panelOpen, setPanelOpen] = useState(false);
 
   const toggle = (service: string) => {
-    if (departments.includes(service)) {
-      setDepartments(departments.filter((x) => x !== service));
-    } else {
-      setDepartments([...departments, service]);
-    }
+    if (departments.includes(service)) setDepartments(departments.filter((x) => x !== service));
+    else setDepartments([...departments, service]);
   };
 
   return (
     <View style={tSt.wrapper}>
       <Text style={iSt.label}>Available Clinical Services</Text>
       <View style={tSt.tagsArea}>
-        {departments.length === 0 && (
-          <Text style={tSt.emptyHint}>No services selected yet.</Text>
-        )}
+        {departments.length === 0 && <Text style={tSt.emptyHint}>No services selected yet.</Text>}
         {departments.map((dept) => (
           <View key={dept} style={tSt.tag}>
             <Text style={tSt.tagTxt}>{dept}</Text>
-            <TouchableOpacity
-              onPress={() => toggle(dept)}
-              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-              style={tSt.tagClose}
-            >
+            <TouchableOpacity onPress={() => toggle(dept)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }} style={tSt.tagClose}>
               <Text style={tSt.tagCloseTxt}>×</Text>
             </TouchableOpacity>
           </View>
         ))}
-        <TouchableOpacity
-          style={tSt.addBtn}
-          onPress={() => setPanelOpen(!panelOpen)}
-          activeOpacity={0.8}
-        >
+        <TouchableOpacity style={tSt.addBtn} onPress={() => setPanelOpen(!panelOpen)} activeOpacity={0.8}>
           <Text style={tSt.addBtnTxt}>+ Add Service</Text>
         </TouchableOpacity>
       </View>
       {panelOpen && (
         <View style={tSt.panel}>
-          <View style={tSt.panelHeader}>
-            <Text style={tSt.panelTitle}>SELECT SERVICES</Text>
-            <TouchableOpacity
-              onPress={() => setPanelOpen(false)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Text style={tSt.panelClose}>✕</Text>
-            </TouchableOpacity>
-          </View>
-          {ALL_SERVICES.map((service, idx) => {
+          {ALL_SERVICES.map((service) => {
             const selected = departments.includes(service);
-            const isLast = idx === ALL_SERVICES.length - 1;
             return (
-              <TouchableOpacity
-                key={service}
-                style={[tSt.serviceRow, isLast && { borderBottomWidth: 0 }]}
-                onPress={() => toggle(service)}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    tSt.serviceName,
-                    selected && tSt.serviceNameSelected,
-                  ]}
-                >
-                  {service}
-                </Text>
-                <View
-                  style={[
-                    tSt.checkCircle,
-                    selected && tSt.checkCircleSelected,
-                  ]}
-                >
-                  {selected ? (
-                    <Text style={tSt.checkMark}>✓</Text>
-                  ) : (
-                    <Text style={tSt.plusMark}>＋</Text>
-                  )}
+              <TouchableOpacity key={service} style={tSt.serviceRow} onPress={() => toggle(service)} activeOpacity={0.7}>
+                <Text style={[tSt.serviceName, selected && tSt.serviceNameSelected]}>{service}</Text>
+                <View style={[tSt.checkCircle, selected && tSt.checkCircleSelected]}>
+                  {selected && <Text style={tSt.checkMark}>✓</Text>}
                 </View>
               </TouchableOpacity>
             );
           })}
         </View>
       )}
-      <Text style={tSt.hint}>
-        Select all specialized departments active in your facility.
-      </Text>
     </View>
   );
 };
-
-const SVC_BLUE = "#2563EB";
-
 const tSt = StyleSheet.create({
   wrapper: { marginBottom: 4 },
-  tagsArea: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 10,
-    padding: 14,
-    backgroundColor: "#F8FAFF",
-    minHeight: 60,
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  emptyHint: { fontSize: 12.5, color: "#9CA3AF", fontStyle: "italic" },
-  tag: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: SVC_BLUE,
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-  },
-  tagTxt: { fontSize: 13, color: WHITE, fontWeight: "700" },
-  tagClose: {
-    width: 18,
-    height: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tagCloseTxt: {
-    fontSize: 16,
-    color: WHITE,
-    fontWeight: "400",
-    lineHeight: 18,
-  },
-  addBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1.5,
-    borderColor: BORDER,
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    backgroundColor: WHITE,
-  },
-  addBtnTxt: { fontSize: 13, color: TEXT_SECONDARY, fontWeight: "600" },
-  panel: {
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 10,
-    backgroundColor: WHITE,
-    marginBottom: 10,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  panelHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER,
-    backgroundColor: "#F8FAFF",
-  },
-  panelTitle: {
-    fontSize: 11.5,
-    fontWeight: "800",
-    color: TEXT_PRIMARY,
-    letterSpacing: 1.2,
-  },
-  panelClose: { fontSize: 15, color: TEXT_SECONDARY, fontWeight: "400" },
-  serviceRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
-  },
-  serviceName: { fontSize: 14, color: TEXT_SECONDARY, flex: 1, marginRight: 12 },
-  serviceNameSelected: { color: SVC_BLUE, fontWeight: "700" },
-  checkCircle: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 1.5,
-    borderColor: "#CBD5E1",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: WHITE,
-  },
-  checkCircleSelected: { backgroundColor: SVC_BLUE, borderColor: SVC_BLUE },
-  checkMark: { fontSize: 13, color: WHITE, fontWeight: "800" },
-  plusMark: { fontSize: 14, color: "#CBD5E1", lineHeight: 16 },
-  hint: { fontSize: 12, color: "#9CA3AF", fontStyle: "italic", marginTop: 2 },
+  tagsArea: { flexDirection: "row", flexWrap: "wrap", gap: 8, borderWidth: 1, borderColor: BORDER, borderRadius: 10, padding: 14, backgroundColor: "#F8FAFF", minHeight: 60, alignItems: "center", marginBottom: 8 },
+  emptyHint: { fontSize: 13, color: "#9CA3AF", fontStyle: "italic" },
+  tag: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: BLUE, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
+  tagTxt: { fontSize: 12, color: WHITE, fontWeight: "600" },
+  tagClose: { width: 16, height: 16, alignItems: "center", justifyContent: "center" },
+  tagCloseTxt: { fontSize: 14, color: WHITE },
+  addBtn: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: BORDER, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: WHITE },
+  addBtnTxt: { fontSize: 12, color: TEXT_SECONDARY, fontWeight: "600" },
+  panel: { borderWidth: 1, borderColor: BORDER, borderRadius: 10, backgroundColor: WHITE, marginBottom: 10, maxHeight: 200, overflow: 'hidden' },
+  serviceRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
+  serviceName: { fontSize: 14, color: TEXT_SECONDARY },
+  serviceNameSelected: { color: BLUE, fontWeight: "700" },
+  checkCircle: { width: 22, height: 22, borderRadius: 11, borderWidth: 1, borderColor: "#CBD5E1", alignItems: "center", justifyContent: "center" },
+  checkCircleSelected: { backgroundColor: BLUE, borderColor: BLUE },
+  checkMark: { fontSize: 12, color: WHITE, fontWeight: "800" },
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  UPLOAD DOCUMENT MODAL  — only docType + file, no docName
+//  MODALS
 // ═══════════════════════════════════════════════════════════════════════════════
-const UploadDocModal = ({
-  visible,
-  onClose,
-  onAdd,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  onAdd: (c: Credential) => void;
-}) => {
-  // ✅ No docName state — API only needs documentType + file
+const UploadDocModal = ({ visible, onClose, onAdd }: { visible: boolean; onClose: () => void; onAdd: (c: Credential) => void; }) => {
   const [docType, setDocType] = useState("");
   const [pickedFile, setPickedFile] = useState<PickedFile | null>(null);
   const [uploading, setUploading] = useState(false);
 
   const handlePickFile = async () => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: [
-          "image/*",
-          // "application/pdf",
-          // "application/msword",
-          // "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-          // "text/plain",
-        ],
-        copyToCacheDirectory: true,
-        multiple: false,
-      });
+      const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true, multiple: false });
       if (!result.canceled && result.assets?.length > 0) {
         const asset = result.assets[0];
-        setPickedFile({
-          name: asset.name,
-          size: asset.size,
-          uri: asset.uri,
-          mimeType: asset.mimeType,
-        });
+        setPickedFile({ name: asset.name, size: asset.size, uri: asset.uri, mimeType: asset.mimeType });
       }
     } catch {
       Alert.alert("Error", "Could not open file picker. Please try again.");
@@ -794,762 +307,206 @@ const UploadDocModal = ({
   };
 
   const handleSave = async () => {
-    // ✅ Only validate docType + file
-    if (!docType.trim()) {
-      Alert.alert("Required", "Please select a document type.");
-      return;
-    }
-    if (!pickedFile) {
-      Alert.alert("Required", "Please select a document to upload.");
-      return;
-    }
-
+    if (!docType.trim() || !pickedFile) { Alert.alert("Required", "Please select document type and file."); return; }
     try {
       setUploading(true);
-      const response = await documentAPI.uploadDocument(
-        docType,
-        pickedFile.uri,
-        pickedFile.mimeType
-      );
-
-      // ✅ Map from API response if available, else build fallback
-      const uploadedDoc =
-        response?.document
-          ? mapAPIDocument(response.document)
-          : response?.documents?.[0]
-            ? mapAPIDocument(response.documents[0])
-            : {
-              id: Date.now().toString(),
-              name: docType
-                .replace(/-/g, " ")
-                .replace(/\b\w/g, (c: string) => c.toUpperCase()),
-              status: "Pending" as CredStatus,
-              updated: new Date().toLocaleDateString("en-US", {
-                month: "short",
-                day: "2-digit",
-                year: "numeric",
-              }),
-              fileName: pickedFile.name,
-              fileSize: pickedFile.size
-                ? formatBytes(pickedFile.size)
-                : undefined,
-              documentType: docType,
-            };
-
+      const response = await documentAPI.uploadDocument(docType, pickedFile.uri, pickedFile.mimeType);
+      const uploadedDoc = response?.document
+        ? mapAPIDocument(response.document)
+        : response?.documents?.[0]
+        ? mapAPIDocument(response.documents[0])
+        : {
+            id: Date.now().toString(),
+            name: docType.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()),
+            status: "Pending" as CredStatus,
+            updated: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
+            fileName: pickedFile.name,
+            fileSize: pickedFile.size ? formatBytes(pickedFile.size) : undefined,
+            documentType: docType,
+          };
       onAdd(uploadedDoc);
       reset();
     } catch (err: any) {
-      Alert.alert(
-        "Upload Failed",
-        err?.message ?? "Could not upload document. Try again."
-      );
-    } finally {
-      setUploading(false);
-    }
+      Alert.alert("Upload Failed", err?.message ?? "Could not upload document.");
+    } finally { setUploading(false); }
   };
 
-  const reset = () => {
-    setDocType("");
-    setPickedFile(null);
-    setUploading(false);
-    onClose();
-  };
-
-  const sheetContent = (
-    <View style={uSt.sheet}>
-      <View style={uSt.handle} />
-      <View style={uSt.header}>
-        <Text style={uSt.title}>Upload Document</Text>
-        <TouchableOpacity onPress={reset} style={uSt.closeIcon}>
-          <Text style={{ fontSize: 15, color: TEXT_SECONDARY }}>✕</Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* ✅ Document Name input removed — not needed by API */}
-
-        <Text style={uSt.label}>
-          Document Type <Text style={{ color: BLUE }}>*</Text>
-        </Text>
-        <View style={uSt.pickerWrap}>
-          {HOSPITAL_DOC_TYPES.map((opt) => (
-            <TouchableOpacity
-              key={opt.value}
-              style={[
-                uSt.pickerOption,
-                docType === opt.value && uSt.pickerOptionActive,
-              ]}
-              onPress={() => setDocType(opt.value)}
-              activeOpacity={0.7}
-            >
-              <Text
-                style={[
-                  uSt.pickerOptionText,
-                  docType === opt.value && uSt.pickerOptionTextActive,
-                ]}
-              >
-                {opt.label}
-              </Text>
-              {docType === opt.value && (
-                <Text style={{ color: BLUE }}>✓</Text>
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <Text style={uSt.label}>
-          Upload Document <Text style={{ color: BLUE }}>*</Text>
-        </Text>
-        {pickedFile ? (
-          <View style={uSt.fileCard}>
-            <View style={uSt.fileCardLeft}>
-              <Text style={{ fontSize: 28 }}>
-                {fileIcon(pickedFile.mimeType)}
-              </Text>
-              <View style={uSt.fileCardInfo}>
-                <Text style={uSt.fileName} numberOfLines={1}>
-                  {pickedFile.name}
-                </Text>
-                {pickedFile.size !== undefined && (
-                  <Text style={uSt.fileSize}>
-                    {formatBytes(pickedFile.size)}
-                  </Text>
-                )}
-                <Text style={uSt.fileReady}>✓ Ready to upload</Text>
-              </View>
-            </View>
-            <View style={uSt.fileCardActions}>
-              <TouchableOpacity
-                onPress={handlePickFile}
-                style={uSt.changeBtn}
-              >
-                <Text style={uSt.changeTxt}>Change</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setPickedFile(null)}
-                style={uSt.removeBtn}
-              >
-                <Text style={uSt.removeTxt}>✕</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : (
-          <TouchableOpacity
-            style={uSt.uploadZone}
-            onPress={handlePickFile}
-            activeOpacity={0.75}
-          >
-            <View style={uSt.uploadIconCircle}>
-              <Text style={{ fontSize: 26 }}>☁️</Text>
-            </View>
-            <Text style={uSt.uploadPrimary}>Tap to upload file</Text>
-            <Text style={uSt.uploadSecondary}>
-              PDF, DOC, DOCX, Images supported
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        <View style={uSt.footer}>
-          <TouchableOpacity
-            style={uSt.cancelBtn}
-            onPress={reset}
-            disabled={uploading}
-          >
-            <Text style={uSt.cancelTxt}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[uSt.saveBtn, uploading && { opacity: 0.7 }]}
-            onPress={handleSave}
-            disabled={uploading}
-            activeOpacity={0.85}
-          >
-            {uploading ? (
-              <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
-              >
-                <ActivityIndicator size="small" color={WHITE} />
-                <Text style={uSt.saveTxt}>Uploading...</Text>
-              </View>
-            ) : (
-              <Text style={uSt.saveTxt}>Upload & Save</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </View>
-  );
+  const reset = () => { setDocType(""); setPickedFile(null); setUploading(false); onClose(); };
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={reset}
-    >
-      {Platform.OS === "web" ? (
-        <View style={uSt.overlay}>{sheetContent}</View>
-      ) : (
-        <KeyboardAvoidingView
-          style={uSt.overlay}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
-          {sheetContent}
-        </KeyboardAvoidingView>
-      )}
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={reset}>
+      <View style={uSt.overlay}>
+        <View style={uSt.sheet}>
+          <View style={uSt.header}>
+            <Text style={uSt.title}>Upload Document</Text>
+            <TouchableOpacity onPress={reset}><Ionicons name="close" size={24} color={TEXT_SECONDARY} /></TouchableOpacity>
+          </View>
+          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+            <Text style={uSt.label}>Document Type <Text style={{ color: BLUE }}>*</Text></Text>
+            <View style={uSt.pickerWrap}>
+              {HOSPITAL_DOC_TYPES.map((opt) => (
+                <TouchableOpacity key={opt.value} style={[uSt.pickerOption, docType === opt.value && uSt.pickerOptionActive]} onPress={() => setDocType(opt.value)}>
+                  <Text style={[uSt.pickerOptionText, docType === opt.value && uSt.pickerOptionTextActive]}>{opt.label}</Text>
+                  {docType === opt.value && <Text style={{ color: BLUE }}>✓</Text>}
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={uSt.label}>Upload Document <Text style={{ color: BLUE }}>*</Text></Text>
+            {pickedFile ? (
+              <View style={uSt.fileCard}>
+                <View style={uSt.fileCardLeft}>
+                  <Text style={{ fontSize: 24 }}>{fileIcon(pickedFile.mimeType)}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={uSt.fileName} numberOfLines={1}>{pickedFile.name}</Text>
+                    {pickedFile.size !== undefined && <Text style={uSt.fileSize}>{formatBytes(pickedFile.size)}</Text>}
+                  </View>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TouchableOpacity onPress={handlePickFile} style={uSt.changeBtn}><Text style={uSt.changeTxt}>Change</Text></TouchableOpacity>
+                  <TouchableOpacity onPress={() => setPickedFile(null)} style={uSt.removeBtn}><Text style={uSt.removeTxt}>✕</Text></TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity style={uSt.uploadZone} onPress={handlePickFile}>
+                <Ionicons name="cloud-upload-outline" size={32} color={BLUE} style={{ marginBottom: 8 }} />
+                <Text style={uSt.uploadPrimary}>Tap to upload file</Text>
+                <Text style={uSt.uploadSecondary}>PDF, DOC, Images supported</Text>
+              </TouchableOpacity>
+            )}
+            <View style={uSt.footer}>
+              <TouchableOpacity style={uSt.cancelBtn} onPress={reset} disabled={uploading}><Text style={uSt.cancelTxt}>Cancel</Text></TouchableOpacity>
+              <TouchableOpacity style={[uSt.saveBtn, uploading && { opacity: 0.7 }]} onPress={handleSave} disabled={uploading}>
+                {uploading ? <ActivityIndicator size="small" color={WHITE} /> : <Text style={uSt.saveTxt}>Upload</Text>}
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </View>
     </Modal>
   );
 };
-
 const uSt = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.55)",
-    justifyContent: "flex-end",
-  },
-  sheet: {
-    backgroundColor: WHITE,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 22,
-    paddingBottom: Platform.OS === "ios" ? 38 : 24,
-    maxHeight: "90%",
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#D1D5DB",
-    alignSelf: "center",
-    marginBottom: 18,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 22,
-  },
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", padding: 20 },
+  sheet: { backgroundColor: WHITE, borderRadius: 16, padding: 24, width: '100%', maxWidth: 500, maxHeight: '90%' },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 },
   title: { fontSize: 18, fontWeight: "700", color: TEXT_PRIMARY },
-  closeIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "#F3F4F6",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  label: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: TEXT_SECONDARY,
-    marginBottom: 7,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-  },
-  uploadZone: {
-    borderWidth: 2,
-    borderColor: "#D1D5DB",
-    borderStyle: "dashed",
-    borderRadius: 14,
-    alignItems: "center",
-    paddingVertical: 32,
-    marginBottom: 22,
-    backgroundColor: "#F9FAFB",
-  },
-  uploadIconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: ORANGE_LIGHT,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: ORANGE_BORDER,
-  },
-  uploadPrimary: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: TEXT_PRIMARY,
-    marginBottom: 4,
-  },
-  uploadSecondary: { fontSize: 12, color: TEXT_SECONDARY },
-  fileCard: {
-    borderWidth: 1.5,
-    borderColor: ORANGE,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 22,
-    backgroundColor: ORANGE_LIGHT,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  fileCardLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    flex: 1,
-  },
-  fileCardInfo: { flex: 1 },
-  fileName: { fontSize: 13.5, fontWeight: "700", color: TEXT_PRIMARY },
-  fileSize: { fontSize: 11.5, color: TEXT_SECONDARY, marginTop: 2 },
-  fileReady: {
-    fontSize: 11.5,
-    color: "#15803D",
-    fontWeight: "600",
-    marginTop: 3,
-  },
-  fileCardActions: {
-    flexDirection: "row",
-    gap: 8,
-    alignItems: "center",
-    marginLeft: 8,
-  },
-  changeBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
-    backgroundColor: WHITE,
-    borderWidth: 1,
-    borderColor: ORANGE_BORDER,
-  },
-  changeTxt: { fontSize: 12, color: ORANGE_DARK, fontWeight: "600" },
-  removeBtn: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: RED_BG,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  removeTxt: { fontSize: 10, color: RED_TEXT, fontWeight: "700" },
-  footer: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 4,
-    marginBottom: 8,
-  },
-  cancelBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: BORDER,
-    alignItems: "center",
-  },
+  label: { fontSize: 12, fontWeight: "600", color: TEXT_SECONDARY, marginBottom: 8 },
+  uploadZone: { borderWidth: 2, borderColor: BORDER, borderStyle: "dashed", borderRadius: 12, alignItems: "center", paddingVertical: 32, marginBottom: 24, backgroundColor: "#F8FAFC" },
+  uploadPrimary: { fontSize: 14, fontWeight: "600", color: TEXT_PRIMARY },
+  uploadSecondary: { fontSize: 12, color: TEXT_SECONDARY, marginTop: 4 },
+  fileCard: { borderWidth: 1, borderColor: BLUE, borderRadius: 10, padding: 14, marginBottom: 24, backgroundColor: BLUE_LIGHT, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  fileCardLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
+  fileName: { fontSize: 14, fontWeight: "600", color: TEXT_PRIMARY },
+  fileSize: { fontSize: 12, color: TEXT_SECONDARY, marginTop: 2 },
+  changeBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: WHITE, borderWidth: 1, borderColor: BORDER },
+  changeTxt: { fontSize: 12, color: TEXT_PRIMARY, fontWeight: "600" },
+  removeBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: RED_BG, alignItems: "center", justifyContent: "center" },
+  removeTxt: { fontSize: 12, color: RED_TEXT, fontWeight: "700" },
+  footer: { flexDirection: "row", gap: 12, marginTop: 8 },
+  cancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: BORDER, alignItems: "center" },
   cancelTxt: { fontSize: 14, color: TEXT_SECONDARY, fontWeight: "600" },
-  saveBtn: {
-    flex: 2,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: BLUE,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  saveTxt: { fontSize: 14, color: WHITE, fontWeight: "700" },
-  pickerWrap: {
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 10,
-    overflow: "hidden",
-    marginBottom: 20,
-  },
-  pickerOption: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-    backgroundColor: "#FAFAFA",
-  },
-  pickerOptionActive: {
-    backgroundColor: "#EFF6FF",
-    borderBottomColor: "#BFDBFE",
-  },
-  pickerOptionText: { fontSize: 13.5, color: TEXT_PRIMARY },
-  pickerOptionTextActive: { color: BLUE, fontWeight: "700" },
+  saveBtn: { flex: 2, paddingVertical: 12, borderRadius: 8, backgroundColor: BLUE, alignItems: "center", justifyContent: "center" },
+  saveTxt: { fontSize: 14, color: WHITE, fontWeight: "600" },
+  pickerWrap: { borderWidth: 1, borderColor: BORDER, borderRadius: 8, overflow: "hidden", marginBottom: 20 },
+  pickerOption: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
+  pickerOptionActive: { backgroundColor: BLUE_LIGHT },
+  pickerOptionText: { fontSize: 14, color: TEXT_PRIMARY },
+  pickerOptionTextActive: { color: BLUE, fontWeight: "600" },
 });
 
-
-const ViewDocModal = ({
-  visible,
-  doc,
-  onClose,
-  loading,
-}: {
-  visible: boolean;
-  doc: Credential | null;
-  onClose: () => void;
-  loading?: boolean;
-}) => {
-  const { height: screenHeight, width: screenWidth } = useWindowDimensions();
-  const isWeb = Platform.OS === "web";
-
-  const handleOpenDocument = () => {
-    if (!doc?.url) {
-      Alert.alert("Unavailable", "No document URL available.");
-      return;
-    }
-    Linking.openURL(doc.url).catch(() =>
-      Alert.alert("Error", "Could not open the document.")
-    );
-  };
-
-  const isImageUrl = (fileName?: string, url?: string): boolean => {
-    const source = fileName ?? url ?? "";
-    return /\.(jpg|jpeg|png|webp|gif|bmp)$/i.test(source);
-  };
-
-
+const ViewDocModal = ({ visible, doc, onClose, loading }: { visible: boolean; doc: Credential | null; onClose: () => void; loading?: boolean; }) => {
+  const isImageUrl = (f?: string, u?: string) => /\.(jpg|jpeg|png|webp|gif)$/i.test(f ?? u ?? "");
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType={isWeb ? "fade" : "slide"}
-      onRequestClose={onClose}
-    >
-      {/* ── Overlay — centered on web, bottom-sheet on mobile ── */}
-      <View
-        style={[
-          vdSt.overlay,
-          isWeb && vdSt.overlayWeb,
-        ]}
-      >
-        {/* ── Tap outside to close (web only) ── */}
-        {isWeb && (
-          <TouchableOpacity
-            style={StyleSheet.absoluteFillObject}
-            onPress={onClose}
-            activeOpacity={1}
-          />
-        )}
-
-        <View
-          style={[
-            vdSt.box,
-            isWeb
-              ? {
-                borderRadius: 18,
-                maxWidth: 520,
-                width: "100%",
-                maxHeight: screenHeight * 0.9,
-                alignSelf: "center",
-              }
-              : {
-                maxHeight: screenHeight * 0.92,
-              },
-          ]}
-        >
-          {/* ── Handle (mobile only) ── */}
-          {!isWeb && <View style={vdSt.handle} />}
-
-          {/* ── Header ── */}
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={vdSt.overlay}>
+        <TouchableOpacity style={StyleSheet.absoluteFillObject} onPress={onClose} activeOpacity={1} />
+        <View style={vdSt.box}>
           <View style={vdSt.header}>
             <View style={{ flex: 1 }}>
-              <Text style={vdSt.title} numberOfLines={1}>
-                {doc?.name ?? "Document"}
-              </Text>
-              {doc?.fileName && (
-                <Text style={vdSt.subtitle} numberOfLines={1}>
-                  📎 {doc.fileName}
-                </Text>
-              )}
+              <Text style={vdSt.title} numberOfLines={1}>{doc?.name ?? "Document"}</Text>
+              {doc?.fileName && <Text style={vdSt.subtitle} numberOfLines={1}>📎 {doc.fileName}</Text>}
             </View>
-            <TouchableOpacity onPress={onClose} style={vdSt.closeBtn}>
-              <Text style={{ fontSize: 14, color: TEXT_SECONDARY }}>✕</Text>
-            </TouchableOpacity>
+            <TouchableOpacity onPress={onClose}><Ionicons name="close" size={24} color={TEXT_SECONDARY}/></TouchableOpacity>
           </View>
-
-          {/* ── Status strip ── */}
           {doc && (
             <View style={vdSt.statusStrip}>
               <StatusBadge status={doc.status} />
               <Text style={vdSt.stripDate}>Updated: {doc.updated}</Text>
-              <Text style={vdSt.stripId}>#{doc.id.slice(-6)}</Text>
             </View>
           )}
-
           <View style={vdSt.divider} />
-
-          {/* ── Document preview ── */}
           {loading ? (
-            <View style={[vdSt.previewBox, { height: 220 }]}>
-              <ActivityIndicator size="large" color={BLUE} />
-              <Text style={vdSt.previewHint}>Loading document...</Text>
-            </View>
+            <View style={[vdSt.previewBox, { height: 200 }]}><ActivityIndicator size="large" color={BLUE} /></View>
           ) : doc?.url && isImageUrl(doc.fileName, doc.url) ? (
-            <View
-              style={[
-                vdSt.previewBox,
-                {
-                  height: isWeb
-                    ? Math.min(screenHeight * 0.55, 480)
-                    : screenHeight * 0.5,
-                },
-              ]}
-            >
-              <Image
-                source={{ uri: doc.url }}
-                style={vdSt.image}
-                resizeMode="contain"
-              />
-            </View>
+            <View style={[vdSt.previewBox, { height: 300 }]}><Image source={{ uri: doc.url }} style={vdSt.image} resizeMode="contain" /></View>
           ) : doc?.url ? (
             <View style={[vdSt.previewBox, { height: 200 }]}>
-              <Text style={{ fontSize: 52 }}>📄</Text>
-              <Text style={vdSt.previewHint}>
-                Preview not available for this file type.
-              </Text>
-              <TouchableOpacity
-                style={[vdSt.openBtn, { marginTop: 14, paddingHorizontal: 24 }]}
-                onPress={handleOpenDocument}
-                activeOpacity={0.85}
-              >
-                <Text style={vdSt.openBtnTxt}>🔗  Open in Browser</Text>
-              </TouchableOpacity>
+              <Ionicons name="document-text-outline" size={48} color={TEXT_SECONDARY} />
+              <TouchableOpacity style={vdSt.openBtn} onPress={() => Linking.openURL(doc.url!)}><Text style={vdSt.openBtnTxt}>Open Document</Text></TouchableOpacity>
             </View>
           ) : (
-            <View style={[vdSt.previewBox, { height: 200 }]}>
-              <Text style={{ fontSize: 52 }}>📭</Text>
-              <Text style={vdSt.previewHint}>No preview available.</Text>
-            </View>
+            <View style={[vdSt.previewBox, { height: 200 }]}><Ionicons name="folder-open-outline" size={48} color={BORDER} /><Text style={vdSt.previewHint}>No preview available</Text></View>
           )}
-
-          {/* ── Footer ── */}
-          <View style={vdSt.footer}>
-            {doc?.url && isImageUrl(doc.fileName, doc.url) && (
-              <TouchableOpacity
-                style={vdSt.openBtn}
-                onPress={handleOpenDocument}
-                activeOpacity={0.85}
-              >
-                <Text style={vdSt.openBtnTxt}>🔗  Open Original</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity style={vdSt.doneBtn} onPress={onClose}>
-              <Text style={vdSt.doneTxt}>Close</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </View>
     </Modal>
   );
 };
-
 const vdSt = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    justifyContent: "flex-end",          // bottom sheet on mobile
-  },
-  overlayWeb: {
-    justifyContent: "center",            // centered on web
-    alignItems: "center",
-    padding: 20,
-  },
-  box: {
-    backgroundColor: WHITE,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
-    paddingBottom: Platform.OS === "ios" ? 38 : 24,
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#D1D5DB",
-    alignSelf: "center",
-    marginBottom: 16,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 10,
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: TEXT_PRIMARY,
-  },
-  subtitle: {
-    fontSize: 12,
-    color: TEXT_SECONDARY,
-    marginTop: 3,
-  },
-  closeBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "#F3F4F6",
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: 10,
-    marginTop: 2,
-  },
-  statusStrip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 12,
-  },
-  stripDate: {
-    fontSize: 12,
-    color: TEXT_SECONDARY,
-    flex: 1,
-  },
-  stripId: {
-    fontSize: 12,
-    color: TEXT_SECONDARY,
-    fontWeight: "600",
-  },
-  divider: {
-    height: 1,
-    backgroundColor: BORDER,
-    marginBottom: 16,
-  },
-  previewBox: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: BORDER,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    marginBottom: 16,
-    padding: 8,
-  },
-  image: {
-    width: "100%",
-    height: "100%",
-  },
-  previewHint: {
-    fontSize: 13,
-    color: TEXT_SECONDARY,
-    marginTop: 10,
-    textAlign: "center",
-  },
-  footer: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  openBtn: {
-    flex: 1,
-    paddingVertical: 13,
-    borderRadius: 12,
-    backgroundColor: "#EFF6FF",
-    borderWidth: 1,
-    borderColor: "#BFDBFE",
-    alignItems: "center",
-  },
-  openBtnTxt: {
-    fontSize: 14,
-    color: BLUE,
-    fontWeight: "700",
-  },
-  doneBtn: {
-    flex: 1,
-    paddingVertical: 13,
-    borderRadius: 12,
-    backgroundColor: ORANGE,
-    alignItems: "center",
-  },
-  doneTxt: {
-    fontSize: 14,
-    color: WHITE,
-    fontWeight: "700",
-  },
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", padding: 20 },
+  box: { backgroundColor: WHITE, borderRadius: 16, padding: 24, width: "100%", maxWidth: 500 },
+  header: { flexDirection: "row", alignItems: "flex-start", marginBottom: 12 },
+  title: { fontSize: 18, fontWeight: "700", color: TEXT_PRIMARY },
+  subtitle: { fontSize: 13, color: TEXT_SECONDARY, marginTop: 4 },
+  statusStrip: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
+  stripDate: { fontSize: 12, color: TEXT_SECONDARY },
+  divider: { height: 1, backgroundColor: BORDER, marginBottom: 16 },
+  previewBox: { backgroundColor: "#F8FAFC", borderRadius: 12, borderWidth: 1, borderColor: BORDER, alignItems: "center", justifyContent: "center", overflow: "hidden", marginBottom: 16, padding: 10 },
+  image: { width: "100%", height: "100%" },
+  previewHint: { fontSize: 14, color: TEXT_SECONDARY, marginTop: 12 },
+  openBtn: { marginTop: 16, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: BLUE_LIGHT, borderRadius: 8, borderWidth: 1, borderColor: "#BFDBFE" },
+  openBtnTxt: { color: BLUE, fontWeight: "600" },
 });
 
 // ─── Credential Row ───────────────────────────────────────────────────────────
-const CredentialRow = ({ cred, onView, onRemove, last, }: {
-  cred: Credential;
-  onView: () => void;
-  onRemove: () => void;
-  last?: boolean;
-}) => (
+const CredentialRow = ({ cred, onView, onRemove, last }: { cred: Credential; onView: () => void; onRemove: () => void; last?: boolean; }) => (
   <View style={[crSt.row, last && { borderBottomWidth: 0 }]}>
     <View style={crSt.nameCell}>
-      <Text style={{ fontSize: 15, marginRight: 7 }}>📋</Text>
+      <View style={crSt.iconBox}><Ionicons name="document-text" size={16} color={TEXT_SECONDARY}/></View>
       <View style={{ flex: 1 }}>
-        <Text style={crSt.name} numberOfLines={1}>
-          {cred.name}
-        </Text>
-        {cred.fileName && (
-          <Text style={crSt.fileHint} numberOfLines={1}>
-            📎 {cred.fileName}
-            {cred.fileSize ? `  ·  ${cred.fileSize}` : ""}
-          </Text>
-        )}
+        <Text style={crSt.name} numberOfLines={1}>{cred.name}</Text>
+        {cred.fileName && <Text style={crSt.fileHint} numberOfLines={1}>📎 {cred.fileName}</Text>}
       </View>
     </View>
-    <View style={crSt.statusCell}>
-      <StatusBadge status={cred.status} />
-    </View>
-    <View style={crSt.dateCell}>
-      <Text style={crSt.date}>{cred.updated}</Text>
-    </View>
+    <View style={crSt.statusCell}><StatusBadge status={cred.status} /></View>
+    <View style={crSt.dateCell}><Text style={crSt.date}>{cred.updated}</Text></View>
     <View style={crSt.actionsCell}>
-      <TouchableOpacity onPress={onView}>
-        <Text style={crSt.viewTxt}>View</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        onPress={onRemove}
-        style={crSt.removeBtn}
-      >
-        <Text style={crSt.removeTxt}>✕</Text>
-      </TouchableOpacity>
+      <TouchableOpacity onPress={onView}><Text style={crSt.viewTxt}>View</Text></TouchableOpacity>
+      <TouchableOpacity onPress={onRemove} style={crSt.removeBtn}><Ionicons name="close" size={14} color={RED_TEXT} /></TouchableOpacity>
     </View>
   </View>
 );
 const crSt = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 13,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-  },
-  nameCell: {
-    flex: 2.4,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingRight: 6,
-  },
-  name: { fontSize: 13, color: TEXT_PRIMARY, fontWeight: "500" },
-  fileHint: { fontSize: 11, color: TEXT_SECONDARY, marginTop: 2 },
-  statusCell: { flex: 1.6 },
-  dateCell: { flex: 1.3 },
-  date: { fontSize: 12, color: TEXT_SECONDARY },
-  actionsCell: {
-    flex: 1,
-    flexDirection: "row",
-    gap: 7,
-    justifyContent: "flex-end",
-    alignItems: "center",
-  },
-  viewTxt: { fontSize: 12.5, color: BLUE, fontWeight: "600" },
-  removeBtn: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: RED_BG,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  removeTxt: { fontSize: 9, color: RED_TEXT, fontWeight: "700" },
+  row: { flexDirection: "row", alignItems: "center", paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
+  nameCell: { flex: 2.5, flexDirection: "row", alignItems: "center", paddingRight: 10 },
+  iconBox: { width: 32, height: 32, borderRadius: 8, backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: BORDER, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  name: { fontSize: 14, color: TEXT_PRIMARY, fontWeight: "600" },
+  fileHint: { fontSize: 12, color: TEXT_SECONDARY, marginTop: 2 },
+  statusCell: { flex: 1.5 },
+  dateCell: { flex: 1.5 },
+  date: { fontSize: 13, color: TEXT_SECONDARY },
+  actionsCell: { flex: 1, flexDirection: "row", gap: 12, justifyContent: "flex-end", alignItems: "center" },
+  viewTxt: { fontSize: 13, color: BLUE, fontWeight: "600" },
+  removeBtn: { width: 24, height: 24, borderRadius: 12, backgroundColor: RED_BG, alignItems: "center", justifyContent: "center" },
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  MAIN PROFILE SCREEN
 // ═══════════════════════════════════════════════════════════════════════════════
 const Profile = () => {
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -1561,29 +518,13 @@ const Profile = () => {
   const showToast = (msg: string) => {
     setToastMsg(msg);
     Animated.parallel([
-      Animated.timing(toastOpacity, {
-        toValue: 1,
-        duration: 280,
-        useNativeDriver: true,
-      }),
-      Animated.timing(toastTranslateY, {
-        toValue: 0,
-        duration: 280,
-        useNativeDriver: true,
-      }),
+      Animated.timing(toastOpacity, { toValue: 1, duration: 280, useNativeDriver: true }),
+      Animated.timing(toastTranslateY, { toValue: 0, duration: 280, useNativeDriver: true }),
     ]).start(() => {
       setTimeout(() => {
         Animated.parallel([
-          Animated.timing(toastOpacity, {
-            toValue: 0,
-            duration: 250,
-            useNativeDriver: true,
-          }),
-          Animated.timing(toastTranslateY, {
-            toValue: 30,
-            duration: 250,
-            useNativeDriver: true,
-          }),
+          Animated.timing(toastOpacity, { toValue: 0, duration: 250, useNativeDriver: true }),
+          Animated.timing(toastTranslateY, { toValue: 30, duration: 250, useNativeDriver: true }),
         ]).start();
       }, 2500);
     });
@@ -1595,12 +536,15 @@ const Profile = () => {
   const [location, setLocation] = useState("");
   const [staffCount, setStaffCount] = useState("");
   const [services, setServices] = useState<string[]>([]);
+  const [isProfileComplete, setIsProfileComplete] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState<string | null>(null);
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [showImageMenu, setShowImageMenu] = useState(false);
 
-  const STATIC_PHONE = "+91 000 000-0000";
-  const STATIC_WEBSITE = "—";
-  const STATIC_BED_CAP = "—";
+  const STATIC_PHONE = "+917498965650";
 
-  const [isEditing, setIsEditing] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
   const [draftName, setDraftName] = useState("");
   const [draftAddress, setDraftAddress] = useState("");
   const [draftLocation, setDraftLocation] = useState("");
@@ -1609,85 +553,48 @@ const Profile = () => {
 
   const [credentials, setCredentials] = useState<Credential[]>([]);
   const [credsLoading, setCredsLoading] = useState(true);
-  const [credsError, setCredsError] = useState<string | null>(null);
 
   const [uploadModal, setUploadModal] = useState(false);
   const [viewModal, setViewModal] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<Credential | null>(null);
-  const [viewLoading, setViewLoading] = useState(false);
 
-  // ✅ GET: response shape → { success, documents: [...], pagination }
   const fetchDocuments = useCallback(async () => {
     try {
       setCredsLoading(true);
-      setCredsError(null);
       const data = await documentAPI.getDocuments();
-      if (data?.success) {
-        setCredentials(
-          Array.isArray(data.documents)
-            ? data.documents.map(mapAPIDocument)
-            : []
-        );
-      } else {
-        setCredentials([]);
-      }
-    } catch (err: any) {
+      if (data?.success) setCredentials(Array.isArray(data.documents) ? data.documents.map(mapAPIDocument) : []);
+    } catch (err) {
       console.error("fetchDocuments error:", err);
-      setCredsError(err?.message ?? "Failed to load documents.");
-    } finally {
-      setCredsLoading(false);
-    }
+    } finally { setCredsLoading(false); }
   }, []);
 
-  // ✅ DELETE: /api/documents/:documentId
   const handleDeleteDocument = async (credId: string) => {
     try {
       await documentAPI.deleteDocument(credId);
       setCredentials((prev) => prev.filter((c) => c.id !== credId));
-      showToast("Document removed successfully.");
+      showToast("Document removed.");
     } catch {
-      Alert.alert("Error", "Could not delete document. Please try again.");
-    }
-  };
-
-  const handleViewDocument = async (cred: Credential) => {
-    try {
-      setViewLoading(true);
-      const data = await documentAPI.getDocument(cred.id);
-      if (data?.success && data?.data) {
-        setSelectedDoc(mapAPIDocument(data.data));
-      } else {
-        setSelectedDoc(cred);
-      }
-      setViewModal(true);
-    } catch {
-      setSelectedDoc(cred);
-      setViewModal(true);
-    } finally {
-      setViewLoading(false);
+      Alert.alert("Error", "Could not delete document.");
     }
   };
 
   const fetchProfile = useCallback(async () => {
     try {
-      setLoading(true);
-      setApiError(null);
+      setLoading(true); setApiError(null);
       const data: any = await profileAPI.getMyProfile();
       const mapped = mapAPIToProfile(data);
-      setHospitalLegalName(mapped.hospitalLegalName);
-      setUserEmail(mapped.userEmail);
-      setCurrentAddress(mapped.currentAddress);
-      setLocation(mapped.location);
-      setStaffCount(mapped.staffCount);
-      setServices(mapped.servicesAvailable);
+      setHospitalLegalName(mapped.hospitalLegalName || "ABC Hospital");
+      setUserEmail(mapped.userEmail || "abhishekpimpalkar35@gmail.com");
+      setCurrentAddress(mapped.currentAddress || "Mumbai, Goregaon");
+      setLocation(mapped.location || "Mumbai");
+      setStaffCount(mapped.staffCount || "124");
+      setServices(mapped.servicesAvailable?.length ? mapped.servicesAvailable : ["Emergency & Acute Care", "Diagnostics & Imaging", "Support Services"]);
+      setIsProfileComplete(mapped.isProfileComplete || false);
+      setVerificationStatus(data?.profile?.verificationStatus ?? null);
+      setProfilePicture(data?.profile?.profilePicture || null);
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.message ??
-        "Failed to load profile. Please try again.";
-      setApiError(msg);
-    } finally {
-      setLoading(false);
-    }
+      setApiError(err?.response?.data?.message ?? "Failed to load profile.");
+    } finally { setLoading(false); }
   }, []);
 
   useEffect(() => {
@@ -1701,16 +608,11 @@ const Profile = () => {
     setDraftLocation(location);
     setDraftStaff(staffCount);
     setDraftServices([...services]);
-    setIsEditing(true);
+    setEditModalVisible(true);
   };
 
-  const handleDiscard = () => setIsEditing(false);
-
   const handleSave = async () => {
-    if (!draftName.trim()) {
-      Alert.alert("Required", "Hospital name cannot be empty.");
-      return;
-    }
+    if (!draftName.trim()) { Alert.alert("Required", "Hospital name cannot be empty."); return; }
     try {
       setSaving(true);
       const payload = {
@@ -1726,41 +628,87 @@ const Profile = () => {
       setLocation(draftLocation.trim());
       setStaffCount(draftStaff);
       setServices(draftServices);
-      setIsEditing(false);
+      setEditModalVisible(false);
       showToast("Profile updated successfully!");
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.message ??
-        "Failed to save changes. Please try again.";
-      Alert.alert("Error", msg);
+      Alert.alert("Error", err?.response?.data?.message ?? "Failed to save changes.");
+    } finally { setSaving(false); }
+  };
+
+  const processImageUpload = async (uri: string) => {
+    try {
+      setUploadingImage(true);
+      setProfilePicture(uri);
+      const res = await profileAPI.uploadProfilePicture(uri);
+      if (res.success) {
+        setProfilePicture(res.profilePicture);
+        showToast("Profile picture updated!");
+      }
+    } catch (error) {
+      console.error("Upload failed:", error);
+      Alert.alert("Error", "Failed to upload profile picture.");
+      setProfilePicture(profilePicture);
     } finally {
-      setSaving(false);
+      setUploadingImage(false);
+    }
+  };
+
+  const handleUpload = async () => {
+    setShowImageMenu(false);
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission required", "Please allow access to your photo library.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      await processImageUpload(result.assets[0].uri);
+    }
+  };
+
+  const handleCamera = async () => {
+    setShowImageMenu(false);
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission required", "Please allow camera access.");
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      await processImageUpload(result.assets[0].uri);
+    }
+  };
+
+  const handleRemove = async () => {
+    setShowImageMenu(false);
+    try {
+      setUploadingImage(true);
+      const res = await profileAPI.deleteProfilePicture();
+      if (res.success) {
+        setProfilePicture(null);
+        showToast("Profile picture removed!");
+      }
+    } catch (error) {
+      console.error("Delete failed:", error);
+      Alert.alert("Error", "Failed to delete profile picture.");
+    } finally {
+      setUploadingImage(false);
     }
   };
 
   if (loading) {
     return (
       <SafeAreaView style={gSt.safe}>
-        <StatusBar barStyle="dark-content" backgroundColor={BG} />
-        <View style={gSt.loadingContainer}>
-          <ActivityIndicator size="large" color={BLUE} />
-          <Text style={gSt.loadingTxt}>Loading profile...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (apiError) {
-    return (
-      <SafeAreaView style={gSt.safe}>
-        <StatusBar barStyle="dark-content" backgroundColor={BG} />
-        <View style={gSt.loadingContainer}>
-          <Text style={{ fontSize: 36 }}>⚠️</Text>
-          <Text style={gSt.errorTxt}>{apiError}</Text>
-          <TouchableOpacity style={gSt.retryBtn} onPress={fetchProfile}>
-            <Text style={gSt.retryTxt}>Retry</Text>
-          </TouchableOpacity>
-        </View>
+        <View style={gSt.centerContainer}><ActivityIndicator size="large" color={BLUE} /></View>
       </SafeAreaView>
     );
   }
@@ -1768,295 +716,270 @@ const Profile = () => {
   return (
     <SafeAreaView style={gSt.safe}>
       <StatusBar barStyle="dark-content" backgroundColor={BG} />
+      <ScrollView contentContainerStyle={gSt.scrollContent} showsVerticalScrollIndicator={false}>
 
-      {/* ── Page Header ── */}
-      <View style={gSt.pageHeader}>
-        <View style={gSt.pageHeaderRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={gSt.pageTitle}>Hospital Profile</Text>
-            <Text style={gSt.pageSub}>
-              {isEditing
-                ? "Make your changes below and save when done."
-                : "View and manage your hospital's information."}
-            </Text>
-          </View>
-          {!isEditing && (
-            <TouchableOpacity
-              style={gSt.editBtn}
-              onPress={handleStartEdit}
-              activeOpacity={0.8}
-            >
-              <Text style={gSt.editBtnTxt}>✏️  Edit Profile</Text>
+        {/* ── Top Header Card ── */}
+        <View style={gSt.headerCard}>
+          <View style={gSt.headerRow}>
+            <View style={gSt.headerLeft}>
+              <TouchableOpacity style={gSt.avatarCircle} onPress={() => setShowImageMenu(true)} activeOpacity={0.85}>
+                {uploadingImage ? (
+                  <ActivityIndicator size="small" color={BLUE} />
+                ) : profilePicture ? (
+                  <Image source={{ uri: profilePicture }} style={gSt.avatarImage} />
+                ) : (
+                  <Ionicons name="person" size={40} color="#94A3B8" />
+                )}
+                <View style={gSt.cameraBadge}><Ionicons name="camera" size={12} color={WHITE} /></View>
+              </TouchableOpacity>
+              <View>
+                <Text style={gSt.hospitalTitle}>{hospitalLegalName}</Text>
+                <Text style={gSt.hospitalSub}>Multispeciality Hospital • ICU Specialist</Text>
+                {/* All badges + chips in one row */}
+                <View style={gSt.badgeRow}>
+                  <View style={gSt.blueBadge}><Text style={gSt.blueBadgeTxt}>MD, FRCP</Text></View>
+                  {verificationStatus === "verified" ? (
+                    <View style={gSt.greenBadge}>
+                      <Ionicons name="checkmark-circle" size={12} color={GREEN} />
+                      <Text style={gSt.greenBadgeTxt}>Verified Profile</Text>
+                    </View>
+                  ) : verificationStatus === "rejected" ? (
+                    <View style={[gSt.pill, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
+                      <Ionicons name="close-circle" size={12} color="#DC2626" />
+                      <Text style={[gSt.pillTxt, { color: "#DC2626" }]}>Rejected</Text>
+                    </View>
+                  ) : (
+                    <View style={[gSt.pill, { backgroundColor: "#FFFBEB", borderColor: "#FDE68A" }]}>
+                      <Ionicons name="time-outline" size={12} color="#A16207" />
+                      <Text style={[gSt.pillTxt, { color: "#A16207" }]}>Verification Under Process</Text>
+                    </View>
+                  )}
+                  <View style={gSt.completeBadge}>
+                    <Ionicons name="checkmark-done-circle" size={12} color="#15803D" />
+                    <Text style={gSt.completeBadgeTxt}>Profile Complete</Text>
+                  </View>
+                  <View style={gSt.grayBadge}><Ionicons name="call" size={11} color={TEXT_SECONDARY} /><Text style={gSt.grayBadgeTxt}>{STATIC_PHONE}</Text></View>
+                  <View style={gSt.grayBadge}><Ionicons name="mail" size={11} color={TEXT_SECONDARY} /><Text style={gSt.grayBadgeTxt}>{userEmail}</Text></View>
+                </View>
+              </View>
+            </View>
+            <TouchableOpacity style={gSt.editBtn} onPress={handleStartEdit} activeOpacity={0.8}>
+              <Ionicons name="pencil" size={14} color={WHITE} />
+              <Text style={gSt.editBtnTxt}>Edit Profile</Text>
             </TouchableOpacity>
-          )}
+          </View>
         </View>
-        {isEditing && (
-          <View style={gSt.editBanner}>
-            <Text style={gSt.editBannerTxt}>
-              ✏️  You are currently editing the profile
-            </Text>
+
+        {/* ── 4 Stats Cards ── */}
+        <View style={[gSt.statsRow, isMobile && gSt.statsRowMobile]}>
+          <View style={[gSt.statCard, isMobile && gSt.statCardMobile]}>
+            <View style={[gSt.statIconWrap, { backgroundColor: BLUE_LIGHT }]}><Ionicons name="checkmark-done" size={18} color={BLUE} /></View>
+            <Text style={gSt.statValue}>{isProfileComplete ? '90%' : '50%'}</Text>
+            <Text style={gSt.statLabel}>Profile Completion</Text>
+            <View style={gSt.progressBarBg}><View style={[gSt.progressBarFill, { width: isProfileComplete ? '90%' : '50%', backgroundColor: BLUE }]} /></View>
           </View>
-        )}
-      </View>
+          <View style={[gSt.statCard, isMobile && gSt.statCardMobile]}>
+            <View style={[gSt.statIconWrap, { backgroundColor: GREEN_LIGHT }]}><Ionicons name="shield-checkmark" size={18} color={GREEN} /></View>
+            <Text style={gSt.statValue}>{credentials.filter(c => c.status === 'Verified').length || '12'}</Text>
+            <Text style={gSt.statLabel}>Verified Docs</Text>
+          </View>
+          <View style={[gSt.statCard, isMobile && gSt.statCardMobile]}>
+            <View style={[gSt.statIconWrap, { backgroundColor: ORANGE_LIGHT }]}><Ionicons name="people" size={18} color={ORANGE} /></View>
+            <Text style={gSt.statValue}>{staffCount}</Text>
+            <Text style={gSt.statLabel}>Staff Count</Text>
+          </View>
+          <View style={[gSt.statCard, isMobile && gSt.statCardMobile]}>
+            <View style={[gSt.statIconWrap, { backgroundColor: PURPLE_LIGHT }]}><Ionicons name="bed" size={18} color="#9333EA" /></View>
+            <Text style={gSt.statValue}>50</Text>
+            <Text style={gSt.statLabel}>Bed Capacity</Text>
+          </View>
+        </View>
 
-      {/* ── Body ── */}
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={gSt.body}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* ── General Information ── */}
-        <SectionCard icon="ℹ️" title="General Information">
-          {isEditing ? (
-            <>
-              <LabeledInput
-                label="Hospital Name"
-                value={draftName}
-                onChangeText={setDraftName}
-                placeholder="Enter hospital name"
-              />
-              <View style={iSt.group}>
-                <Text style={iSt.label}>Contact Email</Text>
-                <View style={gSt.staticField}>
-                  <Text style={gSt.staticFieldTxt}>{userEmail}</Text>
+        {/* ── Departments & Services ── */}
+        <View style={gSt.sectionCard}>
+          <View style={gSt.sectionHeader}>
+            <Text style={gSt.sectionTitle}>List of Department & Services</Text>
+            <TouchableOpacity><Text style={gSt.viewAllTxt}>View All</Text></TouchableOpacity>
+          </View>
+          <View style={[gSt.deptMainRow, isMobile && { flexDirection: 'column' }]}>
+            <View style={[gSt.deptMainBox, isMobile && { width: '100%' }]}>
+              <View style={[gSt.deptIcon, { backgroundColor: RED_BG }]}><Ionicons name="medkit" size={20} color={RED_TEXT}/></View>
+              <Text style={gSt.deptMainTitle}>Emergency & Acute Care</Text>
+              <Text style={gSt.deptMainSub}>Level 1 Trauma center and 24/7 cardiac emergency.</Text>
+            </View>
+            <View style={[gSt.deptMainBox, isMobile && { width: '100%' }]}>
+              <View style={[gSt.deptIcon, { backgroundColor: PURPLE_LIGHT }]}><Ionicons name="scan" size={20} color="#9333EA"/></View>
+              <Text style={gSt.deptMainTitle}>Diagnostics & Imaging</Text>
+              <Text style={gSt.deptMainSub}>Advanced MRI, CT-Scan, and Pathology Labs.</Text>
+            </View>
+            <View style={[gSt.deptMainBox, isMobile && { width: '100%' }]}>
+              <View style={[gSt.deptIcon, { backgroundColor: GREEN_LIGHT }]}><Ionicons name="people" size={20} color={GREEN}/></View>
+              <Text style={gSt.deptMainTitle}>Support Services</Text>
+              <Text style={gSt.deptMainSub}>Physical therapy, Nutrition, and Social work.</Text>
+            </View>
+          </View>
+          <View style={gSt.deptTagsRow}>
+            {services.map((srv, idx) => (
+              <View key={idx} style={[gSt.deptMiniBox, isMobile && { width: '48%' }]}>
+                <View style={gSt.deptMiniHeader}>
+                  <Text style={gSt.deptMiniTitle} numberOfLines={1}>{srv}</Text>
+                  <Ionicons name="arrow-forward" size={12} color={TEXT_SECONDARY} />
                 </View>
+                <View style={gSt.progressBarBg}><View style={[gSt.progressBarFill, { width: `${Math.floor(Math.random() * 50) + 40}%`, backgroundColor: BLUE }]} /></View>
               </View>
-              <LabeledInput
-                label="Full Address"
-                value={draftAddress}
-                onChangeText={setDraftAddress}
-                placeholder="Enter full address"
-              />
-              <View style={gSt.row}>
-                <LabeledInput
-                  label="City / Location"
-                  value={draftLocation}
-                  onChangeText={setDraftLocation}
-                  placeholder="e.g. Nagpur"
-                  half
-                />
-                <View style={{ width: 12 }} />
-                <View style={[iSt.group, iSt.half]}>
-                  <Text style={iSt.label}>Phone Number</Text>
-                  <View style={gSt.staticField}>
-                    <Text style={gSt.staticFieldTxt}>{STATIC_PHONE}</Text>
-                  </View>
-                </View>
-              </View>
-              <View style={iSt.group}>
-                <Text style={iSt.label}>Official Website</Text>
-                <View style={gSt.staticField}>
-                  <Text style={gSt.staticFieldTxt}>{STATIC_WEBSITE}</Text>
-                </View>
-              </View>
-            </>
-          ) : (
-            <>
-              <InfoFieldFull label="Hospital Name" value={hospitalLegalName} />
-              <InfoFieldFull label="Full Address" value={currentAddress} />
-              <View style={[gSt.row, { gap: 12 }]}>
-                <InfoField label="City / Location" value={location} />
-                <InfoField label="Contact Email" value={userEmail} />
-              </View>
-              <View style={[gSt.row, { gap: 12 }]}>
-                <InfoField label="Phone Number" value={STATIC_PHONE} />
-                <InfoField label="Official Website" value={STATIC_WEBSITE} />
-              </View>
-            </>
-          )}
-        </SectionCard>
+            ))}
+          </View>
+        </View>
 
-        {/* ── Capacity & Services ── */}
-        <SectionCard icon="⊞" title="Capacity & Services">
-          {isEditing ? (
-            <>
-              <View style={[gSt.row, { zIndex: 10 }]}>
-                <Dropdown
-                  label="Staff Count"
-                  value={draftStaff}
-                  options={STAFF_OPTIONS}
-                  onSelect={setDraftStaff}
-                />
-                <View style={{ width: 12 }} />
-                <View style={[iSt.group, iSt.half]}>
-                  <Text style={iSt.label}>Bed Capacity</Text>
-                  <View style={gSt.staticField}>
-                    <Text style={gSt.staticFieldTxt}>{STATIC_BED_CAP}</Text>
-                  </View>
-                </View>
-              </View>
-              <DepartmentTags
-                departments={draftServices}
-                setDepartments={setDraftServices}
-              />
-            </>
-          ) : (
-            <>
-              <View style={[gSt.row, { gap: 12 }]}>
-                <InfoRow label="Staff Count" value={staffCount} />
-                <InfoRow label="Bed Capacity" value={STATIC_BED_CAP} />
-              </View>
-              <DepartmentTagsView departments={services} />
-            </>
-          )}
-        </SectionCard>
-
-        {/* ── Credential & Compliance ── */}
-        <SectionCard
-          icon="🛡️"
-          title="Credential & Compliance"
-          headerRight={
-            <TouchableOpacity
-              style={gSt.plusBtn}
-              onPress={() => setUploadModal(true)}
-              activeOpacity={0.8}
-            >
-              <Text style={gSt.plusTxt}>＋</Text>
+        {/* ── Licenses & Certifications ── */}
+        <View style={gSt.sectionCard}>
+          <View style={gSt.sectionHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View style={[gSt.statIconWrap, { backgroundColor: BLUE_LIGHT, width: 32, height: 32, borderRadius: 8 }]}><Ionicons name="shield-checkmark" size={16} color={BLUE} /></View>
+              <Text style={gSt.sectionTitle}>Licenses & Certifications</Text>
+            </View>
+            <TouchableOpacity style={gSt.plusBtn} onPress={() => setUploadModal(true)}>
+              <Ionicons name="add" size={16} color={WHITE} />
             </TouchableOpacity>
-          }
-        >
-          <View style={gSt.credHeader}>
-            <Text style={[gSt.credHdrTxt, { flex: 2.4 }]}>DOCUMENT NAME</Text>
-            <Text style={[gSt.credHdrTxt, { flex: 1.6 }]}>STATUS</Text>
-            <Text style={[gSt.credHdrTxt, { flex: 1.3 }]}>LAST UPDATED</Text>
-            <Text style={[gSt.credHdrTxt, { flex: 1, textAlign: "right" }]}>
-              ACTIONS
-            </Text>
           </View>
-
+          <View style={gSt.tableHeader}>
+            <Text style={[gSt.thText, { flex: 2.5 }]}>DOCUMENT NAME</Text>
+            <Text style={[gSt.thText, { flex: 1.5 }]}>STATUS</Text>
+            <Text style={[gSt.thText, { flex: 1.5 }]}>LAST UPDATED</Text>
+            <Text style={[gSt.thText, { flex: 1, textAlign: "right" }]}>ACTIONS</Text>
+          </View>
           {credsLoading ? (
-            <View style={{ alignItems: "center", paddingVertical: 24 }}>
-              <ActivityIndicator size="small" color={BLUE} />
-              <Text
-                style={{ fontSize: 12, color: TEXT_SECONDARY, marginTop: 8 }}
-              >
-                Loading documents...
-              </Text>
-            </View>
-          ) : credsError ? (
-            <View
-              style={{ alignItems: "center", paddingVertical: 20, gap: 8 }}
-            >
-              <Text style={{ fontSize: 13, color: RED_TEXT }}>{credsError}</Text>
-              <TouchableOpacity onPress={fetchDocuments}>
-                <Text
-                  style={{ fontSize: 13, color: BLUE, fontWeight: "600" }}
-                >
-                  Retry
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <View style={gSt.centerContainer}><ActivityIndicator size="small" color={BLUE} /></View>
           ) : credentials.length === 0 ? (
-            <View style={gSt.emptyState}>
-              <Text style={{ fontSize: 36 }}>📭</Text>
-              <Text style={gSt.emptyTxt}>No documents yet.</Text>
-              <TouchableOpacity
-                style={gSt.emptyAddBtn}
-                onPress={() => setUploadModal(true)}
-              >
-                <Text style={gSt.emptyAddTxt}>
-                  Upload your first document
-                </Text>
-              </TouchableOpacity>
+            <View style={gSt.centerContainer}>
+              <Text style={{ color: TEXT_SECONDARY, marginBottom: 12 }}>No documents uploaded.</Text>
+              <TouchableOpacity style={gSt.outlineBtn} onPress={() => setUploadModal(true)}><Text style={{ color: BLUE, fontWeight: '600' }}>Upload Document</Text></TouchableOpacity>
             </View>
           ) : (
             credentials.map((cred, idx) => (
               <CredentialRow
-                key={cred.id}
-                cred={cred}
-                onView={() => handleViewDocument(cred)}
-                // AFTER — platform-aware confirmation
-                onRemove={() => {
-                  if (Platform.OS === "web") {
-                    // window.confirm works correctly on web
-                    if (window.confirm(`Are you sure you want to remove "${cred.name}"?`)) {
-                      handleDeleteDocument(cred.id);
-                    }
-                  } else {
-                    // Alert.alert works correctly on Android/iOS
-                    Alert.alert(
-                      "Remove Document",
-                      `Are you sure you want to remove "${cred.name}"?`,
-                      [
-                        { text: "Cancel", style: "cancel" },
-                        {
-                          text: "Remove",
-                          style: "destructive",
-                          onPress: () => handleDeleteDocument(cred.id),
-                        },
-                      ]
-                    );
-                  }
-                }}
-                last={idx === credentials.length - 1}
+                key={cred.id} cred={cred} last={idx === credentials.length - 1}
+                onView={() => { setSelectedDoc(cred); setViewModal(true); }}
+                onRemove={() => handleDeleteDocument(cred.id)}
               />
             ))
           )}
-        </SectionCard>
-
-        <View style={{ height: 120 }} />
+        </View>
       </ScrollView>
 
-      {/* ── Footer – edit mode only ── */}
-      {isEditing && (
-        <View style={gSt.footer}>
-          <TouchableOpacity
-            style={gSt.discardBtn}
-            onPress={handleDiscard}
-            disabled={saving}
-          >
-            <Text style={gSt.discardTxt}>Discard Changes</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[gSt.saveBtn, saving && { opacity: 0.7 }]}
-            onPress={handleSave}
-            disabled={saving}
-          >
-            {saving ? (
-              <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
-              >
-                <ActivityIndicator size="small" color={WHITE} />
-                <Text style={gSt.saveTxt}>Saving...</Text>
+      {/* ── Edit Profile Modal ── */}
+      <Modal visible={editModalVisible} transparent animationType="fade" onRequestClose={() => setEditModalVisible(false)}>
+        <View style={gSt.modalOverlay}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={gSt.keyboardView}>
+            <View style={[gSt.modalBox, isMobile && gSt.modalBoxMobile]}>
+              <View style={gSt.modalHeader}>
+                <Text style={gSt.modalTitle}>Edit Profile</Text>
+                <TouchableOpacity onPress={() => setEditModalVisible(false)}><Ionicons name="close" size={24} color={TEXT_SECONDARY}/></TouchableOpacity>
               </View>
-            ) : (
-              <Text style={gSt.saveTxt}>💾  Save Changes</Text>
-            )}
-          </TouchableOpacity>
+              <ScrollView showsVerticalScrollIndicator={false} style={gSt.modalScroll}>
+                <View style={gSt.modalAvatarRow}>
+                  {uploadingImage ? (
+                    <View style={[gSt.modalAvatar, { alignItems: 'center', justifyContent: 'center' }]}>
+                      <ActivityIndicator size="small" color={BLUE} />
+                    </View>
+                  ) : profilePicture ? (
+                    <Image source={{ uri: profilePicture }} style={gSt.modalAvatar} />
+                  ) : (
+                    <View style={[gSt.modalAvatar, { alignItems: 'center', justifyContent: 'center', backgroundColor: '#F1F5F9' }]}>
+                      <Ionicons name="person" size={32} color="#94A3B8" />
+                    </View>
+                  )}
+                  <TouchableOpacity style={gSt.changePhotoBtn} onPress={() => { setEditModalVisible(false); setTimeout(() => setShowImageMenu(true), 300); }}>
+                    <Ionicons name="camera-outline" size={16} color={BLUE} />
+                    <Text style={gSt.changePhotoTxt}>Change Photo</Text>
+                  </TouchableOpacity>
+                </View>
+                <LabeledInput label="Full Name (Hospital Name)" value={draftName} onChangeText={setDraftName} />
+                <Dropdown label="Staff Count" value={draftStaff} options={STAFF_OPTIONS} onSelect={setDraftStaff} />
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <LabeledInput label="City" value={draftLocation} onChangeText={setDraftLocation} half />
+                  <LabeledInput label="Area" value={draftAddress} onChangeText={setDraftAddress} half />
+                </View>
+                <View style={iSt.group}>
+                  <Text style={iSt.label}>Phone Number</Text>
+                  <View style={gSt.phoneInputWrap}>
+                    <Text style={gSt.phonePrefix}>+91</Text>
+                    <TextInput style={gSt.phoneInput} value={STATIC_PHONE.replace('+91', '')} editable={false} />
+                  </View>
+                </View>
+                <DepartmentTags departments={draftServices} setDepartments={setDraftServices} />
+              </ScrollView>
+              <View style={gSt.modalFooter}>
+                <TouchableOpacity style={gSt.modalCancel} onPress={() => setEditModalVisible(false)}><Text style={gSt.modalCancelTxt}>Cancel</Text></TouchableOpacity>
+                <TouchableOpacity style={gSt.modalSave} onPress={handleSave} disabled={saving}>
+                  {saving ? <ActivityIndicator size="small" color={WHITE}/> : <Text style={gSt.modalSaveTxt}>✓ Save Changes</Text>}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
         </View>
-      )}
+      </Modal>
 
-      {/* ── Modals ── */}
-      <UploadDocModal
-        visible={uploadModal}
-        onClose={() => setUploadModal(false)}
-        onAdd={(cred) => {
-          setCredentials((prev) => [...prev, cred]);
-          fetchDocuments();
-        }}
-      />
-      <ViewDocModal
-        visible={viewModal}
-        doc={selectedDoc}
-        onClose={() => setViewModal(false)}
-        loading={viewLoading}
-      />
+      {/* ── Sub-Modals ── */}
+      <UploadDocModal visible={uploadModal} onClose={() => setUploadModal(false)} onAdd={(c) => { setCredentials(p => [...p, c]); fetchDocuments(); }} />
+      <ViewDocModal visible={viewModal} doc={selectedDoc} onClose={() => setViewModal(false)} />
+
+      {/* ── Photo Menu Modal ── */}
+      <Modal visible={showImageMenu} transparent animationType="fade" onRequestClose={() => setShowImageMenu(false)}>
+        <TouchableOpacity style={gSt.photoMenuOverlay} activeOpacity={1} onPress={() => setShowImageMenu(false)}>
+          <TouchableOpacity activeOpacity={1} style={gSt.photoMenuBox} onPress={() => {}}>
+            <View style={gSt.photoMenuHeader}>
+              <Text style={gSt.photoMenuTitle}>Profile Photo</Text>
+              <TouchableOpacity onPress={() => setShowImageMenu(false)}>
+                <Ionicons name="close" size={24} color={TEXT_SECONDARY} />
+              </TouchableOpacity>
+            </View>
+            {profilePicture && (
+              <View style={gSt.photoPreviewWrap}>
+                <Image source={{ uri: profilePicture }} style={gSt.photoPreview} />
+              </View>
+            )}
+            <TouchableOpacity style={gSt.photoMenuItem} onPress={handleUpload} activeOpacity={0.75}>
+              <View style={[gSt.photoMenuIcon, { backgroundColor: BLUE_LIGHT }]}>
+                <Ionicons name="image-outline" size={20} color={BLUE} />
+              </View>
+              <View>
+                <Text style={gSt.photoMenuLabel}>Upload from Library</Text>
+                <Text style={gSt.photoMenuSub}>Choose a photo from your gallery</Text>
+              </View>
+            </TouchableOpacity>
+            {Platform.OS !== "web" && (
+              <TouchableOpacity style={gSt.photoMenuItem} onPress={handleCamera} activeOpacity={0.75}>
+                <View style={[gSt.photoMenuIcon, { backgroundColor: GREEN_LIGHT }]}>
+                  <Ionicons name="camera-outline" size={20} color={GREEN} />
+                </View>
+                <View>
+                  <Text style={gSt.photoMenuLabel}>Take a Photo</Text>
+                  <Text style={gSt.photoMenuSub}>Use your camera</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+            {profilePicture && (
+              <TouchableOpacity style={gSt.photoMenuItem} onPress={handleRemove} activeOpacity={0.75}>
+                <View style={[gSt.photoMenuIcon, { backgroundColor: RED_BG }]}>
+                  <Ionicons name="trash-outline" size={20} color={RED_TEXT} />
+                </View>
+                <View>
+                  <Text style={[gSt.photoMenuLabel, { color: RED_TEXT }]}>Remove Photo</Text>
+                  <Text style={gSt.photoMenuSub}>Revert to default avatar</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={gSt.photoMenuCancel} onPress={() => setShowImageMenu(false)}>
+              <Text style={gSt.photoMenuCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
 
       {/* ── Toast ── */}
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          gSt.toast,
-          {
-            opacity: toastOpacity,
-            transform: [{ translateY: toastTranslateY }],
-          },
-        ]}
-      >
-        <View style={gSt.toastIconWrap}>
-          <Text style={{ fontSize: 15 }}>✓</Text>
-        </View>
+      <Animated.View pointerEvents="none" style={[gSt.toast, { opacity: toastOpacity, transform: [{ translateY: toastTranslateY }] }]}>
+        <Ionicons name="checkmark-circle" size={20} color={WHITE} />
         <Text style={gSt.toastTxt}>{toastMsg}</Text>
       </Animated.View>
     </SafeAreaView>
@@ -2066,197 +989,112 @@ const Profile = () => {
 // ─── Global Styles ────────────────────────────────────────────────────────────
 const gSt = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BG },
-  loadingContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 14,
-    padding: 30,
-  },
-  loadingTxt: { fontSize: 14, color: TEXT_SECONDARY, marginTop: 4 },
-  errorTxt: {
-    fontSize: 14,
-    color: RED_TEXT,
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  retryBtn: {
-    marginTop: 8,
-    paddingHorizontal: 24,
-    paddingVertical: 11,
-    borderRadius: 8,
-    backgroundColor: ORANGE,
-  },
-  retryTxt: { fontSize: 14, color: WHITE, fontWeight: "700" },
-  pageHeader: {
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === "android" ? 18 : 12,
-    paddingBottom: 14,
-    backgroundColor: WHITE,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER,
-  },
-  pageHeaderRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  pageTitle: {
-    fontSize: 21,
-    fontWeight: "700",
-    color: TEXT_PRIMARY,
-    letterSpacing: -0.4,
-  },
-  pageSub: {
-    fontSize: 12.5,
-    color: TEXT_SECONDARY,
-    marginTop: 3,
-    lineHeight: 18,
-  },
-  editBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: 9,
-    backgroundColor: BLUE,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    shadowColor: ORANGE,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  editBtnTxt: { fontSize: 13, color: WHITE, fontWeight: "700" },
-  editBanner: {
-    marginTop: 10,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: ORANGE_BORDER,
-  },
-  editBannerTxt: { fontSize: 12.5, color: BLUE, fontWeight: "600" },
-  body: { padding: 16 },
-  row: { flexDirection: "row", alignItems: "flex-start" },
-  staticField: {
-    borderWidth: 1,
-    borderColor: "#F0F0F0",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: "#F9FAFB",
-    minHeight: 42,
-    justifyContent: "center",
-  },
-  staticFieldTxt: { fontSize: 13.5, color: TEXT_SECONDARY },
-  plusBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: BLUE,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: ORANGE,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  plusTxt: {
-    fontSize: 18,
-    color: WHITE,
-    fontWeight: "700",
-    lineHeight: 22,
-  },
-  credHeader: {
-    flexDirection: "row",
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER,
-    marginBottom: 2,
-  },
-  credHdrTxt: {
-    fontSize: 10.5,
-    fontWeight: "700",
-    color: TEXT_SECONDARY,
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
-  },
-  emptyState: { alignItems: "center", paddingVertical: 28, gap: 8 },
-  emptyTxt: { fontSize: 13, color: TEXT_SECONDARY },
-  emptyAddBtn: {
-    marginTop: 4,
-    paddingHorizontal: 18,
-    paddingVertical: 9,
-    borderRadius: 8,
-    backgroundColor: ORANGE_LIGHT,
-    borderWidth: 1,
-    borderColor: ORANGE_BORDER,
-  },
-  emptyAddTxt: { fontSize: 13, color: ORANGE_DARK, fontWeight: "700" },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    backgroundColor: WHITE,
-    borderTopWidth: 1,
-    borderTopColor: BORDER,
-    gap: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-  discardBtn: {
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: BORDER,
-    backgroundColor: WHITE,
-  },
-  discardTxt: { fontSize: 13.5, color: TEXT_SECONDARY, fontWeight: "500" },
-  saveBtn: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: BLUE,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    minWidth: 140,
-    justifyContent: "center",
-  },
-  saveTxt: { fontSize: 13.5, color: WHITE, fontWeight: "700" },
-  toast: {
-    position: "absolute",
-    bottom: 36,
-    left: 20,
-    right: 20,
-    backgroundColor: "#16A34A",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    elevation: 20,
-  },
-  toastIconWrap: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.25)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  toastTxt: { fontSize: 14, color: WHITE, fontWeight: "600", flex: 1 },
+  centerContainer: { padding: 30, alignItems: "center", justifyContent: "center" },
+  scrollContent: { padding: 24, paddingBottom: 40, maxWidth: 1200, marginHorizontal: 'auto', width: '100%' },
+
+  // Header Card
+  headerCard: { backgroundColor: WHITE, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: BLUE, marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 20 },
+  avatarCircle: { width: 70, height: 70, borderRadius: 35, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  avatarImage: { width: 70, height: 70, borderRadius: 35 },
+  cameraBadge: { position: 'absolute', bottom: -2, right: -2, width: 26, height: 26, borderRadius: 13, backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: WHITE, zIndex: 10 },
+  hospitalTitle: { fontSize: 22, fontWeight: '700', color: TEXT_PRIMARY, marginBottom: 4 },
+  hospitalSub: { fontSize: 13, color: TEXT_SECONDARY, marginBottom: 8 },
+  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6, flexWrap: 'wrap' },
+  chipRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  // shared pill base
+  pill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
+  pillTxt: { fontSize: 11, fontWeight: '600' },
+  blueBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: BLUE_LIGHT, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: "#BFDBFE" },
+  blueBadgeTxt: { color: BLUE, fontSize: 11, fontWeight: '700' },
+  greenBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: GREEN_LIGHT, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: "#6EE7B7" },
+  greenBadgeTxt: { color: "#065F46", fontSize: 11, fontWeight: '700' },
+  grayBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F8FAFC', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: BORDER },
+  grayBadgeTxt: { color: TEXT_SECONDARY, fontSize: 11, fontWeight: '600' },
+  completeBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F0FDF4', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: '#BBF7D0' },
+  completeBadgeTxt: { color: '#15803D', fontSize: 11, fontWeight: '700' },
+  incompleteBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FFFBEB', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: '#FDE68A' },
+  incompleteBadgeTxt: { color: '#B45309', fontSize: 11, fontWeight: '700' },
+  outlineBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: GREEN_LIGHT },
+  outlineBadgeTxt: { color: GREEN, fontSize: 11, fontWeight: '600' },
+  badgesWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: BLUE, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
+  editBtnTxt: { color: WHITE, fontSize: 13, fontWeight: '600' },
+  outlineBtn: { borderWidth: 1, borderColor: BLUE, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
+
+  // Stats Row
+  statsRow: { flexDirection: 'row', gap: 16, marginBottom: 24 },
+  statsRowMobile: { flexWrap: 'wrap' },
+  statCard: { flex: 1, backgroundColor: WHITE, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: BORDER, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 6, elevation: 1 },
+  // ✅ FIX: removed `flex: 'none'` — invalid in React Native (flex only accepts numbers)
+  statCardMobile: { width: '47%' },
+  statIconWrap: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  statValue: { fontSize: 20, fontWeight: '800', color: TEXT_PRIMARY, marginBottom: 2 },
+  statLabel: { fontSize: 12, color: TEXT_SECONDARY, marginBottom: 10 },
+  progressBarBg: { height: 4, backgroundColor: '#F1F5F9', borderRadius: 2, overflow: 'hidden' },
+  progressBarFill: { height: '100%', borderRadius: 2 },
+
+  // Section Cards
+  sectionCard: { backgroundColor: WHITE, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: BORDER, marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 6, elevation: 1 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: TEXT_PRIMARY },
+  viewAllTxt: { fontSize: 13, color: BLUE, fontWeight: '600' },
+  plusBtn: { width: 28, height: 28, borderRadius: 6, backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center' },
+
+  // Depts
+  deptMainRow: { flexDirection: 'row', gap: 16, marginBottom: 16 },
+  deptMainBox: { flex: 1, borderWidth: 1, borderColor: BORDER, borderRadius: 12, padding: 16 },
+  deptIcon: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  deptMainTitle: { fontSize: 14, fontWeight: '700', color: TEXT_PRIMARY, marginBottom: 6 },
+  deptMainSub: { fontSize: 12, color: TEXT_SECONDARY, lineHeight: 18 },
+  deptTagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
+  deptMiniBox: { flex: 1, minWidth: 150, borderWidth: 1, borderColor: BORDER, borderRadius: 8, padding: 16 },
+  deptMiniHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  deptMiniTitle: { fontSize: 13, fontWeight: '600', color: TEXT_PRIMARY },
+
+  // Table
+  tableHeader: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: BORDER, paddingBottom: 12, marginBottom: 8 },
+  thText: { fontSize: 11, fontWeight: '700', color: TEXT_SECONDARY, letterSpacing: 0.5 },
+
+  // Edit Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', padding: 20 },
+  keyboardView: { flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%' },
+  modalBox: { width: 500, maxHeight: '90%', backgroundColor: WHITE, borderRadius: 16, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 10 },
+  modalBoxMobile: { width: '95%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: TEXT_PRIMARY },
+  modalScroll: { flexShrink: 1, width: '100%' },
+  modalAvatarRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 24 },
+  modalAvatar: { width: 70, height: 70, borderRadius: 35, backgroundColor: '#E2E8F0' },
+  changePhotoBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: BLUE, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: WHITE },
+  changePhotoTxt: { color: BLUE, fontSize: 13, fontWeight: '600' },
+  phoneInputWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: BORDER, borderRadius: 8, backgroundColor: WHITE, overflow: 'hidden' },
+  phonePrefix: { paddingHorizontal: 14, paddingVertical: 12, backgroundColor: '#F8FAFC', color: TEXT_SECONDARY, fontWeight: '600', borderRightWidth: 1, borderRightColor: BORDER },
+  phoneInput: { flex: 1, paddingHorizontal: 14, fontSize: 14, color: TEXT_PRIMARY },
+  modalFooter: { flexDirection: 'row', gap: 12, marginTop: 24, borderTopWidth: 1, borderTopColor: BORDER, paddingTop: 20 },
+  modalCancel: { flex: 1, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: BORDER, alignItems: 'center' },
+  modalCancelTxt: { color: TEXT_SECONDARY, fontSize: 14, fontWeight: '600' },
+  modalSave: { flex: 2, paddingVertical: 12, borderRadius: 8, backgroundColor: BLUE, alignItems: 'center' },
+  modalSaveTxt: { color: WHITE, fontSize: 14, fontWeight: '700' },
+
+  // Toast
+  toast: { position: "absolute", bottom: 36, left: 20, right: 20, backgroundColor: GREEN, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, flexDirection: "row", alignItems: "center", gap: 10, elevation: 10 },
+  toastTxt: { fontSize: 14, color: WHITE, fontWeight: "600" },
+
+  // Photo Menu Modal
+  photoMenuOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  photoMenuBox: { backgroundColor: WHITE, borderRadius: 16, padding: 24, width: '100%', maxWidth: 400 },
+  photoMenuHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  photoMenuTitle: { fontSize: 18, fontWeight: '700', color: TEXT_PRIMARY },
+  photoPreviewWrap: { alignItems: 'center', marginBottom: 20 },
+  photoPreview: { width: 96, height: 96, borderRadius: 48, borderWidth: 3, borderColor: BORDER },
+  photoMenuItem: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  photoMenuIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  photoMenuLabel: { fontSize: 15, fontWeight: '600', color: TEXT_PRIMARY },
+  photoMenuSub: { fontSize: 12, color: TEXT_SECONDARY, marginTop: 2 },
+  photoMenuCancel: { marginTop: 12, paddingVertical: 12, borderRadius: 10, backgroundColor: '#F1F5F9', alignItems: 'center' },
+  photoMenuCancelText: { fontSize: 15, fontWeight: '600', color: TEXT_SECONDARY },
 });
 
 export default Profile;
-
-

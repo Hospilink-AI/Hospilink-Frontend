@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { adminAPI } from '@/service/api';
+import { useTrackingReceiver } from '@/hooks/useTrackingReceiver';
 
 // ── Leaflet icon setup ────────────────────────────────────────────────────────
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -51,8 +52,13 @@ const staffIcon = L.divIcon({
 const DISTANCE_OPTIONS = [
   { label: '5 km', value: 5 },
   { label: '10 km', value: 10 },
+  { label: '15 km', value: 15 },
   { label: '20 km', value: 20 },
+  { label: '25 km', value: 25 },
+  { label: '30 km', value: 30 },
+  { label: '35 km', value: 35 },
   { label: '50 km', value: 50 },
+  { label: '100 km', value: 100 },
 ];
 
 const ROLES = [
@@ -149,26 +155,33 @@ export default function StaffTrackingDashboard() {
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [selectedHospital, setSelectedHospital] = useState<Hospital | null>(null);
   const [selectedRole, setSelectedRole] = useState(ROLES[0]);
-  const [selectedDistance, setSelectedDistance] = useState(DISTANCE_OPTIONS[2]);
+  const [selectedDistance, setSelectedDistance] = useState(DISTANCE_OPTIONS[1]);
   const [hospitalCoords, setHospitalCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [staff, setStaff] = useState<StaffMember[]>([]);
-  const [loading, setLoading] = useState(true);
+  
+  // Set loading to false initially so it waits for user selection
+  const [loading, setLoading] = useState(false);
+
+  const liveLocations = useTrackingReceiver({
+  hospitalId: selectedHospital?._id ?? selectedHospital?.id,
+});
 
   useEffect(() => {
     adminAPI.getHospitalsList().then((res: any) => {
       if (res.success && res.data.length > 0) {
-        console.log('Hospital sample:', res.data[0]); // check _id vs id
         setHospitals(res.data);
-        setSelectedHospital(res.data[0]);
+        // Removed: setSelectedHospital(res.data[0]); <-- Now no hospital is selected by default
       }
     }).catch((e: any) => console.error('Failed to fetch hospitals', e));
   }, []);
 
   useEffect(() => {
-    if (!selectedHospital) return;
+    if (!selectedHospital) return; // Wait until the user selects a hospital
+    
     setLoading(true);
     const hospitalId = selectedHospital._id ?? selectedHospital.id;
     if (!hospitalId) return;
+    
     adminAPI.getNearbyStaff(hospitalId, selectedDistance.value, selectedRole.value)
       .then((res: any) => {
         if (res.success) {
@@ -200,65 +213,76 @@ export default function StaffTrackingDashboard() {
 
       {/* Map */}
       <View style={styles.mapWrapper}>
-        {loading && (
-          <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="large" color="#3B82F6" />
-            <Text style={styles.loadingText}>Syncing Live Radar...</Text>
+        {!selectedHospital ? (
+          // Show this placeholder when no hospital is selected
+          <View style={styles.placeholderContainer}>
+            <Text style={styles.placeholderIcon}>🏥</Text>
+            <Text style={styles.placeholderText}>Please select a hospital to view the map and nearby staff.</Text>
           </View>
-        )}
+        ) : (
+          // Show Map once a hospital is selected
+          <>
+            {loading && (
+              <View style={styles.loadingOverlay}>
+                <ActivityIndicator size="large" color="#3B82F6" />
+                <Text style={styles.loadingText}>Syncing Live Radar...</Text>
+              </View>
+            )}
 
-        {hospitalCoords && (
-          <MapContainer
-            key={`${hospitalCoords.latitude}-${hospitalCoords.longitude}-${selectedDistance.value}`}
-            center={[hospitalCoords.latitude, hospitalCoords.longitude]}
-            zoom={12}
-            style={{ width: '100%', height: '100%', zIndex: 0 }}
-          >
-            <TileLayer
-              attribution='&copy; OpenStreetMap'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <Circle
-              center={[hospitalCoords.latitude, hospitalCoords.longitude]}
-              radius={selectedDistance.value * 1000}
-              pathOptions={{ color: '#1565C0', fillColor: '#42A5F5', fillOpacity: 0.08, weight: 2, dashArray: '6 4' }}
-            />
-            <Marker position={[hospitalCoords.latitude, hospitalCoords.longitude]} icon={hospitalIcon}>
-              <Popup><strong style={{ color: '#C62828' }}>{selectedHospital?.name}</strong></Popup>
-            </Marker>
-            {staff.map((person) => (
-              <Marker
-                key={person._id}
-                position={[person.coordinates.coordinates.latitude, person.coordinates.coordinates.longitude]}
-                icon={staffIcon}
+            {hospitalCoords && (
+              <MapContainer
+                key={`${hospitalCoords.latitude}-${hospitalCoords.longitude}-${selectedDistance.value}`}
+                center={[hospitalCoords.latitude, hospitalCoords.longitude]}
+                zoom={12}
+                style={{ width: '100%', height: '100%', zIndex: 0 }}
               >
-                <Popup>
-                  <strong>{person.staffName}</strong><br />
-                  {ROLE_LABELS[person.role] || person.role}<br />
-                  <span style={{ color: '#2E7D32', fontWeight: 'bold' }}>✅ Available now</span><br />
-                  📍 {person.distanceText} away<br />
-                  📞 {person.mobileNumber}
-                </Popup>
-              </Marker>
-            ))}
-          </MapContainer>
-        )}
+                <TileLayer
+                  attribution='&copy; OpenStreetMap'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <Circle
+                  center={[hospitalCoords.latitude, hospitalCoords.longitude]}
+                  radius={selectedDistance.value * 1000}
+                  pathOptions={{ color: '#1565C0', fillColor: '#42A5F5', fillOpacity: 0.08, weight: 2, dashArray: '6 4' }}
+                />
+                <Marker position={[hospitalCoords.latitude, hospitalCoords.longitude]} icon={hospitalIcon}>
+                  <Popup><strong style={{ color: '#C62828' }}>{selectedHospital?.name}</strong></Popup>
+                </Marker>
+                {staff.map((person) => (
+                  <Marker
+                    key={person._id}
+                    position={[person.coordinates.coordinates.latitude, person.coordinates.coordinates.longitude]}
+                    icon={staffIcon}
+                  >
+                    <Popup>
+                      <strong>{person.staffName}</strong><br />
+                      {ROLE_LABELS[person.role] || person.role}<br />
+                      <span style={{ color: '#2E7D32', fontWeight: 'bold' }}>✅ Available now</span><br />
+                      📍 {person.distanceText} away<br />
+                      📞 {person.mobileNumber}
+                    </Popup>
+                  </Marker>
+                ))}
+              </MapContainer>
+            )}
 
-        {/* Legend */}
-        <View style={styles.mapLegend}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#EF4444' }]} />
-            <Text style={styles.legendText}>Hospital</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#43A047' }]} />
-            <Text style={styles.legendText}>Available Staff</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#3B82F6' }]} />
-            <Text style={styles.legendText}>Total: {staff.length}</Text>
-          </View>
-        </View>
+            {/* Legend */}
+            <View style={styles.mapLegend}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#EF4444' }]} />
+                <Text style={styles.legendText}>Hospital</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#43A047' }]} />
+                <Text style={styles.legendText}>Available Staff</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#3B82F6' }]} />
+                <Text style={styles.legendText}>Total: {staff.length}</Text>
+              </View>
+            </View>
+          </>
+        )}
       </View>
 
       {/* Footer */}
@@ -291,6 +315,12 @@ const styles = StyleSheet.create({
   dropdownOption: { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
   dropdownOptionText: { fontSize: 13, color: '#111827' },
   mapWrapper: { flex: 1, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#E5E5E5', position: 'relative', minHeight: 500 },
+  
+  // New styles for the placeholder
+  placeholderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F3F4F6' },
+  placeholderIcon: { fontSize: 48, marginBottom: 12, opacity: 0.5 },
+  placeholderText: { fontSize: 16, fontWeight: '500', color: '#6B7280' },
+  
   loadingOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(255,255,255,0.8)', justifyContent: 'center', alignItems: 'center', zIndex: 5 },
   loadingText: { marginTop: 10, fontWeight: '600', color: '#3B82F6' },
   mapLegend: { position: 'absolute', bottom: 20, alignSelf: 'center', backgroundColor: '#FFFFFF', borderRadius: 8, paddingHorizontal: 20, paddingVertical: 12, flexDirection: 'row', gap: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 3 },

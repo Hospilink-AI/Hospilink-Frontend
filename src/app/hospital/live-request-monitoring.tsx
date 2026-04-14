@@ -1,110 +1,69 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
   TouchableOpacity,
   Platform,
   useWindowDimensions,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { adminAPI } from '@/service/api';
-import { decodePolyline } from '@/utils/polylineDecoderA';
-import { useTrackingReceiver } from '@/hooks/useTrackingReceiver';
-
 
 const isWeb = typeof window !== 'undefined' && !!window.document;
 
-// ─── TypeScript Interfaces ──────────────────────────────────────────────
-interface Coord { latitude: number; longitude: number; }
-interface StatusHistory {
-  _id: string;
-  status: string;
-  timestamp: string;
-  reason: string;
-  changedBy: string;
-}
-interface ApiData {
+// ─── Static Mock Data ──────────────────────────────────────────────────
+const MOCK_DATA = {
   staff: {
-    _id?: string;
-    id?: string;
-    name: string;
-    email?: string;
-    userName?: string;
-    mobileNumber?: string;
-    skills?: string[];
-    avgRating?: number;
-    address?: string;
-    coordinates?: {
-      coordinates: {
-        latitude: number;
-        longitude: number;
-      };
-      type?: string;
-    };
-    location?: { latitude: number; longitude: number; lastUpdated?: string };
-    realTimeLocation?: any;
-  } | null;
+    name: 'Priya Sharma',
+    email: 'priya.sharma@example.com',
+    mobileNumber: '+91 98765 43210',
+    skills: ['Emergency Care', 'Trauma Response', 'ICU', 'BLS/ACLS'],
+    avgRating: 4.8,
+    address: 'Pune, Maharashtra',
+    location: { latitude: 18.5204, longitude: 73.8567, lastUpdated: '2026-04-10T12:00:00Z' },
+  },
   duty: {
-    dutyId: string;
-    dutyRole?: string;
-    role?: string;
-    formattedRole?: string;
-    hospitalName?: string;
-    startTime: string;
-    endTime: string;
-    date: string;
-    description: string;
-    totalPayment: number;
-    status: string;
-    statusHistory?: StatusHistory[];
-  };
+    dutyId: 'REQ-9824B',
+    dutyRole: 'Emergency Nurse',
+    hospitalName: 'Apollo Hospital',
+    startTime: '09:00 AM',
+    endTime: '05:00 PM',
+    date: '2026-04-10',
+    description: 'Standard daytime emergency shift. Please report to the ER head nurse upon arrival and ensure handover protocols are followed.',
+    totalPayment: 2500,
+    status: 'enroute', // 'available', 'assigned', 'enroute', 'in-progress', 'completed'
+    statusHistory: [
+      { _id: 'h1', status: 'available', timestamp: '2026-04-10T07:00:00Z', reason: 'System posted', changedBy: 'System' },
+      { _id: 'h2', status: 'assigned', timestamp: '2026-04-10T07:30:00Z', reason: 'Accepted by staff', changedBy: 'Priya Sharma' },
+      { _id: 'h3', status: 'enroute', timestamp: '2026-04-10T08:15:00Z', reason: 'Started journey', changedBy: 'Priya Sharma' },
+    ],
+  },
   hospital: {
-    id: string;
-    name: string;
-    address?: string;
-    location: string;
-    coordinates: {
-      coordinates: {
-        latitude: number;
-        longitude: number;
-      };
-      type?: string;
-    };
-  };
-  route?: {
-    distanceText: string;
-    durationText: string;
-    stepPolylines: string[];
-  };
-  distance?: {
-    distance: number;
-    distanceText: string;
-    estimatedTime: number;
-    estimatedTimeText: string;
-  };
-  tracking?: {
-    isRealTime: boolean;
-    lastUpdate: string | null;
-    estimatedArrival?: string;
-    source?: string;
-  };
-  timing?: {
-    date: string;
-    startTime: string;
-    endTime: string;
-    urgency: string;
-  };
-}
+    id: 'hosp-1',
+    name: 'Apollo Hospital',
+    address: 'Kharadi, Pune, Maharashtra',
+    location: 'Pune',
+    coordinates: { latitude: 18.5515, longitude: 73.9348 },
+  },
+  route: {
+    distanceText: '12 km',
+    durationText: '25 mins',
+    stepPolylines: [], // Empty for mock
+  },
+  tracking: {
+    isRealTime: true,
+    lastUpdate: 'Just Now',
+    estimatedArrival: '08:40 AM',
+  },
+};
 // ───────────────────────────────────────────────────────────────────────
 
 // ─── WebMap Component ───
 interface WebMapProps {
-  staffLocation: Coord;
-  hospitalLocation: Coord;
+  staffLocation: { latitude: number; longitude: number };
+  hospitalLocation: { latitude: number; longitude: number };
   routePolylines: string[];
   status: string;
 }
@@ -167,17 +126,11 @@ const WebMap = ({ staffLocation, hospitalLocation, routePolylines, status }: Web
       L.marker([staffLocation.latitude, staffLocation.longitude], { icon: staffIcon }).addTo(map);
       L.marker([hospitalLocation.latitude, hospitalLocation.longitude], { icon: hospitalIcon }).addTo(map);
 
-      if (routePolylines && routePolylines.length > 0) {
-        const allPoints: [number, number][] = [];
-        routePolylines.forEach((encodedPolyline: string) => {
-          const points = decodePolyline(encodedPolyline);
-          allPoints.push(...points);
-          L.polyline(points, { color: status === 'in-progress' ? '#10B981' : '#2563EB', weight: 4, opacity: 0.8 }).addTo(map);
-        });
-        if (allPoints.length > 0) {
-          map.fitBounds(L.latLngBounds(allPoints), { padding: [50, 50] });
-        }
-      }
+      // Fit bounds to show both markers nicely
+      map.fitBounds(L.latLngBounds([
+        [staffLocation.latitude, staffLocation.longitude],
+        [hospitalLocation.latitude, hospitalLocation.longitude]
+      ]), { padding: [50, 50] });
     };
 
     loadLeaflet();
@@ -199,39 +152,6 @@ const WebMap = ({ staffLocation, hospitalLocation, routePolylines, status }: Web
 export default function LiveRequestMonitoring() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const isWide = width >= 1024;
-  const { dutyId } = useLocalSearchParams<{ dutyId: string }>();
-  const [data, setData] = useState<ApiData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const liveLocations = useTrackingReceiver({ dutyId: dutyId as string });
-
-
-  const fetchDutyRoute = async () => {
-    try {
-      if (!data) setLoading(true); 
-      const response = await adminAPI.getTrackStaffLocation(dutyId as string);
-      if (response.success) {
-        setData(response.data);
-      } else {
-        setError('Failed to load duty information');
-      }
-    } catch (err) {
-      console.error('❌ [API Error]:', err);
-      setError('Error loading duty information');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (dutyId) {
-      fetchDutyRoute();
-      const interval = setInterval(fetchDutyRoute, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [dutyId]);
 
   // Helpers
   const formatTime = (isoString: string) => {
@@ -246,95 +166,8 @@ export default function LiveRequestMonitoring() {
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   };
 
-  if (loading && !data) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#3B82F6" />
-        <Text style={styles.loadingText}>Loading tracking details...</Text>
-      </View>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>{error || 'No data available'}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={fetchDutyRoute}>
-          <Text style={styles.retryButtonText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  // Additional safety check for required data
-  if (!data.duty || !data.hospital) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#3B82F6" />
-        <Text style={styles.loadingText}>Loading complete data...</Text>
-      </View>
-    );
-  }
-
-  // Handle null staff case
-  if (!data.staff) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>No staff assigned to this duty yet</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={() => router.back()}>
-          <Text style={styles.retryButtonText}>Go Back</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  const { staff, duty, hospital, route: routeData, tracking, distance, timing } = data;
-
-  // Extract coordinates from nested structure
-  const getStaffCoordinates = () => {
-    if (staff?.coordinates?.coordinates) {
-      return {
-        latitude: staff.coordinates.coordinates.latitude,
-        longitude: staff.coordinates.coordinates.longitude
-      };
-    }
-    
-    if (staff?.location) {
-      return {
-        latitude: staff.location.latitude,
-        longitude: staff.location.longitude
-      };
-    }
-    
-    return null;
-  };
-
-  const getHospitalCoordinates = () => {
-    // Check for nested structure first (coordinates.coordinates)
-    if (hospital?.coordinates?.coordinates) {
-      return {
-        latitude: hospital.coordinates.coordinates.latitude,
-        longitude: hospital.coordinates.coordinates.longitude
-      };
-    }
-    
-    // Check for flat structure (coordinates.latitude)
-    if (hospital?.coordinates?.latitude && hospital?.coordinates?.longitude) {
-      return {
-        latitude: hospital.coordinates.latitude,
-        longitude: hospital.coordinates.longitude
-      };
-    }
-    
-    return null;
-  };
-
-  const staffCoordinates = getStaffCoordinates();
-  const hospitalCoordinates = getHospitalCoordinates();
-
-  // Get duty role and status
-  const dutyRole = duty.formattedRole || duty.dutyRole || duty.role || 'Medical Staff';
-  const dutyStatus = (duty as any).status?.status || duty.status || 'unknown';
+  // Load static data
+  const { staff, duty, hospital, route: routeData } = MOCK_DATA;
 
   const timelineSteps = [
     { key: 'available', label: 'Posted', icon: 'checkmark' },
@@ -345,9 +178,9 @@ export default function LiveRequestMonitoring() {
   ];
   
   const currentStatusMap: Record<string, number> = {
-    'available': 0, 'assigned': 1, 'accepted': 2, 'enroute': 3, 'in-progress': 4, 'completed': 5
+    'available': 0, 'assigned': 2, 'enroute': 3, 'in-progress': 4, 'completed': 4
   };
-  const currentStepIndex = currentStatusMap[dutyStatus] ?? 0;
+  const currentStepIndex = currentStatusMap[duty.status] ?? 0;
 
   const sortedHistory = [...(duty.statusHistory || [])].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
@@ -357,58 +190,6 @@ export default function LiveRequestMonitoring() {
     if (reason.toLowerCase().includes('hospital')) return `Admin / ${hospitalName}`;
     return staffName;
   };
-
-  // Get live coordinates from socket or fallback to last known location
-  let staffId: string | undefined;
-  
-  if (staff) {
-    staffId = staff.id || staff._id;
-    
-    if (!staffId && duty.statusHistory && duty.statusHistory.length > 0) {
-      const assignedHistory = duty.statusHistory.find(h => h.status === 'assigned');
-      if (assignedHistory) {
-        staffId = assignedHistory.changedBy;
-      }
-    }
-  }
-  
-  // Check if we have real-time location from API
-  const hasRealtimeFromAPI = staff?.location?.source === 'realtime';
-  const apiLocationAge = staff?.location?.lastUpdated 
-    ? Date.now() - staff.location.lastUpdated 
-    : null;
-  
-  // Priority: WebSocket > API realtime > Static profile
-  let staffLiveCoord;
-  let coordinateSource;
-  
-  if (staffId && liveLocations[staffId]) {
-    // Use WebSocket data (highest priority)
-    staffLiveCoord = liveLocations[staffId];
-    coordinateSource = '🔴 LIVE (WebSocket)';
-  } else if (hasRealtimeFromAPI && apiLocationAge && apiLocationAge < 10000) {
-    // Use API realtime data if less than 10 seconds old
-    staffLiveCoord = {
-      latitude: staff.location.latitude,
-      longitude: staff.location.longitude
-    };
-    coordinateSource = '🟢 LIVE (API)';
-  } else {
-    // Fallback to static profile coordinates
-    staffLiveCoord = staffCoordinates;
-    coordinateSource = '📍 STATIC (Profile)';
-  }
-  
-  console.log('🗺️ [COORDINATE SOURCE]:', coordinateSource, staffLiveCoord);
-
-  // Calculate live update time and ETA
-  const lastUpdate = staffId && liveLocations[staffId]?.timestamp
-    ? new Date(liveLocations[staffId].timestamp! * 1000).toLocaleTimeString()
-    : 'Just now';
-
-  const liveETA = staffId && liveLocations[staffId]?.estimatedArrival
-    ? new Date(liveLocations[staffId].estimatedArrival! * 1000).toLocaleTimeString()
-    : distance?.estimatedTimeText || routeData?.durationText || '--';
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
@@ -460,7 +241,7 @@ export default function LiveRequestMonitoring() {
               <View style={styles.detailTextCol}>
                 <Text style={styles.detailLabel}>Hospital Name</Text>
                 <Text style={styles.detailValueBold}>{hospital.name}</Text>
-                <Text style={styles.detailSub}>{hospital.address?.split(',')[0] || hospital.location}</Text>
+                <Text style={styles.detailSub}>{hospital.address.split(',')[0]}</Text>
               </View>
             </View>
 
@@ -468,7 +249,7 @@ export default function LiveRequestMonitoring() {
               <View style={styles.iconBox} />
               <View style={styles.detailTextCol}>
                 <Text style={styles.detailLabel}>SHIFT TIME</Text>
-                <Text style={styles.detailValueBold}>{timing?.startTime || duty.startTime} - {timing?.endTime || duty.endTime}</Text>
+                <Text style={styles.detailValueBold}>{duty.startTime} - {duty.endTime}</Text>
                 <Text style={styles.detailSub}>Payment: ₹{duty.totalPayment}</Text>
               </View>
             </View>
@@ -477,7 +258,7 @@ export default function LiveRequestMonitoring() {
               <View style={styles.iconBox} />
               <View style={styles.detailTextCol}>
                 <Text style={styles.detailLabel}>ROLE REQUIRED</Text>
-                <Text style={styles.detailValueBold}>{dutyRole.toUpperCase()}</Text>
+                <Text style={styles.detailValueBold}>{duty.dutyRole.toUpperCase()}</Text>
                 <Text style={styles.detailSub}>Specialist</Text>
               </View>
             </View>
@@ -500,54 +281,25 @@ export default function LiveRequestMonitoring() {
               <View style={styles.livePulseDot} />
               <View>
                 <Text style={styles.mapStatusTitle}>Nurse Enroute</Text>
-                <Text style={styles.mapStatusSub}>Estimated arrival in {liveETA || '--'}</Text>
+                <Text style={styles.mapStatusSub}>Estimated arrival in {routeData.durationText || '--'}</Text>
               </View>
             </View>
             <View style={styles.mapStatusRight}>
               <Text style={styles.lastUpdatedLabel}>LAST UPDATED</Text>
-              <Text style={styles.lastUpdatedValue}>{lastUpdate}</Text>
+              <Text style={styles.lastUpdatedValue}>Just Now</Text>
             </View>
           </View>
 
           <View style={styles.mapWrapper}>
             {/* The Map */}
             <View style={styles.mapContainer}>
-              {(() => {
-                if (!isWeb) {
-                  return (
-                    <View style={styles.mapPlaceholder}>
-                      <Text style={{color: '#64748B'}}>Map view available on web version</Text>
-                    </View>
-                  );
-                }
-
-                if (!staffLiveCoord) {
-                  return (
-                    <View style={styles.mapPlaceholder}>
-                      <ActivityIndicator size="large" color="#3B82F6" />
-                      <Text style={{color: '#64748B', marginTop: 12}}>Loading staff location...</Text>
-                    </View>
-                  );
-                }
-
-                if (!hospitalCoordinates) {
-                  return (
-                    <View style={styles.mapPlaceholder}>
-                      <ActivityIndicator size="large" color="#3B82F6" />
-                      <Text style={{color: '#64748B', marginTop: 12}}>Loading hospital location...</Text>
-                    </View>
-                  );
-                }
-
-                return (
-                  <WebMap 
-                    staffLocation={staffLiveCoord} 
-                    hospitalLocation={hospitalCoordinates} 
-                    routePolylines={routeData?.stepPolylines || []} 
-                    status={dutyStatus} 
-                  />
-                );
-              })()}
+              {isWeb ? (
+                <WebMap staffLocation={staff.location} hospitalLocation={hospital.coordinates} routePolylines={routeData.stepPolylines} status={duty.status} />
+              ) : (
+                <View style={styles.mapPlaceholder}>
+                  <Text style={{color: '#64748B'}}>Map view available on web version</Text>
+                </View>
+              )}
             </View>
 
             {/* Horizontal Timeline placed relatively BELOW the map */}
@@ -608,24 +360,20 @@ export default function LiveRequestMonitoring() {
                       <Text style={styles.tagText}>{skill}</Text>
                     </View>
                   ))
-                ) : <Text style={styles.tagText}>No skills added</Text>}
+                ) :<Text style={styles.tagText}>No skills added</Text> }
               </View>
             </View>
 
             <View style={styles.staffSection}>
               <Text style={styles.sectionLabel}>CONTACT INFO</Text>
-              {staff.mobileNumber && (
-                <View style={styles.contactRow}>
-                  <Ionicons name="call-outline" size={14} color="#475569" />
-                  <Text style={styles.contactText}>{staff.mobileNumber}</Text>
-                </View>
-              )}
-              {staff.email && (
-                <View style={styles.contactRow}>
-                  <Ionicons name="mail-outline" size={14} color="#475569" />
-                  <Text style={styles.contactText}>{staff.email}</Text>
-                </View>
-              )}
+              <View style={styles.contactRow}>
+                <Ionicons name="call-outline" size={14} color="#475569" />
+                <Text style={styles.contactText}>{staff.mobileNumber}</Text>
+              </View>
+              <View style={styles.contactRow}>
+                <Ionicons name="mail-outline" size={14} color="#475569" />
+                <Text style={styles.contactText}>{staff.email}</Text>
+              </View>
             </View>
 
             <View style={styles.staffActionRow}>
@@ -699,19 +447,14 @@ export default function LiveRequestMonitoring() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
   contentContainer: { padding: 24, paddingBottom: 60, maxWidth: 1600, marginHorizontal: 'auto', width: '100%' },
-  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' },
-  loadingText: { marginTop: 12, color: '#64748B' },
-  errorText: { color: '#EF4444', marginBottom: 16 },
-  retryButton: { backgroundColor: '#3B82F6', paddingHorizontal: 24, paddingVertical: 10, borderRadius: 8 },
-  retryButtonText: { color: '#FFF', fontWeight: '600' },
 
   headerArea: { marginBottom: 24 },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },
   backBtnText: { fontSize: 14, fontWeight: '600', color: '#1E293B' },
-  headerMainRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 },
+  headerMainRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 },
   pageTitle: { fontSize: 24, fontWeight: '800', color: '#1E293B', letterSpacing: -0.5 },
   pageSubtitle: { fontSize: 14, color: '#94A3B8', marginTop: 4 },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12 },
   badgeHighPriority: { backgroundColor: '#DBEAFE', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
   badgeHighPriorityText: { color: '#2563EB', fontSize: 12, fontWeight: '600' },
   btnOutline: { borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#FFF', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 6 },
@@ -723,14 +466,14 @@ const styles = StyleSheet.create({
   mainGrid: { 
     flexDirection: 'row', 
     gap: 24, 
-    flexWrap: 'wrap', // Ensures it wraps on smaller screens
-    alignItems: 'stretch' // Makes columns match height if desired
+    flexWrap: 'wrap', 
+    alignItems: 'stretch' 
   },
 
-  // Responsive Columns
-  leftCol: { flex: 1, minWidth: 280, maxWidth: 350 },
-  centerCol: { flex: 2.5, minWidth: 400 },
-  rightCol: { flex: 1, minWidth: 300, maxWidth: 350 },
+  // Responsive Columns - minWidth 280 ensures they stack nicely on mobile phones
+  leftCol: { flex: 1, minWidth: 280 },
+  centerCol: { flex: 2, minWidth: 280 },
+  rightCol: { flex: 1, minWidth: 280 },
 
   detailCard: { backgroundColor: '#FFF', borderRadius: 12, padding: 20, borderWidth: 1, borderColor: '#E2E8F0' },
   cardSectionTitle: { fontSize: 16, fontWeight: '700', color: '#1E293B', marginBottom: 20 },
@@ -753,7 +496,6 @@ const styles = StyleSheet.create({
   lastUpdatedLabel: { fontSize: 10, fontWeight: '700', color: '#94A3B8', letterSpacing: 0.5 },
   lastUpdatedValue: { fontSize: 13, fontWeight: '700', color: '#1E293B', marginTop: 2 },
   
-  // Map Wrapper -> now a flex container
   mapWrapper: { 
     flex: 1, 
     minHeight: 500, 
@@ -774,7 +516,6 @@ const styles = StyleSheet.create({
   },
   mapPlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   
-  // Timeline moved to regular flow (not absolute)
   horizontalTimeline: { 
     position: 'relative', 
     backgroundColor: '#FFF', 
@@ -787,7 +528,6 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0', 
     zIndex: 2 
   },
-  // Lines remain absolute relative to the horizontalTimeline container
   timelineTrackBg: { position: 'absolute', height: 4, backgroundColor: '#E2E8F0', left: 40, right: 40, top: 34, zIndex: 1 },
   timelineTrackFill: { position: 'absolute', height: 4, backgroundColor: '#2563EB', left: 40, top: 34, zIndex: 2 },
   timelineNodeWrap: { alignItems: 'center', gap: 8, zIndex: 3, width: 60 },
@@ -795,7 +535,7 @@ const styles = StyleSheet.create({
   timelineNodeCompleted: { backgroundColor: '#2563EB', borderColor: '#2563EB' },
   timelineNodeCurrent: { backgroundColor: '#FFF', borderColor: '#2563EB', borderWidth: 3, width: 32, height: 32, marginTop: -4 },
   nodeIconText: { color: '#FFF', fontSize: 12, fontWeight: '700' },
-  timelineNodeLabel: { fontSize: 11, fontWeight: '600', color: '#94A3B8' },
+  timelineNodeLabel: { fontSize: 11, fontWeight: '600', color: '#94A3B8', textAlign: 'center' },
   timelineNodeLabelActive: { color: '#2563EB' },
 
   staffCard: { backgroundColor: '#FFF', borderRadius: 12, padding: 24, borderWidth: 1, borderColor: '#E2E8F0', alignItems: 'center' },
@@ -803,12 +543,11 @@ const styles = StyleSheet.create({
   staffAvatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#94A3B8', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   staffInitials: { fontSize: 24, fontWeight: '700', color: '#FFF' },
   onlineDot: { position: 'absolute', bottom: 4, right: 4, width: 14, height: 14, backgroundColor: '#10B981', borderRadius: 7, borderWidth: 2, borderColor: '#FFF' },
-  staffProfileName: { fontSize: 18, fontWeight: '700', color: '#1E293B', marginBottom: 8 },
+  staffProfileName: { fontSize: 18, fontWeight: '700', color: '#1E293B', marginBottom: 8, textAlign: 'center' },
   acceptedBadge: { backgroundColor: '#EFF6FF', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, marginBottom: 12 },
   acceptedBadgeText: { fontSize: 12, color: '#3B82F6', fontWeight: '600' },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   ratingText: { fontSize: 14, fontWeight: '700', color: '#1E293B' },
-  shiftsText: { color: '#94A3B8', fontWeight: '400' },
   divider: { height: 1, backgroundColor: '#F1F5F9', width: '100%', marginVertical: 20 },
   staffSection: { width: '100%', marginBottom: 20 },
   sectionLabel: { fontSize: 11, fontWeight: '700', color: '#94A3B8', letterSpacing: 0.5, marginBottom: 12 },
@@ -827,12 +566,12 @@ const styles = StyleSheet.create({
   bottomSection: { marginTop: 24, width: '100%' },
   activityTitle: { fontSize: 18, fontWeight: '700', color: '#1E293B', marginBottom: 16 },
   activityCard: { backgroundColor: '#FFF', borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0' },
-  activityRow: { flexDirection: 'row', padding: 20, paddingVertical: 16 },
+  activityRow: { flexDirection: 'row', padding: 20, paddingVertical: 16, flexWrap: 'wrap' },
   activityBorder: { borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  activityTimeCol: { width: 90, marginRight: 16 },
+  activityTimeCol: { width: 90, marginRight: 16, marginBottom: 8 },
   activityTime: { fontSize: 13, fontWeight: '600', color: '#475569' },
   activityDate: { fontSize: 11, color: '#94A3B8', marginTop: 4 },
-  activityTextWrap: { flex: 1, justifyContent: 'center' },
+  activityTextWrap: { flex: 1, justifyContent: 'center', minWidth: 200 },
   activityDesc: { fontSize: 14, color: '#475569', lineHeight: 22 },
   activityBold: { fontWeight: '700', color: '#1E293B' },
   activityHighlight: { color: '#3B82F6', fontWeight: '700' },

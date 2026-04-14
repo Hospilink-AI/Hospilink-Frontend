@@ -8,7 +8,7 @@ import SkillsCard from "@/component/cards/medicalStaff/Profile/SkillsCard";
 import { COLORS } from "@/constant/colors";
 import { profileData } from "@/data/profile"; // ← still used for static fields
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -78,6 +78,9 @@ export default function Profile() {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
 
+  // ref to open ProfileHeader's edit modal from ProfileActionCard
+  const openEditModalRef = useRef<() => void>(() => {});
+
   // ── API state
   const [apiUser, setApiUser] = useState<any>(null);
   const [apiProfile, setApiProfile] = useState<any>(null);
@@ -145,6 +148,7 @@ const statsRow2 = stats.slice(2, 4);
   const displayEmail = apiUser?.email ?? null;
   const isVerified = apiUser?.isEmailVerified ?? false;
   const isComplete = apiProfile?.isProfileComplete ?? false;
+  const verificationStatus = apiProfile?.verificationStatus ?? null;
 
   // ── ADD THESE THREE HERE ──
   const displayCity = apiProfile?.city ?? "";
@@ -174,20 +178,22 @@ const statsRow2 = stats.slice(2, 4);
         name={displayName}
         role={displayRole}
         badges={profileData.badges}
-        onEdit={() => { }}
+        onEdit={() => {}}
         isMobile={isMobile}
         phone={displayPhone}
         email={displayEmail}
         isVerified={isVerified}
         isComplete={isComplete}
-        jobRoleValue={displayJobRoleValue}   
-        city={displayCity}                  
-        area={displayArea}     
-        profilePicture={displayProfilePicture}              
-        onProfileUpdated={(updated) => {     
-          // setApiProfile((prev) => ({ ...prev, ...updated }));
+        profileCompletion={apiProfile?.profileCompletion ?? null}
+        verificationStatus={verificationStatus}
+        jobRoleValue={displayJobRoleValue}
+        city={displayCity}
+        area={displayArea}
+        profilePicture={displayProfilePicture}
+        onProfileUpdated={(updated) => {
           setApiProfile((prev) => ({ ...(prev || {}), ...updated }));
         }}
+        onOpenEditModal={(fn) => { openEditModalRef.current = fn; }}
       />
 
       {/* ── Stats: desktop = 1 row of 4 | mobile = 2 rows of 2 ── */}
@@ -265,6 +271,7 @@ const statsRow2 = stats.slice(2, 4);
           iconBg="#EEF2FF"
           iconColor={COLORS.primary}
           label="Edit Profile"
+          onPress={() => openEditModalRef.current()}
         />
         <ProfileActionCard
           icon="shield-checkmark-outline"
@@ -283,9 +290,9 @@ const statsRow2 = stats.slice(2, 4);
   );
 }
 
-function ProfileActionCard({ icon, iconBg, iconColor, label }: any) {
+function ProfileActionCard({ icon, iconBg, iconColor, label, onPress }: any) {
   return (
-    <TouchableOpacity style={styles.actionCard} activeOpacity={0.8}>
+    <TouchableOpacity style={styles.actionCard} activeOpacity={0.8} onPress={onPress}>
       <View style={[styles.actionIconWrap, { backgroundColor: iconBg }]}>
         <Ionicons name={icon} size={28} color={iconColor} />
       </View>

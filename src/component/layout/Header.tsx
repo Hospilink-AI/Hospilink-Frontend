@@ -2,8 +2,9 @@ import { COLORS } from "@/constant/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { usePathname } from "expo-router";
 import { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity, Platform, Image } from "react-native";
 import { profileAPI } from "../../service/api";
+import { useRouter } from "expo-router";
 
 // ─── Dynamic greeting based on time ──────────────────────
 const getGreeting = () => {
@@ -31,6 +32,7 @@ export default function Header() {
   // const theme    = roleTheme[role];
 
   const [displayName, setDisplayName] = useState("...");
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
 
   // ────────────────────────────────────────────────────────
   // GET /api/profile/me
@@ -46,12 +48,17 @@ export default function Header() {
         } else {
           setDisplayName(res.profile?.fullName ?? res.user?.name ?? "Staff");
         }
+        // Set profile picture if available
+        setProfilePicture(res.profile?.profilePicture || null);
       } catch (err) {
         console.error("❌ Header profile fetch failed:", err);
         setDisplayName("User");
+        setProfilePicture(null);
       }
     })();
   }, [role]);
+
+  const router = useRouter();
 
   return (
     <View style={styles.container}>
@@ -70,12 +77,12 @@ export default function Header() {
 
       {/* Logo */}
       {role !== "admin" && (
-      <View style={styles.left}>
-        <View style={[styles.logoIcon, { backgroundColor: COLORS.primary }]}>
-          <Ionicons name="medical" size={20} color="#fff" />
+        <View style={styles.left}>
+          <View style={[styles.logoIcon, { backgroundColor: COLORS.primary }]}>
+            <Ionicons name="medical" size={20} color="#fff" />
+          </View>
+          <Text style={styles.logo}>Hospilink</Text>
         </View>
-        <Text style={styles.logo}>Hospilink</Text>
-      </View>
       )}
 
       {/* Right section */}
@@ -97,9 +104,28 @@ export default function Header() {
         </View>
 
         {/* Avatar */}
-        <View style={styles.avatar}>
-          <Ionicons name="person" size={18} color={COLORS.subText} />
-        </View>
+        {role !== "admin" && (
+          <TouchableOpacity
+            style={styles.avatar}
+            onPress={() => {
+              if (role === "medicalStaff") {
+                router.push("/medicalStaff/profile");
+              } else if (role === "hospital") {
+                router.push("/hospital/profile");
+              }
+            }}
+            activeOpacity={0.7}
+          >
+            {profilePicture ? (
+              <Image 
+                source={{ uri: profilePicture }} 
+                style={styles.avatarImage}
+              />
+            ) : (
+              <Ionicons name="person" size={18} color={COLORS.subText} />
+            )}
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -130,7 +156,23 @@ const styles = StyleSheet.create({
   name: { fontSize: 13, fontWeight: "700", color: COLORS.text },
   iconWrap: { position: "relative" },
   redDot: { position: "absolute", top: 0, right: 0, width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.red, borderWidth: 1.5, borderColor: COLORS.white },
-  avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F1F5F9", borderWidth: 1, borderColor: COLORS.border, alignItems: "center", justifyContent: "center" },
+  avatar: { 
+    width: 36, 
+    height: 36, 
+    borderRadius: 18, 
+    backgroundColor: "#F1F5F9", 
+    borderWidth: 1, 
+    borderColor: COLORS.border, 
+    alignItems: "center", 
+    justifyContent: "center",
+    overflow: "hidden",
+    ...(Platform.OS === 'web' && { cursor: 'pointer' })
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 18,
+  },
   adminHeader: {
     flexDirection: "row",
     alignItems: "center",

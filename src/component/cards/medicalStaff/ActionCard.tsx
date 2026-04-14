@@ -7,13 +7,15 @@ interface Props {
   label: string;
   iconBg?: string;
   isMobile?: boolean;
+  onPress?: () => void;
 }
 
-export default function ActionCard({ icon, label, iconBg = "#EEF2FF", isMobile }: Props) {
+export default function ActionCard({ icon, label, iconBg = "#EEF2FF", isMobile, onPress }: Props) {
   return (
     <TouchableOpacity
       style={[styles.card, isMobile && styles.cardMobile]}
       activeOpacity={0.8}
+      onPress={onPress}
     >
       <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>
         <Ionicons name={icon} size={26} color={getIconColor(iconBg)} />

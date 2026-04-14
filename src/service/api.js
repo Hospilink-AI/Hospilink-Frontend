@@ -5,7 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 // Creating an instance of axios with the base URL from env variables
 
 const api = axios.create({
-  baseURL: 'https://hospilinkv1backend.vercel.app',
+  baseURL: 'https://hospilink-backend.vercel.app',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -252,6 +252,16 @@ export const profileAPI = {
     return response.data;
   },
 
+  // Send dashboard location permission status
+  sendDashboardLocationPermission: async (permissionGranted, latitude = null, longitude = null) => {
+    const payload = permissionGranted
+      ? { permissionGranted: true, latitude, longitude }
+      : { permissionGranted: false };
+
+    const response = await api.post('/api/profile/dashboard/location-permission', payload);
+    return response.data;
+  },
+
   // Get earnings data for dashboard
   getEarnings: async () => {
     const response = await api.get('/api/dashboard/earnings');
@@ -291,54 +301,37 @@ uploadProfilePicture: async (imageUri) => {
       });
     }
 
-    // 3. Make Fetch Call
     try {
-      const res = await fetch(`https://hospilinkv1backend.vercel.app/api/profile/profile-picture`, {
+      const res = await fetch(`https://hospilink-backend.vercel.app/api/profile/profile-picture`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          // NO Content-Type — fetch sets multipart/form-data + boundary automatically
-        },
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
-
       const data = await res.json();
-      console.log("UPLOAD SUCCESS:", data);
-
       if (!res.ok) throw { response: { data } };
       return data;
     } catch (error) {
-      console.error("UPLOAD ERROR:", error?.response || error);
       throw error;
     }
   },
 
-  // ────────────────────────────────────────────────────────────
-  // DELETE PROFILE PICTURE
-  // ────────────────────────────────────────────────────────────
   deleteProfilePicture: async () => {
-    console.log("API CALLED: deleteProfilePicture");
-
     const token = Platform.OS === "web"
       ? localStorage.getItem("hospilink_token")
       : await AsyncStorage.getItem("hospilink_token");
 
     try {
-      const res = await fetch(`https://hospilinkv1backend.vercel.app/api/profile/delete-picture`, {
+      const res = await fetch(`https://hospilink-backend.vercel.app/api/profile/delete-picture`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       });
-
       const data = await res.json();
-      console.log("DELETE SUCCESS:", data);
-
       if (!res.ok) throw { response: { data } };
       return data;
     } catch (error) {
-      console.error("DELETE ERROR:", error?.response || error);
       throw error;
     }
   },
@@ -518,6 +511,27 @@ export const dutyAPI = {
   // For hospitals for live tracking 
   getNearbyStaff: async (radiusKm = 5) => {
     const response = await api.get(`/api/profile/nearby-staff?radius=${radiusKm}`);
+    return response.data;
+  },
+
+  // Live location monitoring APIs
+  updateLiveLocation: async (latitude, longitude) => {
+    const response = await api.post('/api/location/update', { latitude, longitude });
+    return response.data;
+  },
+
+  startLocationTracking: async (dutyId) => {
+    const response = await api.post(`/api/duties/${dutyId}/start-tracking`);
+    return response.data;
+  },
+
+  stopLocationTracking: async (dutyId) => {
+    const response = await api.post(`/api/duties/${dutyId}/stop-tracking`);
+    return response.data;
+  },
+
+  getStaffLiveLocation: async (staffId) => {
+    const response = await api.get(`/api/location/staff/${staffId}`);
     return response.data;
   },
 
@@ -899,8 +913,18 @@ export const adminAPI = {
     return response.data;
   },
 
-  getTrackStaffLocation : async (dutyId) => {
-        const response = await api.get(`/api/admin/duty-route-map/${dutyId}`)
+  getTrackStaffLocation: async (dutyId) => {
+    const response = await api.get(`/api/admin/duty-route-map/${dutyId}`);
+    return response.data;
+  },
+
+  getLiveStaffLocation: async (staffId) => {
+    const response = await api.get(`/api/admin/staff-location/${staffId}`);
+    return response.data;
+  },
+
+  getDutyLiveTracking: async (dutyId) => {
+    const response = await api.get(`/api/admin/duties/${dutyId}/live-tracking`);
     return response.data;
   },
 

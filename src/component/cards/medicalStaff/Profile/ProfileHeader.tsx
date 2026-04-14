@@ -70,7 +70,7 @@ const getRoleByLabel = (label: string) =>
 
 interface Props {
   name:        string;
-  role:        string;   // display label e.g. "General Surgeon"
+  role:        string;
   badges:      string[];
   onEdit:      () => void;
   isMobile?:   boolean;
@@ -78,22 +78,27 @@ interface Props {
   email?:      string | null;
   isVerified?: boolean;
   isComplete?: boolean;
-  // raw jobRole value for PUT e.g. "general_surgeon"
+  profileCompletion?: number | null;  // 0-100 from API
+  verificationStatus?: string | null;
   jobRoleValue?: string | null;
   city?:       string | null;
   area?:       string | null;
   profilePicture?: string | null;
-  // callback to refresh parent after save
   onProfileUpdated?: (updatedProfile: any) => void;
+  onOpenEditModal?: (open: () => void) => void;
 }
 
 export default function ProfileHeader({
   name, role, badges, onEdit, isMobile,
   phone, email, isVerified = false, isComplete = false,
-  jobRoleValue, city, area, profilePicture , onProfileUpdated 
+  profileCompletion, verificationStatus, jobRoleValue, city, area,
+  profilePicture, onProfileUpdated, onOpenEditModal,
 }: Props) {
   const { width } = useWindowDimensions();
   const isDesktop = Platform.OS === "web" && width > 900;
+
+  // Profile is complete only when completion % is 100
+  const isProfileComplete = (profileCompletion ?? (isComplete ? 100 : 0)) >= 100;
 
   
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -102,10 +107,16 @@ export default function ProfileHeader({
   useEffect(() => {
     setImageUri(profilePicture ?? null);
   }, [profilePicture]);
+
   const [showImageMenu, setShowImageMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [saving,        setSaving]        = useState(false);
   const [showDropdown,  setShowDropdown]  = useState(false);
+
+  // Expose openEditModal to parent via callback (e.g. ProfileActionCard)
+  useEffect(() => {
+    onOpenEditModal?.(() => setShowEditModal(true));
+  }, [onOpenEditModal]);
 
   // ── Editable fields — pre-filled from props
   const [editName,     setEditName]     = useState(name);
@@ -263,40 +274,56 @@ export default function ProfileHeader({
           <Text style={[styles.name, isMobile && styles.nameMobile]}>{name}</Text>
           <Text style={styles.role}>{role}</Text>
 
-          {/* ── Single row: static badges + dynamic chips ── */}
-          <View style={styles.badgeChipRow}>
-            {badges.map((badge, i) => (
-              <View key={i} style={[styles.badge, i === 1 && styles.verifiedBadge]}>
-                {i === 1 && <Ionicons name="checkmark-circle" size={12} color="#059669" style={{ marginRight: 4 }} />}
-                <Text style={[styles.badgeText, i === 1 && styles.verifiedText]}>{badge}</Text>
+          {/* All badges + chips in one row */}
+          <View style={styles.badgeRow}>
+            {badges.slice(0, 1).map((badge, i) => (
+              <View key={i} style={styles.badge}>
+                <Text style={styles.badgeText}>{badge}</Text>
               </View>
             ))}
 
+            {verificationStatus === "verified" ? (
+              <View style={[styles.pill, styles.pillGreen]}>
+                <Ionicons name="checkmark-circle" size={12} color="#059669" />
+                <Text style={[styles.pillText, { color: "#059669" }]}>Verified Profile</Text>
+              </View>
+            ) : verificationStatus === "rejected" ? (
+              <View style={[styles.pill, styles.pillRed]}>
+                <Ionicons name="close-circle" size={12} color="#DC2626" />
+                <Text style={[styles.pillText, { color: "#DC2626" }]}>Rejected</Text>
+              </View>
+            ) : (
+              <View style={[styles.pill, styles.pillAmber]}>
+                <Ionicons name="time-outline" size={12} color="#A16207" />
+                <Text style={[styles.pillText, { color: "#A16207" }]}>Verification Under Process</Text>
+              </View>
+            )}
+
+            {isProfileComplete ? (
+              <View style={[styles.pill, styles.pillGreen]}>
+                <Ionicons name="checkmark-done-circle" size={12} color="#059669" />
+                <Text style={[styles.pillText, { color: "#059669" }]}>Profile Complete</Text>
+              </View>
+            ) : (
+              <View style={[styles.pill, styles.pillAmber]}>
+                <Ionicons name="alert-circle-outline" size={12} color="#A16207" />
+                <Text style={[styles.pillText, { color: "#A16207" }]}>
+                  {profileCompletion != null ? `${profileCompletion}% Complete` : "Profile Incomplete"}
+                </Text>
+              </View>
+            )}
+
             {phone && (
               <View style={styles.chip}>
-                <Ionicons name="call-outline" size={12} color="#64748b" />
+                <Ionicons name="call-outline" size={11} color="#64748b" />
                 <Text style={styles.chipText}>{phone}</Text>
               </View>
             )}
-
             {email && (
               <View style={styles.chip}>
-                <Ionicons name="mail-outline" size={12} color="#64748b" />
+                <Ionicons name="mail-outline" size={11} color="#64748b" />
                 <Text style={styles.chipText}>{email}</Text>
-                {isVerified && <Ionicons name="checkmark-circle" size={12} color="#22c55e" />}
-              </View>
-            )}
-
-            {(phone || email) && (
-              <View style={[styles.chip, isComplete ? styles.chipGreen : styles.chipAmber]}>
-                <Ionicons
-                  name={isComplete ? "checkmark-done-circle-outline" : "ellipse-outline"}
-                  size={12}
-                  color={isComplete ? "#15803d" : "#b45309"}
-                />
-                <Text style={[styles.chipText, { color: isComplete ? "#15803d" : "#b45309" }]}>
-                  {isComplete ? "Profile Complete" : "Profile Incomplete"}
-                </Text>
+                {isVerified && <Ionicons name="checkmark-circle" size={11} color="#22c55e" />}
               </View>
             )}
           </View>
@@ -519,19 +546,30 @@ const styles = StyleSheet.create({
   avatarImage:{ width: 80, height: 80, borderRadius: 40, borderWidth: 3, borderColor: COLORS.border },
   onlineDot:  { position: "absolute", bottom: 2, right: 2, width: 18, height: 18, borderRadius: 9, backgroundColor: "#22C55E", borderWidth: 2, borderColor: COLORS.white },
   cameraBtn:  { position: "absolute", bottom: 0, right: 0, width: 26, height: 26, borderRadius: 13, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: COLORS.white, zIndex: 10 },
-  info:       { flex: 1 },
+  info:       { flex: 1, minWidth: 0 },
   name:       { fontSize: 22, fontWeight: "700", color: COLORS.text, letterSpacing: -0.4 },
   nameMobile: { fontSize: 18 },
-  role:       { fontSize: 13, color: COLORS.subText, marginTop: 4, marginBottom: 10 },
-  badgeChipRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 },
-  badge:         { backgroundColor: "#EEF2FF", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
-  badgeText:     { fontSize: 12, fontWeight: "700", color: COLORS.primary },
-  verifiedBadge: { backgroundColor: "#F0FDF4", flexDirection: "row", alignItems: "center" },
-  verifiedText:  { color: "#059669" },
-  chip:       { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#f8fafc", paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: "#e2e8f0" },
-  chipGreen:  { backgroundColor: "#f0fdf4", borderColor: "#bbf7d0" },
-  chipAmber:  { backgroundColor: "#fffbeb", borderColor: "#fde68a" },
+  role:       { fontSize: 13, color: COLORS.subText, marginTop: 4, marginBottom: 8 },
+  badgeRow:   { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6, flexWrap: "wrap" },
+  chipRow:    { flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" },
+  // Role badge (blue)
+  badge:      { flexDirection: "row", alignItems: "center", backgroundColor: "#EEF2FF", paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: "#C7D2FE" },
+  badgeText:  { fontSize: 11, fontWeight: "700", color: COLORS.primary },
+  // Generic pill for verification + completion
+  pill:       { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
+  pillText:   { fontSize: 11, fontWeight: "600" },
+  pillGreen:  { backgroundColor: "#F0FDF4", borderColor: "#BBF7D0" },
+  pillAmber:  { backgroundColor: "#FFFBEB", borderColor: "#FDE68A" },
+  pillRed:    { backgroundColor: "#FEF2F2", borderColor: "#FECACA" },
+  // Contact chips
+  chip:       { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#F8FAFC", paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: "#E2E8F0" },
   chipText:   { fontSize: 11, color: "#475569", fontWeight: "500" },
+  // kept for compat (unused now)
+  badgeChipRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6 },
+  verifiedBadge: { flexDirection: "row", alignItems: "center", backgroundColor: "#F0FDF4", paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: "#BBF7D0" },
+  verifiedText:  { color: "#059669" },
+  chipGreen:  { backgroundColor: "#F0FDF4", borderColor: "#BBF7D0" },
+  chipAmber:  { backgroundColor: "#FFFBEB", borderColor: "#FDE68A" },
   editBtn:     { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: COLORS.primary, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 10, flexShrink: 0 },
   editBtnFull: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: COLORS.primary, paddingVertical: 12, borderRadius: 10, marginTop: 16 },
   editBtnText: { color: "#fff", fontWeight: "700", fontSize: 14 },

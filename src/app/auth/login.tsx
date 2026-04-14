@@ -279,7 +279,7 @@ export default function AuthScreen() {
         <View style={[styles.rightSection, isDesktop && { flex: 1 }]}>
           <View style={[styles.cardInner, isMobile && { paddingHorizontal: 20, paddingVertical: 22 }]}>
             <View>
-              <Text style={styles.welcome}>Welcome Back</Text>
+              <Text style={styles.welcome}>{activeTab === "signin" ? "Welcome Back" : "Create Account"}</Text>
               <Text style={styles.smallText}>Join the future of hospital management.</Text>
 
               {/* Tabs */}
@@ -354,7 +354,7 @@ export default function AuthScreen() {
                     onChangeText={(v) => { setPassword(v); if (signUpErrors.password) setSignUpErrors(p => ({ ...p, password: undefined })); }}
                     error={signUpErrors.password}
                   />
-                  <Input
+                  {/* <Input
                     label="Phone Number"
                     placeholder="+91 000-000-0000"
                     iconName="call-outline"
@@ -362,7 +362,7 @@ export default function AuthScreen() {
                     onChangeText={(v) => { setPhone(v); if (signUpErrors.phone) setSignUpErrors(p => ({ ...p, phone: undefined })); }}
                     error={signUpErrors.phone}
                     keyboardType="phone-pad"
-                  />
+                  /> */}
 
 
                 </>
@@ -440,7 +440,7 @@ export default function AuthScreen() {
             </View>
 
             <View>
-              <Text style={styles.copyright}>© 2024 HospiLink Medical Systems. All rights reserved.</Text>
+              <Text style={styles.copyright}>© 2026 HospiLink Medical Systems. All rights reserved.</Text>
             </View>
           </View>
         </View>
@@ -642,7 +642,7 @@ const styles = StyleSheet.create({
   checkboxActive: { backgroundColor: "#2563eb", borderColor: "#2563eb" },
   remember: { color: "#64748b", fontSize: 13 },
   forgot: { color: "#2563eb", fontSize: 12, fontWeight: "600" },
-  primaryButton: { backgroundColor: "#2563eb", paddingVertical: 12, borderRadius: 9, alignItems: "center", marginBottom: 14, ...Platform.select({ web: { boxShadow: "0 4px 14px rgba(37,99,235,0.30)" }, default: { shadowColor: "#2563eb", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 10, elevation: 6 } }) },
+  primaryButton: {marginTop:8, backgroundColor: "#2563eb", paddingVertical: 12, borderRadius: 9, alignItems: "center", marginBottom: 14, ...Platform.select({ web: { boxShadow: "0 4px 14px rgba(37,99,235,0.30)" }, default: { shadowColor: "#2563eb", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 10, elevation: 6 } }) },
   primaryText: { color: "#fff", fontWeight: "700", fontSize: 14, letterSpacing: 0.3 },
   copyright: { color: "#c2cfe0", textAlign: "center", fontSize: 11, letterSpacing: 0.4 },
 });

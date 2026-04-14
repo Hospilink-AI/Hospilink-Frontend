@@ -92,44 +92,6 @@ export default function PortalUsage() {
 
   return (
     <View style={styles.container}>
-      {/* Alerts Section */}
-      <View style={styles.section}>
-        <View style={styles.alertHeader}>
-          <Text style={styles.sectionTitle}>Alerts</Text>
-          <View style={styles.newBadge}>
-            <Text style={styles.newBadgeText}>3 New</Text>
-          </View>
-        </View>
-
-        <View style={styles.alertsList}>
-          {ALERTS.map((alert, index) => {
-            const alertStyle = getAlertStyle(alert.type);
-            
-            return (
-              <View
-                key={index}
-                style={[
-                  styles.alertItem,
-                  {
-                    backgroundColor: alertStyle.bg,
-                    borderColor: alertStyle.border,
-                  },
-                ]}
-              >
-                <View style={styles.alertIconContainer}>
-                  <Text style={styles.alertIcon}>{alert.icon}</Text>
-                </View>
-                <View style={styles.alertContent}>
-                  <Text style={styles.alertTitle}>{alert.title}</Text>
-                  <Text style={styles.alertDescription}>{alert.description}</Text>
-                  <Text style={styles.alertTimestamp}>{alert.timestamp}</Text>
-                </View>
-              </View>
-            );
-          })}
-        </View>
-      </View>
-
       {/* Calendar Section */}
       <View style={[styles.section, { marginTop: 16 }]}>
         <View style={styles.calendarHeader}>

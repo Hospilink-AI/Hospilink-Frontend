@@ -33,7 +33,7 @@ interface Duty {
   staff: {
     id?: string;
     name: string;
-  };
+  } | null;
   timing: {
     urgency: string;
     startTime: string;
@@ -45,7 +45,7 @@ interface Duty {
   distance: {
     distanceText: string;
     estimatedTimeText: string;
-  };
+  } | null;
   totalPayment: number | string;
 }
 // ───────────────────────────────────────────────────────────────────────
@@ -116,10 +116,15 @@ export default function LiveMonitoring() {
 
   const renderDutyCard = (duty: Duty) => {
     const { dutyId, formattedRole, hospital, staff, status, distance } = duty;
+    
     const visuals = getStatusVisuals(status.status);
     
-    // Generate a mock ID based on duty ID if staff ID isn't cleanly available
-    const mockId = staff.id ? staff.id.substring(staff.id.length - 4).toUpperCase() : dutyId.substring(dutyId.length - 4).toUpperCase();
+    // Handle case where staff might be null (unassigned duty)
+    const staffName = staff?.name || 'Unassigned';
+    const staffInitials = staff ? getInitials(staff.name) : '??';
+    const mockId = staff?.id 
+      ? staff.id.substring(staff.id.length - 4).toUpperCase() 
+      : dutyId.substring(dutyId.length - 4).toUpperCase();
 
     return (
       <View key={dutyId} style={[styles.card, isWide ? styles.cardWide : styles.cardMobile]}>
@@ -137,9 +142,9 @@ export default function LiveMonitoring() {
 
         {/* Staff Row */}
         <View style={styles.staffRow}>
-          <Avatar initials={getInitials(staff.name)} />
+          <Avatar initials={staffInitials} />
           <View style={styles.staffInfo}>
-            <Text style={styles.staffNameText} numberOfLines={1}>{staff.name}</Text>
+            <Text style={styles.staffNameText} numberOfLines={1}>{staffName}</Text>
             <Text style={styles.staffIdText}>ID: SP-{mockId}</Text>
           </View>
         </View>
@@ -147,12 +152,12 @@ export default function LiveMonitoring() {
         {/* Stats Row (Estimated Time | Distance) */}
         <View style={styles.statsContainer}>
           <View style={styles.statColumn}>
-            <Text style={styles.statValue}>{distance.estimatedTimeText || '-- mins'}</Text>
+            <Text style={styles.statValue}>{distance?.estimatedTimeText || '-- mins'}</Text>
             <Text style={styles.statLabel}>ESTIMATED</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statColumn}>
-            <Text style={styles.statValue}>{distance.distanceText || '-- km'}</Text>
+            <Text style={styles.statValue}>{distance?.distanceText || '-- km'}</Text>
             <Text style={styles.statLabel}>DISTANCE</Text>
           </View>
         </View>
@@ -160,9 +165,10 @@ export default function LiveMonitoring() {
         {/* Action Buttons */}
         <View style={styles.actionRow}>
           <TouchableOpacity 
-            style={styles.mapBtn} 
+            style={[styles.mapBtn, !staff && styles.disabledBtn]} 
             activeOpacity={0.8}
-            onPress={() => handleShowOnMap(dutyId)}
+            onPress={() => staff && handleShowOnMap(dutyId)}
+            disabled={!staff}
           >
             <Text style={styles.mapBtnText}>Show on Map</Text>
           </TouchableOpacity>
