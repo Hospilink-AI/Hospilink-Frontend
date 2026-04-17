@@ -390,7 +390,39 @@ uploadProfilePicture: async (imageUri) => {
     return response.data;
   },
 
+  getSkills: async () => {
+    try {
+      const response = await api.get('/api/profile/skills');
+      return response.data; 
+    } catch (error) {
+      console.error("Error fetching skills:", error);
+      throw error;
+    }
+  },
 
+  // POST /api/profile/skills 
+  // Use this when the user's skill list is currently empty
+  addSkills: async (skillsArray) => {
+    try {
+      const response = await api.post('/api/profile/skills', { skills: skillsArray });
+      return response.data; 
+    } catch (error) {
+      console.error("Error adding skills:", error);
+      throw error;
+    }
+  },
+
+  // PATCH /api/profile/skills
+  // Use this when the user already has skills and you are adding more
+  updateSkills: async (skillsArray) => {
+    try {
+      const response = await api.patch('/api/profile/skills', { skills: skillsArray });
+      return response.data; 
+    } catch (error) {
+      console.error("Error updating skills:", error);
+      throw error;
+    }
+  }
  
 }
 
@@ -1033,8 +1065,36 @@ exportActivityLogs: async (params = {}) => {
     return response.data; 
   },
 
-
-
+   // GET /api/notifications?limit=50&skip=0
+  getNotifications: async (params) => {
+    const { limit = 50, skip = 0 } = params;
+    const response = await api.get(`/api/notifications`);
+    return response.data; // { success, count, data: Notification[] }
+  },
+ 
+  // GET /api/notifications/unread-count
+  getUnreadCount: async () => {
+    const response = await api.get('/api/notifications/unread-count');
+    return response.data; // { success, count: number }
+  },
+ 
+  // PUT /api/notifications/:id/read
+  markAsRead: async (notificationId) => {
+    const response = await api.put(`/api/notifications/${notificationId}/read`);
+    return response.data; // { success, message, data: Notification }
+  },
+ 
+  // PUT /api/notifications/read-all
+  markAllAsRead: async () => {
+    const response = await api.put('/api/notifications/read-all');
+    return response.data; // { success, message }
+  },
+ 
+  // PUT /api/notifications/read-multiple
+  markMultipleAsRead: async (ids) => {
+    const response = await api.put('/api/notifications/read-multiple', { ids });
+    return response.data; // { success, message }
+  },
 
 }
 
