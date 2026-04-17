@@ -1,6 +1,6 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from 'axios';
 import { Platform } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Creating an instance of axios with the base URL from env variables
 
@@ -164,18 +164,35 @@ export const authAPI = {
 export const profileAPI = {
 
   // POST /api/profile/medical-staff  (with preCapturedLocation)
+  // createMedicalStaffProfileWithLocation: async (profileData) => {
+  //   const response = await api.post('/api/profile/medical-staff', {
+  //     fullName: profileData.fullName,
+  //     jobRole: profileData.jobRole,          // snake_case e.g. "general_surgeon"
+  //     city: profileData.city,
+  //     area: profileData.area,
+  //     phoneNumber: profileData.phoneNumber,      // "+91XXXXXXXXXX"
+  //     preCapturedLocation: profileData.preCapturedLocation, // { latitude, longitude }
+  //   });
+  //   return response.data;
+  // },
+ 
+
+
   createMedicalStaffProfileWithLocation: async (profileData) => {
     const response = await api.post('/api/profile/medical-staff', {
       fullName: profileData.fullName,
-      jobRole: profileData.jobRole,          // snake_case e.g. "general_surgeon"
+      jobRole: profileData.jobRole,
       city: profileData.city,
       area: profileData.area,
-      phoneNumber: profileData.phoneNumber,      // "+91XXXXXXXXXX"
-      preCapturedLocation: profileData.preCapturedLocation, // { latitude, longitude }
+      phoneNumber: profileData.phoneNumber,
+      preCapturedLocation: profileData.preCapturedLocation,
+      // ✅ ADD THESE THREE:
+      profileSummary: profileData.profileSummary,
+      education: profileData.education,
+      skills: profileData.skills,
     });
     return response.data;
   },
-
   // Create medical staff profile
   createMedicalStaffProfile: async (profileData) => {
     const response = await api.post('/api/profile/medical-staff', {
@@ -183,7 +200,10 @@ export const profileAPI = {
       jobRole: profileData.jobRole,
       city: profileData.city,
       area: profileData.area,
-      phoneNumber: profileData.phoneNumber, // Note: backend expects phoneNumber
+      phoneNumber: profileData.phoneNumber,
+      profileSummary: profileData.profileSummary,
+      education: profileData.education,
+      skills: profileData.skills,
     });
     return response.data;
   },
@@ -213,10 +233,18 @@ export const profileAPI = {
   },
 
   // Update profile
+  // updateMyProfile: async (profileData) => {
+  //   const response = await api.put('/api/profile/me', profileData);
+  //   return response.data;
+  // },
+
   updateMyProfile: async (profileData) => {
-    const response = await api.put('/api/profile/me', profileData);
-    return response.data;
-  },
+  const response = await api.put('/api/profile/me', {
+    ...profileData, // spreads everything: fullName, jobRole, city, area, phoneNumber,
+                    // profileSummary, education, skills
+  });
+  return response.data;
+},
 
   // Check profile completion status
   checkProfileStatus: async () => {
@@ -315,6 +343,27 @@ uploadProfilePicture: async (imageUri) => {
     }
   },
 
+  // deleteProfilePicture: async () => {
+  //   const token = Platform.OS === "web"
+  //     ? localStorage.getItem("hospilink_token")
+  //     : await AsyncStorage.getItem("hospilink_token");
+
+  //   try {
+  //     const res = await fetch(`https://hospilink-backend.vercel.app/api/profile/delete-picture`, {
+  //       method: "DELETE",
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //         "Content-Type": "application/json",
+  //       },
+  //     });
+  //     const data = await res.json();
+  //     if (!res.ok) throw { response: { data } };
+  //     return data;
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // },
+
   deleteProfilePicture: async () => {
     const token = Platform.OS === "web"
       ? localStorage.getItem("hospilink_token")
@@ -335,6 +384,12 @@ uploadProfilePicture: async (imageUri) => {
       throw error;
     }
   },
+
+  getStaffAvailability: async () => {
+    const response = await api.get('api/hospital-dashboard/staff-stats');
+    return response.data;
+  },
+
 
  
 }
@@ -933,11 +988,50 @@ export const adminAPI = {
     return response.data;
   },
 
-  getDutyHistory :async () => {
-    const response = await api.get('/api/admin/duty-history')
+  // getDutyHistory :async () => {
+  //   const response = await api.get('/api/admin/duty-history')
+  //   return response.data;
+  // },
+
+  getDutyHistory: async (params = {}) => {
+    // Pass the params object as the second argument to api.get
+    const response = await api.get('/api/admin/duty-history', { params });
     return response.data;
   },
 
+
+
+
+  // ─── Activity Logs APIs ────────────────────────────────────────────────────
+
+// 1. Get all logs (with optional filters)
+getActivityLogs: async (params = {}) => {
+    const response = await api.get('/api/admin/activity-logs', { params });
+    // Return response.data to match the { success, data, pagination, filters } structure
+    return response.data; 
+  },
+
+// 2. Get single log by ID
+getActivityLogById: async (id) => {
+  const response = await api.get(`/api/admin/activity-logs/${id}`);
+  return response.data;
+},
+
+// 3. Search logs (requires q or search param)
+searchActivityLogs: async (params = {}) => {
+  const response = await api.get('/api/admin/activity-logs/search', { params });
+  return response.data;
+},
+
+// 4.export Activit Logs
+
+exportActivityLogs: async (params = {}) => {
+    const response = await api.get('/api/admin/activity-logs/export', { 
+      params,
+      responseType: 'blob', // IMPORTANT: This tells axios to treat the response as a file
+    });
+    return response.data; 
+  },
 
 
 

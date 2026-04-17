@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { StyleSheet, Text, View, TouchableOpacity, Platform, Image } from "react-native";
 import { profileAPI } from "../../service/api";
 import { useRouter } from "expo-router";
+import NotificationPopup from "./Notification";
 
 // ─── Dynamic greeting based on time ──────────────────────
 const getGreeting = () => {
@@ -33,6 +34,7 @@ export default function Header() {
 
   const [displayName, setDisplayName] = useState("...");
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   // ────────────────────────────────────────────────────────
   // GET /api/profile/me
@@ -98,10 +100,14 @@ export default function Header() {
         <Ionicons name={getGreetingIcon()} size={20} color={COLORS.subText} />
 
         {/* Bell with red dot */}
-        <View style={styles.iconWrap}>
+        <TouchableOpacity 
+          style={styles.iconWrap} 
+          onPress={() => setShowNotifications(!showNotifications)}
+          activeOpacity={0.7}
+        >
           <Ionicons name="notifications-outline" size={22} color={COLORS.subText} />
           <View style={styles.redDot} />
-        </View>
+        </TouchableOpacity>
 
         {/* Avatar */}
         {role !== "admin" && (
@@ -127,6 +133,11 @@ export default function Header() {
           </TouchableOpacity>
         )}
       </View>
+      <NotificationPopup 
+        isVisible={showNotifications} 
+        role={role} 
+        onClose={() => setShowNotifications(false)} 
+      />
     </View>
   );
 }

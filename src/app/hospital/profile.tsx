@@ -582,7 +582,9 @@ const Profile = () => {
     try {
       setLoading(true); setApiError(null);
       const data: any = await profileAPI.getMyProfile();
+      console.log('API Response:', JSON.stringify(data, null, 2));
       const mapped = mapAPIToProfile(data);
+      console.log('Mapped Profile:', mapped);
       setHospitalLegalName(mapped.hospitalLegalName || "ABC Hospital");
       setUserEmail(mapped.userEmail || "abhishekpimpalkar35@gmail.com");
       setCurrentAddress(mapped.currentAddress || "Mumbai, Goregaon");
@@ -593,6 +595,7 @@ const Profile = () => {
       setVerificationStatus(data?.profile?.verificationStatus ?? null);
       setProfilePicture(data?.profile?.profilePicture || null);
     } catch (err: any) {
+      console.error('Profile fetch error:', err);
       setApiError(err?.response?.data?.message ?? "Failed to load profile.");
     } finally { setLoading(false); }
   }, []);
@@ -719,10 +722,14 @@ const Profile = () => {
       <ScrollView contentContainerStyle={gSt.scrollContent} showsVerticalScrollIndicator={false}>
 
         {/* ── Top Header Card ── */}
+        {/* ── Top Header Card ── */}
         <View style={gSt.headerCard}>
-          <View style={gSt.headerRow}>
-            <View style={gSt.headerLeft}>
-              <TouchableOpacity style={gSt.avatarCircle} onPress={() => setShowImageMenu(true)} activeOpacity={0.85}>
+          {/* 1. On mobile, switch the main row to a column so the Edit Button drops to the bottom */}
+          <View style={[gSt.headerRow, isMobile && { flexDirection: "column" }]}>
+            
+            {/* 2. Top-align the avatar and text using alignItems: "flex-start" */}
+            <View style={[gSt.headerLeft, { flex: 1, alignItems: "flex-start" }]}>
+              <TouchableOpacity style={[gSt.avatarCircle, { marginTop: 4 }]} onPress={() => setShowImageMenu(true)} activeOpacity={0.85}>
                 {uploadingImage ? (
                   <ActivityIndicator size="small" color={BLUE} />
                 ) : profilePicture ? (
@@ -732,11 +739,13 @@ const Profile = () => {
                 )}
                 <View style={gSt.cameraBadge}><Ionicons name="camera" size={12} color={WHITE} /></View>
               </TouchableOpacity>
-              <View>
+              
+              <View style={{ flex: 1 }}>
                 <Text style={gSt.hospitalTitle}>{hospitalLegalName}</Text>
                 <Text style={gSt.hospitalSub}>Multispeciality Hospital • ICU Specialist</Text>
-                {/* All badges + chips in one row */}
-                <View style={gSt.badgeRow}>
+                
+                {/* 3. Added a slight top margin to separate badges from the subtitle */}
+                <View style={[gSt.badgeRow, { marginTop: 10 }, isMobile && gSt.badgeRowMobile]}>
                   <View style={gSt.blueBadge}><Text style={gSt.blueBadgeTxt}>MD, FRCP</Text></View>
                   {verificationStatus === "verified" ? (
                     <View style={gSt.greenBadge}>
@@ -754,16 +763,27 @@ const Profile = () => {
                       <Text style={[gSt.pillTxt, { color: "#A16207" }]}>Verification Under Process</Text>
                     </View>
                   )}
-                  <View style={gSt.completeBadge}>
-                    <Ionicons name="checkmark-done-circle" size={12} color="#15803D" />
-                    <Text style={gSt.completeBadgeTxt}>Profile Complete</Text>
-                  </View>
+                  {isProfileComplete && (
+                    <View style={gSt.completeBadge}>
+                      <Ionicons name="checkmark-done-circle" size={12} color="#15803D" />
+                      <Text style={gSt.completeBadgeTxt}>Profile Complete</Text>
+                    </View>
+                  )}
                   <View style={gSt.grayBadge}><Ionicons name="call" size={11} color={TEXT_SECONDARY} /><Text style={gSt.grayBadgeTxt}>{STATIC_PHONE}</Text></View>
                   <View style={gSt.grayBadge}><Ionicons name="mail" size={11} color={TEXT_SECONDARY} /><Text style={gSt.grayBadgeTxt}>{userEmail}</Text></View>
                 </View>
               </View>
             </View>
-            <TouchableOpacity style={gSt.editBtn} onPress={handleStartEdit} activeOpacity={0.8}>
+
+            {/* 4. On mobile, make the Edit Button 100% width and center the text */}
+            <TouchableOpacity 
+              style={[
+                gSt.editBtn, 
+                isMobile && { width: "100%", justifyContent: "center", marginTop: 12 }
+              ]} 
+              onPress={handleStartEdit} 
+              activeOpacity={0.8}
+            >
               <Ionicons name="pencil" size={14} color={WHITE} />
               <Text style={gSt.editBtnTxt}>Edit Profile</Text>
             </TouchableOpacity>
@@ -1002,6 +1022,7 @@ const gSt = StyleSheet.create({
   hospitalTitle: { fontSize: 22, fontWeight: '700', color: TEXT_PRIMARY, marginBottom: 4 },
   hospitalSub: { fontSize: 13, color: TEXT_SECONDARY, marginBottom: 8 },
   badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6, flexWrap: 'wrap' },
+  badgeRowMobile: { gap: 4 },
   chipRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   // shared pill base
   pill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },

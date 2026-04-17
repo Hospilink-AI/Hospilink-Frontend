@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { profileAPI } from "../../service/api";
+import { useLocalSearchParams } from "expo-router";
 
 // Lazy import so web build doesn't choke if not installed yet
 let WebView: any = null;
@@ -151,7 +152,7 @@ function MapComponent({
           if (typeof data.lat === "number" && typeof data.lng === "number") {
             onLocationChange(data.lat, data.lng);
           }
-        } catch {}
+        } catch { }
       };
 
       // ✅ Properly attach listener ONLY on web
@@ -211,7 +212,7 @@ function MapComponent({
             e.nativeEvent.data
           );
           onLocationChange(newLat, newLng);
-        } catch {}
+        } catch { }
       }}
       javaScriptEnabled
       domStorageEnabled
@@ -220,83 +221,7 @@ function MapComponent({
   );
 }
 
-// // ─── Map Component ─────────────────────────────────────────────────────────
-// function MapComponent({
-//   lat,
-//   lng,
-//   onLocationChange,
-//   webViewRef,
-// }: {
-//   lat: number;
-//   lng: number;
-//   onLocationChange: (lat: number, lng: number) => void;
-//   webViewRef: React.MutableRefObject<any>;
-// }) {
-//   const htmlContent = getMapHTML(lat, lng);
 
-//   if (Platform.OS === "web") {
-//     const iframeRef = useRef<HTMLIFrameElement>(null);
-
-//     useEffect(() => {
-//       const handler = (e: MessageEvent) => {
-//         try {
-//           const data = JSON.parse(e.data);
-//           if (typeof data.lat === "number" && typeof data.lng === "number") {
-//             onLocationChange(data.lat, data.lng);
-//           }
-//         } catch (_) { }
-//       };
-//       // window.addEventListener("message", handler);
-//       return () => window.removeEventListener("message", handler);
-//     }, [onLocationChange]);
-
-//     useEffect(() => {
-//       webViewRef.current = {
-//         injectJavaScript: (code: string) => {
-//           (iframeRef.current?.contentWindow as any)?.eval(code);
-//         },
-//       };
-//     }, []);
-
-//     return (
-//       // @ts-ignore
-//       <iframe
-//         ref={iframeRef}
-//         srcDoc={htmlContent}
-//         style={{ width: "100%", height: 200, border: "none", borderRadius: 10, display: "block" }}
-//         sandbox="allow-scripts allow-same-origin"
-//         title="Hospital Location Map"
-//       />
-//     );
-//   }
-
-//   if (!WebView) {
-//     return (
-//       <View style={styles.mapFallback}>
-//         <Ionicons name="map-outline" size={28} color="#cbd5e1" />
-//         <Text style={styles.mapFallbackText}>Run: npx expo install react-native-webview</Text>
-//       </View>
-//     );
-//   }
-
-//   return (
-//     <WebView
-//       ref={webViewRef}
-//       source={{ html: htmlContent }}
-//       style={{ height: 200, borderRadius: 10 }}
-//       originWhitelist={["*"]}
-//       onMessage={(e: any) => {
-//         try {
-//           const { lat: newLat, lng: newLng } = JSON.parse(e.nativeEvent.data);
-//           onLocationChange(newLat, newLng);
-//         } catch (_) { }
-//       }}
-//       javaScriptEnabled
-//       domStorageEnabled
-//       scrollEnabled={false}
-//     />
-//   );
-// }
 
 // ─── Main Screen ───────────────────────────────────────────────────────────
 export default function HospitalProfile() {
@@ -305,7 +230,13 @@ export default function HospitalProfile() {
   const router = useRouter();
 
   // ── Form state
-  const [hospitalName, setHospitalName] = useState("");
+  const params = useLocalSearchParams();
+  const signupName = Array.isArray(params.signupName)
+    ? params.signupName[0]
+    : (params.signupName as string) ?? "";
+
+  // ── Form state
+  const [hospitalName, setHospitalName] = useState(signupName); // ← was useState("")
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
@@ -335,12 +266,12 @@ export default function HospitalProfile() {
   // };
 
   const showAlert = (title: string, message: string) => {
-  if (Platform.OS === "web" && typeof window !== "undefined") {
-    window.alert(`${title}\n\n${message}`);
-  } else {
-    Alert.alert(title, message);
-  }
-};
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      window.alert(`${title}\n\n${message}`);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
 
   // ── Geocode address → lat/lng (debounced 800ms)
   const geocode = useCallback(

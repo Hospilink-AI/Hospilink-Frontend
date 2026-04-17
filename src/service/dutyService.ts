@@ -8,8 +8,6 @@ export async function fetchDutyRoute(
   currentLocation: { latitude: number; longitude: number },
 ): Promise<DutyRouteApiResponse> {
 
-  
-
   const data = await dutyAPI.getDutyRoute(dutyId, currentLocation);
 
   if (!data.success) {

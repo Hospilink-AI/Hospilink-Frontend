@@ -531,6 +531,7 @@ export default function Dashboard() {
           label="Support Center" 
           iconBg="#FEF3C7" 
           isMobile={isMobile}
+          onPress={() => router.push("/medicalStaff/support")}
         />
       </View>
     </ScrollView>
