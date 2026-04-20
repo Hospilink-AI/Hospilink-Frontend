@@ -1,16 +1,26 @@
 import { COLORS } from "@/constant/colors";
 import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, Text, TouchableOpacity } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native"; // ✅ View imported at top
 
 interface Props {
   icon: string;
   label: string;
   iconBg?: string;
+  iconColor?: string;        // ✅ optional — falls back to getIconColor
   isMobile?: boolean;
   onPress?: () => void;
 }
 
-export default function ActionCard({ icon, label, iconBg = "#EEF2FF", isMobile, onPress }: Props) {
+export default function ActionCard({
+  icon,
+  label,
+  iconBg = "#EEF2FF",
+  iconColor,
+  isMobile,
+  onPress,
+}: Props) {
+  const resolvedIconColor = iconColor ?? getIconColor(iconBg); // ✅ use passed color or derive it
+
   return (
     <TouchableOpacity
       style={[styles.card, isMobile && styles.cardMobile]}
@@ -18,21 +28,18 @@ export default function ActionCard({ icon, label, iconBg = "#EEF2FF", isMobile, 
       onPress={onPress}
     >
       <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>
-        <Ionicons name={icon} size={26} color={getIconColor(iconBg)} />
+        <Ionicons name={icon as any} size={26} color={resolvedIconColor} />
       </View>
       <Text style={styles.text}>{label}</Text>
     </TouchableOpacity>
   );
 }
 
-function getIconColor(bg: string) {
+function getIconColor(bg: string): string {
   if (bg === "#D1FAE5") return "#059669";
   if (bg === "#FEF3C7") return "#D97706";
   return COLORS.primary;
 }
-
-// Need to import View from react-native
-import { View } from "react-native";
 
 const styles = StyleSheet.create({
   card: {

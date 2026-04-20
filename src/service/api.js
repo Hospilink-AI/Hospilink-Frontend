@@ -145,6 +145,11 @@ export const authAPI = {
     return response.data;
   },
 
+  adminLogout:async () => {
+      const response = await api.post('api/admin/logout')
+      return response.data;
+  },
+
   // Forgot Password — sends reset link to email
   forgotPassword: async (email) => {
     const response = await api.post('/api/auth/forgot-password', { email });

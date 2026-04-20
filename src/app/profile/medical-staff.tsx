@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState ,useRef} from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -17,45 +17,45 @@ import {
 import { profileAPI } from "../../service/api";
 
 const ROLES: { label: string; value: string }[] = [
-  { label: "RMO (Resident Medical Officer)",  value: "rmo" },
-  { label: "Duty Medical Officer (DMO)",       value: "dmo" },
-  { label: "General Physician",                value: "general_physician" },
-  { label: "Intensivist / ICU Doctor",         value: "intensivist" },
-  { label: "Emergency Medicine Doctor",        value: "emergency_doctor" },
-  { label: "Anesthetist",                      value: "anesthetist" },
-  { label: "Pediatrician (NICU/PICU)",         value: "pediatrician" },
-  { label: "Gynecologist (On-call)",           value: "gynecologist" },
-  { label: "Orthopedic Surgeon",               value: "orthopedic_surgeon" },
-  { label: "General Surgeon",                  value: "general_surgeon" },
-  { label: "Radiologist",                      value: "radiologist" },
-  { label: "Pathologist",                      value: "pathologist" },
-  { label: "Staff Nurse (Ward)",               value: "staff_nurse" },
-  { label: "ICU Nurse",                        value: "icu_nurse" },
-  { label: "Emergency Nurse",                  value: "emergency_nurse" },
-  { label: "OT Nurse",                         value: "ot_nurse" },
-  { label: "Dialysis Nurse",                   value: "dialysis_nurse" },
-  { label: "NICU / PICU Nurse",               value: "nicu_nurse" },
-  { label: "Lab Technician",                   value: "lab_technician" },
-  { label: "Radiology Technician",             value: "radiology_technician" },
-  { label: "OT Technician",                   value: "ot_technician" },
-  { label: "Dialysis Technician",              value: "dialysis_technician" },
-  { label: "Cath Lab Technician",              value: "cath_lab_technician" },
-  { label: "ICU Technician",                  value: "icu_technician" },
-  { label: "Ward Boy",                         value: "ward_boy" },
-  { label: "Ayah / Female Attendant",          value: "ayah" },
-  { label: "OPD Attendant",                    value: "opd_attendant" },
-  { label: "Emergency Attendant",              value: "emergency_attendant" },
-  { label: "Patient Care Taker",               value: "patient_care_taker" },
-  { label: "Pharmacist",                       value: "pharmacist" },
-  { label: "Pharmacy Assistant",               value: "pharmacy_assistant" },
-  { label: "Biomedical Engineer",              value: "biomedical_engineer" },
-  { label: "Housekeeping Staff",               value: "housekeeping_staff" },
-  { label: "Security Guard",                   value: "security_guard" },
-  { label: "Ambulance Driver",                 value: "ambulance_driver" },
-  { label: "Receptionist",                     value: "receptionist" },
-  { label: "Billing Executive",                value: "billing_executive" },
-  { label: "Medical Records Staff",            value: "medical_records_staff" },
-  { label: "HR & Accounts",                   value: "hr_accounts" },
+  { label: "RMO (Resident Medical Officer)", value: "rmo" },
+  { label: "Duty Medical Officer (DMO)", value: "dmo" },
+  { label: "General Physician", value: "general_physician" },
+  { label: "Intensivist / ICU Doctor", value: "intensivist" },
+  { label: "Emergency Medicine Doctor", value: "emergency_doctor" },
+  { label: "Anesthetist", value: "anesthetist" },
+  { label: "Pediatrician (NICU/PICU)", value: "pediatrician" },
+  { label: "Gynecologist (On-call)", value: "gynecologist" },
+  { label: "Orthopedic Surgeon", value: "orthopedic_surgeon" },
+  { label: "General Surgeon", value: "general_surgeon" },
+  { label: "Radiologist", value: "radiologist" },
+  { label: "Pathologist", value: "pathologist" },
+  { label: "Staff Nurse (Ward)", value: "staff_nurse" },
+  { label: "ICU Nurse", value: "icu_nurse" },
+  { label: "Emergency Nurse", value: "emergency_nurse" },
+  { label: "OT Nurse", value: "ot_nurse" },
+  { label: "Dialysis Nurse", value: "dialysis_nurse" },
+  { label: "NICU / PICU Nurse", value: "nicu_nurse" },
+  { label: "Lab Technician", value: "lab_technician" },
+  { label: "Radiology Technician", value: "radiology_technician" },
+  { label: "OT Technician", value: "ot_technician" },
+  { label: "Dialysis Technician", value: "dialysis_technician" },
+  { label: "Cath Lab Technician", value: "cath_lab_technician" },
+  { label: "ICU Technician", value: "icu_technician" },
+  { label: "Ward Boy", value: "ward_boy" },
+  { label: "Ayah / Female Attendant", value: "ayah" },
+  { label: "OPD Attendant", value: "opd_attendant" },
+  { label: "Emergency Attendant", value: "emergency_attendant" },
+  { label: "Patient Care Taker", value: "patient_care_taker" },
+  { label: "Pharmacist", value: "pharmacist" },
+  { label: "Pharmacy Assistant", value: "pharmacy_assistant" },
+  { label: "Biomedical Engineer", value: "biomedical_engineer" },
+  { label: "Housekeeping Staff", value: "housekeeping_staff" },
+  { label: "Security Guard", value: "security_guard" },
+  { label: "Ambulance Driver", value: "ambulance_driver" },
+  { label: "Receptionist", value: "receptionist" },
+  { label: "Billing Executive", value: "billing_executive" },
+  { label: "Medical Records Staff", value: "medical_records_staff" },
+  { label: "HR & Accounts", value: "hr_accounts" },
 ];
 
 // ── Education entry type
@@ -75,8 +75,8 @@ interface CapturedLocation {
 export default function MedicalStaffProfile() {
   const { width } = useWindowDimensions();
   // Expanded breakpoint to ensure two columns look good on larger screens, stacks on mobile/tablet
-  const isMobile  = width <= 768; 
-  const router    = useRouter();
+  const isMobile = width <= 768;
+  const router = useRouter();
 
   // ── Read signupName passed from verify-otp (pre-fill fullName)
   const params = useLocalSearchParams();
@@ -85,12 +85,12 @@ export default function MedicalStaffProfile() {
     : (params.signupName as string) ?? "";
 
   // ── Form state
-  const [fullName,     setFullName]     = useState(signupName);   // ← pre-filled
-  const [role,         setRole]         = useState<{ label: string; value: string } | null>(null);
+  const [fullName, setFullName] = useState(signupName);   // ← pre-filled
+  const [role, setRole] = useState<{ label: string; value: string } | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [city,         setCity]         = useState("");
-  const [area,         setArea]         = useState("");
-  const [phone,        setPhone]        = useState("");
+  const [city, setCity] = useState("");
+  const [area, setArea] = useState("");
+  const [phone, setPhone] = useState("");
 
   // ── NEW: Profile Summary
   const [profileSummary, setProfileSummary] = useState("");
@@ -104,14 +104,20 @@ export default function MedicalStaffProfile() {
   });
 
   // ── NEW: Skills — stored as a string while typing, chips on add
-  const [skillInput, setSkillInput]   = useState("");
-  const [skillsList, setSkillsList]   = useState<string[]>([]);
+  const [skillInput, setSkillInput] = useState("");
+  const [skillsList, setSkillsList] = useState<string[]>([]);
+
+  const [showOTP, setShowOTP] = useState(false);
+  const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
+  const otpRefs = useRef<any[]>([]);
 
   const [loading, setLoading] = useState(false);
 
   // ── Location state (invisible to user)
   const [capturedLocation, setCapturedLocation] = useState<CapturedLocation | null>(null);
-  const [locationChecked,  setLocationChecked]  = useState(false);
+  const [locationChecked, setLocationChecked] = useState(false);
+
+
 
   // ────────────────────────────────────────────────────────────
   // STEP 1 — Request GPS silently on mount
@@ -133,7 +139,7 @@ export default function MedicalStaffProfile() {
 
           if (res?.locationInfo?.latitude && res?.locationInfo?.longitude) {
             setCapturedLocation({
-              latitude:  res.locationInfo.latitude,
+              latitude: res.locationInfo.latitude,
               longitude: res.locationInfo.longitude,
             });
           } else {
@@ -146,7 +152,7 @@ export default function MedicalStaffProfile() {
         }
       } catch (err) {
         console.warn("⚠️ Location request failed silently:", err);
-        try { await profileAPI.checkLocationPermission(false); } catch (_) {}
+        try { await profileAPI.checkLocationPermission(false); } catch (_) { }
         setCapturedLocation(null);
       } finally {
         setLocationChecked(true);
@@ -225,26 +231,26 @@ export default function MedicalStaffProfile() {
       const educationArray =
         education.universityName.trim()
           ? [
-              {
-                universityName: education.universityName.trim(),
-                speciality:     education.speciality.trim(),
-                startYear:      education.startYear.trim() ? Number(education.startYear.trim()) : undefined,
-                endYear:        education.endYear.trim()   ? Number(education.endYear.trim())   : undefined,
-              },
-            ]
+            {
+              universityName: education.universityName.trim(),
+              speciality: education.speciality.trim(),
+              startYear: education.startYear.trim() ? Number(education.startYear.trim()) : undefined,
+              endYear: education.endYear.trim() ? Number(education.endYear.trim()) : undefined,
+            },
+          ]
           : [];
 
       // ── Base payload (fields shared by both API paths)
       const basePayload = {
-        fullName:       fullName.trim(),
-        jobRole:        role.value,
-        city:           city.trim(),
-        area:           area.trim(),
-        phoneNumber:    formatPhone(phone),
+        fullName: fullName.trim(),
+        jobRole: role.value,
+        city: city.trim(),
+        area: area.trim(),
+        phoneNumber: formatPhone(phone),
         // ── NEW fields ──────────────────────────────
         profileSummary: profileSummary.trim() || undefined,
-        education:      educationArray.length > 0 ? educationArray : undefined,
-        skills:         skillsList.length > 0 ? skillsList : undefined,
+        education: educationArray.length > 0 ? educationArray : undefined,
+        skills: skillsList.length > 0 ? skillsList : undefined,
         // ────────────────────────────────────────────
       };
 
@@ -254,7 +260,7 @@ export default function MedicalStaffProfile() {
         const payload = {
           ...basePayload,
           preCapturedLocation: {
-            latitude:  capturedLocation.latitude,
+            latitude: capturedLocation.latitude,
             longitude: capturedLocation.longitude,
           },
         };
@@ -268,7 +274,8 @@ export default function MedicalStaffProfile() {
       console.log("✅ Profile created:", response);
 
       if (response?.success) {
-        router.replace("/medicalStaff/dashboard");
+        // router.replace("/medicalStaff/dashboard");
+        router.replace("/profile/document-upload");
       } else {
         showAlert("Error", response?.message || "Failed to save profile.");
       }
@@ -336,7 +343,7 @@ export default function MedicalStaffProfile() {
 
         {/* ── TWO COLUMN LAYOUT ── */}
         <View style={[styles.formColumns, isMobile && styles.formColumnsMobile]}>
-          
+
           {/* ── LEFT COLUMN ── */}
           <View style={styles.col}>
             {/* ── Full Name ── */}
@@ -432,35 +439,74 @@ export default function MedicalStaffProfile() {
               </View>
             </View>
 
+            
             {/* ── Phone Number ── */}
-            <Text style={styles.label}>Phone Number</Text>
             {/* ── Phone Number ── */}
-            <Text style={styles.label}>Phone Number</Text>
-            <View style={styles.inputRow}>
-              <Ionicons name="call-outline" size={16} color="#94a3b8" style={styles.inputIcon} />
-              <Text style={styles.phonePrefix}>+91</Text>
-              <View style={styles.phoneDivider} />
-              <TextInput
-                placeholder="000-000-0000"
-                placeholderTextColor="#b0bec5"
-                style={styles.inputInner}
-                value={phone}
-                onChangeText={setPhone}
-                keyboardType="phone-pad"
-                maxLength={10}
-              />
-              
-              {/* ── Verify Button ── */}
-              {phone.length === 10 && (
-              <TouchableOpacity 
-                style={styles.verifyBtnInline} 
-                onPress={() => Alert.alert("Verify", "OTP Logic goes here")}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.verifyBtnTextInline}>Verify</Text>
-              </TouchableOpacity>
-              )}
-            </View>
+<Text style={styles.label}>Phone Number</Text>
+<View style={styles.phoneRow}>
+  <View style={[styles.inputRow, { flex: 1, marginBottom: 0 }]}>
+    <Ionicons name="call-outline" size={16} color="#94a3b8" style={styles.inputIcon} />
+    <Text style={styles.phonePrefix}>+91</Text>
+    <View style={styles.phoneDivider} />
+    <TextInput
+      placeholder="000-000-0000"
+      placeholderTextColor="#b0bec5"
+      style={styles.inputInner}
+      value={phone}
+      onChangeText={(v) => { setPhone(v); setShowOTP(false); setOtp(["","","","","",""]); }}
+      keyboardType="phone-pad"
+      maxLength={10}
+    />
+  </View>
+  {phone.replace(/\D/g, "").length === 10 && (
+    <TouchableOpacity
+      style={styles.verifyBtnOutline}
+      onPress={() => setShowOTP(true)}
+      activeOpacity={0.8}
+    >
+      <Text style={styles.verifyBtnOutlineText}>Verify</Text>
+    </TouchableOpacity>
+  )}
+</View>
+
+{/* ── OTP Section ── */}
+{showOTP && (
+  <View style={styles.otpSection}>
+    <Text style={styles.otpHint}>Enter the code sent to your phone number.</Text>
+    <View style={styles.otpRow}>
+      {otp.map((digit, i) => (
+        <TextInput
+          key={i}
+          ref={(r) => { otpRefs.current[i] = r as any; }}
+          style={[styles.otpBox, digit !== "" && styles.otpBoxFilled]}
+          value={digit}
+          onChangeText={(v) => {
+            const val = v.replace(/\D/g, "").slice(-1);
+            const updated = [...otp];
+            updated[i] = val;
+            setOtp(updated);
+            if (val && i < 5) otpRefs.current[i + 1]?.focus();
+          }}
+          onKeyPress={({ nativeEvent }) => {
+            if (nativeEvent.key === "Backspace" && !otp[i] && i > 0) {
+              otpRefs.current[i - 1]?.focus();
+            }
+          }}
+          keyboardType="number-pad"
+          maxLength={1}
+          textAlign="center"
+        />
+      ))}
+      <TouchableOpacity
+        style={styles.verifyOtpBtn}
+        onPress={() => Alert.alert("OTP", `Entered: ${otp.join("")}`)}
+        activeOpacity={0.85}
+      >
+        <Text style={styles.verifyOtpBtnText}>Verify OTP</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+)}
 
             {/* ── Profile Summary ── */}
             <Text style={styles.label}>Profile Summary <Text style={styles.optionalTag}>(optional)</Text></Text>
@@ -599,7 +645,8 @@ export default function MedicalStaffProfile() {
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.buttonText}>Complete Setup</Text>
+              // <Text style={styles.buttonText}>Complete Setup</Text>
+              <Text style={styles.buttonText}>Uploads Documents</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -616,73 +663,84 @@ export default function MedicalStaffProfile() {
 }
 
 const styles = StyleSheet.create({
-  scrollWrapper:          { flex: 1, backgroundColor: "#eef2f7" },
-  scrollContent:          { flexGrow: 1, justifyContent: "center", alignItems: "center", padding: 20, minHeight: "100%" },
-  logoRow:                { flexDirection: "row", alignItems: "center", marginBottom: 28 },
-  logoBox:                { width: 36, height: 36, backgroundColor: "#2563eb", borderRadius: 9, justifyContent: "center", alignItems: "center", marginRight: 10 },
-  logoText:               { color: "#0f172a", fontSize: 17, fontWeight: "700", letterSpacing: 0.4 },
-  
-  // Adjusted maxWidth to accommodate two columns comfortably
-  card:                   { width: "100%", maxWidth: 860, backgroundColor: "#ffffff", paddingVertical: 30, paddingHorizontal: 28, borderRadius: 16, borderWidth: 1, borderColor: "#e2e8f0", ...Platform.select({ web: { boxShadow: "0 20px 50px rgba(100,140,200,0.14)" }, default: { shadowColor: "#90a8cc", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.14, shadowRadius: 20, elevation: 10 } }) },
-  
-  progressBarWrapper:     { height: 5, backgroundColor: "#e2e8f0", borderRadius: 10, marginBottom: 22, overflow: "hidden" },
-  progressFill:           { height: "100%", backgroundColor: "#2563eb", borderRadius: 10 },
-  title:                  { fontSize: 20, fontWeight: "800", color: "#0f172a", marginBottom: 6, letterSpacing: 0.2 },
-  subtitle:               { color: "#64748b", fontSize: 13, lineHeight: 20, marginBottom: 20 },
-  
-  // ── Two Column Layout ──
-  formColumns:            { flexDirection: "row", gap: 30 },
-  formColumnsMobile:      { flexDirection: "column", gap: 0 },
-  col:                    { flex: 1 },
+  scrollWrapper: { flex: 1, backgroundColor: "#eef2f7" },
+  scrollContent: { flexGrow: 1, justifyContent: "center", alignItems: "center", padding: 20, minHeight: "100%" },
+  logoRow: { flexDirection: "row", alignItems: "center", marginBottom: 28 },
+  logoBox: { width: 36, height: 36, backgroundColor: "#2563eb", borderRadius: 9, justifyContent: "center", alignItems: "center", marginRight: 10 },
+  logoText: { color: "#0f172a", fontSize: 17, fontWeight: "700", letterSpacing: 0.4 },
 
-  label:                  { color: "#475569", fontSize: 12, fontWeight: "500", marginBottom: 7, marginTop: 14 },
-  optionalTag:            { color: "#94a3b8", fontSize: 11, fontWeight: "400" },
-  inputRow:               { flexDirection: "row", alignItems: "center", backgroundColor: "#f8fafc", borderRadius: 9, borderWidth: 1, borderColor: "#e2e8f0", paddingHorizontal: 12, height: 44 },
-  inputIcon:              { marginRight: 8 },
-  inputInner:             { flex: 1, color: "#0f172a", fontSize: 14, backgroundColor: "transparent", ...Platform.select({ web: { outlineStyle: "none" } as any }) },
-  
+  // Adjusted maxWidth to accommodate two columns comfortably
+  card: { width: "100%", maxWidth: 760, backgroundColor: "#ffffff", paddingVertical: 30, paddingHorizontal: 28, borderRadius: 16, borderWidth: 1, borderColor: "#e2e8f0", ...Platform.select({ web: { boxShadow: "0 20px 50px rgba(100,140,200,0.14)" }, default: { shadowColor: "#90a8cc", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.14, shadowRadius: 20, elevation: 10 } }) },
+
+  progressBarWrapper: { height: 5, backgroundColor: "#e2e8f0", borderRadius: 10, marginBottom: 22, overflow: "hidden" },
+  progressFill: { height: "100%", backgroundColor: "#2563eb", borderRadius: 10 },
+  title: { fontSize: 20, fontWeight: "800", color: "#0f172a", marginBottom: 6, letterSpacing: 0.2 },
+  subtitle: { color: "#64748b", fontSize: 13, lineHeight: 20, marginBottom: 20 },
+
+  // ── Two Column Layout ──
+  formColumns: { flexDirection: "row", gap: 30 },
+  formColumnsMobile: { flexDirection: "column", gap: 0 },
+  col: { flex: 1 },
+
+  label: { color: "#475569", fontSize: 12, fontWeight: "500", marginBottom: 7, marginTop: 14 },
+  optionalTag: { color: "#94a3b8", fontSize: 11, fontWeight: "400" },
+  inputRow: { flexDirection: "row", alignItems: "center", backgroundColor: "#f8fafc", borderRadius: 9, borderWidth: 1, borderColor: "#e2e8f0", paddingHorizontal: 12, height: 44 },
+  inputIcon: { marginRight: 8 },
+  inputInner: { flex: 1, color: "#0f172a", fontSize: 14, backgroundColor: "transparent", ...Platform.select({ web: { outlineStyle: "none" } as any }) },
+
   // ── TextArea styles ──
-  textAreaRow:            { height: "auto", minHeight: 80, alignItems: "flex-start", paddingVertical: 10 },
-  textAreaInner:          { minHeight: 60, paddingTop: 0 },
-  
+  textAreaRow: { height: "auto", minHeight: 80, alignItems: "flex-start", paddingVertical: 10 },
+  textAreaInner: { minHeight: 60, paddingTop: 0 },
+
   // ── Dropdown ──
-  dropdownText:           { flex: 1, color: "#b0bec5", fontSize: 14 },
-  dropdownSelected:       { color: "#0f172a" },
-  dropdownList:           { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 9, marginTop: 4, overflow: "hidden", zIndex: 10, ...Platform.select({ web: { boxShadow: "0 8px 24px rgba(100,140,200,0.14)" }, default: { elevation: 8 } }) },
-  dropdownItem:           { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 11, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: "#f1f5f9" },
-  dropdownItemActive:     { backgroundColor: "#eff6ff" },
-  dropdownItemText:       { color: "#64748b", fontSize: 14 },
+  dropdownText: { flex: 1, color: "#b0bec5", fontSize: 14 },
+  dropdownSelected: { color: "#0f172a" },
+  dropdownList: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 9, marginTop: 4, overflow: "hidden", zIndex: 10, ...Platform.select({ web: { boxShadow: "0 8px 24px rgba(100,140,200,0.14)" }, default: { elevation: 8 } }) },
+  dropdownItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 11, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: "#f1f5f9" },
+  dropdownItemActive: { backgroundColor: "#eff6ff" },
+  dropdownItemText: { color: "#64748b", fontSize: 14 },
   dropdownItemTextActive: { color: "#1d4ed8", fontWeight: "600" },
-  
+
   // ── Layout ──
-  row:                    { flexDirection: "row" },
-  rowItem:                { flex: 1 },
-  phonePrefix:            { color: "#475569", fontSize: 14, fontWeight: "600", marginRight: 8 },
-  phoneDivider:           { width: 1, height: 20, backgroundColor: "#e2e8f0", marginRight: 10 },
-  
+  row: { flexDirection: "row" },
+  rowItem: { flex: 1 },
+  phonePrefix: { color: "#475569", fontSize: 14, fontWeight: "600", marginRight: 8 },
+  phoneDivider: { width: 1, height: 20, backgroundColor: "#e2e8f0", marginRight: 10 },
+
   // ── Section header ──
-  sectionHeader:          { flexDirection: "row", alignItems: "center", marginTop: 14, marginBottom: 2, gap: 6 },
-  sectionTitle:           { fontSize: 13, fontWeight: "700", color: "#1e40af" },
-  
+  sectionHeader: { flexDirection: "row", alignItems: "center", marginTop: 14, marginBottom: 2, gap: 6 },
+  sectionTitle: { fontSize: 13, fontWeight: "700", color: "#1e40af" },
+
   // ── Skills ──
-  skillInputRow:          { flexDirection: "row", alignItems: "center", gap: 8 },
-  addSkillBtn:            { backgroundColor: "#2563eb", borderRadius: 9, paddingHorizontal: 16, height: 44, justifyContent: "center", alignItems: "center" },
-  addSkillBtnText:        { color: "#fff", fontSize: 13, fontWeight: "700" },
-  chipsWrap:              { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
-  chip:                   { flexDirection: "row", alignItems: "center", backgroundColor: "#eff6ff", borderWidth: 1, borderColor: "#bfdbfe", borderRadius: 20, paddingVertical: 5, paddingHorizontal: 10 },
-  chipText:               { color: "#1d4ed8", fontSize: 13, fontWeight: "500" },
-  
+  skillInputRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  addSkillBtn: { backgroundColor: "#2563eb", borderRadius: 9, paddingHorizontal: 16, height: 44, justifyContent: "center", alignItems: "center" },
+  addSkillBtnText: { color: "#fff", fontSize: 13, fontWeight: "700" },
+  chipsWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
+  chip: { flexDirection: "row", alignItems: "center", backgroundColor: "#eff6ff", borderWidth: 1, borderColor: "#bfdbfe", borderRadius: 20, paddingVertical: 5, paddingHorizontal: 10 },
+  chipText: { color: "#1d4ed8", fontSize: 13, fontWeight: "500" },
+
+  phoneRow:           { flexDirection: "row", alignItems: "center", gap: 10 },
+verifyBtnOutline:   { paddingHorizontal: 18, height: 44, borderRadius: 9, borderWidth: 1.5, borderColor: "#2563eb", justifyContent: "center", alignItems: "center" },
+verifyBtnOutlineText: { color: "#2563eb", fontSize: 13, fontWeight: "700" },
+otpSection:         { marginTop: 10 },
+otpHint:            { fontSize: 12, color: "#64748b", marginBottom: 10 },
+otpRow:             { flexDirection: "row", alignItems: "center", gap: 8 },
+otpBox:             { width: 40, height: 44, borderRadius: 9, borderWidth: 1.5, borderColor: "#e2e8f0", backgroundColor: "#f8fafc", fontSize: 16, fontWeight: "700", color: "#0f172a", textAlign: "center" },
+otpBoxFilled:       { borderColor: "#2563eb", backgroundColor: "#eff6ff" },
+verifyOtpBtn:       { backgroundColor: "#2563eb", paddingHorizontal: 16, height: 44, borderRadius: 9, justifyContent: "center", alignItems: "center", marginLeft: 4 },
+verifyOtpBtnText:   { color: "#fff", fontSize: 13, fontWeight: "700" },
+
   // ── Centered Submit Button ──
-  submitWrap:             { alignItems: "center", marginTop: 30, marginBottom: 10 },
-  button:                 { backgroundColor: "#2563eb", paddingVertical: 14, paddingHorizontal: 40, minWidth: 200, borderRadius: 9, alignItems: "center", ...Platform.select({ web: { boxShadow: "0 4px 14px rgba(37,99,235,0.30)" }, default: { shadowColor: "#2563eb", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 10, elevation: 6 } }) },
-  buttonText:             { color: "#ffffff", fontWeight: "700", fontSize: 15, letterSpacing: 0.3 },
-  
+  submitWrap: { alignItems: "center", marginTop: 30, marginBottom: 10 },
+  button: { backgroundColor: "#2563eb", paddingVertical: 14, paddingHorizontal: 40, minWidth: 200, borderRadius: 9, alignItems: "center", ...Platform.select({ web: { boxShadow: "0 4px 14px rgba(37,99,235,0.30)" }, default: { shadowColor: "#2563eb", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 10, elevation: 6 } }) },
+  buttonText: { color: "#ffffff", fontWeight: "700", fontSize: 15, letterSpacing: 0.3 },
+
   // ── Secure Footer ──
-  secureRow:              { flexDirection: "row", alignItems: "center", marginTop: 24, marginBottom: 10 },
-  secureText:             { color: "#94a3b8", fontSize: 11, letterSpacing: 1.2 },
+  secureRow: { flexDirection: "row", alignItems: "center", marginTop: 24, marginBottom: 10 },
+  secureText: { color: "#94a3b8", fontSize: 11, letterSpacing: 1.2 },
 
   // Verify button
   // ── Inline Verify Button ──
-  verifyBtnInline:        { backgroundColor: "#307bdf", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, marginLeft: 8 },
-  verifyBtnTextInline:    { color: "#e5e5e5", fontSize: 12, fontWeight: "700" },
+  verifyBtnInline: { backgroundColor: "#307bdf", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, marginLeft: 8 },
+  verifyBtnTextInline: { color: "#e5e5e5", fontSize: 12, fontWeight: "700" },
 });

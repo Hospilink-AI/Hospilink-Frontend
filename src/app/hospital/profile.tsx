@@ -1010,7 +1010,7 @@ const Profile = () => {
 const gSt = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BG },
   centerContainer: { padding: 30, alignItems: "center", justifyContent: "center" },
-  scrollContent: { padding: 24, paddingBottom: 40, maxWidth: 1200, marginHorizontal: 'auto', width: '100%' },
+  scrollContent: { padding: 24, paddingBottom: 40, marginHorizontal: 'auto', width: '100%' },
 
   // Header Card
   headerCard: { backgroundColor: WHITE, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: BLUE, marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },

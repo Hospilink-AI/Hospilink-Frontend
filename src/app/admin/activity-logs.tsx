@@ -763,7 +763,7 @@ export default function ActivityLogs() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
-      {/* ── Page Header ── */}
+
       {/* ── Page Header ── */}
       <View style={styles.pageHeaderRow}>
         <View>
@@ -804,9 +804,17 @@ export default function ActivityLogs() {
           </View>
 
           {/* Action Type — maps to ?action= param */}
-          <View style={styles.filterGroup}>
+          {/* <View style={styles.filterGroup}>
             <Text style={styles.filterLabel}>ACTION TYPE</Text>
             <Dropdown value={pendingAction} options={ACTION_OPTIONS} onChange={setPendingAction} />
+          </View> */}
+          <View style={styles.filterGroup}>
+            <Text style={styles.filterLabel}>ACTION TYPE</Text>
+            <Dropdown
+              value={pendingAction.replace(/_/g, ' ')}
+              options={ACTION_OPTIONS.map(opt => opt.replace(/_/g, ' '))}
+              onChange={(val) => setPendingAction(val === 'All Actions' ? val : val.replace(/ /g, '_'))}
+            />
           </View>
 
           {/* Department — maps to ?category= param */}
@@ -923,8 +931,11 @@ export default function ActivityLogs() {
             <View style={styles.colDesc}>
               <Text style={styles.descText}>{log.description}</Text>
               {/* Action type chip below description */}
-              <View style={styles.actionChip}>
+              {/* <View style={styles.actionChip}>
                 <Text style={styles.actionChipText}>{log.actionType}</Text>
+              </View> */}
+              <View style={styles.actionChip}>
+                <Text style={styles.actionChipText}>{log.actionType.replace(/_/g, ' ')}</Text>
               </View>
             </View>
 
@@ -1021,7 +1032,7 @@ export default function ActivityLogs() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.confirmBtn}
+              style={[styles.confirmBtn, { opacity: 0.5 }]}
               onPress={() => handleExport('pdf')}
               activeOpacity={0.7}
             >
