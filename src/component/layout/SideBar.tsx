@@ -144,7 +144,7 @@ export default function Sidebar() {
             <TouchableOpacity
               style={styles.emergencyButton}
               activeOpacity={0.8}
-            // onPress={() => router.push("/admin/emergency-alert")}
+            onPress={() => router.push("/admin/emergency")}
             >
               <Text style={styles.emergencyText}>Emergency Alert</Text>
             </TouchableOpacity>
