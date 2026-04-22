@@ -40,7 +40,7 @@ const RED_BG = "#FEE2E2";
 const RED_TEXT = "#EF4444";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type CredStatus = "Verified" | "Expiring Soon" | "Expired" | "Pending";
+type CredStatus = "Verified" | "Auto Verified" | "Expiring Soon" | "Expired" | "Pending" | "Manual Review";
 
 type Credential = {
   id: string;
@@ -101,13 +101,13 @@ const fileIcon = (mime?: string): string => {
 
 function mapVerificationStatus(status: string): CredStatus {
   switch (status) {
-    case "verified": return "Verified";
-    case "expiring-soon": return "Expiring Soon";
-    case "expired": return "Expired";
-    case "manual-pending-verification":
+    case "verified":                    return "Verified";
+    case "auto-verified":               return "Auto Verified";
+    case "manual-pending-verification": return "Manual Review";
+    case "expiring-soon":               return "Expiring Soon";
+    case "expired":                     return "Expired";
     case "pending":
-    default:
-      return "Pending";
+    default:                            return "Pending";
   }
 }
 
@@ -151,12 +151,14 @@ function mapAPIToProfile(data: any): ProfileData {
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }: { status: CredStatus }) => {
-  const cfg: Record<CredStatus, { bg: string; text: string; dot: string }> = {
-    Verified: { bg: "#DCFCE7", text: "#15803D", dot: "#22C55E" },
-    "Expiring Soon": { bg: "#FEF9C3", text: "#A16207", dot: "#EAB308" },
-    Expired: { bg: RED_BG, text: RED_TEXT, dot: "#EF4444" },
-    Pending: { bg: "#EFF6FF", text: "#1D4ED8", dot: "#3B82F6" },
-  };
+ const cfg: Record<CredStatus, { bg: string; text: string; dot: string }> = {
+  "Verified":      { bg: "#DCFCE7", text: "#15803D", dot: "#22C55E" },
+  "Auto Verified": { bg: "#D1FAE5", text: "#15803D", dot: "#34D399" },
+  "Manual Review": { bg: "#DBEAFE", text: "#1D4ED8", dot: "#3B82F6" },
+  "Expiring Soon": { bg: "#FEF9C3", text: "#A16207", dot: "#EAB308" },
+  "Expired":       { bg: RED_BG,    text: RED_TEXT,  dot: "#EF4444" },
+  "Pending":       { bg: "#EFF6FF", text: "#1D4ED8", dot: "#3B82F6" },
+};
   const c = cfg[status];
   return (
     <View style={[bSt.wrap, { backgroundColor: c.bg }]}>
