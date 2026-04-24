@@ -155,7 +155,10 @@ export default function Dashboard() {
                   <Text style={styles.viewMapText}>View Map</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.emergencyButton}>
+                <TouchableOpacity 
+                style={styles.emergencyButton}
+                onPress={() => router.push("/admin/emergency")}
+                >
                   <Text style={styles.emergencyIcon}>🚨</Text>
                   <Text style={styles.emergencyText}>Emergency</Text>
                 </TouchableOpacity>

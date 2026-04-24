@@ -3,10 +3,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface EducationItem {
-  id: string;
-  school: string;
-  degree: string;
-  years: string;
+  _id?: string;
+  universityName: string;
+  speciality: string;
+  startYear: number;
+  endYear: number;
 }
 
 interface Props {
@@ -15,6 +16,14 @@ interface Props {
 }
 
 export default function EducationCard({ items, onAdd }: Props) {
+  // Map API format to display format
+  const displayItems = items.map((item) => ({
+    id: item._id || Math.random().toString(),
+    school: item.universityName,
+    degree: item.speciality,
+    years: `${item.startYear} - ${item.endYear}`,
+  }));
+
   return (
     <View style={styles.card}>
       <View style={styles.header}>
@@ -24,22 +33,29 @@ export default function EducationCard({ items, onAdd }: Props) {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.list}>
-        {items.map((item, i) => (
-          <View key={item.id}>
-            <View style={styles.item}>
-              <View style={styles.iconWrap}>
-                <Ionicons name="school-outline" size={18} color={COLORS.primary} />
+      {displayItems.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Ionicons name="school-outline" size={32} color={COLORS.border} />
+          <Text style={styles.emptyText}>No education added yet</Text>
+        </View>
+      ) : (
+        <View style={styles.list}>
+          {displayItems.map((item, i) => (
+            <View key={item.id}>
+              <View style={styles.item}>
+                <View style={styles.iconWrap}>
+                  <Ionicons name="school-outline" size={18} color={COLORS.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.school}>{item.school}</Text>
+                  <Text style={styles.degree}>{item.degree} • {item.years}</Text>
+                </View>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.school}>{item.school}</Text>
-                <Text style={styles.degree}>{item.degree} • {item.years}</Text>
-              </View>
+              {i < displayItems.length - 1 && <View style={styles.divider} />}
             </View>
-            {i < items.length - 1 && <View style={styles.divider} />}
-          </View>
-        ))}
-      </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -83,4 +99,14 @@ const styles = StyleSheet.create({
   school: { fontSize: 15, fontWeight: "700", color: COLORS.text },
   degree: { fontSize: 13, color: COLORS.subText, marginTop: 3 },
   divider: { height: 1, backgroundColor: COLORS.border },
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 32,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: COLORS.subText,
+    marginTop: 12,
+  },
 });

@@ -22,7 +22,7 @@ export interface DocumentItem {
   documentId: string;
   documentType: string;
   fileName: string;
-  verificationStatus: 'pending' | 'manual-pending-verification' | 'verified' | 'rejected';
+  verificationStatus: 'pending' | 'manual-pending-verification' | 'verified' | 'rejected' | 'auto-verified';
   uploadedAt: string;
   extractedData: ExtractedData;
   userRole: 'staff' | 'hospital';
@@ -76,12 +76,14 @@ const STATUS_STYLE: Record<string, { bg: string; text: string; label: string }> 
   'manual-pending-verification': { bg: '#EFF6FF', text: '#2563EB', label: 'MANUAL REVIEW' },
   'verified': { bg: '#F0FDF4', text: '#16A34A', label: 'VERIFIED' },
   'rejected': { bg: '#FEF2F2', text: '#DC2626', label: 'REJECTED' },
+  'auto-verified': { bg: '#F0FDF4', text: '#15803D', label: 'AUTO VERIFIED' },
 };
  
 const STATUS_FILTERS = [
   { label: 'All', status: '' },
   { label: 'Manual Review', status: 'manual-pending-verification' },
   { label: 'Pending', status: 'pending' },
+  { label: 'Auto Verified', status: 'auto-verified' },
 ];
  
 const ROLE_FILTERS = [
@@ -342,7 +344,8 @@ function PendingRow({
   item, isLast, onReview,
 }: { item: DocumentItem; isLast: boolean; onReview: (item: DocumentItem) => void }) {
   const statusStyle = STATUS_STYLE[item.verificationStatus] ?? STATUS_STYLE['pending'];
-  const isPending = item.verificationStatus === 'pending' || item.verificationStatus === 'manual-pending-verification';
+  // const isPending = item.verificationStatus === 'pending' || item.verificationStatus === 'manual-pending-verification';
+  const isPending =   item.verificationStatus === 'pending' || item.verificationStatus === 'manual-pending-verification';
  
   return (
     <View style={[pr.wrap, isLast && { borderBottomWidth: 0 }]}>
