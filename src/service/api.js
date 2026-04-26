@@ -535,6 +535,17 @@ export const dutyAPI = {
     return response.data;
   },
 
+  getHospitalActiveDuties : async () => {
+    const response = await api.get('api/duties/active-duties')
+    return response.data;
+  },
+
+  getTrackHospitalStaffLocation: async (dutyId) => {
+    const response = await api.get(`api/duties/duty-route-map/${dutyId}`);
+    return response.data;
+  },
+
+
 };
 
 
@@ -912,6 +923,9 @@ export const adminAPI = {
     const response = await api.get('/api/admin/active-duties')
     return response.data;
   },
+
+  
+
 
   getTrackStaffLocation: async (dutyId) => {
     const response = await api.get(`/api/admin/duty-route-map/${dutyId}`);
