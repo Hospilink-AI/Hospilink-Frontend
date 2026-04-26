@@ -16,7 +16,7 @@ import { adminAPI } from '@/service/api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type LicenseStatus = 'VERIFIED' | 'PENDING'  | 'REJECTED';
-type DocStatus = 'VERIFIED' | 'PENDING' | 'REJECTED';
+type DocStatus = 'VERIFIED' | 'PENDING' | 'REJECTED' | 'AUTO_VERIFIED' | 'MANUAL_PENDING';
 
 interface HospitalDocument {
   id: string;
@@ -87,8 +87,10 @@ const toLicenseStatus = (raw: string): LicenseStatus => {
 const mapDoc = (d: any): HospitalDocument => {
   const rawDocStatus = (d.status || d.verificationStatus || 'pending').toLowerCase();
   const docStatus: DocStatus =
-    rawDocStatus === 'verified' ? 'VERIFIED' :
-      rawDocStatus === 'rejected' ? 'REJECTED' : 'PENDING';
+  rawDocStatus === 'verified'                    ? 'VERIFIED' :
+  rawDocStatus === 'auto-verified'               ? 'AUTO_VERIFIED' :
+  rawDocStatus === 'rejected'                    ? 'REJECTED' :
+  rawDocStatus === 'manual-pending-verification' ? 'MANUAL_PENDING' : 'PENDING';
 
   return {
     id: d._id ?? d.id ?? String(Math.random()),
@@ -96,12 +98,12 @@ const mapDoc = (d: any): HospitalDocument => {
     docType: d.documentType || d.docType || 'unknown',
     status: docStatus,
     statusNote:
-      d.statusNote || d.note ||
-      (docStatus === 'VERIFIED'
-        ? 'Document verified'
-        : docStatus === 'REJECTED'
-          ? 'Document rejected'
-          : 'Awaiting review'),
+  d.statusNote || d.note ||
+  (docStatus === 'VERIFIED'     ? 'Document verified' :
+   docStatus === 'AUTO_VERIFIED' ? 'Auto-verified by system' :
+   docStatus === 'REJECTED'     ? 'Document rejected' :
+   docStatus === 'MANUAL_PENDING' ? 'Awaiting manual review' :
+   'Awaiting review'),
     icon: d.icon || '📄',
     docNumber: d.documentNumber || d.docNumber || '—',
     issuedBy: d.issuedBy || '—',
@@ -176,9 +178,11 @@ const LICENSE_BADGE: Record<LicenseStatus, { bg: string; text: string; dot: stri
 };
 
 const DOC_STATUS_CFG: Record<DocStatus, { bg: string; text: string; border: string }> = {
-  VERIFIED: { bg: '#F0FDF4', text: '#16A34A', border: '#BBF7D0' },
-  PENDING: { bg: '#FFFBEB', text: '#D97706', border: '#FDE68A' },
-  REJECTED: { bg: '#FEF2F2', text: '#DC2626', border: '#FECACA' },
+  VERIFIED:       { bg: '#F0FDF4', text: '#16A34A', border: '#BBF7D0' },
+  AUTO_VERIFIED:  { bg: '#ECFDF5', text: '#15803D', border: '#86EFAC' },
+  MANUAL_PENDING: { bg: '#EFF6FF', text: '#2563EB', border: '#BFDBFE' },
+  PENDING:        { bg: '#FFFBEB', text: '#D97706', border: '#FDE68A' },
+  REJECTED:       { bg: '#FEF2F2', text: '#DC2626', border: '#FECACA' },
 };
 
 // ─── Progress Bar ─────────────────────────────────────────────────────────────
@@ -698,7 +702,7 @@ function HospitalReviewModal({
                             </View>
                           </View>
                           <Text style={rm.docTitle}>{doc.title}</Text>
-                          <Text style={[rm.docNote, { color: doc.status === 'REJECTED' ? '#DC2626' : '#64748B' }]}>
+                          <Text style={[rm.docNote, { color: doc.status === 'REJECTED' ? '#DC2626' : doc.status === 'MANUAL_PENDING' ? '#2563EB' : '#64748B' }]}>
                             {doc.statusNote}
                           </Text>
                           <TouchableOpacity

@@ -64,11 +64,9 @@ export default function AuthScreen() {
   const [signUpErrors, setSignUpErrors] = useState<SignUpErrors>({});
   const [signInErrors, setSignInErrors] = useState<SignInErrors>({});
 
-  //forgot password 
+  //forgot password
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotMessage, setForgotMessage] = useState("");
-
-  
 
   // ─── Tab switch: clear errors ──────────────────────────────
   const switchTab = (tab: string) => {
@@ -111,9 +109,10 @@ export default function AuthScreen() {
       const response = await authAPI.signup(payload);
       console.log("✅ Signup API response:", response);
 
+      // ── CHANGE: also pass `name` so profile screen can pre-fill fullName ──
       router.push({
         pathname: "/auth/verify-otp",
-        params: { email, accountType },
+        params: { email, accountType, signupName: name.trim() },
       });
     } catch (error: any) {
       console.error("❌ Signup error:", error);
@@ -144,12 +143,8 @@ export default function AuthScreen() {
     setLoading(true);
 
     try {
-      // Step 1 — Sign in, get token + role
       const response = await authAPI.signin(signInEmail, signInPassword);
       console.log("✅ Signin response:", response);
-
-      // localStorage.setItem("hospilink_token", response.token);
-      // localStorage.setItem("hospilink_user", JSON.stringify(response.user));
 
       if (Platform.OS === "web") {
         localStorage.setItem("hospilink_token", response.token);
@@ -161,10 +156,8 @@ export default function AuthScreen() {
 
       setSession(response.token, response.user);
 
-      const role = response.user?.role; // "staff" | "hospital"
+      const role = response.user?.role;
 
-      // Step 2 — Fetch profile to check isProfileComplete
-      // Response shape: { success, profile: { isProfileComplete: true/false, ... } }
       let profileComplete = false;
       try {
         const profileRes = await profileAPI.getMyProfile();
@@ -175,21 +168,20 @@ export default function AuthScreen() {
         profileComplete = false;
       }
 
-      // Step 3 — Route based on role + profile completion
       if (role === "staff") {
         if (profileComplete) {
-          router.replace("/medicalStaff/dashboard"); // ✅ already set up
+          router.replace("/medicalStaff/dashboard");
         } else {
-          router.replace("/profile/medical-staff");  // ⚠️ needs setup
+          router.replace("/profile/medical-staff");
         }
       } else if (role === "hospital") {
         if (profileComplete) {
-          router.replace("/hospital/dashboard");     // ✅ already set up
+          router.replace("/hospital/dashboard");
         } else {
-          router.replace("/profile/hospital");       // ⚠️ needs setup
+          router.replace("/profile/hospital");
         }
       } else {
-        router.replace("/profile/medical-staff");    // fallback
+        router.replace("/profile/medical-staff");
       }
 
     } catch (error: any) {
@@ -203,8 +195,6 @@ export default function AuthScreen() {
       setLoading(false);
     }
   };
-
-
 
   const handleForgotPassword = async () => {
     if (!signInEmail.trim()) {
@@ -221,7 +211,7 @@ export default function AuthScreen() {
 
     try {
       const res = await authAPI.forgotPassword(signInEmail);
-      setForgotMessage(res.message); // shows success message inline
+      setForgotMessage(res.message);
     } catch (error: any) {
       const message = error?.response?.data?.message || "Something went wrong.";
       setSignInErrors({ general: message });
@@ -229,7 +219,6 @@ export default function AuthScreen() {
       setForgotLoading(false);
     }
   };
-
 
   return (
     <ScrollView
@@ -301,7 +290,6 @@ export default function AuthScreen() {
               {/* ── SIGN UP FIELDS ── */}
               {activeTab === "signup" && (
                 <>
-                  {/* General API error */}
                   {signUpErrors.general && (
                     <View style={styles.generalError}>
                       <Ionicons name="alert-circle-outline" size={14} color="#dc2626" style={{ marginRight: 6 }} />
@@ -336,8 +324,6 @@ export default function AuthScreen() {
                     />
                   )}
 
-
-
                   <Input
                     label="Email Address"
                     placeholder="abc@hospital.com"
@@ -354,17 +340,6 @@ export default function AuthScreen() {
                     onChangeText={(v) => { setPassword(v); if (signUpErrors.password) setSignUpErrors(p => ({ ...p, password: undefined })); }}
                     error={signUpErrors.password}
                   />
-                  {/* <Input
-                    label="Phone Number"
-                    placeholder="+91 000-000-0000"
-                    iconName="call-outline"
-                    value={phone}
-                    onChangeText={(v) => { setPhone(v); if (signUpErrors.phone) setSignUpErrors(p => ({ ...p, phone: undefined })); }}
-                    error={signUpErrors.phone}
-                    keyboardType="phone-pad"
-                  /> */}
-
-
                 </>
               )}
 
@@ -400,7 +375,6 @@ export default function AuthScreen() {
                     </View>
                   ) : null}
 
-                  {/* Remember Me */}
                   <View style={styles.rememberRow}>
                     <TouchableOpacity onPress={() => setRememberMe(!rememberMe)} style={styles.rememberLeft}>
                       <View style={[styles.checkbox, rememberMe && styles.checkboxActive]}>
@@ -408,7 +382,12 @@ export default function AuthScreen() {
                       </View>
                       <Text style={[styles.remember, { marginLeft: 6 }]}>Remember me</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={handleForgotPassword}  disabled={forgotLoading}>
+                    {/* <TouchableOpacity onPress={handleForgotPassword} disabled={forgotLoading}>
+                      <Text style={styles.forgot}>
+                        {forgotLoading ? "Sending..." : "Forgot Password?"}
+                      </Text>
+                    </TouchableOpacity> */}
+                    <TouchableOpacity onPress={() => router.push("/auth/forgot-password")} disabled={forgotLoading}>
                       <Text style={styles.forgot}>
                         {forgotLoading ? "Sending..." : "Forgot Password?"}
                       </Text>
@@ -416,8 +395,6 @@ export default function AuthScreen() {
                   </View>
                 </>
               )}
-
-
 
               {/* Submit Button */}
               <TouchableOpacity
@@ -605,8 +582,6 @@ const styles = StyleSheet.create({
   selectCardActive: { borderColor: "#2563eb", backgroundColor: "#eff6ff" },
   selectText: { color: "#94a3b8", fontSize: 13, fontWeight: "500" },
   selectTextActive: { color: "#1d4ed8", fontSize: 13, fontWeight: "700" },
-
-  // ── Input styles ──
   inputRow: {
     flexDirection: "row", alignItems: "center", backgroundColor: "#f8fafc",
     borderRadius: 8, borderWidth: 1.5, borderColor: "#e2e8f0",
@@ -622,27 +597,21 @@ const styles = StyleSheet.create({
     ...Platform.select({ web: { boxShadow: "0 0 0 3px rgba(220,38,38,0.08)" } as any }),
   },
   inputInner: { flex: 1, color: "#0f172a", fontSize: 13 },
-
-  // ── Error messages ──
   errorRow: { flexDirection: "row", alignItems: "center", marginBottom: 8, marginTop: 1 },
   errorText: { color: "#dc2626", fontSize: 11.5, fontWeight: "500", flex: 1 },
-
-  // ── General (API) error banner ──
   generalError: {
     flexDirection: "row", alignItems: "center",
     backgroundColor: "#fef2f2", borderWidth: 1, borderColor: "#fecaca",
     borderRadius: 8, padding: 10, marginBottom: 10,
   },
   generalErrorText: { color: "#dc2626", fontSize: 12, fontWeight: "500", flex: 1 },
-
-  // ── Rest ──
   rememberRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14, marginTop: 4 },
   rememberLeft: { flexDirection: "row", alignItems: "center" },
   checkbox: { width: 15, height: 15, borderWidth: 1.5, borderColor: "#cbd5e1", borderRadius: 4, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" },
   checkboxActive: { backgroundColor: "#2563eb", borderColor: "#2563eb" },
   remember: { color: "#64748b", fontSize: 13 },
   forgot: { color: "#2563eb", fontSize: 12, fontWeight: "600" },
-  primaryButton: {marginTop:8, backgroundColor: "#2563eb", paddingVertical: 12, borderRadius: 9, alignItems: "center", marginBottom: 14, ...Platform.select({ web: { boxShadow: "0 4px 14px rgba(37,99,235,0.30)" }, default: { shadowColor: "#2563eb", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 10, elevation: 6 } }) },
+  primaryButton: { marginTop: 8, backgroundColor: "#2563eb", paddingVertical: 12, borderRadius: 9, alignItems: "center", marginBottom: 14, ...Platform.select({ web: { boxShadow: "0 4px 14px rgba(37,99,235,0.30)" }, default: { shadowColor: "#2563eb", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 10, elevation: 6 } }) },
   primaryText: { color: "#fff", fontWeight: "700", fontSize: 14, letterSpacing: 0.3 },
   copyright: { color: "#c2cfe0", textAlign: "center", fontSize: 11, letterSpacing: 0.4 },
 });

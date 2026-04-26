@@ -14,7 +14,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { authAPI, adminAPI } from "../../service/api"; // ← added adminAPI import
+import { authAPI, adminAPI } from "../../service/api";
 import { useAuth } from '@/context/AuthContext';
 
 export default function VerifyOtp() {
@@ -36,10 +36,12 @@ export default function VerifyOtp() {
   const email = Array.isArray(params.email) ? params.email[0] : (params.email as string) ?? "";
   const accountType = Array.isArray(params.accountType) ? params.accountType[0] : (params.accountType as string) ?? "";
 
-  // ── NEW: detect admin flow ──────────────────────────────────────────────
+  // ── NEW: carry signupName through so profile screen can pre-fill fullName ──
+  const signupName = Array.isArray(params.signupName) ? params.signupName[0] : (params.signupName as string) ?? "";
+
+  // ── detect admin flow ──────────────────────────────────────────────
   const userType = Array.isArray(params.userType) ? params.userType[0] : (params.userType as string) ?? "";
   const isAdmin = userType === "admin";
-  // ───────────────────────────────────────────────────────────────────────
 
   const isMobile = width <= 600;
   const cardWidth = isMobile ? width - 32 : Math.min(width * 0.88, 400);
@@ -96,8 +98,6 @@ export default function VerifyOtp() {
 
       // ── ADMIN flow ────────────────────────────────────────────────────
       if (isAdmin) {
-        // POST /api/admin/signin/verify-otp
-        // Returns: { success, message, token, user: { id, name, email, role } }
         const response = await adminAPI.verifyOTP(email, otpCode);
 
         if (response?.token) {
@@ -109,14 +109,13 @@ export default function VerifyOtp() {
             await AsyncStorage.setItem("hospilink_user", JSON.stringify(response.user));
           }
           setSession(response.token, response.user);
-
         }
 
-        router.replace("/admin/dashboard"); // ← admin redirect
+        router.replace("/admin/dashboard");
         return;
       }
 
-      // ── EXISTING flow (medical staff / hospital) — unchanged ──────────
+      // ── EXISTING flow (medical staff / hospital) ──────────────────────
       const response = await authAPI.verifyOTP(email, otpCode);
 
       if (response?.token) {
@@ -127,20 +126,25 @@ export default function VerifyOtp() {
           await AsyncStorage.setItem("hospilink_token", response.token);
           await AsyncStorage.setItem("hospilink_user", JSON.stringify(response.user));
         }
-         setSession(response.token, response.user);
+        setSession(response.token, response.user);
       }
 
+      // ── CHANGE: pass signupName so profile can pre-fill fullName ──
       if (accountType === "medical") {
-        router.replace("/profile/medical-staff");
+        router.replace({
+          pathname: "/profile/medical-staff",
+          params: { signupName },
+        });
       } else {
-        router.replace("/profile/hospital");
+        router.replace({
+          pathname: "/profile/hospital",
+          params: { signupName },
+        });
       }
-      // ─────────────────────────────────────────────────────────────────
 
     } catch (error: any) {
       const message = error.response?.data?.message || "";
 
-      // Map backend messages to user-friendly text
       if (message.toLowerCase().includes("expired")) {
         setOtpError("⏱ Your OTP has expired. Please request a new one.");
       } else if (message.toLowerCase().includes("invalid") || message.toLowerCase().includes("incorrect")) {
@@ -151,23 +155,18 @@ export default function VerifyOtp() {
 
       setOtp(["", "", "", "", "", ""]);
       inputs.current[0]?.focus();
-    }
-    finally {
+    } finally {
       setLoading(false);
     }
   };
 
   const handleResend = async () => {
-
     if (!canResend) return;
     setOtpError(null);
     try {
-      // ── ADMIN resend ───────────────────────────────────────────────────
       if (isAdmin) {
-        // POST /api/admin/signin/resend-otp
         await adminAPI.resendOTP(email);
       } else {
-        // ── EXISTING resend — unchanged ───────────────────────────────
         await authAPI.resendOTP(email);
       }
 
@@ -183,7 +182,6 @@ export default function VerifyOtp() {
     }
   };
 
-  // ── UI — completely unchanged from original ───────────────────────────────
   return (
     <View style={styles.outerContainer}>
 
@@ -217,7 +215,6 @@ export default function VerifyOtp() {
             Enter the code sent to your registered email
           </Text>
 
-          {/* Shows the email passed from the previous screen */}
           <Text style={styles.email}>{email}</Text>
 
           {/* OTP Boxes */}
@@ -295,7 +292,6 @@ export default function VerifyOtp() {
   );
 }
 
-// ── Styles — completely unchanged from original ───────────────────────────────
 const styles = StyleSheet.create({
   outerContainer: { flex: 1, backgroundColor: "#dce6f5" },
   navbar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 24, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "#dde6f0", backgroundColor: "#ffffff" },
@@ -322,26 +318,26 @@ const styles = StyleSheet.create({
   secureText: { color: "#94a3b8", fontSize: 11, letterSpacing: 1.2 },
   footer: { textAlign: "center", color: "#c2cfe0", fontSize: 11, paddingBottom: 16, letterSpacing: 0.3, backgroundColor: "#dce6f5" },
   otpInputError: {
-  borderColor: "#dc2626",
-  backgroundColor: "#fff5f5",
-},
-errorBox: {
-  flexDirection: "row",
-  alignItems: "center",
-  backgroundColor: "#fef2f2",
-  borderWidth: 1,
-  borderColor: "#fecaca",
-  borderRadius: 8,
-  paddingVertical: 8,
-  paddingHorizontal: 12,
-  marginBottom: 16,
-  width: "100%",
-  gap: 6,
-},
-errorText: {
-  color: "#dc2626",
-  fontSize: 13,
-  fontWeight: "500",
-  flexShrink: 1,
-},
+    borderColor: "#dc2626",
+    backgroundColor: "#fff5f5",
+  },
+  errorBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fef2f2",
+    borderWidth: 1,
+    borderColor: "#fecaca",
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    width: "100%",
+    gap: 6,
+  },
+  errorText: {
+    color: "#dc2626",
+    fontSize: 13,
+    fontWeight: "500",
+    flexShrink: 1,
+  },
 });

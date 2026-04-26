@@ -44,7 +44,8 @@ interface Duty {
 export default function Dashboard() {
   const [toast, setToast] = useState(false);
   const [showAll, setShowAll] = useState(false);
-  const [available, setAvailable] = useState(true);
+  const [available, setAvailable] = useState<boolean | null>(null);
+  const [availabilityLoading, setAvailabilityLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
   const [duties, setDuties] = useState<Duty[]>([]);
   const [loading, setLoading] = useState(false);
@@ -173,6 +174,8 @@ export default function Dashboard() {
     }
   };
 
+  
+
   const fetchAvailableDuties = async () => {
     setLoading(true);
     setError(null);
@@ -251,6 +254,18 @@ export default function Dashboard() {
     }
   };
 
+  const fetchAvailabilityStatus = async () => {
+    setAvailabilityLoading(true);
+    try {
+      const response = await profileAPI.getMyProfile();
+      setAvailable(response.profile?.isAvailable ?? false);
+    } catch (err) {
+      setAvailable(false);
+    } finally {
+      setAvailabilityLoading(false);
+    }
+  };
+
   const fetchOngoingDuties = async () => {
     setOngoingLoading(true);
     try {
@@ -293,6 +308,7 @@ export default function Dashboard() {
   }, [available]);
 
   useEffect(() => {
+    fetchAvailabilityStatus();
     fetchEarnings();
     fetchDashboardOverview();
     fetchUpcomingDuties();
@@ -359,7 +375,7 @@ export default function Dashboard() {
         </View>
         {toggling
           ? <ActivityIndicator size="small" color={COLORS.primary} />
-          : <ToggleSwitch enabled={available} onToggle={handleToggleAvailability} />
+          : <ToggleSwitch enabled={available ?? false} onToggle={handleToggleAvailability} />
         }
       </View>
 
@@ -531,6 +547,7 @@ export default function Dashboard() {
           label="Support Center" 
           iconBg="#FEF3C7" 
           isMobile={isMobile}
+          onPress={() => router.push("/medicalStaff/support")}
         />
       </View>
     </ScrollView>

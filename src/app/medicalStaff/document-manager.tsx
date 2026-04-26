@@ -1,6 +1,7 @@
 import { COLORS } from "@/constant/colors";
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
+import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -10,14 +11,15 @@ import {
   Modal,
   Platform,
   Pressable,
+  SafeAreaView,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { documentAPI } from "../../../../service/api"; 
-import { useNavigation } from "@react-navigation/native";
+import { documentAPI } from "@/service/api"; // Make sure this path is correct for your project
 
 // ─── Document Type Config ─────────────────────────────────────────────────────
 
@@ -28,20 +30,20 @@ interface DocTypeOption {
 }
 
 const DOCUMENT_TYPES: DocTypeOption[] = [
-  { value: "aadhaar-card",             label: "Aadhaar Card",                     group: "Identity"     },
-  { value: "pan-card",                 label: "PAN Card",                         group: "Identity"     },
-  { value: "mcim-certificate",         label: "MCIM Certificate",                 group: "Education"    },
-  { value: "ncim-certificate",         label: "NCIM Certificate",                 group: "Education"    },
-  { value: "license-permit",           label: "License / Permit",                 group: "Licensing"    },
-  { value: "resume-experience",        label: "Resume / Experience",              group: "Experience"   },
-  { value: "recommendation-letter",    label: "Recommendation Letter (Optional)", group: "Experience"   },
+  { value: "aadhaar-card", label: "Aadhaar Card", group: "Identity" },
+  { value: "pan-card", label: "PAN Card", group: "Identity" },
+  { value: "mcim-certificate", label: "MCIM Certificate", group: "Education" },
+  { value: "ncim-certificate", label: "NCIM Certificate", group: "Education" },
+  { value: "license-permit", label: "License / Permit", group: "Licensing" },
+  { value: "resume-experience", label: "Resume / Experience", group: "Experience" },
+  { value: "recommendation-letter", label: "Recommendation Letter (Optional)", group: "Experience" },
 ];
 
 const GROUPS = ["Identity", "Education", "Licensing", "Experience", "Registration"];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type DocStatus = "Verified" | "Pending" | "Expired" | "Auto Verified" | "Manual Review";
+type DocStatus = "Active" | "Pending" | "Expired";
 
 interface CredentialDoc {
   id: string;
@@ -52,8 +54,8 @@ interface CredentialDoc {
   lastUpdated: string;
   fileType: "image" | "pdf" | "doc" | "other";
   uri?: string;
-  url?: string;      // ← S3 URL from API
-  fileName?: string; // ← original file name from API
+  url?: string;
+  fileName?: string;
 }
 
 interface Props {
@@ -64,64 +66,72 @@ interface Props {
 
 function today() {
   return new Date().toLocaleDateString("en-IN", {
-    month: "short", day: "numeric", year: "numeric",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   });
 }
 
 function fileExtToType(name: string): CredentialDoc["fileType"] {
   const ext = name.split(".").pop()?.toLowerCase() ?? "";
   if (["jpg", "jpeg", "png", "gif", "webp", "heic"].includes(ext)) return "image";
-  if (ext === "pdf")                                                  return "pdf";
-  if (["doc", "docx"].includes(ext))                                  return "doc";
+  if (ext === "pdf") return "pdf";
+  if (["doc", "docx"].includes(ext)) return "doc";
   return "other";
 }
 
 function fileTypeIcon(type: CredentialDoc["fileType"]) {
   switch (type) {
-    case "image": return { name: "image-outline" as const,         color: "#7C3AED" };
-    case "pdf":   return { name: "document-text-outline" as const, color: "#DC2626" };
-    case "doc":   return { name: "document-outline" as const,      color: "#2563EB" };
-    default:      return { name: "attach-outline" as const,        color: "#6B7280" };
+    case "image":
+      return { name: "image-outline" as const, color: "#7C3AED" };
+    case "pdf":
+      return { name: "document-text-outline" as const, color: "#DC2626" };
+    case "doc":
+      return { name: "document-outline" as const, color: "#2563EB" };
+    default:
+      return { name: "attach-outline" as const, color: "#6B7280" };
   }
 }
 
 const STATUS_META: Record<DocStatus, { bg: string; text: string; dot: string }> = {
-  "Verified":      { bg: "#DCFCE7", text: "#16A34A", dot: "#16A34A" },
-  "Auto Verified": { bg: "#D1FAE5", text: "#15803D", dot: "#15803D" },
-  "Pending":       { bg: "#FEF9C3", text: "#CA8A04", dot: "#CA8A04" },
-  "Manual Review": { bg: "#DBEAFE", text: "#2563EB", dot: "#2563EB" },
-  "Expired":       { bg: "#FEE2E2", text: "#DC2626", dot: "#DC2626" },
-};
+  Active: { bg: "#DCFCE7", text: "#16A34A", dot: "#16A34A" },
+  Pending: { bg: "#FEF9C3", text: "#CA8A04", dot: "#CA8A04" },
+  Expired: { bg: "#FEE2E2", text: "#DC2626", dot: "#DC2626" },
+} as const;
 
 // ─── API Mappers ──────────────────────────────────────────────────────────────
 
 function mapVerificationStatus(status: string): DocStatus {
   switch (status) {
-    case "verified":                    return "Verified";
-    case "auto-verified":               return "Auto Verified";
-    case "manual-pending-verification": return "Manual Review";
-    case "expired":                     return "Expired";
+    case "verified":
+      return "Active";
+    case "expired":
+      return "Expired";
     case "pending":
-    default:                            return "Pending";
+    case "manual-pending-verification":
+    default:
+      return "Pending";
   }
 }
 
 function mapAPIDocument(doc: any): CredentialDoc {
   const typeOption = DOCUMENT_TYPES.find((d) => d.value === doc.documentType);
-  const fileName   = doc.fileName ?? "";
+  const fileName = doc.fileName ?? "";
   return {
-    id:           doc.documentId ?? doc._id ?? Date.now().toString(),
-    name:         typeOption?.label ?? doc.documentType ?? "Document",
-    docType:      doc.documentType ?? "",
+    id: doc.documentId ?? doc._id ?? Date.now().toString(),
+    name: doc.name ?? typeOption?.label ?? doc.documentType ?? "Document",
+    docType: doc.documentType ?? "",
     docTypeLabel: typeOption?.label ?? doc.documentType ?? "",
-    status:       mapVerificationStatus(doc.verificationStatus),
-    lastUpdated:  new Date(doc.uploadedAt ?? doc.updatedAt).toLocaleDateString("en-IN", {
-                    month: "short", day: "numeric", year: "numeric",
-                  }),
-    fileType:     fileExtToType(fileName),
-    uri:          doc.url ?? undefined,
-    url:          doc.url ?? undefined,
-    fileName:     fileName || undefined,
+    status: mapVerificationStatus(doc.verificationStatus),
+    lastUpdated: new Date(doc.uploadedAt ?? doc.updatedAt).toLocaleDateString("en-IN", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }),
+    fileType: fileExtToType(fileName),
+    uri: doc.url ?? undefined,
+    url: doc.url ?? undefined,
+    fileName: fileName || undefined,
   };
 }
 
@@ -131,7 +141,7 @@ function isImageUrl(fileName?: string, url?: string): boolean {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  VIEW DOCUMENT MODAL (CENTERED)
+//  VIEW DOCUMENT MODAL
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function ViewDocModal({
@@ -146,16 +156,10 @@ function ViewDocModal({
   loading?: boolean;
 }) {
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={vms.overlay}>
-        <View style={vms.modalCard}>
-
-          {/* Header */}
+        <View style={vms.sheet}>
+          <View style={vms.handle} />
           <View style={vms.header}>
             <View style={{ flex: 1 }}>
               <Text style={vms.title} numberOfLines={1}>
@@ -172,7 +176,6 @@ function ViewDocModal({
             </TouchableOpacity>
           </View>
 
-          {/* Status strip */}
           {doc && (
             <View style={vms.strip}>
               <View style={[vms.pill, { backgroundColor: STATUS_META[doc.status].bg }]}>
@@ -188,7 +191,6 @@ function ViewDocModal({
 
           <View style={vms.divider} />
 
-          {/* Preview area */}
           {loading ? (
             <View style={vms.previewBox}>
               <ActivityIndicator size="large" color={COLORS.primary} />
@@ -196,11 +198,7 @@ function ViewDocModal({
             </View>
           ) : doc?.url && isImageUrl(doc.fileName, doc.url) ? (
             <View style={vms.previewBox}>
-              <Image
-                source={{ uri: doc.url }}
-                style={vms.image}
-                resizeMode="contain"
-              />
+              <Image source={{ uri: doc.url }} style={vms.image} resizeMode="contain" />
             </View>
           ) : doc?.url ? (
             <View style={[vms.previewBox, { height: 180 }]}>
@@ -214,7 +212,6 @@ function ViewDocModal({
             </View>
           )}
 
-          {/* Close button */}
           <TouchableOpacity style={vms.closeFullBtn} onPress={onClose}>
             <Text style={vms.closeFullText}>Close</Text>
           </TouchableOpacity>
@@ -225,7 +222,7 @@ function ViewDocModal({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  UPLOAD MODAL (CENTERED)
+//  UPLOAD MODAL (CENTERED DESIGN - NO BORDER - NO NAME FIELD)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 interface UploadModalProps {
@@ -426,33 +423,27 @@ function UploadModal({ visible, onClose, onSubmit }: UploadModalProps) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  MAIN CARD
+//  MAIN CARD COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export default function CredentialComplianceCard({ initialItems = [] }: Props) {
-  const navigation = useNavigation(); 
-  const [docs, setDocs]                         = useState<CredentialDoc[]>([]);
-  const [docsLoading, setDocsLoading]           = useState(true);
-  const [docsError, setDocsError]               = useState<string | null>(null);
-  const [modalVisible, setModalVisible]         = useState(false);
-  const [deleteDoc, setDeleteDoc]               = useState<CredentialDoc | null>(null);
-  const [deleting, setDeleting]                 = useState(false);
-  const [viewDoc, setViewDoc]                   = useState<CredentialDoc | null>(null);
+function CredentialComplianceCard({ initialItems = [] }: Props) {
+  const [docs, setDocs] = useState<CredentialDoc[]>([]);
+  const [docsLoading, setDocsLoading] = useState(true);
+  const [docsError, setDocsError] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [deleteDoc, setDeleteDoc] = useState<CredentialDoc | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [viewDoc, setViewDoc] = useState<CredentialDoc | null>(null);
   const [viewModalVisible, setViewModalVisible] = useState(false);
-  const [viewLoading, setViewLoading]           = useState(false);
+  const [viewLoading, setViewLoading] = useState(false);
 
-  // ── Fetch all docs ────────────────────────────────────────────────────────
   const fetchDocuments = useCallback(async () => {
     try {
       setDocsLoading(true);
       setDocsError(null);
       const data = await documentAPI.getDocuments();
       if (data?.success) {
-        setDocs(
-          Array.isArray(data.documents)
-            ? data.documents.map(mapAPIDocument)
-            : []
-        );
+        setDocs(Array.isArray(data.documents) ? data.documents.map(mapAPIDocument) : []);
       } else {
         setDocs([]);
       }
@@ -463,9 +454,10 @@ export default function CredentialComplianceCard({ initialItems = [] }: Props) {
     }
   }, []);
 
-  useEffect(() => { fetchDocuments(); }, [fetchDocuments]);
+  useEffect(() => {
+    fetchDocuments();
+  }, [fetchDocuments]);
 
-  // ── Upload ────────────────────────────────────────────────────────────────
   async function handleSubmit(
     docType: DocTypeOption,
     uri: string,
@@ -474,37 +466,34 @@ export default function CredentialComplianceCard({ initialItems = [] }: Props) {
   ) {
     const response = await documentAPI.uploadDocument(docType.value, uri, mimeType);
 
-    // Optimistic add with fallback — then refresh for real documentId + url
-    const uploaded: CredentialDoc =
-      response?.document
-        ? mapAPIDocument(response.document)
-        : response?.documents?.[0]
-          ? mapAPIDocument(response.documents[0])
-          : {
-              id:           Date.now().toString(),
-              name:         docType.label,
-              docType:      docType.value,
-              docTypeLabel: docType.label,
-              status:       "Pending",
-              lastUpdated:  today(),
-              fileType,
-              uri,
-            };
+    const uploaded: CredentialDoc = response?.document
+      ? mapAPIDocument(response.document)
+      : response?.documents?.[0]
+      ? mapAPIDocument(response.documents[0])
+      : {
+          id: Date.now().toString(),
+          name: docType.label, // Defaulting to the dropdown label since name input is gone
+          docType: docType.value,
+          docTypeLabel: docType.label,
+          status: "Pending",
+          lastUpdated: today(),
+          fileType,
+          uri,
+        };
 
     setDocs((prev) => [uploaded, ...prev]);
-    fetchDocuments(); 
+    fetchDocuments();
     setModalVisible(false);
   }
 
-  // ── View (fetch fresh S3 URL) ─────────────────────────────────────────────
   async function handleViewDocument(doc: CredentialDoc) {
     try {
       setViewLoading(true);
-      setViewDoc(doc);         // show modal immediately with cached data
+      setViewDoc(doc);
       setViewModalVisible(true);
       const data = await documentAPI.getDocument(doc.id);
       if (data?.success && data?.data) {
-        setViewDoc(mapAPIDocument(data.data)); // replace with fresh URL
+        setViewDoc(mapAPIDocument(data.data));
       }
     } catch {
       // keep showing cached doc on error
@@ -513,7 +502,6 @@ export default function CredentialComplianceCard({ initialItems = [] }: Props) {
     }
   }
 
-  // ── Delete ────────────────────────────────────────────────────────────────
   async function executeDelete() {
     if (!deleteDoc) return;
     try {
@@ -529,13 +517,11 @@ export default function CredentialComplianceCard({ initialItems = [] }: Props) {
   }
 
   function handleDeletePress(doc: CredentialDoc) {
-      setDeleteDoc(doc);
+    setDeleteDoc(doc);
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <View style={styles.card}>
-
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -557,38 +543,28 @@ export default function CredentialComplianceCard({ initialItems = [] }: Props) {
             Loading documents...
           </Text>
         </View>
-
       ) : docsError ? (
         <View style={{ alignItems: "center", paddingVertical: 32, gap: 10 }}>
           <Text style={{ fontSize: 13, color: "#DC2626" }}>{docsError}</Text>
           <TouchableOpacity onPress={fetchDocuments}>
-            <Text style={{ fontSize: 13, color: COLORS.primary, fontWeight: "600" }}>
-              Retry
-            </Text>
+            <Text style={{ fontSize: 13, color: COLORS.primary, fontWeight: "600" }}>Retry</Text>
           </TouchableOpacity>
         </View>
-
       ) : docs.length > 0 ? (
         <>
-          {/* Table header */}
           <View style={styles.tableHeader}>
-            <Text style={[styles.col, styles.colName,    styles.colLabel]}>DOCUMENT NAME</Text>
-            <Text style={[styles.col, styles.colStatus,  styles.colLabel]}>STATUS</Text>
-            <Text style={[styles.col, styles.colDate,    styles.colLabel]}>LAST UPDATED</Text>
+            <Text style={[styles.col, styles.colName, styles.colLabel]}>DOCUMENT NAME</Text>
+            <Text style={[styles.col, styles.colStatus, styles.colLabel]}>STATUS</Text>
+            <Text style={[styles.col, styles.colDate, styles.colLabel]}>LAST UPDATED</Text>
             <Text style={[styles.col, styles.colActions, styles.colLabel]}>ACTIONS</Text>
           </View>
 
-          {/* Rows */}
           <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
             {docs.map((doc, idx) => {
-              const icon   = fileTypeIcon(doc.fileType);
+              const icon = fileTypeIcon(doc.fileType);
               const status = STATUS_META[doc.status];
               return (
-                <View
-                  key={doc.id}
-                  style={[styles.row, idx < docs.length - 1 && styles.rowDivider]}
-                >
-                  {/* Name */}
+                <View key={doc.id} style={[styles.row, idx < docs.length - 1 && styles.rowDivider]}>
                   <View style={[styles.col, styles.colName, styles.rowName]}>
                     <View style={[styles.fileIcon, { backgroundColor: icon.color + "18" }]}>
                       <Ionicons name={icon.name} size={16} color={icon.color} />
@@ -598,37 +574,18 @@ export default function CredentialComplianceCard({ initialItems = [] }: Props) {
                       <Text style={styles.docSub} numberOfLines={1}>{doc.docTypeLabel}</Text>
                     </View>
                   </View>
-
-                  {/* Status */}
                   <View style={[styles.col, styles.colStatus]}>
                     <View style={[styles.pill, { backgroundColor: status.bg }]}>
                       <View style={[styles.dot, { backgroundColor: status.dot }]} />
-                      <Text style={[styles.pillText, { color: status.text }]}>
-                        {doc.status}
-                      </Text>
+                      <Text style={[styles.pillText, { color: status.text }]}>{doc.status}</Text>
                     </View>
                   </View>
-
-                  {/* Date */}
-                  <Text style={[styles.col, styles.colDate, styles.dateText]}>
-                    {doc.lastUpdated}
-                  </Text>
-
-                  {/* Actions */}
+                  <Text style={[styles.col, styles.colDate, styles.dateText]}>{doc.lastUpdated}</Text>
                   <View style={[styles.col, styles.colActions, styles.actionsRow]}>
-                    {/* View */}
-                    <TouchableOpacity
-                      style={styles.actionBtn}
-                      onPress={() => handleViewDocument(doc)}
-                    >
+                    <TouchableOpacity style={styles.actionBtn} onPress={() => handleViewDocument(doc)}>
                       <Ionicons name="eye-outline" size={16} color="#6B7280" />
                     </TouchableOpacity>
-
-                    {/* Delete — direct onPress, confirmation inside handleDeletePress */}
-                    <TouchableOpacity
-                      style={styles.actionBtn}
-                      onPress={() => handleDeletePress(doc)}
-                    >
+                    <TouchableOpacity style={styles.actionBtn} onPress={() => handleDeletePress(doc)}>
                       <Ionicons name="trash-outline" size={16} color="#EF4444" />
                     </TouchableOpacity>
                   </View>
@@ -637,9 +594,7 @@ export default function CredentialComplianceCard({ initialItems = [] }: Props) {
             })}
           </ScrollView>
         </>
-
       ) : (
-        /* Empty state */
         <View style={styles.empty}>
           <Text style={styles.emptyEmoji}>📬</Text>
           <Text style={styles.emptyTitle}>No documents yet.</Text>
@@ -650,14 +605,7 @@ export default function CredentialComplianceCard({ initialItems = [] }: Props) {
         </View>
       )}
 
-      {/* Upload Modal */}
-      <UploadModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        onSubmit={handleSubmit}
-      />
-
-      {/* View Document Modal */}
+      <UploadModal visible={modalVisible} onClose={() => setModalVisible(false)} onSubmit={handleSubmit} />
       <ViewDocModal
         visible={viewModalVisible}
         doc={viewDoc}
@@ -668,158 +616,54 @@ export default function CredentialComplianceCard({ initialItems = [] }: Props) {
         loading={viewLoading}
       />
 
-      {/* Delete Confirm Modal — only shown on native (Android/iOS) */}
-      <Modal
-        visible={!!deleteDoc}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setDeleteDoc(null)}
-      >
+      <Modal visible={!!deleteDoc} transparent animationType="fade" onRequestClose={() => setDeleteDoc(null)}>
         <View style={styles.delOverlay}>
           <View style={styles.delModal}>
-            <Ionicons
-              name="trash-outline"
-              size={28}
-              color="#EF4444"
-              style={{ marginBottom: 12 }}
-            />
+            <Ionicons name="trash-outline" size={28} color="#EF4444" style={{ marginBottom: 12 }} />
             <Text style={styles.delTitle}>Remove Document?</Text>
-            <Text style={styles.delBody}>
-              "{deleteDoc?.name}" will be removed from your credentials.
-            </Text>
+            <Text style={styles.delBody}>"{deleteDoc?.name}" will be removed from your credentials.</Text>
             <View style={styles.delActions}>
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={() => setDeleteDoc(null)}
-                disabled={deleting}
-              >
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setDeleteDoc(null)} disabled={deleting}>
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.deleteBtn, deleting && { opacity: 0.6 }]}
-                onPress={executeDelete}
-                disabled={deleting}
-              >
-                {deleting ? (
-                  <ActivityIndicator size="small" color="#DC2626" />
-                ) : (
-                  <Text style={styles.deleteText}>Remove</Text>
-                )}
+              <TouchableOpacity style={[styles.deleteBtn, deleting && { opacity: 0.6 }]} onPress={executeDelete} disabled={deleting}>
+                {deleting ? <ActivityIndicator size="small" color="#DC2626" /> : <Text style={styles.deleteText}>Remove</Text>}
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
-
     </View>
   );
 }
 
-// ─── Card Styles ──────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+//  FULL PAGE SCREEN
+// ═══════════════════════════════════════════════════════════════════════════════
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-    overflow: "hidden",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  headerLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
-  iconBadge: {
-    width: 30, height: 30, borderRadius: 8,
-    backgroundColor: COLORS.primary + "15",
-    alignItems: "center", justifyContent: "center",
-  },
-  title:  { fontSize: 16, fontWeight: "700", color: COLORS.text },
-  addBtn: {
-    width: 34, height: 34, borderRadius: 10,
-    backgroundColor: COLORS.primary,
-    alignItems: "center", justifyContent: "center",
-  },
-  tableHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    backgroundColor: "#F8FAFC",
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  colLabel:   { fontSize: 10, fontWeight: "700", color: "#94A3B8", letterSpacing: 0.6 },
-  col:        { paddingRight: 8 },
-  colName:    { flex: 3 },
-  colStatus:  { flex: 2 },
-  colDate:    { flex: 2 },
-  colActions: { flex: 1, paddingRight: 0 },
-  list:       { maxHeight: 340 },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 13,
-  },
-  rowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.border },
-  rowName:    { flexDirection: "row", alignItems: "center", gap: 10 },
-  fileIcon:   { width: 30, height: 30, borderRadius: 8, alignItems: "center", justifyContent: "center" },
-  docName:    { fontSize: 13, fontWeight: "600", color: COLORS.text },
-  docSub:     { fontSize: 10, color: COLORS.subText, marginTop: 2 },
-  pill: {
-    flexDirection: "row", alignItems: "center",
-    gap: 5, paddingHorizontal: 9, paddingVertical: 4,
-    borderRadius: 20, alignSelf: "flex-start",
-  },
-  dot:        { width: 6, height: 6, borderRadius: 3 },
-  pillText:   { fontSize: 11, fontWeight: "700" },
-  dateText:   { fontSize: 12, color: COLORS.subText },
-  actionsRow: { flexDirection: "row", gap: 6, justifyContent: "flex-end" },
-  actionBtn: {
-    width: 28, height: 28, borderRadius: 7,
-    backgroundColor: "#F1F5F9",
-    alignItems: "center", justifyContent: "center",
-  },
-  empty:      { alignItems: "center", paddingVertical: 44, paddingHorizontal: 24 },
-  emptyEmoji: { fontSize: 40, marginBottom: 12 },
-  emptyTitle: { fontSize: 15, fontWeight: "700", color: COLORS.text, marginBottom: 6 },
-  emptySub:   { fontSize: 13, color: COLORS.subText, marginBottom: 20, textAlign: "center" },
-  uploadBtn:  {
-    borderWidth: 1.5, borderColor: COLORS.primary,
-    borderRadius: 24, paddingHorizontal: 24, paddingVertical: 11,
-  },
-  uploadBtnText: { fontSize: 14, fontWeight: "700", color: COLORS.primary },
-  delOverlay: {
-    flex: 1, backgroundColor: "rgba(0,0,0,0.45)",
-    alignItems: "center", justifyContent: "center",
-  },
-  delModal: {
-    width: 300, backgroundColor: "#fff", borderRadius: 18,
-    padding: 24, alignItems: "center",
-    shadowColor: "#000", shadowOpacity: 0.15, shadowRadius: 20, elevation: 10,
-  },
-  delTitle:   { fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 8 },
-  delBody:    { fontSize: 13, color: COLORS.subText, textAlign: "center", marginBottom: 24 },
-  delActions: { flexDirection: "row", gap: 12, width: "100%" },
-  cancelBtn:  { flex: 1, paddingVertical: 12, borderRadius: 10, backgroundColor: "#F1F5F9", alignItems: "center" },
-  cancelText: { fontSize: 14, fontWeight: "600", color: COLORS.subText },
-  deleteBtn:  { flex: 1, paddingVertical: 12, borderRadius: 10, backgroundColor: "#FEE2E2", alignItems: "center", justifyContent: "center" },
-  deleteText: { fontSize: 14, fontWeight: "700", color: "#DC2626" },
-});
+export default function DocumentsScreen() {
+  const handleBack = () => {
+    router.push("/medicalStaff/profile");
+  };
 
-// ─── Modal Styles (Centered UI) ─────────────────────────────────────────────
+  return (
+    <SafeAreaView style={screenStyles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
+      <View style={screenStyles.pageHeader}>
+        <TouchableOpacity style={screenStyles.backButton} onPress={handleBack}>
+          <Ionicons name="chevron-back" size={24} color="#1F2937" />
+        </TouchableOpacity>
+        <Text style={screenStyles.pageTitle}>Documents</Text>
+        <View style={{ width: 24 }} />
+      </View>
+      <ScrollView style={screenStyles.scrollArea} contentContainerStyle={screenStyles.scrollContent} showsVerticalScrollIndicator={false}>
+        <CredentialComplianceCard />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+// ─── Styles ─────────────────────────────────────────────────────────────
 
 const cm = StyleSheet.create({
   overlay: {
@@ -833,7 +677,7 @@ const cm = StyleSheet.create({
     backgroundColor: "#ffffff",
     width: "100%",
     maxWidth: 400,
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 24,
     shadowColor: "#000",
     shadowOpacity: 0.15,
@@ -964,9 +808,63 @@ const cm = StyleSheet.create({
   },
 });
 
+const screenStyles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  pageHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 16, backgroundColor: "#F8FAFC" },
+  backButton: { padding: 4, marginLeft: -4 },
+  pageTitle: { fontSize: 22, fontWeight: "700", color: "#1F2937" },
+  scrollArea: { flex: 1 },
+  scrollContent: { padding: 20, paddingBottom: 40 },
+});
+
+const styles = StyleSheet.create({
+  card: { backgroundColor: COLORS.white, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 6, elevation: 3, overflow: "hidden" },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  headerLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
+  iconBadge: { width: 30, height: 30, borderRadius: 8, backgroundColor: COLORS.primary + "15", alignItems: "center", justifyContent: "center" },
+  title:  { fontSize: 16, fontWeight: "700", color: COLORS.text },
+  addBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center" },
+  tableHeader: { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingVertical: 10, backgroundColor: "#F8FAFC", borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  colLabel:   { fontSize: 10, fontWeight: "700", color: "#94A3B8", letterSpacing: 0.6 },
+  col:        { paddingRight: 8 },
+  colName:    { flex: 3 },
+  colStatus:  { flex: 2 },
+  colDate:    { flex: 2 },
+  colActions: { flex: 1, paddingRight: 0 },
+  list:       { maxHeight: 340 },
+  row: { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingVertical: 13 },
+  rowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.border },
+  rowName:    { flexDirection: "row", alignItems: "center", gap: 10 },
+  fileIcon:   { width: 30, height: 30, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  docName:    { fontSize: 13, fontWeight: "600", color: COLORS.text },
+  docSub:     { fontSize: 10, color: COLORS.subText, marginTop: 2 },
+  pill: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, alignSelf: "flex-start" },
+  dot:        { width: 6, height: 6, borderRadius: 3 },
+  pillText:   { fontSize: 11, fontWeight: "700" },
+  dateText:   { fontSize: 12, color: COLORS.subText },
+  actionsRow: { flexDirection: "row", gap: 6, justifyContent: "flex-end" },
+  actionBtn: { width: 28, height: 28, borderRadius: 7, backgroundColor: "#F1F5F9", alignItems: "center", justifyContent: "center" },
+  empty:      { alignItems: "center", paddingVertical: 44, paddingHorizontal: 24 },
+  emptyEmoji: { fontSize: 40, marginBottom: 12 },
+  emptyTitle: { fontSize: 15, fontWeight: "700", color: COLORS.text, marginBottom: 6 },
+  emptySub:   { fontSize: 13, color: COLORS.subText, marginBottom: 20, textAlign: "center" },
+  uploadBtn:  { borderWidth: 1.5, borderColor: COLORS.primary, borderRadius: 24, paddingHorizontal: 24, paddingVertical: 11 },
+  uploadBtnText: { fontSize: 14, fontWeight: "700", color: COLORS.primary },
+  delOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" },
+  delModal: { width: 300, backgroundColor: "#fff", borderRadius: 18, padding: 24, alignItems: "center", shadowColor: "#000", shadowOpacity: 0.15, shadowRadius: 20, elevation: 10 },
+  delTitle:   { fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 8 },
+  delBody:    { fontSize: 13, color: COLORS.subText, textAlign: "center", marginBottom: 24 },
+  delActions: { flexDirection: "row", gap: 12, width: "100%" },
+  cancelBtn:  { flex: 1, paddingVertical: 12, borderRadius: 10, backgroundColor: "#F1F5F9", alignItems: "center" },
+  cancelText: { fontSize: 14, fontWeight: "600", color: COLORS.subText },
+  deleteBtn:  { flex: 1, paddingVertical: 12, borderRadius: 10, backgroundColor: "#FEE2E2", alignItems: "center", justifyContent: "center" },
+  deleteText: { fontSize: 14, fontWeight: "700", color: "#DC2626" },
+});
+
 const vms = StyleSheet.create({
-  overlay:       { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "center", alignItems: "center", paddingHorizontal: 20 },
-  modalCard:     { backgroundColor: "#fff", width: "100%", maxWidth: 400, borderRadius: 16, padding: 24, maxHeight: "85%" },
+  overlay:       { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" },
+  sheet:         { backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: Platform.OS === "ios" ? 38 : 24, maxHeight: "90%" },
+  handle:        { width: 40, height: 4, borderRadius: 2, backgroundColor: "#E5E7EB", alignSelf: "center", marginBottom: 16 },
   header:        { flexDirection: "row", alignItems: "flex-start", marginBottom: 10 },
   title:         { fontSize: 16, fontWeight: "700", color: COLORS.text },
   sub:           { fontSize: 11, color: COLORS.subText, marginTop: 2 },

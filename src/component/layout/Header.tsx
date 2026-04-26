@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { StyleSheet, Text, View, TouchableOpacity, Platform, Image } from "react-native";
 import { profileAPI } from "../../service/api";
 import { useRouter } from "expo-router";
+import NotificationPopup from "./Notification";
 
 // ─── Dynamic greeting based on time ──────────────────────
 const getGreeting = () => {
@@ -14,7 +15,6 @@ const getGreeting = () => {
   return "Good Evening";
 };
 
-// ─── Dynamic greeting icon based on time ─────────────────
 const getGreetingIcon = (): React.ComponentProps<typeof Ionicons>["name"] => {
   const hour = new Date().getHours();
   if (hour < 12) return "partly-sunny-outline";
@@ -29,16 +29,12 @@ export default function Header() {
     : pathname.startsWith("/hospital")
       ? "hospital"
       : "medicalStaff";
-  // const theme    = roleTheme[role];
 
   const [displayName, setDisplayName] = useState("...");
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0); // ← driven by NotificationPopup
 
-  // ────────────────────────────────────────────────────────
-  // GET /api/profile/me
-  // staff   → res.profile.fullName
-  // hospital → res.profile.hospitalLegalName
-  // ────────────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
       try {
@@ -48,7 +44,6 @@ export default function Header() {
         } else {
           setDisplayName(res.profile?.fullName ?? res.user?.name ?? "Staff");
         }
-        // Set profile picture if available
         setProfilePicture(res.profile?.profilePicture || null);
       } catch (err) {
         console.error("❌ Header profile fetch failed:", err);
@@ -88,45 +83,68 @@ export default function Header() {
       {/* Right section */}
       <View style={styles.right}>
         <View style={styles.greetBlock}>
-          {/* ── Dynamic greeting ── */}
           <Text style={styles.greet}>{getGreeting()}</Text>
-          {/* ── Dynamic name from API ── */}
           <Text style={styles.name}>{displayName}</Text>
         </View>
 
-        {/* ── Dynamic icon based on time ── */}
         <Ionicons name={getGreetingIcon()} size={20} color={COLORS.subText} />
 
-        {/* Bell with red dot */}
-        <View style={styles.iconWrap}>
+        {/* Bell with dynamic unread badge */}
+        {/* <TouchableOpacity
+          style={styles.iconWrap}
+          onPress={() => setShowNotifications(!showNotifications)}
+          activeOpacity={0.7}
+        >
           <Ionicons name="notifications-outline" size={22} color={COLORS.subText} />
-          <View style={styles.redDot} />
-        </View>
+          {unreadCount > 0 && (
+            <View style={styles.redDot}>
+              {unreadCount <= 9 && (
+                <Text style={styles.redDotText}>{unreadCount}</Text>
+              )}
+            </View>
+          )}
+        </TouchableOpacity> */}
+        <TouchableOpacity
+          style={styles.bellBtn}
+          onPress={() => setShowNotifications(v => !v)}
+        >
+          <Ionicons name="notifications-outline" size={22} color="#1e293b" />
+
+          {/* Badge — only renders when there are unread notifications */}
+          {unreadCount > 0 && (
+            <View style={styles.bellBadge}>
+              <Text style={styles.bellBadgeText}>
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
 
         {/* Avatar */}
         {role !== "admin" && (
           <TouchableOpacity
             style={styles.avatar}
             onPress={() => {
-              if (role === "medicalStaff") {
-                router.push("/medicalStaff/profile");
-              } else if (role === "hospital") {
-                router.push("/hospital/profile");
-              }
+              if (role === "medicalStaff") router.push("/medicalStaff/profile");
+              else if (role === "hospital") router.push("/hospital/profile");
             }}
             activeOpacity={0.7}
           >
             {profilePicture ? (
-              <Image 
-                source={{ uri: profilePicture }} 
-                style={styles.avatarImage}
-              />
+              <Image source={{ uri: profilePicture }} style={styles.avatarImage} />
             ) : (
               <Ionicons name="person" size={18} color={COLORS.subText} />
             )}
           </TouchableOpacity>
         )}
       </View>
+
+      <NotificationPopup
+        isVisible={showNotifications}
+        role={role}
+        onClose={() => setShowNotifications(false)}
+        onUnreadCountChange={setUnreadCount}   // ← wires badge to real count
+      />
     </View>
   );
 }
@@ -154,52 +172,82 @@ const styles = StyleSheet.create({
   greetBlock: { alignItems: "flex-end" },
   greet: { fontSize: 11, color: COLORS.subText },
   name: { fontSize: 13, fontWeight: "700", color: COLORS.text },
+
+  // Bell icon + badge
   iconWrap: { position: "relative" },
-  redDot: { position: "absolute", top: 0, right: 0, width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.red, borderWidth: 1.5, borderColor: COLORS.white },
-  avatar: { 
-    width: 36, 
-    height: 36, 
-    borderRadius: 18, 
-    backgroundColor: "#F1F5F9", 
-    borderWidth: 1, 
-    borderColor: COLORS.border, 
-    alignItems: "center", 
+  redDot: {
+    position: "absolute",
+    top: -3,
+    right: -4,
+    minWidth: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: COLORS.red,
+    borderWidth: 1.5,
+    borderColor: COLORS.white,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 2,
+  },
+  redDotText: { fontSize: 8, fontWeight: "700", color: "#fff" },
+  bellBtn: {
+    position: "relative",
+    padding: 6,
+    marginLeft: "auto", // pushes bell to the right
+  },
+  bellBadge: {
+    position: "absolute",
+    top: 2,
+    right: 2,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#ef4444",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 3,
+    // White border so it floats cleanly over the bell icon
+    borderWidth: 1.5,
+    borderColor: "#fff",
+  },
+  bellBadgeText: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: "#fff",
+    lineHeight: 12,
+  },
+
+  // Avatar
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#F1F5F9",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
-    ...(Platform.OS === 'web' && { cursor: 'pointer' })
+    ...(Platform.OS === "web" && { cursor: "pointer" }),
   },
-  avatarImage: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 18,
-  },
+  avatarImage: { width: "100%", height: "100%", borderRadius: 18 },
+
+  // Admin
   adminHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
     marginHorizontal: 12,
-    // backgroundColor: "#EFF6FF",
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 18,
   },
   adminIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
+    width: 36, height: 36, borderRadius: 8,
     backgroundColor: "#2563EB",
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: "center", justifyContent: "center",
   },
-  adminTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#2563EB",
-  },
-  adminSubtitle: {
-    fontSize: 11,
-    color: "#6B7280",
-    fontWeight: "400",
-  },
+  adminTitle: { fontSize: 14, fontWeight: "700", color: "#2563EB" },
+  adminSubtitle: { fontSize: 11, color: "#6B7280", fontWeight: "400" },
 });

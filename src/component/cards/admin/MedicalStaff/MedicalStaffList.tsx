@@ -16,7 +16,7 @@ import { adminAPI } from '@/service/api';
 
 // ─── Types & Config ───────────────────────────────────────────────────────────
 type AvailabilityStatus = 'AVAILABLE' | 'UNAVAILABLE';
-type VerificationStatus = 'verified' | 'pending' | 'rejected';
+type VerificationStatus = 'verified' | 'pending' | 'rejected' | 'auto-verified' | 'manual-pending-verification';
 
 interface MedicalStaff {
   userId: string;
@@ -111,7 +111,12 @@ const ALL_STATUSES: Array<'All Statuses' | AvailabilityStatus> = [
 ];
 
 const VERIFICATION_STATUSES = [
-  'All Verification', 'verified', 'pending', 'rejected',
+  'All Verification',
+  'verified',
+  'auto-verified',
+  'pending',
+  'manual-pending-verification',
+  'rejected',
 ];
 
 const BADGE: Record<AvailabilityStatus, { bg: string; text: string; dot: string }> = {
@@ -120,9 +125,11 @@ const BADGE: Record<AvailabilityStatus, { bg: string; text: string; dot: string 
 };
 
 const VERIFICATION_BADGE: Record<VerificationStatus, { bg: string; text: string; dot: string }> = {
-  verified: { bg: '#DCFCE7', text: '#16A34A', dot: '#22C55E' },
-  pending:  { bg: '#FEF9C3', text: '#CA8A04', dot: '#FACC15' },
-  rejected: { bg: '#FEE2E2', text: '#DC2626', dot: '#EF4444' },
+  'verified':                    { bg: '#DCFCE7', text: '#16A34A', dot: '#22C55E' },
+  'auto-verified':               { bg: '#D1FAE5', text: '#15803D', dot: '#34D399' },
+  'pending':                     { bg: '#FEF9C3', text: '#CA8A04', dot: '#FACC15' },
+  'manual-pending-verification': { bg: '#DBEAFE', text: '#2563EB', dot: '#60A5FA' },
+  'rejected':                    { bg: '#FEE2E2', text: '#DC2626', dot: '#EF4444' },
 };
 
 const ROLE_COLORS: Record<string, { bg: string; text: string }> = {
@@ -139,9 +146,11 @@ const getRoleColor = (role: string) =>
   ROLE_COLORS[role] ?? { bg: '#F1F5F9', text: '#64748B' };
 
 const DOC_STATUS_CFG: Record<string, { bg: string; text: string; border: string }> = {
-  verified: { bg: '#DCFCE7', text: '#16A34A', border: '#BBF7D0' },
-  pending:  { bg: '#FEF9C3', text: '#CA8A04', border: '#FEF08A' },
-  rejected: { bg: '#FEE2E2', text: '#DC2626', border: '#FECACA' },
+  'verified':                    { bg: '#DCFCE7', text: '#16A34A', border: '#BBF7D0' },
+  'auto-verified':               { bg: '#D1FAE5', text: '#15803D', border: '#6EE7B7' },
+  'manual-pending-verification': { bg: '#DBEAFE', text: '#2563EB', border: '#BFDBFE' },
+  'pending':                     { bg: '#FEF9C3', text: '#CA8A04', border: '#FEF08A' },
+  'rejected':                    { bg: '#FEE2E2', text: '#DC2626', border: '#FECACA' },
 };
 
 const DOC_TYPE_LABELS: Record<string, string> = {
@@ -977,7 +986,9 @@ function ActionMenu({ visible, onClose, onReview, onVerify, onReject, anchorY, a
   const left = Math.max(8, anchorX - MENU_WIDTH + 30);
 
   const showVerify = verificationStatus !== 'verified';
-  const showReject = verificationStatus !== 'rejected' && verificationStatus !=='verified';
+const showReject = verificationStatus !== 'rejected' 
+  && verificationStatus !== 'verified' 
+  && verificationStatus !== 'auto-verified';
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>

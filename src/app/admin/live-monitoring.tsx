@@ -312,6 +312,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
+  disabledBtn:{
+    // color:'#FFFFFF'
+  },
+
   // Sub Header
   subHeader: {
     flexDirection: 'row',

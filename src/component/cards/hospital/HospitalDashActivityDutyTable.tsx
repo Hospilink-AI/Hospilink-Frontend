@@ -3,17 +3,17 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
-    ActivityIndicator, Alert,
-    Modal, Pressable,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator, Alert,
+  Modal, Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { dutyAPI } from '../../../service/api'; // ← adjust path if needed
 
 // ─── Types ────────────────────────────────────────────────
-type DutyStatus = 'available' | 'assigned' | 'enroute' | 'in-progress' | 'completed' | 'cancelled';
+type DutyStatus = 'available' | 'assigned' | 'enroute' | 'in-progress' | 'completed' | 'cancelled' | 'incomplete' | 'expired';
 
 interface ApiDuty {
   _id: string;
@@ -37,9 +37,11 @@ const STATUS_CONFIG: Record<DutyStatus, { label: string; color: string; bg: stri
   available:   { label: 'Available',   color: '#22C55E', bg: '#F0FDF4' },
   assigned:    { label: 'Assigned',    color: '#3B82F6', bg: '#EFF6FF' },
   enroute:     { label: 'Enroute',     color: '#F59E0B', bg: '#FEF3C7' },
-  'in-progress': { label: 'In Progress', color: '#F97316', bg: '#FFF4ED' }, // Use quotes for hyphen
+  'in-progress': { label: 'In Progress', color: '#F97316', bg: '#FFF4ED' }, 
   completed:   { label: 'Completed',   color: '#22C55E', bg: '#F0FDF4' },
   cancelled:   { label: 'Cancelled',   color: '#EF4444', bg: '#FEF2F2' },
+  incomplete:  { label: 'Incomplete',  color: '#EF4444', bg: '#FEF2F2' },
+  expired:     { label: 'Expired',     color: '#6B7280', bg: '#F3F4F6' },
 };
 
 // ─── Role → Department Map ────────────────────────────────
@@ -116,11 +118,6 @@ function getStaffName(duty: ApiDuty): string {
 
 // ─── Cancel Reason Modal ──────────────────────────────────
 const CANCEL_REASONS = [
-  { value: 'emergency',             label: 'Emergency' },
-  { value: 'illness',               label: 'Illness' },
-  { value: 'scheduling_conflict',   label: 'Scheduling Conflict' },
-  { value: 'transportation_issue',  label: 'Transportation Issue' },
-  { value: 'other_staff',           label: 'Other Staff' },
   { value: 'no_longer_needed',      label: 'No Longer Needed' },
   { value: 'found_alternative',     label: 'Found Alternative' },
   { value: 'emergency_resolved',    label: 'Emergency Resolved' },
@@ -146,10 +143,8 @@ function CancelModal({
   return (
     <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
       <Pressable style={styles.menuOverlay} onPress={onClose}>
-        {/* Stop touch propagation so tapping inside doesn't close */}
         <Pressable style={styles.cancelBox} onPress={() => {}}>
 
-          {/* Header */}
           <View style={styles.cancelHeader}>
             <View style={styles.cancelIconWrap}>
               <Ionicons name="warning-outline" size={20} color="#2563EB" />
@@ -162,7 +157,6 @@ function CancelModal({
 
           <View style={styles.cancelDivider} />
 
-          {/* Reason List */}
           {CANCEL_REASONS.map((r) => (
             <TouchableOpacity
               key={r.value}
@@ -181,7 +175,6 @@ function CancelModal({
 
           <View style={styles.cancelDivider} />
 
-          {/* Action Buttons */}
           <View style={styles.cancelActions}>
             <TouchableOpacity style={styles.cancelDismiss} onPress={onClose} disabled={loading} activeOpacity={0.7}>
               <Text style={styles.cancelDismissText}>Dismiss</Text>
@@ -224,7 +217,6 @@ function ActionMenu({
       <Pressable style={styles.menuOverlay} onPress={onClose}>
         <View style={styles.menuBox}>
 
-          {/* Edit */}
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() => { onClose(); onEdit(); }}
@@ -239,7 +231,6 @@ function ActionMenu({
 
           <View style={styles.menuDivider} />
 
-          {/* Cancel */}
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() => { onClose(); onCancel(); }}
@@ -260,9 +251,10 @@ function ActionMenu({
 
 // ─── Duty Row ─────────────────────────────────────────────
 function DutyRow({ item, onMenuPress }: { item: ApiDuty; onMenuPress: () => void }) {
-  const statusCfg = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.available;
+  // Fallback styling just in case a completely unknown status slips through
+  const statusCfg = STATUS_CONFIG[item.status] ?? { label: item.status, color: '#6B7280', bg: '#F3F4F6' };
   const staffName = getStaffName(item);
-  const dept = getDept(item.staffRole)
+  const dept = getDept(item.staffRole);
 
   return (
     <View style={styles.row}>
@@ -281,12 +273,19 @@ function DutyRow({ item, onMenuPress }: { item: ApiDuty; onMenuPress: () => void
       <Text style={styles.dept} numberOfLines={1}>{getDept(item.staffRole)}</Text>
 
       <View style={[styles.badge, { backgroundColor: statusCfg.bg }]}>
-        <Text style={[styles.badgeText, { color: statusCfg.color }]}>{statusCfg.label}</Text>
+        <Text style={[styles.badgeText, { color: statusCfg.color }]}>
+          {statusCfg.label || item.status.toUpperCase()}
+        </Text>
       </View>
 
-      <TouchableOpacity style={styles.dotsBtn} onPress={onMenuPress} activeOpacity={0.6}>
-        <Ionicons name="ellipsis-horizontal" size={18} color="#6B7280" />
-      </TouchableOpacity>
+      {/* ── ONLY SHOW MENU FOR AVAILABLE DUTIES ── */}
+      {item.status === 'available' ? (
+        <TouchableOpacity style={styles.dotsBtn} onPress={onMenuPress} activeOpacity={0.6}>
+          <Ionicons name="ellipsis-horizontal" size={18} color="#6B7280" />
+        </TouchableOpacity>
+      ) : (
+        <View style={styles.dotsBtn} /> /* Empty placeholder keeps columns aligned */
+      )}
     </View>
   );
 }
@@ -301,10 +300,11 @@ export function ActiveDutyTable({
 }) {
   const router = useRouter();
 
-  const [duties,     setDuties]     = useState<ApiDuty[]>([]);
-  const [loading,    setLoading]    = useState(true);
-  const [menuFor,    setMenuFor]    = useState<string | null>(null);
-  const [cancelFor,  setCancelFor]  = useState<string | null>(null);
+  const [duties,     setDuties]    = useState<ApiDuty[]>([]);
+  const [loading,    setLoading]   = useState(true);
+  const [showAll,    setShowAll]   = useState(false); // Controls 10 duties vs All duties
+  const [menuFor,    setMenuFor]   = useState<string | null>(null);
+  const [cancelFor,  setCancelFor] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
 
   // ── Fetch duties every time screen is focused ──────────
@@ -321,13 +321,21 @@ export function ActiveDutyTable({
           const list: ApiDuty[] = res.data ?? [];
           setDuties(list);
 
-          // Pass counts up to parent (e.g. stat cards)
+          // Pass counts up to parent (Initialize all possible statuses to 0 first)
           if (onCountsReady) {
+            const baseCounts: Record<DutyStatus, number> = {
+              available: 0, assigned: 0, enroute: 0, 'in-progress': 0, 
+              completed: 0, cancelled: 0, incomplete: 0, expired: 0
+            };
+            
             const counts = list.reduce(
-              (acc, d) => { acc[d.status] = (acc[d.status] ?? 0) + 1; return acc; },
-              {} as Record<string, number>,
+              (acc, d) => { 
+                acc[d.status] = (acc[d.status] || 0) + 1; 
+                return acc; 
+              },
+              { ...baseCounts }
             );
-            onCountsReady(counts as Record<DutyStatus, number>);
+            onCountsReady(counts);
           }
         } catch (err) {
           console.error('Failed to fetch duties:', err);
@@ -337,7 +345,7 @@ export function ActiveDutyTable({
       })();
 
       return () => { active = false; };
-    }, []),
+    }, [onCountsReady])
   );
 
   // ── Edit — navigate to create-duty with dutyId + mode ──
@@ -370,6 +378,9 @@ export function ActiveDutyTable({
     }
   };
 
+  // Slice duties to show only 10 initially, or all if showAll is true
+  const displayedDuties = showAll ? duties : duties.slice(0, 10);
+
   // ── Render ─────────────────────────────────────────────
   return (
     <View style={[styles.card, isTablet && { flex: 1 }]}>
@@ -377,9 +388,11 @@ export function ActiveDutyTable({
       {/* Header */}
       <View style={styles.cardHeader}>
         <Text style={styles.title}>Active Duty Tracking</Text>
-        <TouchableOpacity onPress={() => router.push('/hospital/dashboard')}>
-          <Text style={styles.viewAll}>View all</Text>
-        </TouchableOpacity>
+        {duties.length > 10 && (
+          <TouchableOpacity onPress={() => setShowAll(!showAll)}>
+            <Text style={styles.viewAll}>{showAll ? 'View less' : 'View all'}</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Column Headers */}
@@ -403,10 +416,10 @@ export function ActiveDutyTable({
           <Text style={styles.emptyText}>No active duties</Text>
         </View>
       ) : (
-        duties.map((d, i) => (
+        displayedDuties.map((d, i) => (
           <View key={d._id}>
             <DutyRow item={d} onMenuPress={() => setMenuFor(d._id)} />
-            {i < duties.length - 1 && <View style={styles.divider} />}
+            {i < displayedDuties.length - 1 && <View style={styles.divider} />}
           </View>
         ))
       )}

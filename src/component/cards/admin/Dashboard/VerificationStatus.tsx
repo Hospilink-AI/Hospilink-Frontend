@@ -14,6 +14,7 @@ function CircularProgress({ percentage, size = 50, strokeWidth = 4, color }: Cir
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
+  percentage = Math.round(percentage || 0)
 
   return (
     <View style={{ width: size, height: size }}>
