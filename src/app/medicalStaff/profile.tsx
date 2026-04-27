@@ -146,6 +146,7 @@ export default function Profile() {
 
   // ── FIX: education and skills - use API arrays, fall back to empty
   const displayEducation = Array.isArray(apiProfile?.education) ? apiProfile.education : [];
+  const displaySpeciality = apiProfile?.education?.[0]?.speciality ?? "";
   const displaySkills    = Array.isArray(apiProfile?.skills)    ? apiProfile.skills    : [];
 
   // ── FIX: verificationStatus — derive from documents OR profile field
@@ -171,6 +172,7 @@ export default function Profile() {
       <ProfileHeader
         name={displayName}
         role={displayRole}
+        speciality={displaySpeciality}
         badges={profileData.badges}
         onEdit={() => {}}
         isMobile={isMobile}
@@ -275,7 +277,7 @@ export default function Profile() {
           icon="shield-checkmark-outline"
           iconBg="#D1FAE5"
           iconColor="#059669"
-          label="Account Security"
+          label="Account Secured"
         />
         <ProfileActionCard
           icon="person-add-outline"

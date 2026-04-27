@@ -627,6 +627,17 @@ export const dutyAPI = {
     return response.data;
   },
 
+  getHospitalActiveDuties : async () => {
+    const response = await api.get('api/duties/active-duties')
+    return response.data;
+  },
+
+  getTrackHospitalStaffLocation: async (dutyId) => {
+    const response = await api.get(`api/duties/duty-route-map/${dutyId}`);
+    return response.data;
+  },
+
+
 };
 
 
@@ -744,7 +755,7 @@ export const documentAPI = {
     try {
       console.log("Uploading:", { fileUri, documentType });
 
-      const res = await fetch("https://hospilinkv1backend.vercel.app/api/documents/upload", {
+      const res = await fetch("https://hospilink-backend.vercel.app/api/documents/upload", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -1004,6 +1015,9 @@ export const adminAPI = {
     const response = await api.get('/api/admin/active-duties')
     return response.data;
   },
+
+  
+
 
   getTrackStaffLocation: async (dutyId) => {
     const response = await api.get(`/api/admin/duty-route-map/${dutyId}`);

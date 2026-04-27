@@ -140,6 +140,8 @@ function Toast({ visible, message }: { visible: boolean; message: string }) {
     ]).start();
   }, [visible]);
 
+  
+
   return (
     <Animated.View style={[styles.toast, { transform: [{ translateY }], opacity }]} pointerEvents="none">
       <Ionicons name="checkmark-circle" size={20} color="#fff" />
@@ -327,6 +329,7 @@ function TimePickerField({ value, onChange, placeholder, error }: {
 }) {
   const [showPicker, setShowPicker] = useState(false);
   const [tempTime, setTempTime] = useState<Date>(new Date());
+  const inputRef = useRef<any>(null);
 
   const handlePress = () => {
     if (value) {
@@ -346,21 +349,28 @@ function TimePickerField({ value, onChange, placeholder, error }: {
   const renderInput = () => {
     if (Platform.OS === 'web') {
       return (
-        <View style={[styles.inputWrap, error && styles.inputErrorBorder]}>
-          <Ionicons name="time-outline" size={15} color="#9CA3AF" style={{ marginRight: 6 }} />
-          {/* @ts-ignore */}
-          <input
-            type="time"
-            value={value || ''}
-            onChange={(e: any) => onChange(e.target.value)}
-            style={{
-              flex: 1, border: 'none', outline: 'none', fontSize: 13,
-              color: value ? '#111827' : '#9CA3AF', background: 'transparent',
-              paddingTop: 9, paddingBottom: 9, cursor: 'pointer',
-              fontFamily: 'inherit', minWidth: 0, width: '100%',
-            }}
-          />
-        </View>
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => inputRef.current?.showPicker?.()}
+        >
+          <View style={[styles.inputWrap, error && styles.inputErrorBorder]}> {/* ← View was missing */}
+            <Ionicons name="time-outline" size={15} color="#9CA3AF" style={{ marginRight: 6 }} />
+            {/* @ts-ignore */}
+            <input
+              ref={inputRef}           // ← ref was missing
+              type="time"
+              value={value || ''}
+              onChange={(e: any) => onChange(e.target.value)}
+              style={{
+                flex: 1, border: 'none', outline: 'none', fontSize: 13,
+                color: value ? '#111827' : '#9CA3AF', background: 'transparent',
+                paddingTop: 9, paddingBottom: 9, cursor: 'pointer',
+                fontFamily: 'inherit', minWidth: 0, width: '100%',
+                pointerEvents: 'none', // ← stops input consuming the click before wrapper
+              }}
+            />
+          </View>
+        </TouchableOpacity>
       );
     }
 
@@ -466,6 +476,8 @@ function InputField({ placeholder, value, onChangeText, prefix, multiline, keybo
     </View>
   );
 }
+
+
 
 // ─── Main Screen ──────────────────────────────────────────
 export default function CreateDutyScreen() {
@@ -575,6 +587,23 @@ export default function CreateDutyScreen() {
       setPublishing(false);
     }
   };
+
+  useEffect(() => {
+  if (!form.startingDate || !form.endingDate) return;
+
+  const start = parseDateString(form.startingDate);
+  const end = parseDateString(form.endingDate);
+
+  // Normalize times to midnight to compare dates only
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+
+  const shouldBeOvernight = end > start;
+
+  if (shouldBeOvernight !== form.overtimeDuty) {
+    setForm(prev => ({ ...prev, overtimeDuty: shouldBeOvernight }));
+  }
+}, [form.startingDate, form.endingDate]);
 
   if (loadingDuty) {
     return (
@@ -845,7 +874,7 @@ const styles = StyleSheet.create({
 
   inputWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, paddingHorizontal: 14, backgroundColor: '#fff' },
   inputPrefix: { fontSize: 13, color: '#6B7280', marginRight: 4 },
-  input: { flex: 1, fontSize: 13, color: '#111827', paddingVertical: Platform.OS === 'ios' ? 12 : 10, outlineWidth: 0 },
+  input: { flex: 1, fontSize: 13, color: '#111827', paddingVertical: Platform.OS === 'ios' ? 12 : 10, ...Platform.select({ web: { outlineWidth: 0 } as any }), },
   inputMulti: { minHeight: 140, paddingTop: 12 },
 
   // New Error Styles
