@@ -428,7 +428,7 @@ function TableHeader() {
       <Text style={[th.cell, th.colLocation]}>LOCATION</Text>
       <Text style={[th.cell, th.colEmail]}>EMAIL</Text>
       <Text style={[th.cell, th.colDuties, { textAlign: 'center' }]}>{'COMPLETED\nDUTIES'}</Text>
-      <Text style={[th.cell, th.colStatus, { textAlign: 'center' }]}>AVAILABILITY</Text>
+      <Text style={[th.cell, th.colStatus, { textAlign: 'center' }]}>STATUS</Text>
       <Text style={[th.cell, th.colAction, { textAlign: 'center' }]}>ACTIONS</Text>
     </View>
   );

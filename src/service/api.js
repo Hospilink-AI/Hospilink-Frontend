@@ -755,7 +755,7 @@ export const documentAPI = {
     try {
       console.log("Uploading:", { fileUri, documentType });
 
-      const res = await fetch("https://hospilinkv1backend.vercel.app/api/documents/upload", {
+      const res = await fetch("https://hospilink-backend.vercel.app/api/documents/upload", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

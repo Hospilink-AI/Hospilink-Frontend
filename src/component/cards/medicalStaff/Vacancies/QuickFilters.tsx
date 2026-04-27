@@ -1,7 +1,13 @@
+
 import { COLORS } from "@/constant/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation, Platform, UIManager } from "react-native";
+
+// Enable LayoutAnimation for smooth transitions on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 const MIN_DISTANCE = 1;
 const MAX_DISTANCE = 50;
@@ -16,11 +22,14 @@ export interface QuickFilterValues {
   contract: boolean;
 }
 
-interface FilterState extends QuickFilterValues {}
+interface FilterState extends QuickFilterValues {
+  filterMode: 'distance' | 'location'; // Track which mode is active
+}
 
 const DEFAULT_FILTERS: FilterState = {
   role: "", location: "", distance: 25,
   minSal: "", maxSal: "", fullTime: true, contract: false,
+  filterMode: 'distance'
 };
 
 interface Props {
@@ -29,29 +38,34 @@ interface Props {
 
 export default function QuickFilters({ onApply }: Props) {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
-  const [appliedRole, setAppliedRole] = useState("");
-  const [appliedLocation, setAppliedLocation] = useState("");
 
   const set = (key: keyof FilterState, value: any) =>
     setFilters((prev) => ({ ...prev, [key]: value }));
 
+  const toggleMode = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    const newMode = filters.filterMode === 'distance' ? 'location' : 'distance';
+    // When switching, clear the other value so they don't conflict
+    setFilters(prev => ({
+      ...prev,
+      filterMode: newMode,
+      location: newMode === 'distance' ? "" : prev.location,
+      distance: newMode === 'location' ? 0 : 25, 
+    }));
+  };
+
   const reset = () => {
     setFilters(DEFAULT_FILTERS);
-    setAppliedRole("");
-    setAppliedLocation("");
     onApply(DEFAULT_FILTERS);
   };
 
   const handleApply = () => {
-    setAppliedRole(filters.role.trim());
-    setAppliedLocation(filters.location.trim());
     onApply(filters);
   };
 
   const distancePct = ((filters.distance - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE)) * 100;
   const decreaseDistance = () => set("distance", Math.max(MIN_DISTANCE, filters.distance - 5));
   const increaseDistance = () => set("distance", Math.min(MAX_DISTANCE, filters.distance + 5));
-  const hasChips = appliedRole.length > 0 || appliedLocation.length > 0;
 
   return (
     <View style={styles.container}>
@@ -62,7 +76,7 @@ export default function QuickFilters({ onApply }: Props) {
         </TouchableOpacity>
       </View>
 
-      {/* Role */}
+      {/* Role Filter - Always Visible */}
       <View style={styles.searchGroup}>
         <Text style={styles.searchLabel}>{"Filter by Role"}</Text>
         <View style={[styles.searchInputBox, filters.role.length > 0 && styles.searchInputBoxActive]}>
@@ -73,72 +87,57 @@ export default function QuickFilters({ onApply }: Props) {
             value={filters.role}
             onChangeText={(v) => set("role", v)}
           />
-          {filters.role.length > 0 && (
-            <TouchableOpacity onPress={() => set("role", "")} hitSlop={8}>
-              <Ionicons name="close-circle" size={15} color={COLORS.subText} />
-            </TouchableOpacity>
-          )}
         </View>
       </View>
 
-      {/* Location */}
-      <View style={[styles.searchGroup, { marginTop: 12 }]}>
-        <Text style={styles.searchLabel}>{"Filter by Location"}</Text>
-        <View style={[styles.searchInputBox, filters.location.length > 0 && styles.searchInputBoxActive]}>
+      {/* Toggle Header for Location vs Distance */}
+      <View style={styles.modeToggleHeader}>
+        <Text style={styles.label}>
+          {filters.filterMode === 'distance' ? "MAX DISTANCE (KM)" : "FILTER BY LOCATION"}
+        </Text>
+        <TouchableOpacity onPress={toggleMode} style={styles.switchModeBtn}>
+          <Ionicons name="swap-horizontal" size={14} color={COLORS.primary} />
+          <Text style={styles.switchModeText}>
+            {filters.filterMode === 'distance' ? "Use Location" : "Use Distance"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Conditional Rendering: Distance Slider OR Location Input */}
+      {filters.filterMode === 'distance' ? (
+        <View>
+          <View style={styles.sliderRow}>
+            <TouchableOpacity style={styles.sliderBtn} onPress={decreaseDistance}>
+              <Ionicons name="remove" size={16} color={COLORS.primary} />
+            </TouchableOpacity>
+            <View style={styles.sliderTrack}>
+              <View style={[styles.sliderFill, { width: (distancePct + "%") as any }]} />
+              <View style={[styles.sliderThumb, { left: (Math.max(distancePct - 3, 0) + "%") as any }]} />
+            </View>
+            <TouchableOpacity style={styles.sliderBtn} onPress={increaseDistance}>
+              <Ionicons name="add" size={16} color={COLORS.primary} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.sliderLabels}>
+            <Text style={styles.sliderLabel}>{MIN_DISTANCE + " km"}</Text>
+            <Text style={[styles.sliderLabel, styles.sliderCurrent]}>{filters.distance + " km"}</Text>
+            <Text style={styles.sliderLabel}>{MAX_DISTANCE + " km"}</Text>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.searchInputBox}>
           <TextInput
             style={styles.searchInput}
-            placeholder="e.g. Pune"
+            placeholder="e.g. Pune, Maharashtra"
             placeholderTextColor={COLORS.subText}
             value={filters.location}
             onChangeText={(v) => set("location", v)}
           />
-          {filters.location.length > 0 && (
-            <TouchableOpacity onPress={() => set("location", "")} hitSlop={8}>
-              <Ionicons name="close-circle" size={15} color={COLORS.subText} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {/* Chips */}
-      {hasChips && (
-        <View style={styles.chipsRow}>
-          {appliedRole.length > 0 && (
-            <TouchableOpacity style={styles.chip} onPress={() => { set("role", ""); setAppliedRole(""); onApply({ ...filters, role: "" }); }}>
-              <Text style={styles.chipText}>{"Role: " + appliedRole}</Text>
-              <Ionicons name="close" size={12} color={COLORS.primary} style={{ marginLeft: 4 }} />
-            </TouchableOpacity>
-          )}
-          {appliedLocation.length > 0 && (
-            <TouchableOpacity style={styles.chip} onPress={() => { set("location", ""); setAppliedLocation(""); onApply({ ...filters, location: "" }); }}>
-              <Text style={styles.chipText}>{"Location: " + appliedLocation}</Text>
-              <Ionicons name="close" size={12} color={COLORS.primary} style={{ marginLeft: 4 }} />
-            </TouchableOpacity>
-          )}
+          <Ionicons name="location-outline" size={16} color={COLORS.subText} />
         </View>
       )}
 
-      {/* Distance */}
-      <Text style={[styles.label, { marginTop: 18 }]}>{"MAX DISTANCE (KM)"}</Text>
-      <View style={styles.sliderRow}>
-        <TouchableOpacity style={styles.sliderBtn} onPress={decreaseDistance}>
-          <Ionicons name="remove" size={16} color={COLORS.primary} />
-        </TouchableOpacity>
-        <View style={styles.sliderTrack}>
-          <View style={[styles.sliderFill, { width: (distancePct + "%") as any }]} />
-          <View style={[styles.sliderThumb, { left: (Math.max(distancePct - 3, 0) + "%") as any }]} />
-        </View>
-        <TouchableOpacity style={styles.sliderBtn} onPress={increaseDistance}>
-          <Ionicons name="add" size={16} color={COLORS.primary} />
-        </TouchableOpacity>
-      </View>
-      <View style={styles.sliderLabels}>
-        <Text style={styles.sliderLabel}>{MIN_DISTANCE + " km"}</Text>
-        <Text style={[styles.sliderLabel, styles.sliderCurrent]}>{filters.distance + " km"}</Text>
-        <Text style={styles.sliderLabel}>{MAX_DISTANCE + " km"}</Text>
-      </View>
-
-      {/* Salary */}
+      {/* Salary Section */}
       <Text style={[styles.label, { marginTop: 18 }]}>{"SALARY RANGE (YEARLY)"}</Text>
       <View style={styles.salaryRow}>
         <View style={styles.salaryInputWrap}>
@@ -165,18 +164,13 @@ export default function QuickFilters({ onApply }: Props) {
           />
         </View>
       </View>
-      {(filters.minSal.length > 0 || filters.maxSal.length > 0) && (
-        <Text style={styles.salaryPreview}>
-          {"₹" + (filters.minSal || "0") + " \u2014 ₹" + (filters.maxSal || "\u221e") + " / yr"}
-        </Text>
-      )}
 
-      {/* Contract */}
+      {/* Contract Section */}
       <Text style={[styles.label, { marginTop: 18 }]}>{"CONTRACT TYPE"}</Text>
-      <CheckItem label="Full-time"       checked={filters.fullTime} onToggle={() => set("fullTime", !filters.fullTime)} />
+      <CheckItem label="Full-time" checked={filters.fullTime} onToggle={() => set("fullTime", !filters.fullTime)} />
       <CheckItem label="Contract / Locum" checked={filters.contract} onToggle={() => set("contract", !filters.contract)} />
 
-      {/* Apply */}
+      {/* Apply Action */}
       <TouchableOpacity style={styles.applyBtn} activeOpacity={0.85} onPress={handleApply}>
         <Ionicons name="options-outline" size={15} color="#fff" />
         <Text style={styles.applyText}>{"Apply Filters"}</Text>
@@ -185,6 +179,7 @@ export default function QuickFilters({ onApply }: Props) {
   );
 }
 
+// CheckItem remains the same...
 function CheckItem({ label, checked, onToggle }: { label: string; checked: boolean; onToggle: () => void }) {
   return (
     <TouchableOpacity style={styles.checkRow} onPress={onToggle} activeOpacity={0.7}>
@@ -207,22 +202,22 @@ const styles = StyleSheet.create({
   reset:  { fontSize: 12, fontWeight: "700", color: COLORS.primary, letterSpacing: 0.5 },
   searchGroup:  {},
   searchLabel:  { fontSize: 12, fontWeight: "600", color: COLORS.subText, marginBottom: 6 },
+  modeToggleHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 18, marginBottom: 8 },
+  switchModeBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  switchModeText: { fontSize: 11, color: COLORS.primary, fontWeight: '700' },
   searchInputBox: {
     flexDirection: "row", alignItems: "center",
     borderWidth: 1, borderColor: COLORS.border, borderRadius: 8,
     paddingHorizontal: 10, backgroundColor: "#FAFAFA", height: 42,
   },
   searchInputBoxActive: { borderColor: COLORS.primary, backgroundColor: "#EEF8FA" },
-  searchInput: { flex: 1, fontSize: 14, color: COLORS.text, paddingVertical: 0, outlineWidth: 0 } as any,
-  chipsRow:  { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
-  chip:      { flexDirection: "row", alignItems: "center", backgroundColor: "#EEF8FA", borderWidth: 1, borderColor: COLORS.primary, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
-  chipText:  { fontSize: 12, color: COLORS.primary, fontWeight: "600" },
-  label:     { fontSize: 11, fontWeight: "700", color: COLORS.subText, letterSpacing: 0.8, marginBottom: 8 },
+  searchInput: { flex: 1, fontSize: 14, color: COLORS.text, paddingVertical: 0 } as any,
+  label:     { fontSize: 11, fontWeight: "700", color: COLORS.subText, letterSpacing: 0.8 },
   sliderRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   sliderBtn: { width: 32, height: 32, borderRadius: 8, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: COLORS.border },
   sliderTrack: { flex: 1, height: 6, backgroundColor: "#E2E8F0", borderRadius: 3, position: "relative", justifyContent: "center" },
   sliderFill:  { position: "absolute", left: 0, height: "100%", backgroundColor: COLORS.primary, borderRadius: 3 },
-  sliderThumb: { position: "absolute", width: 18, height: 18, borderRadius: 9, backgroundColor: COLORS.primary, borderWidth: 2, borderColor: COLORS.white, shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 3, elevation: 3 },
+  sliderThumb: { position: "absolute", width: 18, height: 18, borderRadius: 9, backgroundColor: COLORS.primary, borderWidth: 2, borderColor: COLORS.white, elevation: 3 },
   sliderLabels: { flexDirection: "row", justifyContent: "space-between", marginTop: 8 },
   sliderLabel:  { fontSize: 11, color: COLORS.subText },
   sliderCurrent:{ color: COLORS.primary, fontWeight: "700" },
@@ -231,7 +226,6 @@ const styles = StyleSheet.create({
   salaryInputWrap: { flex: 1, flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingHorizontal: 10, backgroundColor: "#FAFAFA", height: 42 },
   currencySign: { fontSize: 13, color: COLORS.subText, marginRight: 4 },
   salaryInput:  { flex: 1, fontSize: 14, color: COLORS.text },
-  salaryPreview:{ fontSize: 12, color: COLORS.primary, fontWeight: "600", textAlign: "center", marginTop: 6 },
   checkRow:     { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 10 },
   checkbox:     { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: COLORS.border, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.white },
   checkboxActive:{ backgroundColor: COLORS.primary, borderColor: COLORS.primary },

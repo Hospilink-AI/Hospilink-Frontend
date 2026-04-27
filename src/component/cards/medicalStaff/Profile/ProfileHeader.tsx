@@ -76,6 +76,7 @@ const getRoleByLabel = (label: string) =>
 interface Props {
   name:                string;
   role:                string;
+  speciality?:         string;
   badges:              string[];
   onEdit:              () => void;
   isMobile?:           boolean;
@@ -97,7 +98,7 @@ interface Props {
 }
 
 export default function ProfileHeader({
-  name, role, badges, onEdit, isMobile,
+  name, role, badges, onEdit, isMobile,speciality,
   phone, email, isVerified = false, isComplete = false,
   profileCompletion, verificationStatus, jobRoleValue, city, area,
   profilePicture, profileSummary, education = [], skills = [],
@@ -352,11 +353,12 @@ export default function ProfileHeader({
           <Text style={[styles.name, isMobile && styles.nameMobile]}>{name}</Text>
           <Text style={styles.role}>{role}</Text>
           <View style={styles.badgeRow}>
-            {badges.slice(0, 1).map((badge, i) => (
-              <View key={i} style={styles.badge}>
-                <Text style={styles.badgeText}>{badge}</Text>
+            
+            {speciality && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{speciality}</Text>
               </View>
-            ))}
+            )}
 
             {verificationStatus === "verified" ? (
               <View style={[styles.pill, styles.pillGreen]}>

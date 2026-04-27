@@ -22,8 +22,8 @@ import {
 import { dutyAPI, profileAPI } from "../../service/api";
 
 interface Duty {
-  _id?: string;
-  id?: string;
+  _id: string;
+  id: string;
   title: string;
   hospitalId?: string;
   hospital: string;
@@ -37,6 +37,7 @@ interface Duty {
   urgency?: string;
   startTime?: string;
   endTime?: string;
+
   totalPayment?: number;
   status?: string;
 }
@@ -73,7 +74,7 @@ export default function Dashboard() {
 
   // Get active duty (first ongoing duty)
   const activeDuty = ongoingDuties.length > 0 ? ongoingDuties[0] : null;
-  
+
   // Calculate progress based on status
   const getProgress = (status: string | undefined) => {
     switch (status) {
@@ -99,13 +100,13 @@ export default function Dashboard() {
     }, 100);
   };
 
-  
+
 
   const checkLocationPermission = async () => {
     try {
       if (Platform.OS === 'web') {
         const permissionStatus = await navigator.permissions?.query({ name: 'geolocation' as PermissionName });
-        
+
         if (permissionStatus?.state === 'granted') {
           navigator.geolocation.getCurrentPosition(
             async (position) => {
@@ -161,6 +162,11 @@ export default function Dashboard() {
     fetchOngoingDuties();
   };
 
+  const handlePressDuty = (id: string) => {
+    if (!id) return;
+    router.push(`/medicalStaff/dutyDetails/${id}` as any);
+  };
+
   const handleToggleAvailability = async () => {
     const newValue = !available;
     setAvailable(newValue);
@@ -174,7 +180,7 @@ export default function Dashboard() {
     }
   };
 
-  
+
 
   const fetchAvailableDuties = async () => {
     setLoading(true);
@@ -315,6 +321,8 @@ export default function Dashboard() {
     fetchOngoingDuties();
   }, []);
 
+  
+
   return (
     <ScrollView
       ref={scrollViewRef}
@@ -453,6 +461,7 @@ export default function Dashboard() {
                       key={duty._id || duty.id}
                       duty={duty}
                       onAccept={handleAccept}
+                      onPress={() => handlePressDuty(duty._id || duty.id)}
                       isMobile={isMobile}
                     />
                   ))}
@@ -493,6 +502,7 @@ export default function Dashboard() {
               key={duty._id}
               duty={duty}
               isMobile={isMobile}
+              onPress={() => handlePressDuty(duty._id)}
               onStatusChange={refreshDuties}
             />
           ))}
@@ -521,6 +531,7 @@ export default function Dashboard() {
               key={duty._id}
               duty={duty}
               isMobile={isMobile}
+              onPress={handlePressDuty}
               onStatusChange={refreshDuties}
             />
           ))}
@@ -528,24 +539,24 @@ export default function Dashboard() {
       )}
 
       <View style={styles.actionsRow}>
-        <ActionCard 
-          icon="search-outline" 
-          label="Find Duties" 
-          iconBg="#EEF2FF" 
+        <ActionCard
+          icon="search-outline"
+          label="Find Duties"
+          iconBg="#EEF2FF"
           isMobile={isMobile}
           onPress={handleFindDuties}
         />
-        <ActionCard 
-          icon="document-text-outline" 
-          label="My Documents" 
-          iconBg="#D1FAE5" 
+        <ActionCard
+          icon="document-text-outline"
+          label="My Documents"
+          iconBg="#D1FAE5"
           isMobile={isMobile}
           onPress={() => router.push("/medicalStaff/profile")}
         />
-        <ActionCard 
-          icon="help-circle-outline" 
-          label="Support Center" 
-          iconBg="#FEF3C7" 
+        <ActionCard
+          icon="help-circle-outline"
+          label="Support Center"
+          iconBg="#FEF3C7"
           isMobile={isMobile}
           onPress={() => router.push("/medicalStaff/support")}
         />
