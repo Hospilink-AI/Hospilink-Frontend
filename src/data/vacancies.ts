@@ -1,8 +1,8 @@
 export const vacancyStats = [
   { id: "1", icon: "shield-checkmark-outline" as const, iconBg: "#EEF2FF", iconColor: "#2563EB", value: "124", label: "AVAILABLE JOBS",     trend: "+4 today", trendColor: "#16A34A" },
-  { id: "2", icon: "alert-circle-outline" as const,     iconBg: "#FFF1F2", iconColor: "#EF4444", value: "18",  label: "URGENT ROLES", trend: null },
-  { id: "3", icon: "cash-outline" as const,             iconBg: "#FEF3C7", iconColor: "#D97706", value: "42",  label: "HIGH PAYING",  trend: null },
-  { id: "4", icon: "bookmark-outline" as const,         iconBg: "#F3E8FF", iconColor: "#7C3AED", value: "14",  label: "SAVED JOBS",   trend: null },
+  { id: "2", icon: "alert-circle-outline" as const,     iconBg: "#FFF1F2", iconColor: "#EF4444", value: "NA",  label: "URGENT ROLES", trend: null },
+  { id: "3", icon: "cash-outline" as const,             iconBg: "#FEF3C7", iconColor: "#D97706", value: "NA",  label: "HIGH PAYING",  trend: null },
+  { id: "4", icon: "bookmark-outline" as const,         iconBg: "#F3E8FF", iconColor: "#7C3AED", value: "NA",  label: "SAVED JOBS",   trend: null },
 ];
 
 export const featuredVacancies = [

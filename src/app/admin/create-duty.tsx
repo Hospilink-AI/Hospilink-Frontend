@@ -1338,13 +1338,15 @@ function DatePickerField({ value, onChange, placeholder }: {
     return (
       <View style={styles.inputWrap}>
         <Ionicons name="calendar-outline" size={15} color="#9CA3AF" style={{ marginRight: 6 }} />
-        {/* @ts-ignore */}
         <input
           type="date"
           value={htmlValue}
           onChange={(e: any) => {
             const raw = e.target.value;
-            if (raw) { const [y, m, d] = raw.split('-'); onChange(`${m}/${d}/${y}`); }
+            if (raw) { 
+              const [y, m, d] = raw.split('-'); 
+              onChange(`${m}/${d}/${y}`); 
+            }
             else onChange('');
           }}
           style={{
@@ -1358,63 +1360,73 @@ function DatePickerField({ value, onChange, placeholder }: {
     );
   }
 
-  if (Platform.OS === 'android') {
-    return (
-      <View>
-        <TouchableOpacity style={styles.inputWrap} onPress={handlePress} activeOpacity={0.8}>
-          <Ionicons name="calendar-outline" size={15} color="#9CA3AF" style={{ marginRight: 6 }} />
-          <Text style={[styles.input, !value && { color: '#9CA3AF' }]}>{value || placeholder}</Text>
-        </TouchableOpacity>
-        {showPicker && (
-          <DateTimePicker
-            value={tempDate}
-            mode="date"
-            display="calendar"
-            onChange={(_e: any, date?: Date) => { setShowPicker(false); if (date) onChange(formatDateDisplay(date)); }}
-          />
-        )}
-      </View>
-    );
-  }
-
   return (
     <View>
-      <TouchableOpacity style={styles.inputWrap} onPress={handlePress} activeOpacity={0.8}>
+      {/* Click trigger moved to the wrapper for full-box interaction */}
+      <TouchableOpacity 
+        style={styles.inputWrap} 
+        onPress={handlePress} 
+        activeOpacity={0.8}
+      >
         <Ionicons name="calendar-outline" size={15} color="#9CA3AF" style={{ marginRight: 6 }} />
-        <Text style={[styles.input, !value && { color: '#9CA3AF' }]}>{value || placeholder}</Text>
+        <Text style={[styles.input, !value && { color: '#9CA3AF' }]}>
+          {value || placeholder}
+        </Text>
       </TouchableOpacity>
-      <Modal visible={showPicker} transparent animationType="slide" onRequestClose={() => setShowPicker(false)}>
-        <View style={styles.dateModalOverlay}>
-          <View style={styles.dateModalBox}>
-            <View style={styles.dateModalHeader}>
-              <TouchableOpacity onPress={() => setShowPicker(false)}>
-                <Text style={styles.dateModalCancel}>Cancel</Text>
-              </TouchableOpacity>
-              <Text style={styles.dateModalTitle}>Select Date</Text>
-              <TouchableOpacity onPress={() => { onChange(formatDateDisplay(tempDate)); setShowPicker(false); }}>
-                <Text style={styles.dateModalDone}>Done</Text>
-              </TouchableOpacity>
+
+      {showPicker && Platform.OS === 'android' && (
+        <DateTimePicker
+          value={tempDate}
+          mode="date"
+          display="calendar"
+          onChange={(_e: any, date?: Date) => { 
+            setShowPicker(false); 
+            if (date) onChange(formatDateDisplay(date)); 
+          }}
+        />
+      )}
+
+      {Platform.OS === 'ios' && (
+        <Modal 
+          visible={showPicker} 
+          transparent 
+          animationType="slide" 
+          onRequestClose={() => setShowPicker(false)}
+        >
+          <View style={styles.dateModalOverlay}>
+            <View style={styles.dateModalBox}>
+              <View style={styles.dateModalHeader}>
+                <TouchableOpacity onPress={() => setShowPicker(false)}>
+                  <Text style={styles.dateModalCancel}>Cancel</Text>
+                </TouchableOpacity>
+                <Text style={styles.dateModalTitle}>Select Date</Text>
+                <TouchableOpacity onPress={() => { onChange(formatDateDisplay(tempDate)); setShowPicker(false); }}>
+                  <Text style={styles.dateModalDone}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={tempDate}
+                mode="date"
+                display="spinner"
+                onChange={(_e: any, d?: Date) => { if (d) setTempDate(d); }}
+                style={{ backgroundColor: '#fff' }}
+              />
             </View>
-            <DateTimePicker
-              value={tempDate}
-              mode="date"
-              display="spinner"
-              onChange={(_e: any, d?: Date) => { if (d) setTempDate(d); }}
-              style={{ backgroundColor: '#fff' }}
-            />
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      )}
     </View>
   );
 }
 
+/// ─── Time Picker Field ────────────────────────────────────
 // ─── Time Picker Field ────────────────────────────────────
-function TimePickerField({ value, onChange, placeholder }: {
-  value: string; onChange: (v: string) => void; placeholder: string;
+function TimePickerField({ value, onChange, placeholder, error }: {
+  value: string; onChange: (v: string) => void; placeholder: string; error?: string;
 }) {
   const [showPicker, setShowPicker] = useState(false);
   const [tempTime, setTempTime] = useState<Date>(new Date());
+  const inputRef = useRef<any>(null); // Added ref for web interaction
 
   const handlePress = () => {
     if (value) {
@@ -1431,82 +1443,103 @@ function TimePickerField({ value, onChange, placeholder }: {
   const formatTime = (d: Date): string =>
     `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 
-  if (Platform.OS === 'web') {
-    return (
-      <View style={styles.inputWrap}>
-        <Ionicons name="time-outline" size={15} color="#9CA3AF" style={{ marginRight: 6 }} />
-        {/* @ts-ignore */}
-        <input
-          type="time"
-          value={value || ''}
-          onChange={(e: any) => onChange(e.target.value)}
-          style={{
-            flex: 1, border: 'none', outline: 'none', fontSize: 13,
-            color: value ? '#111827' : '#9CA3AF', background: 'transparent',
-            paddingTop: 9, paddingBottom: 9, cursor: 'pointer',
-            fontFamily: 'inherit', minWidth: 0, width: '100%',
-          }}
-        />
-      </View>
-    );
-  }
+  const renderInput = () => {
+    if (Platform.OS === 'web') {
+      return (
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => inputRef.current?.showPicker?.()} // Triggers the browser's native picker
+        >
+          <View style={[styles.inputWrap]}>
+            <Ionicons name="time-outline" size={15} color="#9CA3AF" style={{ marginRight: 6 }} />
+            {/* @ts-ignore */}
+            <input
+              ref={inputRef}
+              type="time"
+              value={value || ''}
+              onChange={(e: any) => onChange(e.target.value)}
+              style={{
+                flex: 1, border: 'none', outline: 'none', fontSize: 13,
+                color: value ? '#111827' : '#9CA3AF', background: 'transparent',
+                paddingTop: 9, paddingBottom: 9, cursor: 'pointer',
+                fontFamily: 'inherit', minWidth: 0, width: '100%',
+                pointerEvents: 'none', // Prevents the native input from blocking the TouchableOpacity
+              }}
+            />
+          </View>
+        </TouchableOpacity>
+      );
+    }
 
-  if (Platform.OS === 'android') {
     return (
-      <View>
-        <TouchableOpacity style={styles.inputWrap} onPress={handlePress} activeOpacity={0.8}>
+      <TouchableOpacity 
+        style={[styles.inputWrap]} 
+        onPress={handlePress} 
+        activeOpacity={0.8}
+      >
+        {/* pointerEvents="none" makes the touch go "through" the icon/text to the wrapper */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }} pointerEvents="none">
           <Ionicons name="time-outline" size={15} color="#9CA3AF" style={{ marginRight: 6 }} />
           <Text style={[styles.input, !value && { color: '#9CA3AF' }]}>
             {value || placeholder}
           </Text>
-        </TouchableOpacity>
-        {showPicker && (
-          <DateTimePicker
-            value={tempTime}
-            mode="time"
-            display="clock"
-            is24Hour={true}
-            onChange={(_e: any, date?: Date) => {
-              setShowPicker(false);
-              if (date) onChange(formatTime(date));
-            }}
-          />
-        )}
-      </View>
+        </View>
+      </TouchableOpacity>
     );
-  }
+  };
 
   return (
     <View>
-      <TouchableOpacity style={styles.inputWrap} onPress={handlePress} activeOpacity={0.8}>
-        <Ionicons name="time-outline" size={15} color="#9CA3AF" style={{ marginRight: 6 }} />
-        <Text style={[styles.input, !value && { color: '#9CA3AF' }]}>
-          {value || placeholder}
-        </Text>
-      </TouchableOpacity>
-      <Modal visible={showPicker} transparent animationType="slide" onRequestClose={() => setShowPicker(false)}>
-        <View style={styles.dateModalOverlay}>
-          <View style={styles.dateModalBox}>
-            <View style={styles.dateModalHeader}>
-              <TouchableOpacity onPress={() => setShowPicker(false)}>
-                <Text style={styles.dateModalCancel}>Cancel</Text>
-              </TouchableOpacity>
-              <Text style={styles.dateModalTitle}>Select Time</Text>
-              <TouchableOpacity onPress={() => { onChange(formatTime(tempTime)); setShowPicker(false); }}>
-                <Text style={styles.dateModalDone}>Done</Text>
-              </TouchableOpacity>
+      {renderInput()}
+
+      {showPicker && Platform.OS === 'android' && (
+        <DateTimePicker
+          value={tempTime}
+          mode="time"
+          display="clock"
+          is24Hour={true}
+          onChange={(_e: any, date?: Date) => {
+            setShowPicker(false);
+            if (date) onChange(formatTime(date));
+          }}
+        />
+      )}
+
+      {Platform.OS === 'ios' && (
+        <Modal 
+          visible={showPicker} 
+          transparent 
+          animationType="slide" 
+          onRequestClose={() => setShowPicker(false)}
+        >
+          <View style={styles.dateModalOverlay}>
+            <View style={styles.dateModalBox}>
+              <View style={styles.dateModalHeader}>
+                <TouchableOpacity onPress={() => setShowPicker(false)}>
+                  <Text style={styles.dateModalCancel}>Cancel</Text>
+                </TouchableOpacity>
+                <Text style={styles.dateModalTitle}>Select Time</Text>
+                <TouchableOpacity 
+                  onPress={() => { 
+                    onChange(formatTime(tempTime)); 
+                    setShowPicker(false); 
+                  }}
+                >
+                  <Text style={styles.dateModalDone}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={tempTime}
+                mode="time"
+                display="spinner"
+                is24Hour={true}
+                onChange={(_e: any, d?: Date) => { if (d) setTempTime(d); }}
+                style={{ backgroundColor: '#fff' }}
+              />
             </View>
-            <DateTimePicker
-              value={tempTime}
-              mode="time"
-              display="spinner"
-              is24Hour={true}
-              onChange={(_e: any, d?: Date) => { if (d) setTempTime(d); }}
-              style={{ backgroundColor: '#fff' }}
-            />
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      )}
     </View>
   );
 }
@@ -1664,6 +1697,26 @@ export default function CreateDutyScreen() {
       </View>
     );
   }
+
+
+// ─── AUTO-TOGGLE OVERNIGHT LOGIC ───
+useEffect(() => {
+  if (!form.startingDate || !form.endingDate) return;
+
+  const start = parseDateString(form.startingDate);
+  const end = parseDateString(form.endingDate);
+
+  // Set hours to 0 to compare the calendar dates only
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+
+  // If End Date is later than Start Date, it is an overnight shift
+  const isNextDay = end > start;
+
+  if (isNextDay !== form.overtimeDuty) {
+    setForm(prev => ({ ...prev, overtimeDuty: isNextDay }));
+  }
+}, [form.startingDate, form.endingDate]);
 
   return (
     <View style={styles.screen}>
