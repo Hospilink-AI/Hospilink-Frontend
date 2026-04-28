@@ -937,10 +937,10 @@ function HospitalRow({ h, onDotsPress }: HospitalRowProps) {
 const hr = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 20, borderBottomWidth: 1, borderBottomColor: '#F1F5F9', backgroundColor: '#fff' },
   cell: { overflow: 'hidden' },
-  colName: { flex: 2.5 },
-  colLoc: { flex: 1.8 },
+  colName: { flex: 2.7 },
+  colLoc: { flex: 1 },
   colStaff: { flex: 1 },
-  colDuty: { flex: 2.2 },
+  colDuty: { flex: 2 },
   colStatus: { flex: 1.6 },
   colAction: { flex: 0.6, minWidth: 60 },
   iconBox: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },

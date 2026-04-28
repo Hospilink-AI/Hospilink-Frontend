@@ -1097,7 +1097,7 @@ function StaffRow({ staff, onDotsPress }: StaffRowProps) {
       </View>
 
       <View style={[sr.cell, sr.colStatus, { alignItems: 'center', justifyContent: 'center' }]}>
-        <Badge status={staff.status} />
+        <VerificationBadge status={staff.verificationStatus} />
       </View>
 
       <View style={[sr.cell, sr.colAction, { alignItems: 'center', justifyContent: 'center' }]}>

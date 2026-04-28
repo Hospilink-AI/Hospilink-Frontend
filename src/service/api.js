@@ -158,11 +158,20 @@ export const authAPI = {
   },
 
   // Reset Password — uses token from email link + new password
-  resetPassword: async (token, newPassword) => {
-    const response = await api.post('/api/auth/reset-password', { token, newPassword });
-    return response.data;
-    // returns: { success: true, message: "Password reset successful. Please sign in with your new password." }
-  },
+  // resetPassword: async (token, newPassword) => {
+  //   const response = await api.post('/api/auth/reset-password', { token, newPassword });
+  //   return response.data;
+  //   // returns: { success: true, message: "Password reset successful. Please sign in with your new password." }
+  // },
+
+  resetPassword: async (token, newPassword, confirmPassword) => {
+  const response = await api.post('/api/auth/reset-password', { 
+    token, 
+    newPassword, 
+    confirmPassword  // ← API requires this field
+  });
+  return response.data;
+}
 };
 
 // Profile API's 
@@ -495,6 +504,12 @@ export const dutyAPI = {
     const response = await api.get('/api/duties-published');
     return response.data;
   },
+
+  getPublishedDutiesH: async (filters = {}) => {
+  // filters could be { status: 'completed', staffRole: 'staff_nurse', page: 1, limit: 10 }
+  const response = await api.get('/api/duties-published', { params: filters });
+  return response.data;
+},
 
   // For updating duty, edit duty details (for hospital)
   updatePublishedDuty: async (dutyId, updatedData) => {
@@ -1114,6 +1129,39 @@ exportActivityLogs: async (params = {}) => {
     const response = await api.put('/api/notifications/read-multiple', { ids });
     return response.data; // { success, message }
   },
+
+
+  // Get Active Emergency Requests
+getEmergencyDashboard: async (page = 1) => {
+  const response = await api.get(`/api/admin/emergency-dashboard?page=${page}`);
+  return response.data;
+},
+
+// Get Medical Staff List
+getMedicalStaff: async (search = '', page = 1) => {
+  const response = await api.get(`/api/admin/medical-staff?search=${search}&page=${page}`);
+  return response.data;
+},
+
+// Assign Staff to Duty
+// assignDuty: async (hospitalId, dutyId, staffId) => {
+//   const response = await api.post('/api/admin/assign-duty', { hospitalId, dutyId, staffId });
+//   return response.data;
+// },
+
+assignDuty: async (hospitalId, dutyId, staffId) => {
+  const response = await api.post('/api/admin/assign-duty', {
+    hospital_id: hospitalId,
+    duty_id: dutyId,
+    staff_id: staffId,
+  });
+  return response.data;
+},
+
+recentAction : async () => {
+  const response = await api.get('/api/admin/documents/stats');
+  return response.data;
+}
 
 }
 

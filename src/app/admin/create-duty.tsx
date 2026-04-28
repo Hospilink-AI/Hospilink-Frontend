@@ -1581,6 +1581,7 @@ function InputField({ placeholder, value, onChangeText, prefix, multiline, keybo
         numberOfLines={multiline ? 5 : 1}
         keyboardType={keyboardType}
         textAlignVertical={multiline ? 'top' : 'center'}
+        
       />
     </View>
   );
@@ -2036,10 +2037,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, backgroundColor: '#fff',
   },
   inputPrefix: { fontSize: 13, color: '#6B7280', marginRight: 4 },
-  input: {
-    flex: 1, fontSize: 13, color: '#111827',
-    paddingVertical: Platform.OS === 'ios' ? 10 : 8, outlineWidth: 0,
-  },
+  input: { flex: 1, fontSize: 13, color: '#111827', paddingVertical: Platform.OS === 'ios' ? 12 : 10, ...Platform.select({ web: { outlineWidth: 0 } as any }), },
+  inputRow: {
+  borderWidth: 1,
+  borderColor: "#e2e8f0",
+  backgroundColor: "#f8fafc",
+},
+inputInner: {
+  backgroundColor: "transparent",
+  ...Platform.select({
+    web: { outlineStyle: "none" }
+  })
+},
   inputMulti: { minHeight: 110, paddingTop: 10 },
 
   // ── Date/Time modal ──

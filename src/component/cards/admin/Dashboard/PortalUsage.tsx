@@ -42,7 +42,10 @@ interface CalendarDay {
 }
 
 export default function PortalUsage() {
-  const [currentMonth] = useState('October 2023');
+  const today = new Date();
+const [currentMonth] = useState(
+  today.toLocaleString('default', { month: 'long', year: 'numeric' })
+);
 
   const getAlertStyle = (type: string) => {
     switch (type) {
@@ -58,34 +61,27 @@ export default function PortalUsage() {
   };
 
   // Generate calendar days
-  const generateCalendar = (): CalendarDay[] => {
-    const days: CalendarDay[] = [];
-    
-    // October 2023 starts on Sunday (day 0)
-    // Add days 1-31
-    for (let i = 1; i <= 31; i++) {
-      const day: CalendarDay = { day: i };
-      
-      // Mark some days with shifts
-      if ([5, 12, 17, 23, 26].includes(i)) {
-        day.hasShift = true;
-      }
-      
-      // Mark some days with emergencies
-      if ([8, 15, 22].includes(i)) {
-        day.hasEmergency = true;
-      }
-      
-      // Mark today (let's say it's the 23rd)
-      if (i === 23) {
-        day.isToday = true;
-      }
-      
-      days.push(day);
-    }
-    
-    return days;
-  };
+  // ─── Replace generateCalendar function ────────────────────
+
+const generateCalendar = (): CalendarDay[] => {
+  const days: CalendarDay[] = [];
+  const todayDate = new Date().getDate(); // ← get real today's date number
+
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+
+  for (let i = 1; i <= daysInMonth; i++) {
+    const day: CalendarDay = { day: i };
+
+    if ([5, 12, 17, 23, 26].includes(i)) day.hasShift = true;
+    if ([8, 15, 22].includes(i)) day.hasEmergency = true;
+
+    if (i === todayDate) day.isToday = true; // ← real today instead of hardcoded 23
+
+    days.push(day);
+  }
+
+  return days;
+};
 
   const calendarDays = generateCalendar();
   const weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];

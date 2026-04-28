@@ -458,7 +458,7 @@ export default function MedicalStaffProfile() {
       maxLength={10}
     />
   </View>
-  {phone.replace(/\D/g, "").length === 10 && (
+  {/* {phone.replace(/\D/g, "").length === 10 && (
     <TouchableOpacity
       style={styles.verifyBtnOutline}
       onPress={() => setShowOTP(true)}
@@ -466,7 +466,7 @@ export default function MedicalStaffProfile() {
     >
       <Text style={styles.verifyBtnOutlineText}>Verify</Text>
     </TouchableOpacity>
-  )}
+  )} */}
 </View>
 
 {/* ── OTP Section ── */}

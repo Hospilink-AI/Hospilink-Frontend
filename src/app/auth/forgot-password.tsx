@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -9,116 +9,141 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from "react-native";
-import { router } from "expo-router"; // Use useNavigation if you aren't using Expo Router
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { authAPI } from "../../service/api";
+
+const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  
-  // Refs for auto-focusing OTP inputs
-  const otpRefs = useRef<Array<TextInput | null>>([]);
+  const [loading, setLoading] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
-  const handleOtpChange = (text: string, index: number) => {
-    const newOtp = [...otp];
-    newOtp[index] = text;
-    setOtp(newOtp);
-
-    // Move to next input if text is entered
-    if (text && index < 5) {
-      otpRefs.current[index + 1]?.focus();
+  const handleSendResetLink = async () => {
+    // Validate
+    if (!email.trim()) {
+      setEmailError("Email address is required.");
+      return;
     }
-  };
-
-  const handleOtpKeyPress = (e: any, index: number) => {
-    // Move to previous input on backspace if current is empty
-    if (e.nativeEvent.key === "Backspace" && otp[index] === "" && index > 0) {
-      otpRefs.current[index - 1]?.focus();
+    if (!isValidEmail(email)) {
+      setEmailError("Please enter a valid email address.");
+      return;
     }
-  };
 
-  const handleSendOTP = () => {
-    console.log("Sending OTP to:", email);
-  };
+    setEmailError("");
+    setLoading(true);
+    setSuccessMessage("");
 
-  const handleVerifyOTP = () => {
-    console.log("Verifying OTP:", otp.join(""));
+    try {
+      const res = await authAPI.forgotPassword(email.trim());
+      // API returns: { success: true, message: "If this email is registered, a reset link has been sent." }
+      setSuccessMessage(
+        res.message || "If this email is registered, a reset link has been sent."
+      );
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message || "Something went wrong. Please try again.";
+      setEmailError(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
-      
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
       >
         <View style={styles.content}>
+          {/* Back Button */}
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back-outline" size={20} color="#374151" />
+            <Text style={styles.backText}>Back to Sign In</Text>
+          </TouchableOpacity>
+
           {/* Main Card */}
           <View style={styles.card}>
-            <Text style={styles.title}>Forgot Password</Text>
+            {/* Icon */}
+            <View style={styles.iconWrap}>
+              <Ionicons name="lock-open-outline" size={26} color="#2563EB" />
+            </View>
 
-            {/* Email Input Section */}
+            <Text style={styles.title}>Forgot Password?</Text>
+            <Text style={styles.subtitle}>
+              Enter your registered email address and we'll send you a link to reset your password.
+            </Text>
+
+            {/* Success Banner */}
+            {successMessage ? (
+              <View style={styles.successBanner}>
+                <Ionicons name="checkmark-circle-outline" size={16} color="#16a34a" style={{ marginRight: 8 }} />
+                <Text style={styles.successText}>{successMessage}</Text>
+              </View>
+            ) : null}
+
+            {/* Email Input */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email Address</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="abc@gmail.com"
-                placeholderTextColor="#9CA3AF"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-            </View>
-
-            <TouchableOpacity style={styles.sendOtpBtn} onPress={handleSendOTP} activeOpacity={0.7}>
-              <Text style={styles.sendOtpText}>Send OTP</Text>
-            </TouchableOpacity>
-
-            {/* Divider / Spacer */}
-            <View style={styles.spacer} />
-
-            {/* OTP Section */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.subText}>Enter the code sent to your registered email</Text>
-              <View style={styles.otpRow}>
-                {otp.map((digit, index) => (
-                  <TextInput
-                    key={index}
-                    // ref={(el) => (otpRefs.current[index] = el)}
-                    style={styles.otpInput}
-                    value={digit}
-                    onChangeText={(text) => handleOtpChange(text, index)}
-                    onKeyPress={(e) => handleOtpKeyPress(e, index)}
-                    keyboardType="number-pad"
-                    maxLength={1}
-                    selectTextOnFocus
-                  />
-                ))}
+              <View style={[styles.inputRow, emailError ? styles.inputRowError : null]}>
+                <Ionicons
+                  name="mail-outline"
+                  size={16}
+                  color={emailError ? "#dc2626" : "#94a3b8"}
+                  style={{ marginRight: 8 }}
+                />
+                <TextInput
+                  style={[styles.input, Platform.OS === "web" && ({ outlineStyle: "none" } as any)]}
+                  placeholder="abc@hospital.com"
+                  placeholderTextColor="#9CA3AF"
+                  value={email}
+                  onChangeText={(v) => {
+                    setEmail(v);
+                    if (emailError) setEmailError("");
+                    if (successMessage) setSuccessMessage("");
+                  }}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
               </View>
+              {emailError ? (
+                <View style={styles.errorRow}>
+                  <Ionicons name="information-circle-outline" size={13} color="#dc2626" style={{ marginRight: 4 }} />
+                  <Text style={styles.errorText}>{emailError}</Text>
+                </View>
+              ) : null}
             </View>
 
-            <TouchableOpacity style={styles.verifyBtn} onPress={handleVerifyOTP} activeOpacity={0.8}>
-              <Text style={styles.verifyBtnText}>Verify OTP</Text>
+            {/* Send Button */}
+            <TouchableOpacity
+              style={[styles.sendBtn, loading && { opacity: 0.7 }]}
+              onPress={handleSendResetLink}
+              activeOpacity={0.8}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.sendBtnText}>Send Reset Link</Text>
+              )}
             </TouchableOpacity>
-
-            {/* Resend Section */}
-            <View style={styles.resendContainer}>
-              <Text style={styles.didntReceiveText}>Didn't receive the code?</Text>
-              <View style={styles.resendActionRow}>
-                <TouchableOpacity>
-                  <Text style={styles.resendLink}>Resend OTP</Text>
-                </TouchableOpacity>
-                <Text style={styles.timerText}>Resend in 00:43</Text>
-              </View>
-            </View>
           </View>
 
-          {/* Footer outside the card */}
+          {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerSecure}>SECURE END-TO-END ENCRYPTION</Text>
-            <Text style={styles.footerCopy}>© 2024 Hospilink Medical Systems. All rights reserved.</Text>
+            <Text style={styles.footerCopy}>© 2026 HospiLink Medical Systems. All rights reserved.</Text>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -126,12 +151,10 @@ export default function ForgotPasswordScreen() {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC", // Light grayish-blue background
+    backgroundColor: "#F8FAFC",
   },
   keyboardView: {
     flex: 1,
@@ -141,6 +164,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 20,
+  },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    marginBottom: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 2,
+    maxWidth: 440,
+    width: "100%",
+  },
+  backText: {
+    fontSize: 13,
+    color: "#374151",
+    fontWeight: "500",
+    marginLeft: 6,
   },
   card: {
     backgroundColor: "#FFFFFF",
@@ -154,14 +193,46 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
+  iconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: "#EFF6FF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "700",
     color: "#1F2937",
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 13,
+    color: "#6B7280",
+    lineHeight: 20,
     marginBottom: 24,
   },
-  inputGroup: {
+  successBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f0fdf4",
+    borderWidth: 1,
+    borderColor: "#bbf7d0",
+    borderRadius: 8,
+    padding: 12,
     marginBottom: 16,
+  },
+  successText: {
+    color: "#16a34a",
+    fontSize: 13,
+    fontWeight: "500",
+    flex: 1,
+    lineHeight: 18,
+  },
+  inputGroup: {
+    marginBottom: 20,
   },
   label: {
     fontSize: 12,
@@ -169,96 +240,58 @@ const styles = StyleSheet.create({
     color: "#374151",
     marginBottom: 8,
   },
-  input: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    fontSize: 14,
-    color: "#1F2937",
-    backgroundColor: "#FFFFFF",
-    ...(Platform.OS === "web" && { outlineStyle: "none" } as any),
-  },
-  sendOtpBtn: {
-    backgroundColor: "#F1F5F9", // Light gray/blue
-    height: 48,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 24,
-  },
-  sendOtpText: {
-    color: "#3B82F6", // Blue text
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  spacer: {
-    height: 8,
-  },
-  subText: {
-    fontSize: 13,
-    color: "#6B7280",
-    marginBottom: 12,
-  },
-  otpRow: {
+  inputRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    width: "100%",
-  },
-  otpInput: {
-    width: 46,
-    height: 52,
-    borderWidth: 1,
+    height: 46,
+    borderWidth: 1.5,
     borderColor: "#E5E7EB",
-    backgroundColor: "#F8FAFC",
     borderRadius: 8,
-    textAlign: "center",
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#1F2937",
-    ...(Platform.OS === "web" && { outlineStyle: "none" } as any),
+    paddingHorizontal: 12,
+    backgroundColor: "#F8FAFC",
   },
-  verifyBtn: {
-    backgroundColor: "#2563EB", // Solid blue
+  inputRowError: {
+    borderColor: "#dc2626",
+    backgroundColor: "#fff5f5",
+  },
+  input: {
+    flex: 1,
+    fontSize: 14,
+    color: "#1F2937",
+    height: "100%",
+  },
+  errorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 5,
+  },
+  errorText: {
+    color: "#dc2626",
+    fontSize: 11.5,
+    fontWeight: "500",
+    flex: 1,
+  },
+  sendBtn: {
+    backgroundColor: "#2563EB",
     height: 48,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 8,
-    marginBottom: 24,
-    shadowColor: "#2563EB",
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
+    ...Platform.select({
+      web: { boxShadow: "0 4px 14px rgba(37,99,235,0.30)" } as any,
+      default: {
+        shadowColor: "#2563eb",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.28,
+        shadowRadius: 10,
+        elevation: 6,
+      },
+    }),
   },
-  verifyBtnText: {
+  sendBtnText: {
     color: "#FFFFFF",
     fontSize: 15,
     fontWeight: "600",
-  },
-  resendContainer: {
-    alignItems: "center",
-  },
-  didntReceiveText: {
-    fontSize: 13,
-    color: "#6B7280",
-    marginBottom: 8,
-  },
-  resendActionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  resendLink: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#3B82F6",
-  },
-  timerText: {
-    fontSize: 13,
-    color: "#9CA3AF",
   },
   footer: {
     marginTop: 32,
