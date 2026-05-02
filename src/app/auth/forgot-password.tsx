@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
@@ -24,7 +23,6 @@ export default function ForgotPasswordScreen() {
   const [successMessage, setSuccessMessage] = useState("");
 
   const handleSendResetLink = async () => {
-    // Validate
     if (!email.trim()) {
       setEmailError("Email address is required.");
       return;
@@ -40,7 +38,6 @@ export default function ForgotPasswordScreen() {
 
     try {
       const res = await authAPI.forgotPassword(email.trim());
-      // API returns: { success: true, message: "If this email is registered, a reset link has been sent." }
       setSuccessMessage(
         res.message || "If this email is registered, a reset link has been sent."
       );
@@ -54,166 +51,182 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
+    <KeyboardAvoidingView
+      style={styles.screen}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardView}
-      >
-        <View style={styles.content}>
-          {/* Back Button */}
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="arrow-back-outline" size={20} color="#374151" />
-            <Text style={styles.backText}>Back to Sign In</Text>
-          </TouchableOpacity>
+      {/* ── Navbar ── */}
+      <View style={styles.navbar}>
+        <View style={styles.navBrand}>
+          <View style={styles.navIconBox}>
+            <Ionicons name="pulse" size={16} color="#fff" />
+          </View>
+          <Text style={styles.navBrandText}>Hospilink</Text>
+        </View>
+        <TouchableOpacity style={styles.helpBtn}>
+          <Ionicons name="help-circle-outline" size={20} color="#9aa3b0" />
+        </TouchableOpacity>
+      </View>
 
-          {/* Main Card */}
-          <View style={styles.card}>
-            {/* Icon */}
-            <View style={styles.iconWrap}>
-              <Ionicons name="lock-open-outline" size={26} color="#2563EB" />
+      {/* ── Body ── */}
+      <View style={styles.body}>
+        <View style={styles.card}>
+
+          {/* Title */}
+          <Text style={styles.title}>Verify Your Email</Text>
+
+          {/* Success Banner */}
+          {successMessage ? (
+            <View style={styles.successBanner}>
+              <Ionicons name="checkmark-circle-outline" size={16} color="#16a34a" style={{ marginRight: 8 }} />
+              <Text style={styles.successText}>{successMessage}</Text>
             </View>
+          ) : null}
 
-            <Text style={styles.title}>Forgot Password?</Text>
-            <Text style={styles.subtitle}>
-              Enter your registered email address and we'll send you a link to reset your password.
-            </Text>
-
-            {/* Success Banner */}
-            {successMessage ? (
-              <View style={styles.successBanner}>
-                <Ionicons name="checkmark-circle-outline" size={16} color="#16a34a" style={{ marginRight: 8 }} />
-                <Text style={styles.successText}>{successMessage}</Text>
+          {/* Email Input */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email Address</Text>
+            <View style={[styles.inputRow, emailError ? styles.inputRowError : null]}>
+              <TextInput
+                style={[styles.input, Platform.OS === "web" && ({ outlineStyle: "none" } as any)]}
+                placeholder="abc@gmail.com"
+                placeholderTextColor="#9CA3AF"
+                value={email}
+                onChangeText={(v) => {
+                  setEmail(v);
+                  if (emailError) setEmailError("");
+                  if (successMessage) setSuccessMessage("");
+                }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+            {emailError ? (
+              <View style={styles.errorRow}>
+                <Ionicons name="information-circle-outline" size={13} color="#dc2626" style={{ marginRight: 4 }} />
+                <Text style={styles.errorText}>{emailError}</Text>
               </View>
             ) : null}
+          </View>
 
-            {/* Email Input */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email Address</Text>
-              <View style={[styles.inputRow, emailError ? styles.inputRowError : null]}>
-                <Ionicons
-                  name="mail-outline"
-                  size={16}
-                  color={emailError ? "#dc2626" : "#94a3b8"}
-                  style={{ marginRight: 8 }}
-                />
-                <TextInput
-                  style={[styles.input, Platform.OS === "web" && ({ outlineStyle: "none" } as any)]}
-                  placeholder="abc@hospital.com"
-                  placeholderTextColor="#9CA3AF"
-                  value={email}
-                  onChangeText={(v) => {
-                    setEmail(v);
-                    if (emailError) setEmailError("");
-                    if (successMessage) setSuccessMessage("");
-                  }}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
-              {emailError ? (
-                <View style={styles.errorRow}>
-                  <Ionicons name="information-circle-outline" size={13} color="#dc2626" style={{ marginRight: 4 }} />
-                  <Text style={styles.errorText}>{emailError}</Text>
-                </View>
-              ) : null}
-            </View>
+          {/* Send Button */}
+          <TouchableOpacity
+            style={[styles.sendBtn, loading && { opacity: 0.7 }]}
+            onPress={handleSendResetLink}
+            activeOpacity={0.8}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.sendBtnText}>Send Link</Text>
+            )}
+          </TouchableOpacity>
 
-            {/* Send Button */}
-            <TouchableOpacity
-              style={[styles.sendBtn, loading && { opacity: 0.7 }]}
-              onPress={handleSendResetLink}
-              activeOpacity={0.8}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.sendBtnText}>Send Reset Link</Text>
-              )}
+          {/* Resend row */}
+          <View style={styles.resendRow}>
+            <Text style={styles.resendHint}>Didn't receive the link?</Text>
+            <TouchableOpacity onPress={handleSendResetLink} disabled={loading}>
+              <Text style={styles.resendLink}>Resend Link</Text>
             </TouchableOpacity>
+            <Text style={styles.resendTimer}>  Resend in 00:43</Text>
           </View>
 
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerSecure}>SECURE END-TO-END ENCRYPTION</Text>
-            <Text style={styles.footerCopy}>© 2026 HospiLink Medical Systems. All rights reserved.</Text>
-          </View>
         </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.footerSecure}>SECURE END-TO-END ENCRYPTION</Text>
+          <Text style={styles.footerCopy}>© 2026 Hospilink Medical Systems. All rights reserved.</Text>
+        </View>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
+const BLUE = "#2563EB";
+
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#eef0f4",
   },
-  keyboardView: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 20,
-  },
-  backButton: {
+
+  /* ── Navbar ── */
+  navbar: {
     flexDirection: "row",
     alignItems: "center",
-    alignSelf: "flex-start",
-    marginBottom: 20,
-    paddingVertical: 6,
-    paddingHorizontal: 2,
-    maxWidth: 440,
-    width: "100%",
+    justifyContent: "space-between",
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb",
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === "ios" ? 48 : 0,
+    height: Platform.OS === "ios" ? 88 : 56,
   },
-  backText: {
-    fontSize: 13,
-    color: "#374151",
-    fontWeight: "500",
-    marginLeft: 6,
+  navBrand: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
-  card: {
-    backgroundColor: "#FFFFFF",
-    width: "100%",
-    maxWidth: 440,
-    borderRadius: 16,
-    padding: 32,
-    shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowRadius: 15,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
-  iconWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    backgroundColor: "#EFF6FF",
+  navIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    backgroundColor: BLUE,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 16,
   },
+  navBrandText: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#1a1f2e",
+  },
+  helpBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  /* ── Body ── */
+  body: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 24,
+  },
+
+  /* ── Card ── */
+  card: {
+    width: 380,
+    maxWidth: "90%",
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 28,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+    marginBottom: 28,
+  },
+
   title: {
     fontSize: 22,
-    fontWeight: "700",
+    fontWeight: "800",
     color: "#1F2937",
-    marginBottom: 8,
+    marginBottom: 20,
   },
-  subtitle: {
-    fontSize: 13,
-    color: "#6B7280",
-    lineHeight: 20,
-    marginBottom: 24,
-  },
+
+  /* Success */
   successBanner: {
     flexDirection: "row",
     alignItems: "center",
@@ -231,11 +244,13 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 18,
   },
+
+  /* Input */
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   label: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "600",
     color: "#374151",
     marginBottom: 8,
@@ -244,11 +259,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     height: 46,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: "#E5E7EB",
     borderRadius: 8,
-    paddingHorizontal: 12,
-    backgroundColor: "#F8FAFC",
+    paddingHorizontal: 14,
+    backgroundColor: "#fff",
   },
   inputRowError: {
     borderColor: "#dc2626",
@@ -271,38 +286,59 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     flex: 1,
   },
+
+  /* Button */
   sendBtn: {
-    backgroundColor: "#2563EB",
-    height: 48,
+    backgroundColor: BLUE,
+    height: 46,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    ...Platform.select({
-      web: { boxShadow: "0 4px 14px rgba(37,99,235,0.30)" } as any,
-      default: {
-        shadowColor: "#2563eb",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.28,
-        shadowRadius: 10,
-        elevation: 6,
-      },
-    }),
+    marginBottom: 16,
+    shadowColor: BLUE,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    elevation: 5,
   },
   sendBtnText: {
-    color: "#FFFFFF",
+    color: "#fff",
     fontSize: 15,
     fontWeight: "600",
   },
-  footer: {
-    marginTop: 32,
+
+  /* Resend row */
+  resendRow: {
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    flexWrap: "wrap",
+    gap: 4,
+  },
+  resendHint: {
+    fontSize: 13,
+    color: "#6B7280",
+  },
+  resendLink: {
+    fontSize: 13,
+    color: BLUE,
+    fontWeight: "600",
+  },
+  resendTimer: {
+    fontSize: 13,
+    color: "#6B7280",
+  },
+
+  /* Footer */
+  footer: {
+    alignItems: "center",
+    gap: 4,
   },
   footerSecure: {
     fontSize: 11,
     fontWeight: "600",
     color: "#9CA3AF",
     letterSpacing: 0.5,
-    marginBottom: 6,
   },
   footerCopy: {
     fontSize: 11,

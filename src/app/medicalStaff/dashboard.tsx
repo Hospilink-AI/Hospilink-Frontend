@@ -55,7 +55,8 @@ export default function Dashboard() {
   const [earnings, setEarnings] = useState({
     totalEarnings: 0,
     completedDutiesCount: 0,
-    averagePerDuty: "0.0"
+    averagePerDuty: "0.0",
+    growth: { percent: 0, trend: "neutral", label: "+0%" },
   });
   const [earningsLoading, setEarningsLoading] = useState(false);
   const [upcomingDuties, setUpcomingDuties] = useState<Duty[]>([]);
@@ -63,6 +64,10 @@ export default function Dashboard() {
   const [ongoingDuties, setOngoingDuties] = useState<Duty[]>([]);
   const [ongoingLoading, setOngoingLoading] = useState(false);
   const [averageRating, setAverageRating] = useState<number>(0);
+  const [ratingGrowth, setRatingGrowth] = useState({
+  percent: 0, trend: "neutral", label: "+0%"
+});
+
 
   const router = useRouter();
   const scrollViewRef = useRef<ScrollView>(null);
@@ -216,7 +221,14 @@ export default function Dashboard() {
     try {
       const response = await profileAPI.getEarnings();
       if (response.success && response.data) {
-        setEarnings(response.data);
+        console.log(response.data)
+        // setEarnings(response.data);
+        setEarnings({
+        totalEarnings: response.data.totalEarnings,
+        completedDutiesCount: response.data.completedDutiesCount,
+        averagePerDuty: response.data.averagePerDuty,
+        growth: response.data.growth,   
+      });
       }
     } catch (err: any) {
     } finally {
@@ -228,6 +240,7 @@ export default function Dashboard() {
     try {
       const response = await profileAPI.getStaffOverview();
       setAverageRating(response.data?.profile?.averageRating || 0);
+       setRatingGrowth(response.data?.growth || { percent: 0, trend: "neutral", label: "+0%" });
     } catch (err) {
     }
   };
@@ -392,8 +405,8 @@ export default function Dashboard() {
           icon="cash-outline"
           value={earningsLoading ? "..." : `₹ ${earnings.totalEarnings.toLocaleString()}`}
           label="Total Earnings"
-          trend="12%"
-          trendUp
+          trend={earnings.growth.label} 
+          trendUp={earnings.growth.trend === "up"}
           isMobile={isMobile}
         />
         <StatsCard
@@ -412,8 +425,8 @@ export default function Dashboard() {
           icon="star-outline"
           value={averageRating.toString()}
           label="Avg. Rating"
-          trend="0.2"
-          trendUp
+          trend={ratingGrowth.label} 
+          trendUp={ratingGrowth.trend === "up"}
           isMobile={isMobile}
         />
       </View>

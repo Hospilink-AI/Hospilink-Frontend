@@ -112,7 +112,7 @@ export default function AuthScreen() {
       // ── CHANGE: also pass `name` so profile screen can pre-fill fullName ──
       router.push({
         pathname: "/auth/verify-otp",
-        params: { email, accountType, signupName: name.trim() },
+        params: { email: email.trim(), accountType, signupName: name.trim() },
       });
     } catch (error: any) {
       console.error("❌ Signup error:", error);
@@ -615,3 +615,9 @@ const styles = StyleSheet.create({
   primaryText: { color: "#fff", fontWeight: "700", fontSize: 14, letterSpacing: 0.3 },
   copyright: { color: "#c2cfe0", textAlign: "center", fontSize: 11, letterSpacing: 0.4 },
 });
+
+
+
+
+
+

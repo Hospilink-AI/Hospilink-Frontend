@@ -16,6 +16,17 @@ import { useTrackingReceiver } from '@/hooks/useTrackingReceiver'; // adjust pat
 
 const isWeb = typeof window !== 'undefined' && !!window.document;
 
+// ─── Tile Sources ─────────────────────────────────────────────────────────────
+const STREET_TILE = {
+  url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  attribution: '© OpenStreetMap contributors',
+};
+
+const SATELLITE_TILE = {
+  url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  attribution: '© Esri, Maxar, Earthstar Geographics',
+};
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface StaffLocation {
   latitude: number;
@@ -159,11 +170,16 @@ interface WebMapProps {
   hospitalLocation: { latitude: number; longitude: number };
   routePolylines: string[];
   status: string;
+  isSatellite: boolean;
+  onToggleSatellite: () => void;
 }
 
-const WebMap = ({ staffLocation, hospitalLocation, routePolylines, status }: WebMapProps) => {
+const WebMap = ({ staffLocation, hospitalLocation, routePolylines, status, isSatellite,
+  onToggleSatellite }: WebMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
+  const tileLayerRef = useRef<any>(null);
+
 
   useEffect(() => {
     if (!isWeb || !mapRef.current) return;
@@ -197,8 +213,14 @@ const WebMap = ({ staffLocation, hospitalLocation, routePolylines, status }: Web
       const map = L.map(mapRef.current!).setView([centerLat, centerLng], 12);
       mapInstanceRef.current = map;
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
+      // L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      //   attribution: '© OpenStreetMap contributors',
+      //   maxZoom: 19,
+      // }).addTo(map);
+
+      const tile = isSatellite ? SATELLITE_TILE : STREET_TILE;
+      tileLayerRef.current = L.tileLayer(tile.url, {
+        attribution: tile.attribution,
         maxZoom: 19,
       }).addTo(map);
 
@@ -261,15 +283,52 @@ const WebMap = ({ staffLocation, hospitalLocation, routePolylines, status }: Web
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
+         tileLayerRef.current = null;
       }
     };
   }, [staffLocation, hospitalLocation, routePolylines, status]);
 
+  // ── Swap tile layer when satellite toggles ──────────────────────────────────
+useEffect(() => {
+  const L = (window as any).L;
+  const map = mapInstanceRef.current;
+  if (!map || !L) return;
+
+  if (tileLayerRef.current) {
+    map.removeLayer(tileLayerRef.current);
+  }
+
+  const tile = isSatellite ? SATELLITE_TILE : STREET_TILE;
+  tileLayerRef.current = L.tileLayer(tile.url, {
+    attribution: tile.attribution,
+    maxZoom: 19,
+  }).addTo(map);
+
+  tileLayerRef.current.bringToBack(); // keeps markers and route on top
+}, [isSatellite]);
+
   return (
-    <div
-      ref={mapRef}
-      style={{ width: '100%', height: '100%', minHeight: 350, zIndex: 1 }}
-    />
+    // <div
+    //   ref={mapRef}
+    //   style={{ width: '100%', height: '100%', minHeight: 350, zIndex: 1 }}
+    // />
+   
+  <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 350 }}>
+    {/* Map */}
+    <div ref={mapRef} style={{ width: '100%', height: '100%', minHeight: 350, zIndex: 1 }} />
+
+    {/* Satellite Toggle Button */}
+    <TouchableOpacity
+      style={styles.satelliteToggle}
+      onPress={onToggleSatellite}
+      activeOpacity={0.8}
+    >
+      <Text style={styles.satelliteToggleText}>
+        {isSatellite ? '🗺 Street View' : '🛰 Satellite'}
+      </Text>
+    </TouchableOpacity>
+  </div>
+
   );
 };
 
@@ -282,6 +341,7 @@ export default function LiveRequestMonitoring() {
   const [routeData, setRouteData] = useState<RouteMapData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSatellite, setIsSatellite] = useState(false);
 
   // ── Fetch ──
   const fetchRouteMap = useCallback(async () => {
@@ -414,7 +474,8 @@ export default function LiveRequestMonitoring() {
                 <Text style={styles.detailLabel}>HOSPITAL NAME</Text>
                 <Text style={styles.detailValueBold}>{hospital.name}</Text>
                 <Text style={styles.detailSub}>
-                  {hospital.address.split(',')[0]}
+                  {/* {hospital.address.split(',')[0]} */}
+                  {hospital.address?.split(',')[0] ?? ''}
                 </Text>
               </View>
             </View>
@@ -480,10 +541,10 @@ export default function LiveRequestMonitoring() {
                   {duty.status === 'enroute'
                     ? 'Staff Enroute'
                     : duty.status === 'in-progress'
-                    ? 'Shift In Progress'
-                    : duty.status === 'assigned'
-                    ? 'Staff Assigned'
-                    : 'Status: ' + duty.status}
+                      ? 'Shift In Progress'
+                      : duty.status === 'assigned'
+                        ? 'Staff Assigned'
+                        : 'Status: ' + duty.status}
                 </Text>
                 <Text style={styles.mapStatusSub}>
                   ETA {etaDisplay} · {routeInfo?.durationText ?? '--'}
@@ -511,6 +572,8 @@ export default function LiveRequestMonitoring() {
                   }}
                   routePolylines={routeInfo?.stepPolylines ?? []}
                   status={duty.status}
+                   isSatellite={isSatellite} 
+                   onToggleSatellite={() => setIsSatellite(v => !v)} 
                 />
               ) : (
                 <View style={styles.mapPlaceholder}>
@@ -529,9 +592,8 @@ export default function LiveRequestMonitoring() {
                 style={[
                   styles.timelineTrackFill,
                   {
-                    width: `${
-                      (currentStepIndex / (timelineSteps.length - 1)) * 100
-                    }%`,
+                    width: `${(currentStepIndex / (timelineSteps.length - 1)) * 100
+                      }%`,
                   },
                 ]}
               />
@@ -687,15 +749,15 @@ export default function LiveRequestMonitoring() {
                       {(item.status === 'enroute' ||
                         item.status === 'in-progress' ||
                         item.status === 'completed') && (
-                        <Text>
-                          {' '}
-                          marked status as{' '}
-                          <Text style={styles.activityHighlight}>
-                            {item.status.toUpperCase()}
+                          <Text>
+                            {' '}
+                            marked status as{' '}
+                            <Text style={styles.activityHighlight}>
+                              {item.status.toUpperCase()}
+                            </Text>
+                            .
                           </Text>
-                          .
-                        </Text>
-                      )}
+                        )}
                     </Text>
 
                     {/* Sub description */}
@@ -737,6 +799,29 @@ const styles = StyleSheet.create({
     marginHorizontal: 'auto',
     width: '100%',
   },
+
+  satelliteToggle: {
+  position: 'absolute',
+  top: 12,
+  right: 12,
+  zIndex: 999,
+  backgroundColor: '#fff',
+  paddingHorizontal: 14,
+  paddingVertical: 8,
+  borderRadius: 8,
+  borderWidth: 1,
+  borderColor: '#E5E7EB',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 6,
+  elevation: 4,
+},
+satelliteToggleText: {
+  fontSize: 13,
+  fontWeight: '600',
+  color: '#111827',
+},
 
   // States
   centeredState: {

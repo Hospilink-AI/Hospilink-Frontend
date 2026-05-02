@@ -31,7 +31,9 @@ export function HospitalDashHeader() {
           <Text style={styles.outlineBtnText}>View Map</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.dangerBtn}>
+        <TouchableOpacity style={styles.dangerBtn} 
+        onPress={() => router.push('/hospital/emergency')}
+        >
           <Ionicons name="warning" size={16} color="#fff" />
           <Text style={styles.dangerBtnText}>Emergency</Text>
         </TouchableOpacity>

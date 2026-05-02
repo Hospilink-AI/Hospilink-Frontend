@@ -30,6 +30,7 @@ export default function MapScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);//this
+  const [isSatellite, setIsSatellite] = useState(false);
 
   const handleRefresh = () => {
   cache.data = null;
@@ -110,7 +111,7 @@ export default function MapScreen() {
 
         {hospital ? (
           <Suspense fallback={<View style={styles.mapLoading} />}>
-            <LiveMap hospital={hospital} doctors={doctors} rangeKm={selectedRange}  onRefresh={handleRefresh} />
+            <LiveMap hospital={hospital} doctors={doctors} rangeKm={selectedRange}  onRefresh={handleRefresh} isSatellite={isSatellite}  onToggleSatellite={() => setIsSatellite(v => !v)}/>
           </Suspense>
         ) : !loading ? (
           <View style={styles.mapLoading}>

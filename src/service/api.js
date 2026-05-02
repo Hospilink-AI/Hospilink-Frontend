@@ -209,28 +209,13 @@ export const profileAPI = {
   },
   // Create medical staff profile
   createMedicalStaffProfile: async (profileData) => {
-    const response = await api.post('/api/profile/medical-staff', {
-      fullName: profileData.fullName,
-      jobRole: profileData.jobRole,
-      city: profileData.city,
-      area: profileData.area,
-      phoneNumber: profileData.phoneNumber,
-      profileSummary: profileData.profileSummary,
-      education: profileData.education,
-      skills: profileData.skills,
-    });
+    const response = await api.post('/api/profile/medical-staff', profileData);
     return response.data;
   },
 
   // Create hospital profile
   createHospitalProfile: async (profileData) => {
-    const response = await api.post('/api/profile/hospital', {
-      hospitalLegalName: profileData.hospitalLegalName, // Note: backend expects hospitalLegalName
-      currentAddress: profileData.currentAddress,
-      servicesAvailable: profileData.servicesAvailable,
-      location: profileData.location,
-      staffCount: profileData.staffCount,
-    });
+    const response = await api.post('/api/profile/hospital',profileData );
     return response.data;
   },
 
