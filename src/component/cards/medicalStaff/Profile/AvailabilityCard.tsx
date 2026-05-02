@@ -7,14 +7,14 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { profileAPI } from "../../../../service/api";
 
 interface Props {
-  available:   boolean;
+  available: boolean;
   memberSince: string;
-  location:    string;
+  location: string;
 }
 
 export default function AvailabilityCard({ available: initAvailable, memberSince, location }: Props) {
   const [available, setAvailable] = useState(initAvailable);
-  const [toggling, setToggling]   = useState(false);
+  const [toggling, setToggling] = useState(false);
 
   // ── PATCH /api/profile/staff-availability
   const handleToggle = async () => {
@@ -46,22 +46,25 @@ export default function AvailabilityCard({ available: initAvailable, memberSince
         {/* Show spinner while API call is in flight */}
         {toggling
           ? <ActivityIndicator size="small" color={COLORS.primary} />
-          : <ToggleSwitch enabled={available} onToggle={handleToggle} />
+          : <View style={{ transform: [{ scale: 0.75 }] }}>
+            <ToggleSwitch enabled={available} onToggle={handleToggle} />
+          </View>
         }
       </View>
 
       <View style={styles.divider} />
 
       {/* memberSince — from profile.createdAt (formatted in Profile.tsx) */}
+      {/* member since — stays as side-by-side row, value right-aligned */}
       <View style={styles.infoRow}>
         <Text style={styles.infoLabel}>Member Since</Text>
         <Text style={styles.infoValue}>{memberSince}</Text>
       </View>
 
-      {/* location — from "area, city" (composed in Profile.tsx) */}
-      <View style={styles.infoRow}>
+      {/* location — column layout to prevent long text from overlapping */}
+      <View style={styles.infoRowCol}>
         <Text style={styles.infoLabel}>Location</Text>
-        <Text style={styles.infoValue}>{location}</Text>
+        <Text style={styles.infoValueFull}>{location}</Text>
       </View>
     </View>
   );
@@ -79,7 +82,8 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  title:       { fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 14 },
+
+  title: { fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 14 },
   toggleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -90,11 +94,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  toggleLeft:  { flexDirection: "row", alignItems: "center", gap: 8 },
-  dot:         { width: 9, height: 9, borderRadius: 5 },
+  toggleLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
+  dot: { width: 9, height: 9, borderRadius: 5 },
   toggleLabel: { fontSize: 13, fontWeight: "600", color: COLORS.text },
-  divider:     { height: 1, backgroundColor: COLORS.border, marginVertical: 14 },
-  infoRow:     { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
-  infoLabel:   { fontSize: 13, color: COLORS.subText },
-  infoValue:   { fontSize: 13, fontWeight: "600", color: COLORS.text },
+  divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 14 },
+  infoRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
+  infoLabel: { fontSize: 13, color: COLORS.subText, flexShrink: 0 },
+  infoValue: { fontSize: 13, fontWeight: "600", color: COLORS.text, textAlign: "right", flexShrink: 1 },
+
+  // ── new ──
+  infoRowCol: { marginBottom: 10, gap: 3 },
+  infoValueFull: { fontSize: 13, fontWeight: "600", color: COLORS.text },
 });

@@ -133,12 +133,12 @@ export default function VerifyOtp() {
       if (accountType === "medical") {
         router.replace({
           pathname: "/profile/medical-staff",
-          params: { signupName },
+          params: {email, signupName },
         });
       } else {
         router.replace({
           pathname: "/profile/hospital",
-          params: { signupName },
+          params: {email, signupName },
         });
       }
 

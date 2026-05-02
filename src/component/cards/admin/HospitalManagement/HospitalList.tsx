@@ -15,7 +15,7 @@ import {
 import { adminAPI } from '@/service/api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type LicenseStatus = 'VERIFIED' | 'PENDING'  | 'REJECTED';
+type LicenseStatus = 'VERIFIED' | 'PENDING' | 'REJECTED';
 type DocStatus = 'VERIFIED' | 'PENDING' | 'REJECTED' | 'AUTO_VERIFIED' | 'MANUAL_PENDING';
 
 interface HospitalDocument {
@@ -87,10 +87,10 @@ const toLicenseStatus = (raw: string): LicenseStatus => {
 const mapDoc = (d: any): HospitalDocument => {
   const rawDocStatus = (d.status || d.verificationStatus || 'pending').toLowerCase();
   const docStatus: DocStatus =
-  rawDocStatus === 'verified'                    ? 'VERIFIED' :
-  rawDocStatus === 'auto-verified'               ? 'AUTO_VERIFIED' :
-  rawDocStatus === 'rejected'                    ? 'REJECTED' :
-  rawDocStatus === 'manual-pending-verification' ? 'MANUAL_PENDING' : 'PENDING';
+    rawDocStatus === 'verified' ? 'VERIFIED' :
+      rawDocStatus === 'auto-verified' ? 'AUTO_VERIFIED' :
+        rawDocStatus === 'rejected' ? 'REJECTED' :
+          rawDocStatus === 'manual-pending-verification' ? 'MANUAL_PENDING' : 'PENDING';
 
   return {
     id: d._id ?? d.id ?? String(Math.random()),
@@ -98,12 +98,12 @@ const mapDoc = (d: any): HospitalDocument => {
     docType: d.documentType || d.docType || 'unknown',
     status: docStatus,
     statusNote:
-  d.statusNote || d.note ||
-  (docStatus === 'VERIFIED'     ? 'Document verified' :
-   docStatus === 'AUTO_VERIFIED' ? 'Auto-verified by system' :
-   docStatus === 'REJECTED'     ? 'Document rejected' :
-   docStatus === 'MANUAL_PENDING' ? 'Awaiting manual review' :
-   'Awaiting review'),
+      d.statusNote || d.note ||
+      (docStatus === 'VERIFIED' ? 'Document verified' :
+        docStatus === 'AUTO_VERIFIED' ? 'Auto-verified by system' :
+          docStatus === 'REJECTED' ? 'Document rejected' :
+            docStatus === 'MANUAL_PENDING' ? 'Awaiting manual review' :
+              'Awaiting review'),
     icon: d.icon || '📄',
     docNumber: d.documentNumber || d.docNumber || '—',
     issuedBy: d.issuedBy || '—',
@@ -178,11 +178,11 @@ const LICENSE_BADGE: Record<LicenseStatus, { bg: string; text: string; dot: stri
 };
 
 const DOC_STATUS_CFG: Record<DocStatus, { bg: string; text: string; border: string }> = {
-  VERIFIED:       { bg: '#F0FDF4', text: '#16A34A', border: '#BBF7D0' },
-  AUTO_VERIFIED:  { bg: '#ECFDF5', text: '#15803D', border: '#86EFAC' },
+  VERIFIED: { bg: '#F0FDF4', text: '#16A34A', border: '#BBF7D0' },
+  AUTO_VERIFIED: { bg: '#ECFDF5', text: '#15803D', border: '#86EFAC' },
   MANUAL_PENDING: { bg: '#EFF6FF', text: '#2563EB', border: '#BFDBFE' },
-  PENDING:        { bg: '#FFFBEB', text: '#D97706', border: '#FDE68A' },
-  REJECTED:       { bg: '#FEF2F2', text: '#DC2626', border: '#FECACA' },
+  PENDING: { bg: '#FFFBEB', text: '#D97706', border: '#FDE68A' },
+  REJECTED: { bg: '#FEF2F2', text: '#DC2626', border: '#FECACA' },
 };
 
 // ─── Progress Bar ─────────────────────────────────────────────────────────────
@@ -1149,6 +1149,59 @@ const rr = StyleSheet.create({
   confirmTxt: { fontSize: 13, color: '#fff', fontWeight: '700' },
 });
 
+// ─── Stats Row ────────────────────────────────────────────────────────────────
+interface StatCardProps {
+  icon: string;
+  iconBg: string;
+  iconColor: string;
+  badge: string;
+  badgeColor: string;
+  value: string;
+  label: string;
+}
+function StatCard({ icon, iconBg, iconColor, badge, badgeColor, value, label }: StatCardProps) {
+  return (
+    <View style={sc.card}>
+      <View style={sc.topRow}>
+        <View style={[sc.iconBox, { backgroundColor: iconBg }]}>
+          <Text style={[sc.iconTxt, { color: iconColor }]}>{icon}</Text>
+        </View>
+        <Text style={[sc.badge, { color: badgeColor }]}>{badge}</Text>
+      </View>
+      <Text style={sc.value}>{value}</Text>
+      <Text style={sc.label}>{label}</Text>
+    </View>
+  );
+}
+const sc = StyleSheet.create({
+  card: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E9ECF0',
+    padding: 14,
+    gap: 4,
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  iconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconTxt: { fontSize: 18 },
+  badge: { fontSize: 11, fontWeight: '700' },
+  value: { fontSize: 26, fontWeight: '800', color: '#0F172A', lineHeight: 30 },
+  label: { fontSize: 11, fontWeight: '600', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5 },
+});
+
 
 
 // ─── Main Export ──────────────────────────────────────────────────────────────
@@ -1179,6 +1232,13 @@ export default function HospitalListSection() {
   const [rejectReasonVisible, setRejectReasonVisible] = useState(false);
   const [pendingRejectTarget, setPendingRejectTarget] = useState<Hospital | null>(null);
 
+  const [stats, setStats] = useState({
+    totalStaff: 0,
+    pendingVerification: 0,
+    approvedClinicians: 0,
+    onDuty: 0,
+  });
+
   // ── Toast ──────────────────────────────────────────────────────────────────
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
@@ -1205,6 +1265,12 @@ export default function HospitalListSection() {
       // API shape: { success, hospitals: [...], pagination: {...} }
       const list = res?.data?.hospitals ?? res?.hospitals ?? res?.data ?? [];
       const mapped: Hospital[] = list.map(mapHospital);
+      // Compute stats from the mapped list
+      const totalStaff = mapped.reduce((sum, h) => sum + h.totalStaff, 0);
+      const pendingVerification = mapped.filter(h => h.licenseStatus === 'PENDING').length;
+      const approvedClinicians = mapped.filter(h => h.licenseStatus === 'VERIFIED').length;
+      const onDuty = mapped.reduce((sum, h) => sum + h.occupiedDuties, 0);
+      setStats({ totalStaff, pendingVerification, approvedClinicians, onDuty });
       setHospitals(mapped);
       setPagination(res?.data?.pagination ?? res?.pagination ?? null);
     } catch {
@@ -1309,6 +1375,7 @@ export default function HospitalListSection() {
   const totalItems = pagination?.totalItems ?? hospitals.length;
   const displayCount = hospitals.length;
 
+
   return (
     <View style={s.card}>
 
@@ -1377,6 +1444,46 @@ export default function HospitalListSection() {
           )}
         </View>
       )}
+
+      {/* ── Stat Cards ── */}
+      <View style={s.statsRow}>
+        <StatCard
+          icon="🛡️"
+          iconBg="#EEF2FF"
+          iconColor="#4F46E5"
+          badge="+12%"
+          badgeColor="#16A34A"
+          value={stats.totalStaff.toLocaleString()}
+          label="Total Staff"
+        />
+        <StatCard
+          icon="⚠️"
+          iconBg="#FEF3C7"
+          iconColor="#D97706"
+          badge="Action Req."
+          badgeColor="#D97706"
+          value={String(stats.pendingVerification)}
+          label="Pending Verification"
+        />
+        <StatCard
+          icon="🖥️"
+          iconBg="#ECFDF5"
+          iconColor="#16A34A"
+          badge="98% Verified"
+          badgeColor="#16A34A"
+          value={stats.approvedClinicians.toLocaleString()}
+          label="Approved Clinicians"
+        />
+        <StatCard
+          icon="🔖"
+          iconBg="#F5F3FF"
+          iconColor="#7C3AED"
+          badge="Active"
+          badgeColor="#7C3AED"
+          value={String(stats.onDuty)}
+          label="On-Duty Currently"
+        />
+      </View>
 
       {/* ── Toast ── */}
       {toast && <Toast message={toast.msg} type={toast.type} />}
@@ -1486,4 +1593,10 @@ const s = StyleSheet.create({
   navActive: { borderColor: '#BFDBFE' },
   navDisabled: { opacity: 0.4 },
   navTxt: { fontSize: 15, color: '#64748B', lineHeight: 20 },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+  },
 });

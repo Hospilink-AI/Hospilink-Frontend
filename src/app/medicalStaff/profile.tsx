@@ -131,13 +131,15 @@ export default function Profile() {
   const displayRole          = apiProfile?.jobRole           ? getRoleLabel(apiProfile.jobRole) : profileData.role;
   const displayAvail         = apiProfile?.isAvailable       ?? profileData.availability;
   const displaySince         = apiProfile?.createdAt         ? formatDate(apiProfile.createdAt) : profileData.memberSince;
-  const displayLocation      = apiProfile               ? `${apiProfile.area}, ${apiProfile.city}` : profileData.location;
+  const displayLocation      = apiProfile               ? `${apiProfile.currentAddress}, ${apiProfile.city}` : profileData.location;
   const displayPhone         = apiProfile?.phoneNumber       ?? null;
   const displayEmail         = apiUser?.email                ?? null;
   const isVerified           = apiUser?.isEmailVerified      ?? false;
   const isComplete           = apiProfile?.isProfileComplete ?? false;
   const displayCity          = apiProfile?.city              ?? "";
-  const displayArea          = apiProfile?.area              ?? "";
+  const displayState = apiProfile?.state ?? "";
+  const diaplayPincode = apiProfile?.pincode ?? "";
+  const displaycurrentAddress          = apiProfile?.currentAddress    ?? "";
   const displayJobRoleValue  = apiProfile?.jobRole           ?? null;
   const displayProfilePicture = apiProfile?.profilePicture   ?? null;
 
@@ -184,7 +186,9 @@ export default function Profile() {
         verificationStatus={verificationStatus}
         jobRoleValue={displayJobRoleValue}
         city={displayCity}
-        area={displayArea}
+        currentAddress={displaycurrentAddress} 
+        state={displayState}
+        pincode={diaplayPincode}                 
         profilePicture={displayProfilePicture}
         // ── Pass live data to edit modal
         profileSummary={displaySummary}

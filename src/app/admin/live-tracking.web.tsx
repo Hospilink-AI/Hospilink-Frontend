@@ -158,13 +158,14 @@ export default function StaffTrackingDashboard() {
   const [selectedDistance, setSelectedDistance] = useState(DISTANCE_OPTIONS[1]);
   const [hospitalCoords, setHospitalCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [staff, setStaff] = useState<StaffMember[]>([]);
-  
+  const [isSatellite, setIsSatellite] = useState(false);
+
   // Set loading to false initially so it waits for user selection
   const [loading, setLoading] = useState(false);
 
   const liveLocations = useTrackingReceiver({
-  hospitalId: selectedHospital?._id ?? selectedHospital?.id,
-});
+    hospitalId: selectedHospital?._id ?? selectedHospital?.id,
+  });
 
   useEffect(() => {
     adminAPI.getHospitalsList().then((res: any) => {
@@ -177,11 +178,11 @@ export default function StaffTrackingDashboard() {
 
   useEffect(() => {
     if (!selectedHospital) return; // Wait until the user selects a hospital
-    
+
     setLoading(true);
     const hospitalId = selectedHospital._id ?? selectedHospital.id;
     if (!hospitalId) return;
-    
+
     adminAPI.getNearbyStaff(hospitalId, selectedDistance.value, selectedRole.value)
       .then((res: any) => {
         if (res.success) {
@@ -236,9 +237,21 @@ export default function StaffTrackingDashboard() {
                 zoom={12}
                 style={{ width: '100%', height: '100%', zIndex: 0 }}
               >
-                <TileLayer
+                {/* <TileLayer
                   attribution='&copy; OpenStreetMap'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                /> */}
+                <TileLayer
+                  attribution={
+                    isSatellite
+                      ? 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
+                      : '&copy; OpenStreetMap'
+                  }
+                  url={
+                    isSatellite
+                      ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+                      : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+                  }
                 />
                 <Circle
                   center={[hospitalCoords.latitude, hospitalCoords.longitude]}
@@ -265,6 +278,15 @@ export default function StaffTrackingDashboard() {
                 ))}
               </MapContainer>
             )}
+
+            <TouchableOpacity
+              style={styles.satelliteToggle}
+              onPress={() => setIsSatellite(prev => !prev)}
+            >
+              <Text style={styles.satelliteToggleText}>
+                {isSatellite ? '🗺 Street View' : '🛰 Satellite'}
+              </Text>
+            </TouchableOpacity>
 
             {/* Legend */}
             <View style={styles.mapLegend}>
@@ -315,12 +337,12 @@ const styles = StyleSheet.create({
   dropdownOption: { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
   dropdownOptionText: { fontSize: 13, color: '#111827' },
   mapWrapper: { flex: 1, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#E5E5E5', position: 'relative', minHeight: 500 },
-  
+
   // New styles for the placeholder
   placeholderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F3F4F6' },
   placeholderIcon: { fontSize: 48, marginBottom: 12, opacity: 0.5 },
   placeholderText: { fontSize: 16, fontWeight: '500', color: '#6B7280' },
-  
+
   loadingOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(255,255,255,0.8)', justifyContent: 'center', alignItems: 'center', zIndex: 5 },
   loadingText: { marginTop: 10, fontWeight: '600', color: '#3B82F6' },
   mapLegend: { position: 'absolute', bottom: 20, alignSelf: 'center', backgroundColor: '#FFFFFF', borderRadius: 8, paddingHorizontal: 20, paddingVertical: 12, flexDirection: 'row', gap: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 3 },
@@ -331,4 +353,14 @@ const styles = StyleSheet.create({
   syncIndicator: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   syncDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10B981' },
   syncText: { fontSize: 11, color: '#9CA3AF' },
+
+
+  satelliteToggle: {
+  position: 'absolute', top: 12, right: 12, zIndex: 999,
+  backgroundColor: '#fff', paddingHorizontal: 14, paddingVertical: 8,
+  borderRadius: 8, borderWidth: 1, borderColor: '#E5E7EB',
+  shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1, shadowRadius: 6, elevation: 4,
+},
+satelliteToggleText: { fontSize: 13, fontWeight: '600', color: '#111827' },
 });

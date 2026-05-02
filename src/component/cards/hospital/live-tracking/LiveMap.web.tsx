@@ -14,6 +14,16 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
+const STREET_TILE = {
+  url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  attribution: '© OpenStreetMap contributors',
+};
+
+const SATELLITE_TILE = {
+  url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  attribution: '© Esri, Maxar, Earthstar Geographics',
+};
+
 const hospitalIcon = L.divIcon({
   className: '',
   html: `<div style="background:#E53935;border-radius:50% 50% 50% 0;
@@ -46,6 +56,8 @@ interface LiveMapProps {
   doctors: DoctorWithDistance[];
   rangeKm: RangeKm;
    onRefresh: () => void;   // this
+   isSatellite: boolean;  
+   onToggleSatellite: () => void;
 }
 
 // ── Refresh Control — sits below +/- zoom buttons ──
@@ -105,23 +117,29 @@ const RefreshControl: React.FC<RefreshControlProps> = ({ onRefresh }) => {
   return null;
 };
 
-const LiveMap: React.FC<LiveMapProps> = ({ hospital, doctors, rangeKm, onRefresh }) => {
+
+
+const LiveMap: React.FC<LiveMapProps> = ({ hospital, doctors, rangeKm, onRefresh, isSatellite, onToggleSatellite }) => {
   const center: [number, number] = [
     hospital.location.latitude,
     hospital.location.longitude,
   ];
 
+  const tile = isSatellite ? SATELLITE_TILE : STREET_TILE;
+
   return (
+     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
     <MapContainer
       center={center}
       zoom={13}
       style={{ width: '100%', height: '100%', zIndex: 0 }}
       zoomControl
     >
-      <TileLayer
+      {/* <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
+      /> */}
+      <TileLayer url={tile.url} attribution={tile.attribution} />
        <RefreshControl onRefresh={onRefresh} />
       <Circle
         center={center}
@@ -161,6 +179,33 @@ const LiveMap: React.FC<LiveMapProps> = ({ hospital, doctors, rangeKm, onRefresh
         </Marker>
       ))}
     </MapContainer>
+    {/* Satellite Toggle Button */}
+    <button
+      onClick={onToggleSatellite}
+      style={{
+        position: 'absolute',
+        top: 58,
+        // left: 12,          // left side so it doesn't clash with RangeDropdown on right
+        right:10,
+        zIndex: 1000,
+        backgroundColor: '#fff',
+        border: '1px solid #E5E7EB',
+        borderRadius: 8,
+        padding: '7px 12px',
+        fontSize: 11,
+        fontWeight: 600,
+        color: '#111827',
+        cursor: 'pointer',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+      }}
+    >
+      {isSatellite ? '🗺 Street View' : '🛰 Satellite'}
+    </button>
+    </div>
+    
   );
 };
 

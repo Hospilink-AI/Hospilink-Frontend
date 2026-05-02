@@ -18,6 +18,16 @@ import { useTrackingReceiver } from '@/hooks/useTrackingReceiver';
 
 const isWeb = typeof window !== 'undefined' && !!window.document;
 
+const STREET_TILE = {
+  url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  attribution: '© OpenStreetMap contributors',
+};
+
+const SATELLITE_TILE = {
+  url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  attribution: '© Esri, Maxar, Earthstar Geographics',
+};
+
 // ─── TypeScript Interfaces ──────────────────────────────────────────────
 interface Coord { latitude: number; longitude: number; }
 interface StatusHistory {
@@ -45,7 +55,7 @@ interface ApiData {
       };
       type?: string;
     };
-    location?: { latitude: number; longitude: number; lastUpdated?: string };
+    location?: { latitude: number; longitude: number; lastUpdated?: string ,source?: string;};
     realTimeLocation?: any;
   } | null;
   duty: {
@@ -72,6 +82,8 @@ interface ApiData {
         latitude: number;
         longitude: number;
       };
+      latitude?: number;  
+      longitude?: number; 
       type?: string;
     };
   };
@@ -107,11 +119,16 @@ interface WebMapProps {
   hospitalLocation: Coord;
   routePolylines: string[];
   status: string;
+  isSatellite: boolean;
+  onToggleSatellite: () => void;
 }
 
-const WebMap = ({ staffLocation, hospitalLocation, routePolylines, status }: WebMapProps) => {
+
+
+const WebMap = ({ staffLocation, hospitalLocation, routePolylines, status, isSatellite, onToggleSatellite }: WebMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
+  const tileLayerRef = useRef<any>(null);
 
   useEffect(() => {
     if (!isWeb || !mapRef.current) return;
@@ -145,8 +162,16 @@ const WebMap = ({ staffLocation, hospitalLocation, routePolylines, status }: Web
       const map = L.map(mapRef.current!).setView([centerLat, centerLng], 13);
       mapInstanceRef.current = map;
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
+      // const tile = isSatellite ? SATELLITE_TILE : STREET_TILE;
+
+      // L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      //   attribution: '© OpenStreetMap contributors',
+      //   maxZoom: 19,
+      // }).addTo(map);
+
+      const tile = isSatellite ? SATELLITE_TILE : STREET_TILE;
+      tileLayerRef.current = L.tileLayer(tile.url, {
+        attribution: tile.attribution,
         maxZoom: 19,
       }).addTo(map);
 
@@ -186,12 +211,43 @@ const WebMap = ({ staffLocation, hospitalLocation, routePolylines, status }: Web
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
+        tileLayerRef.current = null;
       }
     };
   }, [staffLocation, hospitalLocation, routePolylines, status]);
 
+  useEffect(() => {
+  const L = (window as any).L;
+  const map = mapInstanceRef.current;
+  if (!map || !L) return;
+
+  if (tileLayerRef.current) {
+    map.removeLayer(tileLayerRef.current);
+  }
+
+  const tile = isSatellite ? SATELLITE_TILE : STREET_TILE;
+  tileLayerRef.current = L.tileLayer(tile.url, {
+    attribution: tile.attribution,
+    maxZoom: 19,
+  }).addTo(map);
+
+  tileLayerRef.current.bringToBack();
+}, [isSatellite]);
+
   return (
+    // <div ref={mapRef} style={{ width: '100%', height: '100%', minHeight: 350, zIndex: 1 }} />
+     <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 350 }}>
     <div ref={mapRef} style={{ width: '100%', height: '100%', minHeight: 350, zIndex: 1 }} />
+    <TouchableOpacity
+      style={styles.satelliteToggle}
+      onPress={onToggleSatellite}
+      activeOpacity={0.8}
+    >
+      <Text style={styles.satelliteToggleText}>
+        {isSatellite ? '🗺 Street View' : '🛰 Satellite'}
+      </Text>
+    </TouchableOpacity>
+  </div>
   );
 };
 
@@ -204,13 +260,14 @@ export default function LiveRequestMonitoring() {
   const [data, setData] = useState<ApiData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSatellite, setIsSatellite] = useState(false);
 
   const liveLocations = useTrackingReceiver({ dutyId: dutyId as string });
 
 
   const fetchDutyRoute = async () => {
     try {
-      if (!data) setLoading(true); 
+      if (!data) setLoading(true);
       const response = await adminAPI.getTrackStaffLocation(dutyId as string);
       if (response.success) {
         setData(response.data);
@@ -237,7 +294,7 @@ export default function LiveRequestMonitoring() {
   const formatTime = (isoString: string) => {
     return new Date(isoString).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
-  
+
   const formatDate = (isoString: string) => {
     return new Date(isoString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
@@ -298,14 +355,14 @@ export default function LiveRequestMonitoring() {
         longitude: staff.coordinates.coordinates.longitude
       };
     }
-    
+
     if (staff?.location) {
       return {
         latitude: staff.location.latitude,
         longitude: staff.location.longitude
       };
     }
-    
+
     return null;
   };
 
@@ -317,7 +374,7 @@ export default function LiveRequestMonitoring() {
         longitude: hospital.coordinates.coordinates.longitude
       };
     }
-    
+
     // Check for flat structure (coordinates.latitude)
     if (hospital?.coordinates?.latitude && hospital?.coordinates?.longitude) {
       return {
@@ -325,7 +382,7 @@ export default function LiveRequestMonitoring() {
         longitude: hospital.coordinates.longitude
       };
     }
-    
+
     return null;
   };
 
@@ -343,7 +400,7 @@ export default function LiveRequestMonitoring() {
     { key: 'enroute', label: 'In Progress', icon: 'car' },
     { key: 'in-progress', label: 'Completed', icon: 'location' }
   ];
-  
+
   const currentStatusMap: Record<string, number> = {
     'available': 0, 'assigned': 1, 'accepted': 2, 'enroute': 3, 'in-progress': 4, 'completed': 5
   };
@@ -360,10 +417,10 @@ export default function LiveRequestMonitoring() {
 
   // Get live coordinates from socket or fallback to last known location
   let staffId: string | undefined;
-  
+
   if (staff) {
     staffId = staff.id || staff._id;
-    
+
     if (!staffId && duty.statusHistory && duty.statusHistory.length > 0) {
       const assignedHistory = duty.statusHistory.find(h => h.status === 'assigned');
       if (assignedHistory) {
@@ -371,17 +428,17 @@ export default function LiveRequestMonitoring() {
       }
     }
   }
-  
+
   // Check if we have real-time location from API
   const hasRealtimeFromAPI = staff?.location?.source === 'realtime';
-  const apiLocationAge = staff?.location?.lastUpdated 
-    ? Date.now() - staff.location.lastUpdated 
+  const apiLocationAge = staff?.location?.lastUpdated
+    ? Date.now() - new Date(staff.location.lastUpdated).getTime()
     : null;
-  
+
   // Priority: WebSocket > API realtime > Static profile
   let staffLiveCoord;
   let coordinateSource;
-  
+
   if (staffId && liveLocations[staffId]) {
     // Use WebSocket data (highest priority)
     staffLiveCoord = liveLocations[staffId];
@@ -389,8 +446,10 @@ export default function LiveRequestMonitoring() {
   } else if (hasRealtimeFromAPI && apiLocationAge && apiLocationAge < 10000) {
     // Use API realtime data if less than 10 seconds old
     staffLiveCoord = {
-      latitude: staff.location.latitude,
-      longitude: staff.location.longitude
+      // latitude: staff.location.latitude,
+       latitude: staff.location!.latitude, 
+         longitude: staff.location!.longitude 
+      // longitude: staff.location.longitude
     };
     coordinateSource = '🟢 LIVE (API)';
   } else {
@@ -398,7 +457,7 @@ export default function LiveRequestMonitoring() {
     staffLiveCoord = staffCoordinates;
     coordinateSource = '📍 STATIC (Profile)';
   }
-  
+
   console.log('🗺️ [COORDINATE SOURCE]:', coordinateSource, staffLiveCoord);
 
   // Calculate live update time and ETA
@@ -412,14 +471,14 @@ export default function LiveRequestMonitoring() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
-      
+
       {/* Top Header */}
       <View style={styles.headerArea}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
           <Ionicons name="arrow-back" size={18} color="#1E293B" />
           <Text style={styles.backBtnText}>Back to Dashboard</Text>
         </TouchableOpacity>
-        
+
         <View style={styles.headerMainRow}>
           <View>
             <Text style={styles.pageTitle}>Live Request Monitoring</Text>
@@ -441,12 +500,12 @@ export default function LiveRequestMonitoring() {
       </View>
 
       <View style={styles.mainGrid}>
-        
+
         {/* LEFT COLUMN: Request Details */}
         <View style={styles.leftCol}>
           <View style={styles.detailCard}>
             <Text style={styles.cardSectionTitle}>Request Details</Text>
-            
+
             <View style={styles.detailItem}>
               <View style={styles.iconBox} />
               <View style={styles.detailTextCol}>
@@ -516,7 +575,7 @@ export default function LiveRequestMonitoring() {
                 if (!isWeb) {
                   return (
                     <View style={styles.mapPlaceholder}>
-                      <Text style={{color: '#64748B'}}>Map view available on web version</Text>
+                      <Text style={{ color: '#64748B' }}>Map view available on web version</Text>
                     </View>
                   );
                 }
@@ -525,7 +584,7 @@ export default function LiveRequestMonitoring() {
                   return (
                     <View style={styles.mapPlaceholder}>
                       <ActivityIndicator size="large" color="#3B82F6" />
-                      <Text style={{color: '#64748B', marginTop: 12}}>Loading staff location...</Text>
+                      <Text style={{ color: '#64748B', marginTop: 12 }}>Loading staff location...</Text>
                     </View>
                   );
                 }
@@ -534,17 +593,19 @@ export default function LiveRequestMonitoring() {
                   return (
                     <View style={styles.mapPlaceholder}>
                       <ActivityIndicator size="large" color="#3B82F6" />
-                      <Text style={{color: '#64748B', marginTop: 12}}>Loading hospital location...</Text>
+                      <Text style={{ color: '#64748B', marginTop: 12 }}>Loading hospital location...</Text>
                     </View>
                   );
                 }
 
                 return (
-                  <WebMap 
-                    staffLocation={staffLiveCoord} 
-                    hospitalLocation={hospitalCoordinates} 
-                    routePolylines={routeData?.stepPolylines || []} 
-                    status={dutyStatus} 
+                  <WebMap
+                    staffLocation={staffLiveCoord}
+                    hospitalLocation={hospitalCoordinates}
+                    routePolylines={routeData?.stepPolylines || []}
+                    status={dutyStatus}
+                    isSatellite={isSatellite}   
+                    onToggleSatellite={() => setIsSatellite(v => !v)}
                   />
                 );
               })()}
@@ -554,7 +615,7 @@ export default function LiveRequestMonitoring() {
             <View style={styles.horizontalTimeline}>
               <View style={styles.timelineTrackBg} />
               <View style={[styles.timelineTrackFill, { width: `${(currentStepIndex / (timelineSteps.length - 1)) * 100}%` }]} />
-              
+
               {timelineSteps.map((step, idx) => {
                 const isCompleted = idx <= currentStepIndex;
                 const isCurrent = idx === currentStepIndex;
@@ -584,16 +645,16 @@ export default function LiveRequestMonitoring() {
               </View>
               <View style={styles.onlineDot} />
             </View>
-            
+
             <Text style={styles.staffProfileName}>{staff.name}</Text>
             <View style={styles.acceptedBadge}>
               <Text style={styles.acceptedBadgeText}>Accepted Staff</Text>
             </View>
-            
+
             <View style={styles.ratingRow}>
               <Ionicons name="star" size={14} color="#F59E0B" />
               <Text style={styles.ratingText}>
-                {staff.avgRating > 0 ? staff.avgRating : '0'} 
+                {staff.avgRating > 0 ? staff.avgRating : '0'}
               </Text>
             </View>
 
@@ -648,10 +709,10 @@ export default function LiveRequestMonitoring() {
           {sortedHistory.map((item, idx) => {
             const actor = getActorFromReason(item.reason, staff.name, hospital.name);
             const isLast = idx === sortedHistory.length - 1;
-            
+
             return (
               <View key={item._id} style={[styles.activityRow, !isLast && styles.activityBorder]}>
-                
+
                 {/* Time & Date Column */}
                 <View style={styles.activityTimeCol}>
                   <Text style={styles.activityTime}>{formatTime(item.timestamp)}</Text>
@@ -662,7 +723,7 @@ export default function LiveRequestMonitoring() {
                 <View style={styles.activityTextWrap}>
                   <Text style={styles.activityDesc}>
                     <Text style={styles.activityBold}>{actor}</Text>
-                    
+
                     {item.status === 'available' && ' created the shift request.'}
                     {item.status === 'assigned' && ' accepted the shift request.'}
                     {(item.status === 'enroute' || item.status === 'in-progress' || item.status === 'completed') && (
@@ -684,7 +745,7 @@ export default function LiveRequestMonitoring() {
               </View>
             );
           })}
-          
+
           <TouchableOpacity style={styles.viewHistoryBtn} activeOpacity={0.8}>
             <Text style={styles.viewHistoryText}>View Full History</Text>
           </TouchableOpacity>
@@ -720,9 +781,9 @@ const styles = StyleSheet.create({
   btnDangerText: { color: '#EF4444', fontSize: 13, fontWeight: '600' },
 
   // Responsive Grid Settings
-  mainGrid: { 
-    flexDirection: 'row', 
-    gap: 24, 
+  mainGrid: {
+    flexDirection: 'row',
+    gap: 24,
     flexWrap: 'wrap', // Ensures it wraps on smaller screens
     alignItems: 'stretch' // Makes columns match height if desired
   },
@@ -752,19 +813,19 @@ const styles = StyleSheet.create({
   mapStatusRight: { alignItems: 'flex-end' },
   lastUpdatedLabel: { fontSize: 10, fontWeight: '700', color: '#94A3B8', letterSpacing: 0.5 },
   lastUpdatedValue: { fontSize: 13, fontWeight: '700', color: '#1E293B', marginTop: 2 },
-  
+
   // Map Wrapper -> now a flex container
-  mapWrapper: { 
-    flex: 1, 
-    minHeight: 500, 
-    backgroundColor: '#FFF', 
-    borderBottomLeftRadius: 12, 
-    borderBottomRightRadius: 12, 
-    borderWidth: 1, 
-    borderTopWidth: 0, 
-    borderColor: '#E2E8F0', 
+  mapWrapper: {
+    flex: 1,
+    minHeight: 500,
+    backgroundColor: '#FFF',
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: '#E2E8F0',
     overflow: 'hidden',
-    flexDirection: 'column' 
+    flexDirection: 'column'
   },
   mapContainer: {
     flex: 1,
@@ -773,20 +834,43 @@ const styles = StyleSheet.create({
     zIndex: 1
   },
   mapPlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  
+
   // Timeline moved to regular flow (not absolute)
-  horizontalTimeline: { 
-    position: 'relative', 
-    backgroundColor: '#FFF', 
-    paddingHorizontal: 20, 
-    paddingVertical: 24, 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'flex-start', 
-    borderTopWidth: 1, 
-    borderColor: '#E2E8F0', 
-    zIndex: 2 
+  horizontalTimeline: {
+    position: 'relative',
+    backgroundColor: '#FFF',
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    borderTopWidth: 1,
+    borderColor: '#E2E8F0',
+    zIndex: 2
   },
+
+  satelliteToggle: {
+  position: 'absolute',
+  top: 10,
+  right: 10,
+  zIndex: 999,
+  backgroundColor: '#fff',
+  paddingHorizontal: 14,
+  paddingVertical: 8,
+  borderRadius: 8,
+  borderWidth: 1,
+  borderColor: '#E5E7EB',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 6,
+  elevation: 4,
+},
+satelliteToggleText: {
+  fontSize: 13,
+  fontWeight: '600',
+  color: '#111827',
+},
   // Lines remain absolute relative to the horizontalTimeline container
   timelineTrackBg: { position: 'absolute', height: 4, backgroundColor: '#E2E8F0', left: 40, right: 40, top: 34, zIndex: 1 },
   timelineTrackFill: { position: 'absolute', height: 4, backgroundColor: '#2563EB', left: 40, top: 34, zIndex: 2 },
