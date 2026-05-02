@@ -293,20 +293,29 @@ const getStatusDisplay = (status: string): { label: string; bg: string; color: s
   }
 };
 
-const getInitials = (name: string): string =>
-  name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .substring(0, 2)
-    .toUpperCase();
+// const getInitials = (name: string): string =>
+//   name
+//     .split(' ')
+//     .map((n) => n[0])
+//     .join('')
+//     .substring(0, 2)
+//     .toUpperCase();
+
+const getInitials = (name: string): string => {
+  if (!name) return '?';
+  return name.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase();
+};
 
 const AVATAR_COLORS = [
   '#6366F1', '#8B5CF6', '#EC4899', '#EF4444',
   '#F59E0B', '#10B981', '#2563EB', '#0891B2',
 ];
-const getAvatarColor = (name: string): string =>
-  AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
+// const getAvatarColor = (name: string): string =>
+//   AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
+const getAvatarColor = (name: string): string => {
+  if (!name) return AVATAR_COLORS[0];
+  return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
+};
 
 // ─── Initials Avatar ──────────────────────────────────────────────────────────
 const InitialsAvatar = ({ name, size = 40 }: { name: string; size?: number }) => (
@@ -327,6 +336,7 @@ const InitialsAvatar = ({ name, size = 40 }: { name: string; size?: number }) =>
   </View>
 );
 
+
 // ─── Tracking Card ────────────────────────────────────────────────────────────
 const TrackingCard = ({
   duty,
@@ -338,6 +348,8 @@ const TrackingCard = ({
   onShowMap: (dutyId: string) => void;
 }) => {
   const statusInfo = getStatusDisplay(duty.status.status);
+  const staffName = duty.staff?.name ?? 'Unassigned';
+const staffId   = duty.staff?.id   ?? '000000';
 
   return (
     <View style={[styles.card, { width: cardWidth as any }]}>
@@ -360,13 +372,14 @@ const TrackingCard = ({
 
       {/* Profile Row */}
       <View style={styles.profileRow}>
-        <InitialsAvatar name={duty.staff.name} size={40} />
+        <InitialsAvatar name={staffName} size={40} />
         <View style={{ flex: 1 }}>
           <Text style={styles.nameText} numberOfLines={1}>
-            {duty.staff.name}
+            {/* {duty.staff.name} */}
+            {staffName} 
           </Text>
           <Text style={styles.idText}>
-            ID: {duty.staff.id.slice(-6).toUpperCase()}
+            ID: {staffId.slice(-6).toUpperCase()}
           </Text>
         </View>
       </View>
