@@ -55,7 +55,7 @@ interface ApiData {
       };
       type?: string;
     };
-    location?: { latitude: number; longitude: number; lastUpdated?: string ,source?: string;};
+    location?: { latitude: number; longitude: number; lastUpdated?: string, source?: string; };
     realTimeLocation?: any;
   } | null;
   duty: {
@@ -82,8 +82,8 @@ interface ApiData {
         latitude: number;
         longitude: number;
       };
-      latitude?: number;  
-      longitude?: number; 
+      latitude?: number;
+      longitude?: number;
       type?: string;
     };
   };
@@ -217,37 +217,37 @@ const WebMap = ({ staffLocation, hospitalLocation, routePolylines, status, isSat
   }, [staffLocation, hospitalLocation, routePolylines, status]);
 
   useEffect(() => {
-  const L = (window as any).L;
-  const map = mapInstanceRef.current;
-  if (!map || !L) return;
+    const L = (window as any).L;
+    const map = mapInstanceRef.current;
+    if (!map || !L) return;
 
-  if (tileLayerRef.current) {
-    map.removeLayer(tileLayerRef.current);
-  }
+    if (tileLayerRef.current) {
+      map.removeLayer(tileLayerRef.current);
+    }
 
-  const tile = isSatellite ? SATELLITE_TILE : STREET_TILE;
-  tileLayerRef.current = L.tileLayer(tile.url, {
-    attribution: tile.attribution,
-    maxZoom: 19,
-  }).addTo(map);
+    const tile = isSatellite ? SATELLITE_TILE : STREET_TILE;
+    tileLayerRef.current = L.tileLayer(tile.url, {
+      attribution: tile.attribution,
+      maxZoom: 19,
+    }).addTo(map);
 
-  tileLayerRef.current.bringToBack();
-}, [isSatellite]);
+    tileLayerRef.current.bringToBack();
+  }, [isSatellite]);
 
   return (
     // <div ref={mapRef} style={{ width: '100%', height: '100%', minHeight: 350, zIndex: 1 }} />
-     <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 350 }}>
-    <div ref={mapRef} style={{ width: '100%', height: '100%', minHeight: 350, zIndex: 1 }} />
-    <TouchableOpacity
-      style={styles.satelliteToggle}
-      onPress={onToggleSatellite}
-      activeOpacity={0.8}
-    >
-      <Text style={styles.satelliteToggleText}>
-        {isSatellite ? '🗺 Street View' : '🛰 Satellite'}
-      </Text>
-    </TouchableOpacity>
-  </div>
+    <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 350 }}>
+      <div ref={mapRef} style={{ width: '100%', height: '100%', minHeight: 350, zIndex: 1 }} />
+      <TouchableOpacity
+        style={styles.satelliteToggle}
+        onPress={onToggleSatellite}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.satelliteToggleText}>
+          {isSatellite ? '🗺 Street View' : '🛰 Satellite'}
+        </Text>
+      </TouchableOpacity>
+    </div>
   );
 };
 
@@ -447,8 +447,8 @@ export default function LiveRequestMonitoring() {
     // Use API realtime data if less than 10 seconds old
     staffLiveCoord = {
       // latitude: staff.location.latitude,
-       latitude: staff.location!.latitude, 
-         longitude: staff.location!.longitude 
+      latitude: staff.location!.latitude,
+      longitude: staff.location!.longitude
       // longitude: staff.location.longitude
     };
     coordinateSource = '🟢 LIVE (API)';
@@ -604,7 +604,7 @@ export default function LiveRequestMonitoring() {
                     hospitalLocation={hospitalCoordinates}
                     routePolylines={routeData?.stepPolylines || []}
                     status={dutyStatus}
-                    isSatellite={isSatellite}   
+                    isSatellite={isSatellite}
                     onToggleSatellite={() => setIsSatellite(v => !v)}
                   />
                 );
@@ -622,10 +622,17 @@ export default function LiveRequestMonitoring() {
                 return (
                   <View key={step.key} style={styles.timelineNodeWrap}>
                     <View style={[styles.timelineNode, isCompleted && styles.timelineNodeCompleted, isCurrent && styles.timelineNodeCurrent]}>
-                      {step.icon === 'checkmark' && isCompleted ? (
+                      {/* {step.icon === 'checkmark' && isCompleted ? (
                         <Text style={styles.nodeIconText}>✓</Text>
                       ) : step.icon === 'car' && isCurrent ? (
                         <Ionicons name="car" size={16} color="#2563EB" />
+                      ) : null} */}
+                      {isCompleted ? (
+                        step.icon === 'car' && isCurrent ? (
+                          <Ionicons name="car" size={16} color="#fff" />
+                        ) : (
+                          <Text style={styles.nodeIconText}>✓</Text>
+                        )
                       ) : null}
                     </View>
                     <Text style={[styles.timelineNodeLabel, isCompleted && styles.timelineNodeLabelActive]}>{step.label}</Text>
@@ -850,34 +857,35 @@ const styles = StyleSheet.create({
   },
 
   satelliteToggle: {
-  position: 'absolute',
-  top: 10,
-  right: 10,
-  zIndex: 999,
-  backgroundColor: '#fff',
-  paddingHorizontal: 14,
-  paddingVertical: 8,
-  borderRadius: 8,
-  borderWidth: 1,
-  borderColor: '#E5E7EB',
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.1,
-  shadowRadius: 6,
-  elevation: 4,
-},
-satelliteToggleText: {
-  fontSize: 13,
-  fontWeight: '600',
-  color: '#111827',
-},
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 999,
+    backgroundColor: '#fff',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  satelliteToggleText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#111827',
+  },
   // Lines remain absolute relative to the horizontalTimeline container
   timelineTrackBg: { position: 'absolute', height: 4, backgroundColor: '#E2E8F0', left: 40, right: 40, top: 34, zIndex: 1 },
   timelineTrackFill: { position: 'absolute', height: 4, backgroundColor: '#2563EB', left: 40, top: 34, zIndex: 2 },
   timelineNodeWrap: { alignItems: 'center', gap: 8, zIndex: 3, width: 60 },
   timelineNode: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: '#E2E8F0', alignItems: 'center', justifyContent: 'center' },
   timelineNodeCompleted: { backgroundColor: '#2563EB', borderColor: '#2563EB' },
-  timelineNodeCurrent: { backgroundColor: '#FFF', borderColor: '#2563EB', borderWidth: 3, width: 32, height: 32, marginTop: -4 },
+  timelineNodeCurrent: {  backgroundColor: '#2563EB',
+     borderColor: '#2563EB', borderWidth: 3, width: 32, height: 32, marginTop: -4 },
   nodeIconText: { color: '#FFF', fontSize: 12, fontWeight: '700' },
   timelineNodeLabel: { fontSize: 11, fontWeight: '600', color: '#94A3B8' },
   timelineNodeLabelActive: { color: '#2563EB' },

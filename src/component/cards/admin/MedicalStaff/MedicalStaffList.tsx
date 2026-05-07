@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   View,
@@ -11,6 +12,7 @@ import {
   Animated,
   Dimensions,
   Alert,
+  Image
 } from 'react-native';
 import { adminAPI } from '@/service/api';
 
@@ -36,8 +38,10 @@ interface MedicalStaff {
 
 interface StaffDocument {
   _id: string;
+  id?: string;
   documentType: string;
   documentUrl: string;
+  url?: string;
   verificationStatus: 'verified' | 'pending' | 'rejected';
   rejectionReason?: string;
   uploadedAt: string;
@@ -46,6 +50,7 @@ interface StaffDocument {
 interface StaffDetails {
   id: string;
   userid: string;
+  userId?: string;
   fullName: string;
   jobRole: string;
   location: string;
@@ -94,63 +99,112 @@ const mapStaff = (s: any): MedicalStaff => ({
   isAvailable: s.isAvailable ?? true,
   email: s.email || '—',
   completedDuties: s.completedDuties ?? 0,
-  location: s.location || '—',
-  city: (s.location || '').split(',').pop()?.trim() || (s.city || 'Unknown'),
+  // location: s.location || '—',
+  // location: s.currentAddress ? `${s.currentAddress}, ${s.city || ''}`.replace(/, $/, '') : (s.city || '—'),
+  location: s.currentAddress ? `${s.currentAddress}`.replace(/, $/, '') : (s.city || '—'),
+
+  // city: (s.location || '').split(',').pop()?.trim() || (s.city || 'Unknown'),
+  city: s.city || 'Unknown',
   status: s.isAvailable ? 'AVAILABLE' : 'UNAVAILABLE',
   verificationStatus: s.verificationStatus || 'pending',
   phoneNumber: s.phoneNumber,
 });
 
 const JOB_ROLE_OPTIONS = [
-  'All Roles', 'General Surgeon', 'General Physician', 'Rmo',
-  'Emergency Doctor', 'Lab Technician', 'Orthopedic Surgeon', 'Radiologist',
+  'All Roles',
+  'Rmo',
+  'Dmo',
+  'General Physician',
+  'Intensivist',
+  'Emergency Doctor',
+  'Anesthetist',
+  'Pediatrician',
+  'Gynecologist',
+  'Orthopedic Surgeon',
+  'General Surgeon',
+  'Radiologist',
+  'Pathologist',
+  'Staff Nurse',
+  'Icu Nurse',
+  'Emergency Nurse',
+  'Ot Nurse',
+  'Dialysis Nurse',
+  'Nicu Nurse',
+  'Lab Technician',
+  'Radiology Technician',
+  'Ot Technician',
+  'Dialysis Technician',
+  'Cath Lab Technician',
+  'Icu Technician',
+  'Ward Boy',
+  'Ayah',
+  'Opd Attendant',
+  'Emergency Attendant',
+  'Patient Care Taker',
+  'Pharmacist',
+  'Pharmacy Assistant',
+  'Biomedical Engineer',
+  'Housekeeping Staff',
+  'Security Guard',
+  'Ambulance Driver',
+  'Receptionist',
+  'Billing Executive',
+  'Medical Records Staff',
+  'Hr Accounts',
 ];
 
 const ALL_STATUSES: Array<'All Statuses' | AvailabilityStatus> = [
   'All Statuses', 'AVAILABLE', 'UNAVAILABLE',
 ];
 
-const VERIFICATION_STATUSES = [
-  'All Verification',
-  'verified',
-  'auto-verified',
-  'pending',
-  'manual-pending-verification',
-  'rejected',
+// ✅ Tab filter config — maps tab label to verification statuses
+// const VERIFICATION_TABS = [
+//   { label: 'All Staff',            key: 'all',     match: [] as string[] },
+//   { label: 'Pending Verification', key: 'pending', match: ['pending', 'manual-pending-verification'] },
+//   { label: 'Approved',             key: 'approved',match: ['verified', 'auto-verified'] },
+//   { label: 'Rejected',             key: 'rejected',match: ['rejected'] },
+// ];
+const VERIFICATION_TABS = [
+  { label: 'All Staff', key: 'all', match: [] as string[] },
+  { label: 'Pending Verification', key: 'pending', match: ['pending'] },
+  { label: 'Manual Review', key: 'manual', match: ['manual-pending-verification'] },
+  { label: 'Approved', key: 'approved', match: ['verified', 'auto-verified'] },
+  { label: 'Auto Verified', key: 'auto', match: ['auto-verified'] },
+  { label: 'Rejected', key: 'rejected', match: ['rejected'] },
 ];
 
 const BADGE: Record<AvailabilityStatus, { bg: string; text: string; dot: string }> = {
-  AVAILABLE:   { bg: '#F0FDF4', text: '#16A34A', dot: '#22C55E' },
+  AVAILABLE: { bg: '#F0FDF4', text: '#16A34A', dot: '#22C55E' },
   UNAVAILABLE: { bg: '#FEF2F2', text: '#DC2626', dot: '#EF4444' },
 };
 
 const VERIFICATION_BADGE: Record<VerificationStatus, { bg: string; text: string; dot: string }> = {
-  'verified':                    { bg: '#DCFCE7', text: '#16A34A', dot: '#22C55E' },
-  'auto-verified':               { bg: '#D1FAE5', text: '#15803D', dot: '#34D399' },
-  'pending':                     { bg: '#FEF9C3', text: '#CA8A04', dot: '#FACC15' },
+  'verified': { bg: '#DCFCE7', text: '#16A34A', dot: '#22C55E' },
+  'auto-verified': { bg: '#D1FAE5', text: '#15803D', dot: '#34D399' },
+  'pending': { bg: '#FEF9C3', text: '#CA8A04', dot: '#FACC15' },
   'manual-pending-verification': { bg: '#DBEAFE', text: '#2563EB', dot: '#60A5FA' },
-  'rejected':                    { bg: '#FEE2E2', text: '#DC2626', dot: '#EF4444' },
+  'rejected': { bg: '#FEE2E2', text: '#DC2626', dot: '#EF4444' },
 };
 
 const ROLE_COLORS: Record<string, { bg: string; text: string }> = {
-  general_surgeon:    { bg: '#EFF6FF', text: '#2563EB' },
-  general_physician:  { bg: '#F0FDF4', text: '#16A34A' },
-  rmo:                { bg: '#FFFBEB', text: '#D97706' },
-  emergency_doctor:   { bg: '#FEF2F2', text: '#DC2626' },
-  lab_technician:     { bg: '#F5F3FF', text: '#7C3AED' },
+  general_surgeon: { bg: '#EFF6FF', text: '#2563EB' },
+  general_physician: { bg: '#F0FDF4', text: '#16A34A' },
+  rmo: { bg: '#FFFBEB', text: '#D97706' },
+  emergency_doctor: { bg: '#FEF2F2', text: '#DC2626' },
+  lab_technician: { bg: '#F5F3FF', text: '#7C3AED' },
   orthopedic_surgeon: { bg: '#FFF7ED', text: '#EA580C' },
-  radiologist:        { bg: '#F0F9FF', text: '#0284C7' },
+  radiologist: { bg: '#F0F9FF', text: '#0284C7' },
 };
 
 const getRoleColor = (role: string) =>
   ROLE_COLORS[role] ?? { bg: '#F1F5F9', text: '#64748B' };
 
 const DOC_STATUS_CFG: Record<string, { bg: string; text: string; border: string }> = {
-  'verified':                    { bg: '#DCFCE7', text: '#16A34A', border: '#BBF7D0' },
-  'auto-verified':               { bg: '#D1FAE5', text: '#15803D', border: '#6EE7B7' },
+  'verified': { bg: '#DCFCE7', text: '#16A34A', border: '#BBF7D0' },
+  'auto-verified': { bg: '#D1FAE5', text: '#15803D', border: '#6EE7B7' },
   'manual-pending-verification': { bg: '#DBEAFE', text: '#2563EB', border: '#BFDBFE' },
-  'pending':                     { bg: '#FEF9C3', text: '#CA8A04', border: '#FEF08A' },
-  'rejected':                    { bg: '#FEE2E2', text: '#DC2626', border: '#FECACA' },
+  'pending': { bg: '#FEF9C3', text: '#CA8A04', border: '#FEF08A' },
+  'rejected': { bg: '#FEE2E2', text: '#DC2626', border: '#FECACA' },
 };
 
 const DOC_TYPE_LABELS: Record<string, string> = {
@@ -166,6 +220,9 @@ const DOC_TYPE_ICONS: Record<string, string> = {
   degree_certificate: '🎓',
   experience_certificate: '📜',
 };
+
+const formatDocType = (docType: string): string =>
+  docType.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 function SkeletonBox({ width, height = 10, style }: { width: string | number; height?: number; style?: any }) {
@@ -226,13 +283,13 @@ function SkeletonRow() {
 const sk = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#F1F5F9', backgroundColor: '#fff' },
   cell: { overflow: 'hidden' },
-  colName:     { flex: 2.2 },
-  colRole:     { flex: 1.8 },
+  colName: { flex: 2.2 },
+  colRole: { flex: 1.8 },
   colLocation: { flex: 1.8 },
-  colEmail:    { flex: 2 },
-  colDuties:   { flex: 1 },
-  colStatus:   { flex: 1.5 },
-  colAction:   { flex: 0.6, minWidth: 50 },
+  colEmail: { flex: 2 },
+  colDuties: { flex: 1 },
+  colStatus: { flex: 1.5 },
+  colAction: { flex: 0.6, minWidth: 50 },
 });
 
 // ─── Badges ───────────────────────────────────────────────────────────────────
@@ -240,7 +297,7 @@ function RoleBadge({ role, label }: { role: string; label: string }) {
   const cfg = getRoleColor(role);
   return (
     <View style={[rb.wrap, { backgroundColor: cfg.bg }]}>
-      <Text style={[rb.txt, { color: cfg.text }]}>{label}</Text>
+      <Text style={[rb.txt, { color: cfg.text }]}>{label || 'Unknown'}</Text>
     </View>
   );
 }
@@ -249,27 +306,12 @@ const rb = StyleSheet.create({
   txt: { fontSize: 10, fontWeight: '700', letterSpacing: 0.2 },
 });
 
-function Badge({ status }: { status: AvailabilityStatus }) {
-  const cfg = BADGE[status];
-  return (
-    <View style={[bdg.wrap, { backgroundColor: cfg.bg }]}>
-      <View style={[bdg.dot, { backgroundColor: cfg.dot }]} />
-      <Text style={[bdg.txt, { color: cfg.text }]}>{status}</Text>
-    </View>
-  );
-}
-const bdg = StyleSheet.create({
-  wrap: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99 },
-  dot: { width: 6, height: 6, borderRadius: 99 },
-  txt: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
-});
-
 function VerificationBadge({ status }: { status: VerificationStatus }) {
-  const cfg = VERIFICATION_BADGE[status];
+  const cfg = VERIFICATION_BADGE[status] ?? VERIFICATION_BADGE['pending'];
   return (
     <View style={[vbdg.wrap, { backgroundColor: cfg.bg }]}>
       <View style={[vbdg.dot, { backgroundColor: cfg.dot }]} />
-      <Text style={[vbdg.txt, { color: cfg.text }]}>{status.toUpperCase()}</Text>
+      <Text style={[vbdg.txt, { color: cfg.text }]}>{(status || 'pending').toUpperCase()}</Text>
     </View>
   );
 }
@@ -297,16 +339,22 @@ function Dropdown({ label, value, options, onSelect, flat }: DropdownProps) {
         <TouchableOpacity style={dd.overlay} activeOpacity={1} onPress={() => setOpen(false)}>
           <View style={dd.sheet}>
             <Text style={dd.sheetTitle}>{label}</Text>
-            {options.map(opt => (
-              <TouchableOpacity
-                key={opt}
-                style={[dd.option, opt === value && dd.optionActive]}
-                onPress={() => { onSelect(opt); setOpen(false); }}
-              >
-                <Text style={[dd.optionTxt, opt === value && dd.optionTxtActive]}>{opt}</Text>
-                {opt === value && <Text style={dd.check}>✓</Text>}
-              </TouchableOpacity>
-            ))}
+            <ScrollView
+              style={{ maxHeight: 320 }}
+              showsVerticalScrollIndicator={true}
+              bounces={false}
+            >
+              {options.map(opt => (
+                <TouchableOpacity
+                  key={opt}
+                  style={[dd.option, opt === value && dd.optionActive]}
+                  onPress={() => { onSelect(opt); setOpen(false); }}
+                >
+                  <Text style={[dd.optionTxt, opt === value && dd.optionTxtActive]}>{opt}</Text>
+                  {opt === value && <Text style={dd.check}>✓</Text>}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
         </TouchableOpacity>
       </Modal>
@@ -321,7 +369,7 @@ const dd = StyleSheet.create({
   chevron: { fontSize: 11, color: '#94A3B8' },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
   sheet: {
-    backgroundColor: '#fff', borderRadius: 16, paddingVertical: 8, width: '100%', maxWidth: 320,
+    backgroundColor: '#fff', borderRadius: 16, paddingVertical: 8, width: '100%', maxWidth: 320, maxHeight: '70%',
     ...Platform.select({ ios: { shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: 8 } }, android: { elevation: 10 } }),
   },
   sheetTitle: { fontSize: 11, fontWeight: '700', color: '#94A3B8', letterSpacing: 0.8, textTransform: 'uppercase', paddingHorizontal: 16, paddingVertical: 10 },
@@ -332,16 +380,72 @@ const dd = StyleSheet.create({
   check: { fontSize: 14, color: '#2563EB', fontWeight: '700' },
 });
 
+// ─── Verification Tab Row ─────────────────────────────────────────────────────
+// ✅ NEW: replaces the verification dropdown — renders All Staff / Pending / Approved / Rejected tabs
+interface VerificationTabsProps {
+  activeKey: string;
+  onChange: (key: string) => void;
+}
+function VerificationTabs({ activeKey, onChange }: VerificationTabsProps) {
+  return (
+    <View style={vt.wrap}>
+      {VERIFICATION_TABS.map(tab => {
+        const isActive = activeKey === tab.key;
+        return (
+          <TouchableOpacity
+            key={tab.key}
+            style={[vt.tab, isActive && vt.tabActive]}
+            onPress={() => onChange(tab.key)}
+            activeOpacity={0.75}
+          >
+            <Text style={[vt.tabTxt, isActive && vt.tabTxtActive]}>
+              {tab.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+const vt = StyleSheet.create({
+  wrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  tab: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+  },
+  tabActive: {
+    backgroundColor: '#2563EB',
+  },
+  tabTxt: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  tabTxtActive: {
+    color: '#FFFFFF',
+  },
+});
+
 // ─── Filter Bar ───────────────────────────────────────────────────────────────
+// ✅ REMOVED verificationStatus prop — now handled by VerificationTabs above
 interface FilterBarProps {
   search: string; setSearch: (v: string) => void;
   status: string; setStatus: (v: string) => void;
-  role: string;   setRole: (v: string) => void;
-  verificationStatus: string; setVerificationStatus: (v: string) => void;
+  role: string; setRole: (v: string) => void;
   onApply: () => void; onClear: () => void;
   hasActiveFilters: boolean;
 }
-function FilterBar({ search, setSearch, status, setStatus, role, setRole, verificationStatus, setVerificationStatus, onApply, onClear, hasActiveFilters }: FilterBarProps) {
+function FilterBar({ search, setSearch, status, setStatus, role, setRole, onApply, onClear, hasActiveFilters }: FilterBarProps) {
   return (
     <View style={fb.wrap}>
       <View style={fb.row}>
@@ -371,7 +475,7 @@ function FilterBar({ search, setSearch, status, setStatus, role, setRole, verifi
 
         <View style={fb.group}>
           <Text style={fb.label}>JOB ROLE</Text>
-          <Dropdown label="JOB ROLE" onSelect={setRole} value={role} options={JOB_ROLE_OPTIONS}  flat />
+          <Dropdown label="JOB ROLE" onSelect={setRole} value={role} options={JOB_ROLE_OPTIONS} flat />
         </View>
 
         <View style={fb.divider} />
@@ -379,13 +483,6 @@ function FilterBar({ search, setSearch, status, setStatus, role, setRole, verifi
         <View style={fb.group}>
           <Text style={fb.label}>AVAILABILITY</Text>
           <Dropdown label="AVAILABILITY" value={status} options={ALL_STATUSES} onSelect={setStatus} flat />
-        </View>
-
-        <View style={fb.divider} />
-
-        <View style={fb.group}>
-          <Text style={fb.label}>VERIFICATION</Text>
-          <Dropdown label="VERIFICATION" value={verificationStatus} options={VERIFICATION_STATUSES} onSelect={setVerificationStatus} flat />
         </View>
 
         <View style={fb.btnWrap}>
@@ -436,13 +533,13 @@ function TableHeader() {
 const th = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#F8FAFC', borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#E9ECF0' },
   cell: { fontSize: 10, fontWeight: '700', color: '#94A3B8', letterSpacing: 0.7, lineHeight: 14 },
-  colName:     { flex: 2.2 },
-  colRole:     { flex: 1.8 },
+  colName: { flex: 2.2 },
+  colRole: { flex: 1.8 },
   colLocation: { flex: 1.8 },
-  colEmail:    { flex: 2 },
-  colDuties:   { flex: 1 },
-  colStatus:   { flex: 1.5 },
-  colAction:   { flex: 0.6, minWidth: 50 },
+  colEmail: { flex: 2 },
+  colDuties: { flex: 1 },
+  colStatus: { flex: 1.5 },
+  colAction: { flex: 0.6, minWidth: 50 },
 });
 
 // ─── Document Viewer Modal ────────────────────────────────────────────────────
@@ -455,10 +552,49 @@ interface DocumentViewerModalProps {
 function DocumentViewerModal({ visible, doc, onClose }: DocumentViewerModalProps) {
   if (!doc) return null;
 
-  const docLabel = DOC_TYPE_LABELS[doc.documentType] || doc.documentType;
+  // const docLabel = DOC_TYPE_LABELS[doc.documentType] || doc.documentType || 'Document';
+  const docLabel = DOC_TYPE_LABELS[doc.documentType] || formatDocType(doc.documentType) || 'Document';
   const docIcon = DOC_TYPE_ICONS[doc.documentType] || '📄';
+  const docUrl = doc.url ?? doc.documentUrl ?? '';
 
   return (
+    // <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    //   <View style={vm.overlay}>
+    //     <View style={vm.sheet}>
+    //       <View style={vm.header}>
+    //         <Text style={vm.title}>{docLabel}</Text>
+    //         <TouchableOpacity style={vm.closeBtn} onPress={onClose}>
+    //           <Text style={vm.closeX}>✕</Text>
+    //         </TouchableOpacity>
+    //       </View>
+
+    //       <View style={vm.content}>
+    //         <View style={vm.placeholderBox}>
+    //           <Text style={vm.placeholderIcon}>{docIcon}</Text>
+    //           <Text style={vm.placeholderTxt}>Document Preview Area</Text>
+    //           <Text style={vm.placeholderSub}>({docLabel})</Text>
+    //           <TouchableOpacity 
+    //             style={vm.viewBtn}
+    //             onPress={() => {
+    //               if (doc.documentUrl) {
+    //                 console.log('Open URL:', doc.documentUrl);
+    //               }
+    //             }}
+    //           >
+    //             <Text style={vm.viewBtnTxt}>Open Document</Text>
+    //           </TouchableOpacity>
+    //         </View>
+    //       </View>
+
+    //       <View style={vm.footer}>
+    //         <TouchableOpacity style={vm.doneBtn} onPress={onClose}>
+    //           <Text style={vm.doneBtnTxt}>Close Viewer</Text>
+    //         </TouchableOpacity>
+    //       </View>
+    //     </View>
+    //   </View>
+    // </Modal>
+
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={vm.overlay}>
         <View style={vm.sheet}>
@@ -468,26 +604,22 @@ function DocumentViewerModal({ visible, doc, onClose }: DocumentViewerModalProps
               <Text style={vm.closeX}>✕</Text>
             </TouchableOpacity>
           </View>
-          
-          <View style={vm.content}>
-            <View style={vm.placeholderBox}>
-              <Text style={vm.placeholderIcon}>{docIcon}</Text>
-              <Text style={vm.placeholderTxt}>Document Preview Area</Text>
-              <Text style={vm.placeholderSub}>({docLabel})</Text>
-              <TouchableOpacity 
-                style={vm.viewBtn}
-                onPress={() => {
-                  // Open document URL in browser/viewer
-                  if (doc.documentUrl) {
-                    // Linking.openURL(doc.documentUrl);
-                    console.log('Open URL:', doc.documentUrl);
-                  }
-                }}
-              >
-                <Text style={vm.viewBtnTxt}>Open Document</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+
+          <ScrollView contentContainerStyle={vm.content}>
+            {docUrl ? (
+              // ✅ Show actual document image
+              <Image
+                source={{ uri: docUrl }}
+                style={vm.docImage}
+                resizeMode="contain"
+              />
+            ) : (
+              <View style={vm.placeholderBox}>
+                <Text style={vm.placeholderIcon}>{docIcon}</Text>
+                <Text style={vm.placeholderTxt}>No document URL available</Text>
+              </View>
+            )}
+          </ScrollView>
 
           <View style={vm.footer}>
             <TouchableOpacity style={vm.doneBtn} onPress={onClose}>
@@ -499,6 +631,7 @@ function DocumentViewerModal({ visible, doc, onClose }: DocumentViewerModalProps
     </Modal>
   );
 }
+
 
 const vm = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.6)', justifyContent: 'center', alignItems: 'center' },
@@ -520,6 +653,11 @@ const vm = StyleSheet.create({
   footer: { padding: 16, borderTopWidth: 1, borderTopColor: '#E2E8F0', backgroundColor: '#fff' },
   doneBtn: { backgroundColor: '#0F172A', borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
   doneBtnTxt: { fontSize: 13, color: '#fff', fontWeight: '700' },
+  docImage: {
+    width: '100%',
+    height: 400,
+    borderRadius: 8,
+  },
 });
 
 // ─── Rejection Modal ──────────────────────────────────────────────────────────
@@ -552,9 +690,9 @@ function RejectionModal({ visible, staffName, onClose, onSubmit }: RejectionModa
               <Text style={rejm.closeX}>✕</Text>
             </TouchableOpacity>
           </View>
-          
+
           <View style={rejm.content}>
-            <Text style={rejm.staffName}>{staffName}</Text>
+            <Text style={rejm.staffName}>{staffName || '—'}</Text>
             <Text style={rejm.label}>Rejection Reason *</Text>
             <TextInput
               style={rejm.input}
@@ -710,20 +848,24 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
   if (!staffDetails) return null;
 
   const roleColor = getRoleColor(staffDetails.jobRole);
-  const initials = staffDetails.fullName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+  const initials = (staffDetails.fullName || 'UN').split(' ').map((n: string) => n[0] || '').slice(0, 2).join('').toUpperCase() || 'UN';
 
   const metaRows = [
-    { label: 'User ID',           value: staffDetails.userid ? staffDetails.userid.slice(-10).toUpperCase() : '—' },
-    { label: 'Job Role',          value: formatJobRole(staffDetails.jobRole) },
-    { label: 'Email',             value: staffDetails.email },
-    { label: 'Phone',             value: staffDetails.phoneNumber || '—' },
-    { label: 'Location',          value: staffDetails.location },
-    { label: 'Completed Duties',  value: String(staffDetails.completedDuties) },
-    { label: 'Availability',      value: staffDetails.isAvailable ? 'Available' : 'Unavailable' },
-    { label: 'Verification Status', value: staffDetails.verificationStatus },
+    {
+      label: 'User ID', value: (() => {
+        const id = staffDetails.userId ?? staffDetails.userid;
+        return id ? `MG-${id.slice(-6).toUpperCase()}` : '—';
+      })()
+    },
+    { label: 'Job Role', value: formatJobRole(staffDetails.jobRole) || '—' },
+    { label: 'Email', value: staffDetails.email || '—' },
+    { label: 'Phone', value: staffDetails.phoneNumber || '—' },
+    { label: 'Location', value: staffDetails.location || '—' },
+    { label: 'Completed Duties', value: String(staffDetails.completedDuties ?? 0) },
+    { label: 'Availability', value: staffDetails.isAvailable ? 'Available' : 'Unavailable' },
+    { label: 'Verification Status', value: staffDetails.verificationStatus || '—' },
   ];
 
-  // Show verify/reject buttons based on verification status
   const showVerifyButton = staffDetails.verificationStatus !== 'verified';
   const showRejectButton = staffDetails.verificationStatus !== 'rejected';
 
@@ -747,7 +889,7 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
                   {decision === 'approved' ? 'Profile Approved' : 'Profile Rejected'}
                 </Text>
                 <Text style={pm.resultSub}>
-                  <Text style={{ fontWeight: '700', color: '#0F172A' }}>{staffDetails.fullName}</Text>
+                  <Text style={{ fontWeight: '700', color: '#0F172A' }}>{staffDetails.fullName || 'Staff Member'}</Text>
                   {'\n'}
                   has been {decision === 'approved'
                     ? 'approved and verified successfully.'
@@ -763,10 +905,10 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
                   <View style={[pm.avatarLarge, { backgroundColor: roleColor.bg }]}>
                     <Text style={[pm.avatarInitials, { color: roleColor.text }]}>{initials}</Text>
                   </View>
-                  <Text style={pm.staffName}>{staffDetails.fullName}</Text>
+                  <Text style={pm.staffName}>{staffDetails.fullName || '—'}</Text>
                   <View style={pm.roleBadgeWrap}>
                     <View style={[pm.rolePill, { backgroundColor: roleColor.bg }]}>
-                      <Text style={[pm.rolePillTxt, { color: roleColor.text }]}>{formatJobRole(staffDetails.jobRole)}</Text>
+                      <Text style={[pm.rolePillTxt, { color: roleColor.text }]}>{formatJobRole(staffDetails.jobRole) || 'Unknown'}</Text>
                     </View>
                   </View>
                   <View style={{ marginBottom: 8 }}>
@@ -778,7 +920,7 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
                       {staffDetails.isAvailable ? 'Available' : 'Unavailable'}
                     </Text>
                   </View>
-                  {staffDetails.rejectionReason && (
+                  {!!staffDetails.rejectionReason && (
                     <View style={pm.rejectionBox}>
                       <Text style={pm.rejectionLabel}>Rejection Reason:</Text>
                       <Text style={pm.rejectionReason}>{staffDetails.rejectionReason}</Text>
@@ -793,7 +935,7 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
                       <View key={label} style={[pm.metaCell, idx % 2 === 0 ? pm.metaCellLeft : pm.metaCellRight, idx >= metaRows.length - 2 && pm.metaCellBottom]}>
                         <Text style={pm.metaLabel}>{label}</Text>
                         <Text style={[pm.metaValue, label === 'Availability' && { color: staffDetails.isAvailable ? '#16A34A' : '#DC2626' }]} numberOfLines={2}>
-                          {value}
+                          {value || '—'}
                         </Text>
                       </View>
                     ))}
@@ -802,7 +944,7 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
 
                 <View style={pm.section}>
                   <Text style={pm.sectionLabel}>SUBMITTED DOCUMENTS</Text>
-                  {staffDetails.documents.length === 0 ? (
+                  {!staffDetails.documents || staffDetails.documents.length === 0 ? (
                     <View style={rm.noDocsWrap}>
                       <Text style={rm.noDocsIcon}>📂</Text>
                       <Text style={rm.noDocsTxt}>No documents submitted yet</Text>
@@ -810,9 +952,10 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
                   ) : (
                     staffDetails.documents.map((doc, idx) => {
                       const cfg = DOC_STATUS_CFG[doc.verificationStatus] || DOC_STATUS_CFG.pending;
-                      const docLabel = DOC_TYPE_LABELS[doc.documentType] || doc.documentType;
+                      // const docLabel = DOC_TYPE_LABELS[doc.documentType] || doc.documentType || 'Document';
+                      const docLabel = DOC_TYPE_LABELS[doc.documentType] || formatDocType(doc.documentType) || 'Document';
                       const docIcon = DOC_TYPE_ICONS[doc.documentType] || '📄';
-                      
+
                       return (
                         <View key={doc._id} style={[rm.docCard, { borderLeftColor: cfg.text, borderLeftWidth: 4 }, idx < staffDetails.documents.length - 1 && rm.docCardGap]}>
                           <View style={rm.docCardTop}>
@@ -820,18 +963,18 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
                               <Text style={rm.docIconEmoji}>{docIcon}</Text>
                             </View>
                             <View style={[rm.docStatusBadge, { backgroundColor: cfg.bg, borderColor: cfg.border }]}>
-                              <Text style={[rm.docStatusTxt, { color: cfg.text }]}>{doc.verificationStatus.toUpperCase()}</Text>
+                              <Text style={[rm.docStatusTxt, { color: cfg.text }]}>{(doc.verificationStatus || 'pending').toUpperCase()}</Text>
                             </View>
                           </View>
 
                           <Text style={rm.docTitle}>{docLabel}</Text>
-                          {doc.rejectionReason && (
+                          {!!doc.rejectionReason && (
                             <Text style={[rm.docNote, { color: '#DC2626' }]}>
                               Rejection: {doc.rejectionReason}
                             </Text>
                           )}
                           <Text style={rm.docDate}>
-                            Uploaded: {new Date(doc.uploadedAt).toLocaleDateString()}
+                            Uploaded: {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : '—'}
                           </Text>
 
                           <TouchableOpacity
@@ -856,18 +999,18 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
             {!decision && (
               <View style={pm.footer}>
                 {showRejectButton && (
-                  <TouchableOpacity 
-                    style={pm.rejectBtn} 
-                    onPress={() => setRejectionModalVisible(true)} 
+                  <TouchableOpacity
+                    style={pm.rejectBtn}
+                    onPress={() => setRejectionModalVisible(true)}
                     activeOpacity={0.85}
                   >
                     <Text style={pm.rejectBtnTxt}>✕   Reject</Text>
                   </TouchableOpacity>
                 )}
                 {showVerifyButton && (
-                  <TouchableOpacity 
-                    style={pm.approveBtn} 
-                    onPress={handleVerify} 
+                  <TouchableOpacity
+                    style={pm.approveBtn}
+                    onPress={handleVerify}
                     activeOpacity={0.85}
                   >
                     <Text style={pm.approveBtnTxt}>✓   Verify</Text>
@@ -879,15 +1022,15 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
         </View>
       </Modal>
 
-      <DocumentViewerModal 
-        visible={docViewerVisible} 
-        doc={selectedDoc} 
-        onClose={() => setDocViewerVisible(false)} 
+      <DocumentViewerModal
+        visible={docViewerVisible}
+        doc={selectedDoc}
+        onClose={() => setDocViewerVisible(false)}
       />
 
       <RejectionModal
         visible={rejectionModalVisible}
-        staffName={staffDetails.fullName}
+        staffName={staffDetails.fullName || ''}
         onClose={() => setRejectionModalVisible(false)}
         onSubmit={handleReject}
       />
@@ -971,12 +1114,12 @@ const rm = StyleSheet.create({
 
 // ─── Action Menu ──────────────────────────────────────────────────────────────
 interface ActionMenuProps {
-  visible: boolean; 
+  visible: boolean;
   onClose: () => void;
   onReview: () => void;
   onVerify?: () => void;
   onReject?: () => void;
-  anchorY: number; 
+  anchorY: number;
   anchorX: number;
   verificationStatus: VerificationStatus;
 }
@@ -986,9 +1129,9 @@ function ActionMenu({ visible, onClose, onReview, onVerify, onReject, anchorY, a
   const left = Math.max(8, anchorX - MENU_WIDTH + 30);
 
   const showVerify = verificationStatus !== 'verified';
-const showReject = verificationStatus !== 'rejected' 
-  && verificationStatus !== 'verified' 
-  && verificationStatus !== 'auto-verified';
+  const showReject = verificationStatus !== 'rejected'
+    && verificationStatus !== 'verified'
+    && verificationStatus !== 'auto-verified';
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -1006,9 +1149,9 @@ const showReject = verificationStatus !== 'rejected'
           {showVerify && (
             <>
               <View style={am.sep} />
-              <TouchableOpacity 
-                style={am.item} 
-                onPress={() => { onClose(); setTimeout(() => onVerify?.(), 100); }} 
+              <TouchableOpacity
+                style={am.item}
+                onPress={() => { onClose(); setTimeout(() => onVerify?.(), 100); }}
                 activeOpacity={0.75}
               >
                 <Text style={am.itemIcon}>✅</Text>
@@ -1020,9 +1163,9 @@ const showReject = verificationStatus !== 'rejected'
           {showReject && (
             <>
               <View style={am.sep} />
-              <TouchableOpacity 
-                style={am.item} 
-                onPress={() => { onClose(); setTimeout(() => onReject?.(), 100); }} 
+              <TouchableOpacity
+                style={am.item}
+                onPress={() => { onClose(); setTimeout(() => onReject?.(), 100); }}
                 activeOpacity={0.75}
               >
                 <Text style={am.itemIcon}>🚫</Text>
@@ -1063,7 +1206,7 @@ function StaffRow({ staff, onDotsPress }: StaffRowProps) {
     });
   };
 
-  const initials = staff.fullName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+  const initials = (staff.fullName || 'UN').split(' ').map((n: string) => n[0] || '').slice(0, 2).join('').toUpperCase() || 'UN';
   const roleColor = getRoleColor(staff.jobRole);
 
   return (
@@ -1073,26 +1216,26 @@ function StaffRow({ staff, onDotsPress }: StaffRowProps) {
           <Text style={[sr.avatarTxt, { color: roleColor.text }]}>{initials}</Text>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={sr.name} numberOfLines={1}>{staff.fullName}</Text>
+          <Text style={sr.name} numberOfLines={1}>{staff.fullName || '—'}</Text>
           <Text style={sr.uid}>{staff.staffId ? `ID: ${staff.staffId.slice(-6).toUpperCase()}` : 'No ID'}</Text>
         </View>
       </View>
 
       <View style={[sr.cell, sr.colRole, { justifyContent: 'center' }]}>
-        <RoleBadge role={staff.jobRole} label={staff.jobRoleLabel} />
+        <RoleBadge role={staff.jobRole} label={staff.jobRoleLabel || 'Unknown'} />
       </View>
 
       <View style={[sr.cell, sr.colLocation, { flexDirection: 'row', alignItems: 'center', gap: 5 }]}>
         <View style={sr.pinDot} />
-        <Text style={sr.location} numberOfLines={2}>{staff.location}</Text>
+        <Text style={sr.location} numberOfLines={2}>{staff.location || '—'}</Text>
       </View>
 
       <View style={[sr.cell, sr.colEmail, { justifyContent: 'center' }]}>
-        <Text style={sr.email} numberOfLines={1}>{staff.email}</Text>
+        <Text style={sr.email} numberOfLines={1}>{staff.email || '—'}</Text>
       </View>
 
       <View style={[sr.cell, sr.colDuties, { alignItems: 'center', justifyContent: 'center' }]}>
-        <Text style={sr.dutiesNum}>{staff.completedDuties}</Text>
+        <Text style={sr.dutiesNum}>{staff.completedDuties ?? 0}</Text>
         <Text style={sr.dutiesLbl}>duties</Text>
       </View>
 
@@ -1112,13 +1255,13 @@ function StaffRow({ staff, onDotsPress }: StaffRowProps) {
 const sr = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#F1F5F9', backgroundColor: '#fff' },
   cell: { overflow: 'hidden' },
-  colName:     { flex: 2.2 },
-  colRole:     { flex: 1.8 },
+  colName: { flex: 2.2 },
+  colRole: { flex: 1.8 },
   colLocation: { flex: 1.8 },
-  colEmail:    { flex: 2 },
-  colDuties:   { flex: 1 },
-  colStatus:   { flex: 1.5 },
-  colAction:   { flex: 0.6, minWidth: 50 },
+  colEmail: { flex: 2 },
+  colDuties: { flex: 1 },
+  colStatus: { flex: 1.5 },
+  colAction: { flex: 0.6, minWidth: 50 },
   avatar: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   avatarTxt: { fontSize: 13, fontWeight: '800' },
   name: { fontSize: 13, fontWeight: '700', color: '#0F172A', lineHeight: 18 },
@@ -1159,14 +1302,14 @@ function Toast({ message, type }: { message: string; type: 'success' | 'error' }
   return (
     <View style={[ts.wrap, type === 'success' ? ts.success : ts.error]}>
       <Text style={ts.icon}>{type === 'success' ? '✅' : '🚫'}</Text>
-      <Text style={ts.txt}>{message}</Text>
+      <Text style={ts.txt}>{message || ''}</Text>
     </View>
   );
 }
 const ts = StyleSheet.create({
   wrap: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, marginHorizontal: 16, marginBottom: 10 },
   success: { backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0' },
-  error:   { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA' },
+  error: { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA' },
   icon: { fontSize: 14 },
   txt: { fontSize: 12, fontWeight: '600', color: '#334155', flex: 1 },
 });
@@ -1175,22 +1318,23 @@ const ts = StyleSheet.create({
 export default function MedicalStaffListSection() {
   const [searchDraft, setSearchDraft] = useState('');
   const [statusDraft, setStatusDraft] = useState('All Statuses');
-  const [roleDraft, setRoleDraft]     = useState('All Roles');
-  const [verificationDraft, setVerificationDraft] = useState('All Verification');
-  
-  const [search, setSearch]           = useState('');
-  const [status, setStatus]           = useState('All Statuses');
-  const [role, setRole]               = useState('All Roles');
-  const [verificationFilter, setVerificationFilter] = useState('All Verification');
+  const [roleDraft, setRoleDraft] = useState('All Roles');
 
-  const [staffList, setStaffList]       = useState<MedicalStaff[]>([]);
-  const [pagination, setPagination]     = useState<PaginationInfo | null>(null);
-  const [loading, setLoading]           = useState(false);
-  const [activeStaff, setActiveStaff]   = useState<MedicalStaff | null>(null);
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('All Statuses');
+  const [role, setRole] = useState('All Roles');
 
-  const [menuVisible, setMenuVisible]     = useState(false);
-  const [menuAnchorY, setMenuAnchorY]     = useState(0);
-  const [menuAnchorX, setMenuAnchorX]     = useState(0);
+  // ✅ Tab-based verification filter (replaces verificationFilter state + dropdown)
+  const [activeTabKey, setActiveTabKey] = useState('all');
+
+  const [staffList, setStaffList] = useState<MedicalStaff[]>([]);
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [activeStaff, setActiveStaff] = useState<MedicalStaff | null>(null);
+
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [menuAnchorY, setMenuAnchorY] = useState(0);
+  const [menuAnchorX, setMenuAnchorX] = useState(0);
   const [profileVisible, setProfileVisible] = useState(false);
   const [rejectionModalVisible, setRejectionModalVisible] = useState(false);
 
@@ -1204,24 +1348,14 @@ export default function MedicalStaffListSection() {
   const fetchStaff = async (page = 1, currentSearch = search, currentRole = role) => {
     try {
       setLoading(true);
-      
-      const params: any = {
-        page: String(page),
-        limit: '10'
-      };
-      
-      // Use the newly passed parameters instead of the state variables
-      if (currentSearch) params.search = currentSearch;
-      if (currentRole !== 'All Roles') {
-        params.role = currentRole.toLowerCase().replace(/ /g, '_');
-      }
-      
-      const data = await adminAPI.getMedicalStaff(params);
-      
+      const roleParam = currentRole !== 'All Roles'
+        ? currentRole.toLowerCase().replace(/ /g, '_')
+        : '';
+      const data = await adminAPI.getMedicalStaff(currentSearch, page, roleParam);
       if (data.success) {
         const mapped: MedicalStaff[] = (data.staff ?? []).map(mapStaff);
         setStaffList(mapped);
-        setPagination(data.pagination);
+        setPagination(data.pagination ?? null);
       }
     } catch (error) {
       console.error('Failed to fetch staff:', error);
@@ -1244,7 +1378,6 @@ export default function MedicalStaffListSection() {
     if (!activeStaff) return;
     try {
       const data = await adminAPI.verifyMedicalStaff(activeStaff.staffId);
-      
       if (data.success) {
         showToast('Staff member verified successfully', 'success');
         fetchStaff();
@@ -1265,7 +1398,6 @@ export default function MedicalStaffListSection() {
     if (!activeStaff) return;
     try {
       const data = await adminAPI.rejectMedicalStaff(activeStaff.staffId, reason);
-      
       if (data.success) {
         showToast('Staff member rejected', 'success');
         setRejectionModalVisible(false);
@@ -1279,33 +1411,33 @@ export default function MedicalStaffListSection() {
     }
   };
 
-  const hasActiveFilters = search !== '' || status !== 'All Statuses' || role !== 'All Roles' || verificationFilter !== 'All Verification';
+  const hasActiveFilters = search !== '' || status !== 'All Statuses' || role !== 'All Roles';
 
+  // ✅ Filter by availability + active tab verification
   const filtered = useMemo(() => {
+    const tabCfg = VERIFICATION_TABS.find(t => t.key === activeTabKey);
     return staffList.filter(s => {
       const matchStatus = status === 'All Statuses' || s.status === status;
-      const matchVerification = verificationFilter === 'All Verification' || s.verificationStatus === verificationFilter;
-      return matchStatus && matchVerification;
+      const matchTab = !tabCfg || tabCfg.match.length === 0 || tabCfg.match.includes(s.verificationStatus);
+      return matchStatus && matchTab;
     });
-  }, [staffList, status, verificationFilter]);
+  }, [staffList, status, activeTabKey]);
 
-  const handleApply = () => { 
-    setSearch(searchDraft); 
-    setStatus(statusDraft); 
-    setRole(roleDraft); 
-    setVerificationFilter(verificationDraft);
+  const handleApply = () => {
+    setSearch(searchDraft);
+    setStatus(statusDraft);
+    setRole(roleDraft);
     fetchStaff(1, searchDraft, roleDraft);
   };
-  
+
   const handleClear = () => {
-    setSearchDraft(''); 
-    setStatusDraft('All Statuses'); 
+    setSearchDraft('');
+    setStatusDraft('All Statuses');
     setRoleDraft('All Roles');
-    setVerificationDraft('All Verification');
-    setSearch('');      
-    setStatus('All Statuses');      
+    setSearch('');
+    setStatus('All Statuses');
     setRole('All Roles');
-    setVerificationFilter('All Verification');
+    setActiveTabKey('all');
     fetchStaff(1, '', 'All Roles');
   };
 
@@ -1321,11 +1453,9 @@ export default function MedicalStaffListSection() {
     }
   };
 
-  const availableCount   = staffList.filter(s => s.isAvailable).length;
-  const unavailableCount = staffList.length - availableCount;
-
   return (
     <View style={s.card}>
+      {/* ── Header ── */}
       <View style={s.header}>
         <View style={s.headerLeft}>
           <Text style={s.title}>Medical Staff</Text>
@@ -1340,39 +1470,27 @@ export default function MedicalStaffListSection() {
         </TouchableOpacity>
       </View>
 
-      <View style={s.statsRow}>
-        <View style={s.statCard}>
-          <Text style={s.statNum}>{pagination?.totalItems || staffList.length}</Text>
-          <Text style={s.statLbl}>Total Staff</Text>
-        </View>
-        <View style={s.statDivider} />
-        <View style={s.statCard}>
-          <Text style={[s.statNum, { color: '#16A34A' }]}>{availableCount}</Text>
-          <Text style={s.statLbl}>Available</Text>
-        </View>
-        <View style={s.statDivider} />
-        <View style={s.statCard}>
-          <Text style={[s.statNum, { color: '#DC2626' }]}>{unavailableCount}</Text>
-          <Text style={s.statLbl}>Unavailable</Text>
-        </View>
-      </View>
 
+
+      {/* ── Filter Bar (no verification dropdown) ── */}
       <View style={s.filterCard}>
         <FilterBar
-          search={searchDraft}   
+          search={searchDraft}
           setSearch={setSearchDraft}
-          status={statusDraft}   
+          status={statusDraft}
           setStatus={setStatusDraft}
-          role={roleDraft}       
+          role={roleDraft}
           setRole={setRoleDraft}
-          verificationStatus={verificationDraft}
-          setVerificationStatus={setVerificationDraft}
-          onApply={handleApply}  
+          onApply={handleApply}
           onClear={handleClear}
           hasActiveFilters={hasActiveFilters}
         />
       </View>
 
+      {/* ✅ Verification Tab Row — replaces stat cards + verification dropdown */}
+      <VerificationTabs activeKey={activeTabKey} onChange={setActiveTabKey} />
+
+      {/* ── Active Filter Chips ── */}
       {hasActiveFilters && (
         <View style={s.chipsRow}>
           <Text style={s.chipsLabel}>Active:</Text>
@@ -1400,19 +1518,13 @@ export default function MedicalStaffListSection() {
               </TouchableOpacity>
             </View>
           )}
-          {verificationFilter !== 'All Verification' && (
-            <View style={s.chip}>
-              <Text style={s.chipTxt}>{verificationFilter}</Text>
-              <TouchableOpacity onPress={() => { setVerificationFilter('All Verification'); setVerificationDraft('All Verification'); }} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                <Text style={s.chipX}>✕</Text>
-              </TouchableOpacity>
-            </View>
-          )}
         </View>
       )}
 
+      {/* ── Toast ── */}
       {toast && <Toast message={toast.msg} type={toast.type} />}
 
+      {/* ── Table ── */}
       {loading ? (
         <View style={{ width: '100%' }}>
           <TableHeader />
@@ -1440,21 +1552,22 @@ export default function MedicalStaffListSection() {
         </View>
       )}
 
+      {/* ── Footer Pagination ── */}
       <View style={s.footer}>
         <Text style={s.footerTxt}>
-          Showing {filtered.length} of {pagination?.totalItems || staffList.length} staff members
-          {pagination && ` • Page ${pagination.currentPage} of ${pagination.totalPages}`}
+          {`Showing ${filtered.length} of ${pagination?.totalItems ?? staffList.length} staff members`}
+          {pagination ? ` • Page ${pagination.currentPage} of ${pagination.totalPages}` : ''}
         </Text>
         <View style={s.navRow}>
-          <TouchableOpacity 
-            style={[s.navBtn, !pagination?.hasPrevPage && s.navDisabled]} 
+          <TouchableOpacity
+            style={[s.navBtn, !pagination?.hasPrevPage && s.navDisabled]}
             onPress={handlePrevPage}
             disabled={!pagination?.hasPrevPage}
           >
             <Text style={s.navTxt}>‹</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[s.navBtn, !pagination?.hasNextPage && s.navDisabled, pagination?.hasNextPage && s.navActive]} 
+          <TouchableOpacity
+            style={[s.navBtn, !pagination?.hasNextPage && s.navDisabled, pagination?.hasNextPage && s.navActive]}
             onPress={handleNextPage}
             disabled={!pagination?.hasNextPage}
           >
@@ -1463,6 +1576,7 @@ export default function MedicalStaffListSection() {
         </View>
       </View>
 
+      {/* ── Modals ── */}
       <ActionMenu
         visible={menuVisible}
         onClose={() => setMenuVisible(false)}
@@ -1500,11 +1614,6 @@ const s = StyleSheet.create({
   exportBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#1D4ED8', paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10 },
   exportIcon: { fontSize: 12, color: '#fff', fontWeight: '700' },
   exportTxt: { fontSize: 12, color: '#fff', fontWeight: '600' },
-  statsRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 12, backgroundColor: '#F8FAFC', borderRadius: 12, borderWidth: 1, borderColor: '#E9ECF0', paddingVertical: 12 },
-  statCard: { flex: 1, alignItems: 'center', gap: 2 },
-  statNum: { fontSize: 22, fontWeight: '800', color: '#0F172A' },
-  statLbl: { fontSize: 10, color: '#94A3B8', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  statDivider: { width: 1, height: 36, backgroundColor: '#E9ECF0' },
   filterCard: { marginHorizontal: 16, marginBottom: 12, backgroundColor: '#F8FAFC', borderRadius: 14, borderWidth: 1, borderColor: '#E9ECF0', paddingTop: 14 },
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingBottom: 12 },
   chipsLabel: { fontSize: 11, color: '#94A3B8', fontWeight: '600' },

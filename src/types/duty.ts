@@ -119,27 +119,51 @@ export interface StaffUser {
 }
 
 export interface StaffMember {
+  // _id: string;
+  // user: StaffUser;
+  // fullName: string;
+  // jobRole: string;
+  // city: string;
+  // area: string;
+  // phoneNumber: string;
+  // isAvailable: boolean;
+  // distance: number;          // already in km — comes from API
+  // averageRating?: number;
+  // location: StaffLocation;
+
   _id: string;
-  user: StaffUser;
+  user: { _id: string; name: string; email: string } | null;  // ← must allow null
   fullName: string;
   jobRole: string;
-  city: string;
-  area: string;
   phoneNumber: string;
   isAvailable: boolean;
-  distance: number;          // already in km — comes from API
-  averageRating?: number;
-  location: StaffLocation;
+  distance: number;
+  location: { latitude: number; longitude: number };
+  coordinates: { type: string; coordinates: { latitude: number; longitude: number } };
+  city: string;
+  state: string;
+  pincode: string;
+  averageRating: number;
 }
 
 export interface NearbyStaffResponse {
+  // success: boolean;
+  // hospital: {
+  //   name: string;
+  //   location: StaffLocation;
+  // };
+  // searchRadius: number;
+  // totalStaffFound: number;
+  // staff: StaffMember[];
+  // message: string;
   success: boolean;
   hospital: {
     name: string;
-    location: StaffLocation;
+    location: { latitude: number; longitude: number };
+    address: { currentAddress: string; city: string; state: string; pincode: string };
   };
-  searchRadius: number;
-  totalStaffFound: number;
   staff: StaffMember[];
+  totalStaffFound: number;   
+  searchRadius: number;
   message: string;
 }

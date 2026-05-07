@@ -1123,8 +1123,14 @@ getEmergencyDashboard: async (page = 1) => {
 },
 
 // Get Medical Staff List
-getMedicalStaff: async (search = '', page = 1) => {
-  const response = await api.get(`/api/admin/medical-staff?search=${search}&page=${page}`);
+// getMedicalStaff: async (search = '', page = 1) => {
+//   const response = await api.get(`/api/admin/medical-staff?search=${search}&page=${page}`);
+//   return response.data;
+// },
+
+getMedicalStaff: async (search = '', page = 1, role = '') => {
+  const roleQuery = role ? `&role=${role}` : '';
+  const response = await api.get(`/api/admin/medical-staff?search=${search}&page=${page}${roleQuery}`);
   return response.data;
 },
 

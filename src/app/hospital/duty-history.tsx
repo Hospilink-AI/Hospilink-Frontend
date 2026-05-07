@@ -206,12 +206,14 @@ export default function DutyHistoryScreen() {
   // draft filters (not yet applied)
   const [draftDate, setDraftDate]     = useState<DateFilter>(DEFAULT_DATE_FILTER);
   const [draftRole, setDraftRole]     = useState('');
-  const [draftStatus, setDraftStatus] = useState('');
+  // const [draftStatus, setDraftStatus] = useState('');
+  const [draftStatus, setDraftStatus] = useState('completed');
 
   // applied filters (drives API)
   const [appliedDate, setAppliedDate]     = useState<DateFilter>(DEFAULT_DATE_FILTER);
   const [appliedRole, setAppliedRole]     = useState('');
-  const [appliedStatus, setAppliedStatus] = useState('');
+  // const [appliedStatus, setAppliedStatus] = useState('');
+  const [appliedStatus, setAppliedStatus] = useState('completed');
 
   // date modal
   const [dateModalVisible, setDateModalVisible] = useState(false);
@@ -249,11 +251,13 @@ export default function DutyHistoryScreen() {
   const handleClear = () => {
     setDraftDate(DEFAULT_DATE_FILTER);
     setDraftRole('');
-    setDraftStatus('');
+    // setDraftStatus('');
+    setDraftStatus('completed'); 
     setPage(1);
     setAppliedDate(DEFAULT_DATE_FILTER);
     setAppliedRole('');
-    setAppliedStatus('');
+    // setAppliedStatus('');
+    setAppliedStatus('completed');
   };
 
   const openModal = () => { setModalDraft({ ...draftDate }); setDateModalVisible(true); };
@@ -318,7 +322,7 @@ export default function DutyHistoryScreen() {
                 />
               </FilterChip>
 
-              <FilterChip label="STATUS">
+              {/* <FilterChip label="STATUS">
                 <NativeSelect
                   value={draftStatus}
                   options={STATUS_OPTIONS}
@@ -326,7 +330,7 @@ export default function DutyHistoryScreen() {
                   placeholder="All Statuses"
                   minWidth={140}
                 />
-              </FilterChip>
+              </FilterChip> */}
 
               <View style={styles.mobileFilterActions}>
                 <TouchableOpacity style={styles.applyBtn} onPress={handleApply}>
@@ -362,7 +366,7 @@ export default function DutyHistoryScreen() {
               </View>
 
               {/* STATUS */}
-              <View style={styles.filterCol}>
+              {/* <View style={styles.filterCol}>
                 <Text style={styles.filterLabel}>STATUS</Text>
                 <NativeSelect
                   value={draftStatus}
@@ -370,7 +374,7 @@ export default function DutyHistoryScreen() {
                   onChange={setDraftStatus}
                   placeholder="All Statuses"
                 />
-              </View>
+              </View> */}
 
               {/* ACTIONS */}
               <View style={styles.filterActions}>

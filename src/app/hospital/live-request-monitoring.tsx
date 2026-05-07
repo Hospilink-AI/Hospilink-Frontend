@@ -150,9 +150,9 @@ const getTimelineSteps = () => [
 
 const STATUS_STEP_MAP: Record<string, number> = {
   available: 0,
-  assigned: 2,
-  enroute: 3,
-  'in-progress': 4,
+  assigned: 1,
+  enroute: 2,
+  'in-progress': 3,
   completed: 4,
 };
 
@@ -283,51 +283,51 @@ const WebMap = ({ staffLocation, hospitalLocation, routePolylines, status, isSat
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
-         tileLayerRef.current = null;
+        tileLayerRef.current = null;
       }
     };
   }, [staffLocation, hospitalLocation, routePolylines, status]);
 
   // ── Swap tile layer when satellite toggles ──────────────────────────────────
-useEffect(() => {
-  const L = (window as any).L;
-  const map = mapInstanceRef.current;
-  if (!map || !L) return;
+  useEffect(() => {
+    const L = (window as any).L;
+    const map = mapInstanceRef.current;
+    if (!map || !L) return;
 
-  if (tileLayerRef.current) {
-    map.removeLayer(tileLayerRef.current);
-  }
+    if (tileLayerRef.current) {
+      map.removeLayer(tileLayerRef.current);
+    }
 
-  const tile = isSatellite ? SATELLITE_TILE : STREET_TILE;
-  tileLayerRef.current = L.tileLayer(tile.url, {
-    attribution: tile.attribution,
-    maxZoom: 19,
-  }).addTo(map);
+    const tile = isSatellite ? SATELLITE_TILE : STREET_TILE;
+    tileLayerRef.current = L.tileLayer(tile.url, {
+      attribution: tile.attribution,
+      maxZoom: 19,
+    }).addTo(map);
 
-  tileLayerRef.current.bringToBack(); // keeps markers and route on top
-}, [isSatellite]);
+    tileLayerRef.current.bringToBack(); // keeps markers and route on top
+  }, [isSatellite]);
 
   return (
     // <div
     //   ref={mapRef}
     //   style={{ width: '100%', height: '100%', minHeight: 350, zIndex: 1 }}
     // />
-   
-  <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 350 }}>
-    {/* Map */}
-    <div ref={mapRef} style={{ width: '100%', height: '100%', minHeight: 350, zIndex: 1 }} />
 
-    {/* Satellite Toggle Button */}
-    <TouchableOpacity
-      style={styles.satelliteToggle}
-      onPress={onToggleSatellite}
-      activeOpacity={0.8}
-    >
-      <Text style={styles.satelliteToggleText}>
-        {isSatellite ? '🗺 Street View' : '🛰 Satellite'}
-      </Text>
-    </TouchableOpacity>
-  </div>
+    <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 350 }}>
+      {/* Map */}
+      <div ref={mapRef} style={{ width: '100%', height: '100%', minHeight: 350, zIndex: 1 }} />
+
+      {/* Satellite Toggle Button */}
+      <TouchableOpacity
+        style={styles.satelliteToggle}
+        onPress={onToggleSatellite}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.satelliteToggleText}>
+          {isSatellite ? '🗺 Street View' : '🛰 Satellite'}
+        </Text>
+      </TouchableOpacity>
+    </div>
 
   );
 };
@@ -572,8 +572,8 @@ export default function LiveRequestMonitoring() {
                   }}
                   routePolylines={routeInfo?.stepPolylines ?? []}
                   status={duty.status}
-                   isSatellite={isSatellite} 
-                   onToggleSatellite={() => setIsSatellite(v => !v)} 
+                  isSatellite={isSatellite}
+                  onToggleSatellite={() => setIsSatellite(v => !v)}
                 />
               ) : (
                 <View style={styles.mapPlaceholder}>
@@ -609,11 +609,14 @@ export default function LiveRequestMonitoring() {
                         isCurrent && styles.timelineNodeCurrent,
                       ]}
                     >
-                      {step.icon === 'checkmark' && isCompleted ? (
-                        <Text style={styles.nodeIconText}>✓</Text>
-                      ) : step.icon === 'car' && isCurrent ? (
-                        <Ionicons name="car" size={14} color="#2563EB" />
+                      {isCompleted ? (
+                        step.icon === 'car' && isCurrent ? (
+                          <Ionicons name="car" size={14} color="#fff" />   // white icon on blue bg
+                        ) : (
+                          <Text style={styles.nodeIconText}>✓</Text>
+                        )
                       ) : null}
+
                     </View>
                     <Text
                       style={[
@@ -801,27 +804,27 @@ const styles = StyleSheet.create({
   },
 
   satelliteToggle: {
-  position: 'absolute',
-  top: 12,
-  right: 12,
-  zIndex: 999,
-  backgroundColor: '#fff',
-  paddingHorizontal: 14,
-  paddingVertical: 8,
-  borderRadius: 8,
-  borderWidth: 1,
-  borderColor: '#E5E7EB',
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.1,
-  shadowRadius: 6,
-  elevation: 4,
-},
-satelliteToggleText: {
-  fontSize: 13,
-  fontWeight: '600',
-  color: '#111827',
-},
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    zIndex: 999,
+    backgroundColor: '#fff',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  satelliteToggleText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#111827',
+  },
 
   // States
   centeredState: {
@@ -933,7 +936,9 @@ satelliteToggleText: {
   },
   timelineNodeCompleted: { backgroundColor: '#2563EB', borderColor: '#2563EB' },
   timelineNodeCurrent: {
-    backgroundColor: '#FFF', borderColor: '#2563EB',
+    // backgroundColor: '#FFF',
+    backgroundColor: '#2563EB', 
+     borderColor: '#2563EB',
     borderWidth: 3, width: 32, height: 32, marginTop: -4,
   },
   nodeIconText: { color: '#FFF', fontSize: 12, fontWeight: '700' },

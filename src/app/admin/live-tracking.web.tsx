@@ -106,6 +106,35 @@ const ROLES = [
 
 const ROLE_LABELS: Record<string, string> = Object.fromEntries(ROLES.map(r => [r.value, r.label]));
 
+// Spread markers that share identical coordinates so they don't stack
+function jitterDuplicateStaff(staffList: StaffMember[]): StaffMember[] {
+  const seen = new Map<string, number>();
+
+  return staffList.map((person) => {
+    const lat = person.coordinates.coordinates.latitude;
+    const lng = person.coordinates.coordinates.longitude;
+    const key = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+    const count = seen.get(key) ?? 0;
+    seen.set(key, count + 1);
+
+    if (count === 0) return person; // first at this spot — no change
+
+    const angle = (count * 137.5 * Math.PI) / 180; // golden angle
+    const radius = 0.00015 * count;                 // ~15 m per step
+
+    return {
+      ...person,
+      coordinates: {
+        ...person.coordinates,
+        coordinates: {
+          latitude: lat + radius * Math.cos(angle),
+          longitude: lng + radius * Math.sin(angle),
+        },
+      },
+    };
+  });
+}
+
 // ── Interfaces ────────────────────────────────────────────────────────────────
 interface Hospital { _id?: string; id?: string; name: string; location: string; }
 interface StaffMember {
@@ -190,7 +219,8 @@ export default function StaffTrackingDashboard() {
             latitude: res.data.hospital.coordinates.coordinates.latitude,
             longitude: res.data.hospital.coordinates.coordinates.longitude,
           });
-          setStaff(res.data.staff || []);
+          // setStaff(res.data.staff || []);
+          setStaff(jitterDuplicateStaff(res.data.staff || []));
         }
       })
       .catch((e: any) => console.error('Failed to fetch nearby staff', e))
