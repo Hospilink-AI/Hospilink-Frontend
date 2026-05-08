@@ -158,27 +158,69 @@ export default function AuthScreen() {
 
       const role = response.user?.role;
 
+
+
+      if (!response.user?.isEmailVerified) {
+        router.replace({
+          pathname: "/auth/verify-otp",
+          params: {
+            email: response.user?.email,
+            accountType: role === "staff" ? "medical" : "hospital",
+          },
+        });
+        return;
+      }
+
       let profileComplete = false;
+      let documentsUploaded = false;
+      let profileName = "";
+      let profileEmail = "";
+
       try {
         const profileRes = await profileAPI.getMyProfile();
-        profileComplete = profileRes?.profile?.isProfileComplete ?? false;
+        // profileComplete = profileRes?.profile?.isProfileComplete ?? false;
+        profileComplete = profileRes?.isProfileComplete ?? profileRes?.profile?.isProfileComplete ?? false;
+        // documentsUploaded = profileRes?.profile?.isDocumentsUploaded ?? false;
+        documentsUploaded = profileRes?.isDocumentsUploaded ?? profileRes?.profile?.isDocumentsUploaded ?? false;
+
+        // profileName = profileRes?.profile?.fullName ?? response.user?.name ?? "";
+        profileName = profileRes?.profile?.fullName ?? profileRes?.user?.name ?? response.user?.name ?? "";
+        // profileEmail = profileRes?.profile?.email ?? response.user?.email ?? "";
+        profileEmail = profileRes?.profile?.email ?? profileRes?.user?.email ?? response.user?.email ?? "";
+
         console.log("✅ Profile isProfileComplete:", profileComplete);
+        console.log("✅ Profile isDocumentsUploaded:", documentsUploaded);
+        console.log("✅ Profile fullName:", profileName, " email:", profileEmail)
       } catch (e) {
         console.warn("⚠️ Could not fetch profile, defaulting to setup screen");
+        profileName = response.user?.name ?? "";
+        profileEmail = response.user?.email ?? "";
         profileComplete = false;
       }
 
       if (role === "staff") {
-        if (profileComplete) {
-          router.replace("/medicalStaff/dashboard");
+        if (!profileComplete) {
+          // router.replace("/profile/medical-staff");
+          router.replace({
+            pathname: "/profile/medical-staff",
+            params: { prefillName: profileName, prefillEmail: profileEmail }, // ← ADD
+          });
+        } else if (!documentsUploaded) {
+          router.replace("/profile/document-upload");
         } else {
-          router.replace("/profile/medical-staff");
+          router.replace("/medicalStaff/dashboard");
         }
       } else if (role === "hospital") {
-        if (profileComplete) {
-          router.replace("/hospital/dashboard");
+        if (!profileComplete) {
+          // router.replace("/profile/hospital");
+          router.replace({
+            pathname: "/profile/hospital",
+            params: { prefillName: profileName, prefillEmail: profileEmail }, // ← ADD
+          });
+        } else if (!documentsUploaded) {
+          router.replace("/profile/upload-document");
         } else {
-          router.replace("/profile/hospital");
+          router.replace("/hospital/dashboard");
         }
       } else {
         router.replace("/profile/medical-staff");

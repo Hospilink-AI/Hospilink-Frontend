@@ -1,19 +1,3 @@
-// src/components/LiveMap.native.tsx
-//
-// ─── MOBILE ONLY (iOS + Android) ───────────────────────────────────────────
-// Metro automatically picks this file on iOS / Android.
-// It uses react-native-maps, which is the standard Expo map library.
-//
-// SETUP (run once):
-//   npx expo install react-native-maps
-//
-// For Google Maps on Android, add your key in app.json:
-//   "android": {
-//     "config": {
-//       "googleMaps": { "apiKey": "YOUR_GOOGLE_MAPS_API_KEY" }
-//     }
-//   }
-// ────────────────────────────────────────────────────────────────────────────
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';

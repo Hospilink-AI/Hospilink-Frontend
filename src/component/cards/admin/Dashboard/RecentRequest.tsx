@@ -41,6 +41,10 @@ interface StaffMember {
   phoneNumber: string;
   isAvailable: boolean;
   staffId: string;
+  currentAddress: string;  
+  city: string;            
+  state: string;           
+  pincode: string;         
   location: string;
   email?: string;
   completedDuties: number;
@@ -535,7 +539,9 @@ export default function RecentRequests() {
                       </View>
                       <View style={styles.distanceBadge}>
                         <Text style={styles.distanceText} numberOfLines={1}>
-                          {staff.location.split(',')[0]}
+                          {/* {staff.location.split(',')[0]} */}
+                          {staff.city ?? staff.currentAddress?.split(',')[0] ?? '—'}
+
                         </Text>
                       </View>
                       {isSelected

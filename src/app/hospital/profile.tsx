@@ -1536,7 +1536,7 @@ const DepartmentTags = ({ departments, setDepartments }: {
           <Text style={tSt.addBtnTxt}>+ Add Service</Text>
         </TouchableOpacity>
       </View>
-      {panelOpen && (
+      {/* {panelOpen && (
         <View style={tSt.panel}>
           {ALL_SERVICES.map((service) => {
             const selected = departments.includes(service);
@@ -1549,6 +1549,23 @@ const DepartmentTags = ({ departments, setDepartments }: {
               </TouchableOpacity>
             );
           })}
+        </View>
+      )} */}
+      {panelOpen && (
+        <View style={tSt.panel}>
+          <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false} style={{ maxHeight: 250 }}>
+            {ALL_SERVICES.map((service) => {
+              const selected = departments.includes(service);
+              return (
+                <TouchableOpacity key={service} style={tSt.serviceRow} onPress={() => toggle(service)} activeOpacity={0.7}>
+                  <Text style={[tSt.serviceName, selected && tSt.serviceNameSelected]}>{service}</Text>
+                  <View style={[tSt.checkCircle, selected && tSt.checkCircleSelected]}>
+                    {selected && <Text style={tSt.checkMark}>✓</Text>}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
       )}
     </View>
@@ -1564,7 +1581,7 @@ const tSt = StyleSheet.create({
   tagCloseTxt: { fontSize: 14, color: WHITE },
   addBtn: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: BORDER, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: WHITE },
   addBtnTxt: { fontSize: 12, color: TEXT_SECONDARY, fontWeight: "600" },
-  panel: { borderWidth: 1, borderColor: BORDER, borderRadius: 10, backgroundColor: WHITE, marginBottom: 10, maxHeight: 200, overflow: 'hidden' },
+  panel: { borderWidth: 1, borderColor: BORDER, borderRadius: 10, backgroundColor: WHITE, marginBottom: 10, maxHeight: 200},
   serviceRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
   serviceName: { fontSize: 14, color: TEXT_SECONDARY },
   serviceNameSelected: { color: BLUE, fontWeight: "700" },
@@ -2413,13 +2430,13 @@ const Profile = () => {
 
 // ─── Global Styles ────────────────────────────────────────────────────────────
 const stDropSt = StyleSheet.create({
-  dropdown:      { position: "absolute", top: 72, left: 0, right: 0, zIndex: 999, backgroundColor: WHITE, borderWidth: 1, borderColor: BORDER, borderRadius: 8, overflow: "hidden", ...Platform.select({ web: { boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }, default: { elevation: 16 } }) },
-  searchRow:     { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#F1F5F9", backgroundColor: "#F8FAFC" },
-  searchInput:   { flex: 1, fontSize: 13, color: TEXT_PRIMARY, ...Platform.select({ web: { outlineStyle: "none" } as any }) },
-  item:          { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
-  itemActive:    { backgroundColor: "#EFF6FF" },
-  itemText:      { fontSize: 13, color: TEXT_SECONDARY },
-  itemTextActive:{ color: BLUE, fontWeight: "600" },
+  dropdown: { position: "absolute", top: 72, left: 0, right: 0, zIndex: 999, backgroundColor: WHITE, borderWidth: 1, borderColor: BORDER, borderRadius: 8, overflow: "hidden", ...Platform.select({ web: { boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }, default: { elevation: 16 } }) },
+  searchRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#F1F5F9", backgroundColor: "#F8FAFC" },
+  searchInput: { flex: 1, fontSize: 13, color: TEXT_PRIMARY, ...Platform.select({ web: { outlineStyle: "none" } as any }) },
+  item: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
+  itemActive: { backgroundColor: "#EFF6FF" },
+  itemText: { fontSize: 13, color: TEXT_SECONDARY },
+  itemTextActive: { color: BLUE, fontWeight: "600" },
 });
 const gSt = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BG },

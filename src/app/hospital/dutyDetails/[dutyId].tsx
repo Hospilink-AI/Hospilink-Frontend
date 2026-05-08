@@ -1,12 +1,3 @@
-/**
- * DutyDetailsScreen
- *
- * File location:  app/medicalStaff/dutyDetails/[dutyId].tsx
- *
- * Dependencies:
- *   expo install react-native-webview
- *   (already assumed: expo-router, @expo/vector-icons)
- */
 
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -21,7 +12,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { dutyAPI } from '../../../service/api'; // adjust to your path
+import { dutyAPI } from '../../../service/api';
 
 // ─── Types ────────────────────────────────────────────────
 interface DutyDetail {

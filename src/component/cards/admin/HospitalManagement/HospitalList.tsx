@@ -11,11 +11,12 @@ import {
   Animated,
   Dimensions,
   ActivityIndicator,
+  Image
 } from 'react-native';
 import { adminAPI } from '@/service/api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type LicenseStatus = 'VERIFIED' | 'PENDING' | 'REJECTED';
+type LicenseStatus = 'VERIFIED' | 'PENDING' | 'REJECTED' | 'AUTO_VERIFIED' | 'MANUAL_PENDING';
 type DocStatus = 'VERIFIED' | 'PENDING' | 'REJECTED' | 'AUTO_VERIFIED' | 'MANUAL_PENDING';
 
 interface HospitalDocument {
@@ -33,6 +34,7 @@ interface HospitalDocument {
   description?: string;
   pages?: number;
   fileSize?: string;
+  url?: string;
 }
 
 interface PaginationInfo {
@@ -57,7 +59,7 @@ interface Hospital {
   dutyPercent: number;
   dutyLabel: string;
   licenseStatus: LicenseStatus;
-  verificationStatus: string; // raw from API: 'verified' | 'rejected' | 'pending'
+  verificationStatus: string;
   iconBg: string;
   iconEmoji: string;
   legalName: string;
@@ -66,76 +68,86 @@ interface Hospital {
   totalDuties: number;
   occupiedDuties: number;
   documents: HospitalDocument[];
+  servicesAvailable?: string[];
 }
 
 // ─── Mapper ───────────────────────────────────────────────────────────────────
+const safeStr = (val: any, fallback = '—'): string =>
+  val !== null && val !== undefined && String(val).trim() !== '' ? String(val) : fallback;
+
 const parseStaff = (staff: string): number => {
   if (!staff || staff === '0') return 0;
   if (staff === '100+') return 100;
-  if (staff.includes('-')) return parseInt(staff.split('-')[1]);
+  if (staff.includes('-')) return parseInt(staff.split('-')[1]) || 0;
   return parseInt(staff) || 0;
 };
 
 const toLicenseStatus = (raw: string): LicenseStatus => {
-  const s = (raw || '').toLowerCase();
+  const s = (raw ?? '').toLowerCase().replace(/[_\s-]/g, '');
   if (s === 'verified') return 'VERIFIED';
   if (s === 'rejected') return 'REJECTED';
+  if (s === 'autoverified') return 'AUTO_VERIFIED';
+  if (s === 'manualpending' || s === 'manualpendingverification') return 'MANUAL_PENDING';
   return 'PENDING';
 };
 
-// Maps a document from the API to HospitalDocument
+const formatDocType = (docType: string): string =>
+  docType.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
 const mapDoc = (d: any): HospitalDocument => {
-  const rawDocStatus = (d.status || d.verificationStatus || 'pending').toLowerCase();
+  const rawDocStatus = safeStr(d?.status ?? d?.verificationStatus, 'pending').toLowerCase();
   const docStatus: DocStatus =
     rawDocStatus === 'verified' ? 'VERIFIED' :
-      rawDocStatus === 'auto-verified' ? 'AUTO_VERIFIED' :
+      rawDocStatus === 'auto-verified' || rawDocStatus === 'autoverified' ? 'AUTO_VERIFIED' :
         rawDocStatus === 'rejected' ? 'REJECTED' :
-          rawDocStatus === 'manual-pending-verification' ? 'MANUAL_PENDING' : 'PENDING';
+          rawDocStatus === 'manual-pending-verification' || rawDocStatus === 'manualpending' ? 'MANUAL_PENDING' :
+            'PENDING';
 
   return {
-    id: d._id ?? d.id ?? String(Math.random()),
-    title: d.title || d.documentType || d.name || 'Document',
-    docType: d.documentType || d.docType || 'unknown',
+    id: safeStr(d?._id ?? d?.id, String(Math.random())),
+    title: safeStr(d?.title ?? d?.documentType ?? d?.name, 'Document'),
+    url: safeStr(d?.url ?? d?.fileUrl, ''),
+    docType: safeStr(d?.documentType ?? d?.docType, 'unknown'),
     status: docStatus,
-    statusNote:
-      d.statusNote || d.note ||
-      (docStatus === 'VERIFIED' ? 'Document verified' :
+    statusNote: safeStr(
+      d?.statusNote ?? d?.note,
+      docStatus === 'VERIFIED' ? 'Document verified' :
         docStatus === 'AUTO_VERIFIED' ? 'Auto-verified by system' :
           docStatus === 'REJECTED' ? 'Document rejected' :
             docStatus === 'MANUAL_PENDING' ? 'Awaiting manual review' :
-              'Awaiting review'),
-    icon: d.icon || '📄',
-    docNumber: d.documentNumber || d.docNumber || '—',
-    issuedBy: d.issuedBy || '—',
-    issuedTo: d.issuedTo || '—',
-    issuedDate: d.issuedDate || '—',
-    expiryDate: d.expiryDate || '—',
-    description: d.description || '',
-    pages: d.pages || 1,
-    fileSize: d.fileSize || '—',
+              'Awaiting review',
+    ),
+    icon: safeStr(d?.icon, '📄'),
+    docNumber: safeStr(d?.documentNumber ?? d?.docNumber),
+    issuedBy: safeStr(d?.issuedBy),
+    issuedTo: safeStr(d?.issuedTo),
+    issuedDate: safeStr(d?.issuedDate),
+    expiryDate: safeStr(d?.expiryDate),
+    description: safeStr(d?.description, ''),
+    pages: Number(d?.pages) || 1,
+    fileSize: safeStr(d?.fileSize),
   };
 };
 
-// Maps a hospital list item (from GET /hospitals)
 const mapHospital = (h: any): Hospital => {
-  const rawStatus = (h.verificationStatus || 'pending').toLowerCase();
+  const rawStatus = safeStr(h?.verificationStatus, 'pending').toLowerCase();
   const licenseStatus = toLicenseStatus(rawStatus);
-
-  const totalDuties = Number(h.totalDuties) || 0;
-  const occupiedDuties = Number(h.occupiedDuties) || 0;
-  const dutyPercent =
-    totalDuties > 0 ? Math.round((occupiedDuties / totalDuties) * 100) : 0;
+  const totalDuties = Number(h?.totalDuties) || 0;
+  const occupiedDuties = Number(h?.occupiedDuties) || 0;
+  const dutyPercent = totalDuties > 0 ? Math.round((occupiedDuties / totalDuties) * 100) : 0;
 
   return {
-    id: h._id ?? h.id,
-    name: h.hospitalLegalName || h.user?.name || 'Unknown Hospital',
-    legalName: h.hospitalLegalName || h.user?.name || 'Unknown Hospital',
-    hospitalId: `ID: ${(h._id ?? h.id ?? '------').slice(-6).toUpperCase()}`,
-    location: h.location || '—',
-    city: h.location || 'Unknown',
-    currentAddress: h.currentAddress || h.address || '—',
-    staffCount: h.staffCount || '—',
-    totalStaff: parseStaff(h.staffCount || '0'),
+    id: safeStr(h?._id ?? h?.id, 'unknown'),
+    name: safeStr(h?.hospitalLegalName ?? h?.user?.name, 'Unknown Hospital'),
+    legalName: safeStr(h?.hospitalLegalName ?? h?.user?.name, 'Unknown Hospital'),
+    hospitalId: `ID: ${safeStr(h?._id ?? h?.id, '------').slice(-6).toUpperCase()}`,
+    // location: safeStr(h?.location),
+    location: safeStr(h?.currentAddress ?? h?.location),
+    // city: safeStr(h?.location, 'Unknown'),
+    city: safeStr(h?.city ?? h?.location, 'Unknown'),
+    currentAddress: safeStr(h?.currentAddress ?? h?.address),
+    staffCount: safeStr(h?.staffCount, '0'),
+    totalStaff: parseStaff(safeStr(h?.staffCount, '0')),
     staffLabel: 'Staff',
     dutyPercent,
     dutyLabel: `${occupiedDuties}/${totalDuties} Active`,
@@ -145,36 +157,44 @@ const mapHospital = (h: any): Hospital => {
     iconEmoji: '🏥',
     totalDuties,
     occupiedDuties,
-    documents: (h.documents ?? []).map(mapDoc),
+    documents: Array.isArray(h?.documents) ? h.documents.map(mapDoc) : [],
   };
 };
 
-// Maps a single hospital detail (from GET /hospitals/:id)
 const mapHospitalDetail = (data: any): Partial<Hospital> => ({
-  legalName: data.hospitalLegalName || data.name || '—',
-  currentAddress: data.currentAddress || '—',
-  location: data.location || '—',
-  staffCount: data.staffCount || '—',
-  documents: (data.documents ?? []).map(mapDoc),
+  legalName: safeStr(data?.hospitalLegalName ?? data?.name),
+  // currentAddress: safeStr(data?.currentAddress),
+  currentAddress: [
+    data?.currentAddress,
+    data?.city,
+    data?.state,
+    data?.pincode,
+  ].filter(Boolean).join(', '),
+  // location: safeStr(
+  //   data?.location ??
+  //   [data?.city, data?.state, data?.pincode].filter(Boolean).join(', ')
+  // ),
+  staffCount: safeStr(data?.staffCount, '0'),
+  servicesAvailable: Array.isArray(data?.servicesAvailable) ? data.servicesAvailable : [],
+  documents: Array.isArray(data?.documents) ? data.documents.map(mapDoc) : [],
 });
 
-// ─── Status filter → API param ────────────────────────────────────────────────
-// API expects: ?status=Verified / ?status=Rejected / ?status=Pending
 const toApiStatus = (s: string): string | undefined => {
   if (!s || s === 'All Statuses') return undefined;
-
-  return s.toLowerCase(); // ✅ always "pending", "verified", etc.
+  return s.toLowerCase();
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const ALL_STATUSES: Array<'All Statuses' | LicenseStatus> = [
-  'All Statuses', 'VERIFIED', 'PENDING', 'REJECTED',
+  'All Statuses', 'VERIFIED', 'PENDING', 'REJECTED', 'AUTO_VERIFIED', 'MANUAL_PENDING',
 ];
 
 const LICENSE_BADGE: Record<LicenseStatus, { bg: string; text: string; dot: string }> = {
   VERIFIED: { bg: '#F0FDF4', text: '#16A34A', dot: '#22C55E' },
   PENDING: { bg: '#FFFBEB', text: '#D97706', dot: '#F59E0B' },
   REJECTED: { bg: '#FFF1F2', text: '#BE123C', dot: '#FB7185' },
+  AUTO_VERIFIED: { bg: '#ECFDF5', text: '#15803D', dot: '#34D399' },
+  MANUAL_PENDING: { bg: '#EFF6FF', text: '#2563EB', dot: '#60A5FA' },
 };
 
 const DOC_STATUS_CFG: Record<DocStatus, { bg: string; text: string; border: string }> = {
@@ -185,11 +205,126 @@ const DOC_STATUS_CFG: Record<DocStatus, { bg: string; text: string; border: stri
   REJECTED: { bg: '#FEF2F2', text: '#DC2626', border: '#FECACA' },
 };
 
+// ─── Status Tab Config ─────────────────────────────────────────────────────────
+type TabKey = 'ALL' | LicenseStatus;
+
+interface TabConfig {
+  key: TabKey;
+  label: string;
+}
+
+const STATUS_TABS: TabConfig[] = [
+  { key: 'ALL', label: 'All Hospitals' },
+  { key: 'PENDING', label: 'Pending Verification' },
+  { key: 'VERIFIED', label: 'Approved' },
+  { key: 'REJECTED', label: 'Rejected' },
+  { key: 'AUTO_VERIFIED', label: 'Auto Verified' },
+  { key: 'MANUAL_PENDING', label: 'Manual Pending' },
+];
+
+// ─── Status Tab Bar ────────────────────────────────────────────────────────────
+interface StatusTabBarProps {
+  activeTab: TabKey;
+  counts: Partial<Record<TabKey, number>>;
+  onSelect: (tab: TabKey) => void;
+}
+
+function StatusTabBar({ activeTab, counts, onSelect }: StatusTabBarProps) {
+  return (
+    <View style={stb.wrap}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={stb.scrollContent}
+      >
+        {STATUS_TABS.map(tab => {
+          const isActive = activeTab === tab.key;
+          const count = counts[tab.key];
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              style={[stb.tab, isActive && stb.tabActive]}
+              onPress={() => onSelect(tab.key)}
+              activeOpacity={0.75}
+            >
+              <Text style={[stb.tabTxt, isActive && stb.tabTxtActive]}>
+                {tab.label}
+              </Text>
+              {count !== undefined && count > 0 && (
+                <View style={[stb.badge, isActive && stb.badgeActive]}>
+                  <Text style={[stb.badgeTxt, isActive && stb.badgeTxtActive]}>
+                    {count}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
+}
+
+const stb = StyleSheet.create({
+  wrap: {
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E9ECF0',
+    paddingHorizontal: 16,
+  },
+  scrollContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingVertical: 10,
+  },
+  tab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+  },
+  tabActive: {
+    backgroundColor: '#2563EB',
+  },
+  tabTxt: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  tabTxtActive: {
+    color: '#fff',
+  },
+  badge: {
+    backgroundColor: '#F1F5F9',
+    borderRadius: 99,
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeActive: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+  },
+  badgeTxt: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  badgeTxtActive: {
+    color: '#fff',
+  },
+});
+
 // ─── Progress Bar ─────────────────────────────────────────────────────────────
 function ProgressBar({ percent }: { percent: number }) {
   return (
     <View style={pb.track}>
-      <View style={[pb.fill, { width: `${Math.min(percent, 100)}%` as any }]} />
+      <View style={[pb.fill, { width: `${Math.min(Math.max(percent, 0), 100)}%` as any }]} />
     </View>
   );
 }
@@ -199,12 +334,22 @@ const pb = StyleSheet.create({
 });
 
 // ─── License Badge ────────────────────────────────────────────────────────────
+const BADGE_LABELS: Record<LicenseStatus, string> = {
+  VERIFIED: 'VERIFIED',
+  PENDING: 'PENDING',
+  REJECTED: 'REJECTED',
+  AUTO_VERIFIED: 'AUTO VERIFIED',
+  MANUAL_PENDING: 'MANUAL PENDING',
+};
+
 function LicenseBadge({ status }: { status: LicenseStatus }) {
-  const cfg = LICENSE_BADGE[status];
+  const cfg = LICENSE_BADGE[status] ?? LICENSE_BADGE['PENDING'];
   return (
     <View style={[lbdg.wrap, { backgroundColor: cfg.bg }]}>
       <View style={[lbdg.dot, { backgroundColor: cfg.dot }]} />
-      <Text style={[lbdg.txt, { color: cfg.text }]}>{status}</Text>
+      <Text style={[lbdg.txt, { color: cfg.text }]} numberOfLines={1}>
+        {BADGE_LABELS[status] ?? status}
+      </Text>
     </View>
   );
 }
@@ -294,10 +439,10 @@ function FilterBar({ search, setSearch, status, setStatus, city, setCity, onAppl
           </View>
         </View>
         <View style={fb.divider} />
-        <View style={fb.group}>
+        {/* <View style={fb.group}>
           <Text style={fb.label}>CURRENT STATUS</Text>
           <Dropdown label="CURRENT STATUS" value={status} options={ALL_STATUSES} onSelect={setStatus} flat />
-        </View>
+        </View> */}
         <View style={fb.divider} />
         <View style={fb.group}>
           <Text style={fb.label}>CITY/REGION</Text>
@@ -365,7 +510,7 @@ function TableHeader() {
 const th = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#F8FAFC', borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#E9ECF0' },
   cell: { fontSize: 10, fontWeight: '700', color: '#94A3B8', letterSpacing: 0.7, lineHeight: 14 },
-  colName: { flex: 2.5 },
+  colName: { flex: 2 },
   colLoc: { flex: 1.8 },
   colStaff: { flex: 1 },
   colDuty: { flex: 2.2 },
@@ -408,7 +553,7 @@ function DocumentViewerModal({ visible, doc, hospitalName, onClose }: DocViewerP
                 {decision === 'approved' ? 'Document Approved' : 'Document Rejected'}
               </Text>
               <Text style={dv.resultSub}>
-                <Text style={{ fontWeight: '700', color: '#0F172A' }}>{doc?.title}</Text>
+                <Text style={{ fontWeight: '700', color: '#0F172A' }}>{doc?.title ?? 'Document'}</Text>
                 {'\n'}has been {decision === 'approved' ? 'approved and verified.' : 'rejected. The hospital will be notified.'}
               </Text>
               <TouchableOpacity style={dv.doneBtn} onPress={handleClose}>
@@ -417,10 +562,10 @@ function DocumentViewerModal({ visible, doc, hospitalName, onClose }: DocViewerP
             </View>
           ) : (
             <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
-              {/* ── Doc preview mockup ── */}
               <View style={dv.previewBg}>
-                <View style={dv.docPage}>
-                  <View style={dv.docTopRow}>
+
+                {/* <View style={dv.docPage}> */}
+                {/* <View style={dv.docTopRow}>
                     <View style={dv.docLogoBox}>
                       <Text style={dv.docLogoEmoji}>{doc?.icon ?? '📄'}</Text>
                     </View>
@@ -438,15 +583,29 @@ function DocumentViewerModal({ visible, doc, hospitalName, onClose }: DocViewerP
                       <Text style={dv.stampTxt}>OFFICIAL</Text>
                     </View>
                   </View>
-                </View>
+                </View> */}
+                {doc?.url ? (
+                  // ✅ Show actual document image
+                  <View style={dv.docImageWrap}>
+                    <Image
+                      source={{ uri: doc.url }}
+                      style={dv.docImage}
+                      resizeMode="contain"
+                    />
+                  </View>
+                ) : (
+                  // existing skeleton fallback
+                  <View style={dv.docPage}>
+                    {/* ...existing skeleton lines... */}
+                  </View>
+                )}
                 <Text style={dv.pageNote}>Page 1 of {doc?.pages ?? 1}</Text>
               </View>
 
-              {/* ── Doc details ── */}
               <View style={dv.body}>
                 <View style={dv.titleRow}>
                   <View style={{ flex: 1 }}>
-                    <Text style={dv.docTitle}>{doc?.title}</Text>
+                    <Text style={dv.docTitle}>{doc?.title ?? '—'}</Text>
                     <Text style={dv.docSubtitle}>{hospitalName}</Text>
                   </View>
                   {doc && (
@@ -460,30 +619,6 @@ function DocumentViewerModal({ visible, doc, hospitalName, onClose }: DocViewerP
 
                 {doc?.description ? <Text style={dv.description}>{doc.description}</Text> : null}
 
-                <View style={dv.metaGrid}>
-                  {[
-                    { label: 'Document No.', value: doc?.docNumber },
-                    { label: 'Issued To', value: doc?.issuedTo },
-                    { label: 'Issued By', value: doc?.issuedBy },
-                    { label: 'Issued Date', value: doc?.issuedDate },
-                    { label: 'Expiry Date', value: doc?.expiryDate },
-                    { label: 'Status Note', value: doc?.statusNote },
-                    { label: 'Pages', value: String(doc?.pages ?? '—') },
-                    { label: 'File Size', value: doc?.fileSize },
-                  ].map(({ label, value }, idx) => (
-                    <View
-                      key={label}
-                      style={[
-                        dv.metaCell,
-                        idx % 2 === 0 ? dv.metaCellLeft : dv.metaCellRight,
-                        idx >= 6 && dv.metaCellBottom,
-                      ]}
-                    >
-                      <Text style={dv.metaLabel}>{label}</Text>
-                      <Text style={dv.metaValue}>{value ?? '—'}</Text>
-                    </View>
-                  ))}
-                </View>
               </View>
             </ScrollView>
           )}
@@ -537,6 +672,14 @@ const dv = StyleSheet.create({
   resultSub: { fontSize: 13, color: '#64748B', textAlign: 'center', lineHeight: 22, marginBottom: 28 },
   doneBtn: { backgroundColor: '#0F172A', borderRadius: 12, paddingHorizontal: 36, paddingVertical: 13 },
   doneBtnTxt: { fontSize: 13, color: '#fff', fontWeight: '700' },
+  docImageWrap: {
+    width: '80%', borderRadius: 8, overflow: 'hidden',
+    borderWidth: 1, borderColor: '#E2E8F0',
+    backgroundColor: '#fff',
+  },
+  docImage: {
+    width: '100%', height: 300,
+  },
 });
 
 // ─── Hospital Review Modal ────────────────────────────────────────────────────
@@ -548,16 +691,13 @@ interface HospitalReviewModalProps {
   onReject: () => void;
 }
 
-function HospitalReviewModal({
-  visible, hospital, onClose, onApprove, onReject,
-}: HospitalReviewModalProps) {
+function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject }: HospitalReviewModalProps) {
   const [selectedDoc, setSelectedDoc] = useState<HospitalDocument | null>(null);
   const [docViewerVisible, setDocViewerVisible] = useState(false);
   const [detailData, setDetailData] = useState<Partial<Hospital> | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [actionDecision, setActionDecision] = useState<'approved' | 'rejected' | null>(null);
 
-  // Fetch full hospital details when modal opens
   useEffect(() => {
     if (visible && hospital?.id) {
       setDetailData(null);
@@ -583,13 +723,13 @@ function HospitalReviewModal({
 
   if (!hospital) return null;
 
-  const legalName = detailData?.legalName ?? hospital.legalName;
-  const currentAddress = detailData?.currentAddress ?? hospital.currentAddress;
-  const location = detailData?.location ?? hospital.location;
-  const staffCount = detailData?.staffCount ?? hospital.staffCount;
+  const legalName = safeStr(detailData?.legalName ?? hospital.legalName, 'Unknown Hospital');
+  const currentAddress = safeStr(detailData?.currentAddress ?? hospital.currentAddress);
+  const location = safeStr(detailData?.location ?? hospital.location);
+  const staffCount = safeStr(detailData?.staffCount ?? hospital.staffCount, '0');
   const docs = detailData?.documents ?? hospital.documents ?? [];
 
-  const isVerified = hospital.licenseStatus === 'VERIFIED';
+  const isVerified = hospital.licenseStatus === 'VERIFIED' || hospital.licenseStatus === 'AUTO_VERIFIED';
   const isRejected = hospital.licenseStatus === 'REJECTED';
 
   return (
@@ -603,7 +743,6 @@ function HospitalReviewModal({
             </TouchableOpacity>
 
             {actionDecision ? (
-              /* ── Result screen after approve/reject ── */
               <View style={rm.resultWrap}>
                 <View style={[rm.resultIcon, actionDecision === 'approved' ? rm.resultIconGreen : rm.resultIconRed]}>
                   <Text style={[rm.resultCheck, { color: actionDecision === 'approved' ? '#16A34A' : '#DC2626' }]}>
@@ -627,7 +766,6 @@ function HospitalReviewModal({
                 bounces={false}
                 contentContainerStyle={{ paddingBottom: 32 }}
               >
-                {/* ── Hospital Details Section ── */}
                 <View style={rm.section}>
                   <View style={rm.mainInfoCard}>
                     <View style={rm.infoRow}>
@@ -636,12 +774,26 @@ function HospitalReviewModal({
                     </View>
                     <View style={rm.twoColRow}>
                       <View style={rm.twoColCell}>
-                        <Text style={rm.detailFieldLabel}>CURRENT ADDRESS</Text>
+                        <Text style={rm.detailFieldLabel}>ADDRESS</Text>
                         <Text style={rm.detailFieldValue}>{currentAddress}</Text>
                       </View>
-                      <View style={rm.twoColCell}>
+                      {/* <View style={rm.twoColCell}>
                         <Text style={rm.detailFieldLabel}>LOCATION</Text>
                         <Text style={rm.detailFieldValue}>{location}</Text>
+                      </View> */}
+                      <View style={rm.twoColCell}>
+                        {(detailData?.servicesAvailable ?? []).length > 0 && (
+                          <View style={rm.infoRow}>
+                            <Text style={rm.detailFieldLabel}>SERVICES AVAILABLE</Text>
+                            <View style={rm.servicesWrap}>
+                              {(detailData?.servicesAvailable ?? []).map((s, i) => (
+                                <View key={i} style={rm.serviceChip}>
+                                  <Text style={rm.serviceChipTxt}>{s}</Text>
+                                </View>
+                              ))}
+                            </View>
+                          </View>
+                        )}
                       </View>
                     </View>
                     <View style={rm.twoColRow}>
@@ -659,7 +811,6 @@ function HospitalReviewModal({
                         </Text>
                       </View>
                     </View>
-                    {/* Status badge inside card */}
                     <View style={rm.infoRowLast}>
                       <Text style={rm.detailFieldLabel}>VERIFICATION STATUS</Text>
                       <LicenseBadge status={hospital.licenseStatus} />
@@ -667,7 +818,6 @@ function HospitalReviewModal({
                   </View>
                 </View>
 
-                {/* ── Documents Section ── */}
                 <View style={rm.section}>
                   <Text style={rm.sectionLabel}>LIST OF DOCUMENTS</Text>
 
@@ -683,7 +833,7 @@ function HospitalReviewModal({
                     </View>
                   ) : (
                     docs.map((doc, idx) => {
-                      const cfg = DOC_STATUS_CFG[doc.status];
+                      const cfg = DOC_STATUS_CFG[doc.status] ?? DOC_STATUS_CFG['PENDING'];
                       return (
                         <View
                           key={doc.id}
@@ -702,7 +852,10 @@ function HospitalReviewModal({
                             </View>
                           </View>
                           <Text style={rm.docTitle}>{doc.title}</Text>
-                          <Text style={[rm.docNote, { color: doc.status === 'REJECTED' ? '#DC2626' : doc.status === 'MANUAL_PENDING' ? '#2563EB' : '#64748B' }]}>
+                          <Text style={[rm.docNote, {
+                            color: doc.status === 'REJECTED' ? '#DC2626' :
+                              doc.status === 'MANUAL_PENDING' ? '#2563EB' : '#64748B',
+                          }]}>
                             {doc.statusNote}
                           </Text>
                           <TouchableOpacity
@@ -718,10 +871,8 @@ function HospitalReviewModal({
                   )}
                 </View>
 
-                {/* ── Footer Buttons — conditional on status ── */}
                 {!isVerified && (
                   <View style={dv.footer}>
-                    {/* Rejected hospitals: only Approve */}
                     {isRejected ? (
                       <TouchableOpacity
                         style={[dv.approveBtn, { flex: 1 }]}
@@ -731,7 +882,6 @@ function HospitalReviewModal({
                         <Text style={dv.approveBtnTxt}>✓   Approve Hospital</Text>
                       </TouchableOpacity>
                     ) : (
-                      // Pending hospitals: Reject + Approve
                       <>
                         <TouchableOpacity
                           style={dv.rejectBtn}
@@ -757,7 +907,6 @@ function HospitalReviewModal({
         </View>
       </Modal>
 
-      {/* ── Document Viewer (opens on top) ── */}
       <DocumentViewerModal
         visible={docViewerVisible}
         doc={selectedDoc}
@@ -802,7 +951,6 @@ const rm = StyleSheet.create({
   noDocsTxt: { fontSize: 13, color: '#94A3B8', fontWeight: '500' },
   loadingWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 24 },
   loadingTxt: { fontSize: 13, color: '#94A3B8' },
-  // Result screen
   resultWrap: { alignItems: 'center', paddingVertical: 52, paddingHorizontal: 24 },
   resultIcon: { width: 68, height: 68, borderRadius: 99, alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
   resultIconGreen: { backgroundColor: '#DCFCE7' },
@@ -811,14 +959,22 @@ const rm = StyleSheet.create({
   resultTitle: { fontSize: 20, fontWeight: '800', color: '#0F172A', marginBottom: 10 },
   resultSub: { fontSize: 13, color: '#64748B', textAlign: 'center', lineHeight: 22, marginBottom: 28 },
   doneBtn: { backgroundColor: '#0F172A', borderRadius: 12, paddingHorizontal: 36, paddingVertical: 13 },
+  servicesWrap: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6,
+  },
+  serviceChip: {
+    width: '30%',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE',
+    paddingHorizontal: 2, paddingVertical: 4, borderRadius: 99,
+  },
+  serviceChipTxt: {
+    fontSize: 8, fontWeight: '600', color: '#2563EB', textAlign: 'center',
+  },
   doneBtnTxt: { fontSize: 13, color: '#fff', fontWeight: '700' },
 });
 
 // ─── Action Menu ──────────────────────────────────────────────────────────────
-// Shows options based on the hospital's current verification status:
-//   VERIFIED  → Review only
-//   REJECTED  → Review + Approve
-//   PENDING   → Review + Verify + Reject
 interface ActionMenuProps {
   visible: boolean;
   onClose: () => void;
@@ -834,25 +990,21 @@ function ActionMenu({ visible, onClose, onReview, onVerify, onReject, anchorY, a
   const screenWidth = Dimensions.get('window').width;
   const left = Math.max(8, anchorX - MENU_WIDTH + 30);
 
-  const isVerified = hospitalStatus === 'VERIFIED';
+  const isVerified = hospitalStatus === 'VERIFIED' || hospitalStatus === 'AUTO_VERIFIED';
   const isRejected = hospitalStatus === 'REJECTED';
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <TouchableOpacity style={am.overlay} activeOpacity={1} onPress={onClose}>
         <View style={[am.menu, { top: anchorY + 8, left: Math.min(left, screenWidth - MENU_WIDTH - 8) }]}>
-
-          {/* Review — always shown */}
           <TouchableOpacity style={am.item} onPress={() => { onClose(); setTimeout(onReview, 100); }} activeOpacity={0.75}>
             <Text style={am.itemIcon}>📝</Text>
             <Text style={am.itemTxt}>Review</Text>
           </TouchableOpacity>
 
-          {/* VERIFIED: no more actions */}
           {!isVerified && (
             <>
               <View style={am.sep} />
-              {/* Approve — shown for both PENDING and REJECTED */}
               <TouchableOpacity style={am.item} onPress={() => { onVerify(); onClose(); }} activeOpacity={0.75}>
                 <Text style={am.itemIcon}>✅</Text>
                 <Text style={[am.itemTxt, { color: '#16A34A' }]}>
@@ -860,7 +1012,6 @@ function ActionMenu({ visible, onClose, onReview, onVerify, onReject, anchorY, a
                 </Text>
               </TouchableOpacity>
 
-              {/* Reject — only for PENDING (not for already-rejected) */}
               {!isRejected && (
                 <>
                   <View style={am.sep} />
@@ -872,7 +1023,6 @@ function ActionMenu({ visible, onClose, onReview, onVerify, onReject, anchorY, a
               )}
             </>
           )}
-
         </View>
       </TouchableOpacity>
     </Modal>
@@ -915,7 +1065,6 @@ function HospitalRow({ h, onDotsPress }: HospitalRowProps) {
         <Text style={hr.loc} numberOfLines={1}>{h.location}</Text>
       </View>
       <View style={[hr.cell, hr.colStaff, { alignItems: 'center' }]}>
-        {/* Show staff range string rather than a parsed number */}
         <Text style={hr.staffNum} numberOfLines={1}>{h.staffCount}</Text>
         <Text style={hr.staffLbl}>{h.staffLabel}</Text>
       </View>
@@ -937,10 +1086,10 @@ function HospitalRow({ h, onDotsPress }: HospitalRowProps) {
 const hr = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 20, borderBottomWidth: 1, borderBottomColor: '#F1F5F9', backgroundColor: '#fff' },
   cell: { overflow: 'hidden' },
-  colName: { flex: 2.7 },
-  colLoc: { flex: 1 },
+  colName: { flex: 2 },
+  colLoc: { flex: 1.8 },
   colStaff: { flex: 1 },
-  colDuty: { flex: 2 },
+  colDuty: { flex: 2.2 },
   colStatus: { flex: 1.6 },
   colAction: { flex: 0.6, minWidth: 60 },
   iconBox: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
@@ -1003,7 +1152,7 @@ function SkeletonRow() {
 const sk = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 20, borderBottomWidth: 1, borderBottomColor: '#F1F5F9', backgroundColor: '#fff' },
   cell: { overflow: 'hidden' },
-  colName: { flex: 2.5 },
+  colName: { flex: 2 },
   colLoc: { flex: 1.8 },
   colStaff: { flex: 1 },
   colDuty: { flex: 2.2 },
@@ -1050,8 +1199,6 @@ const ts = StyleSheet.create({
   txt: { fontSize: 12, fontWeight: '600', color: '#334155', flex: 1 },
 });
 
-
-
 // ─── Reject Reason Modal ──────────────────────────────────────────────────────
 interface RejectReasonModalProps {
   visible: boolean;
@@ -1077,21 +1224,15 @@ function RejectReasonModal({ visible, hospitalName, onConfirm, onCancel }: Rejec
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleCancel}>
       <View style={rr.overlay}>
         <View style={rr.sheet}>
-
-          {/* Icon */}
           <View style={rr.iconCircle}>
             <Text style={rr.iconEmoji}>🚫</Text>
           </View>
-
-          {/* Title */}
           <Text style={rr.title}>Reject Hospital</Text>
           <Text style={rr.sub}>
             You are about to reject{' '}
             <Text style={rr.subBold}>{hospitalName}</Text>.{'\n'}
             Please provide a rejection reason.
           </Text>
-
-          {/* Input */}
           <View style={rr.inputWrap}>
             <TextInput
               style={rr.input}
@@ -1108,8 +1249,6 @@ function RejectReasonModal({ visible, hospitalName, onConfirm, onCancel }: Rejec
               <Text style={rr.charCount}>{reason.length} chars</Text>
             )}
           </View>
-
-          {/* Buttons */}
           <View style={rr.btnRow}>
             <TouchableOpacity style={rr.cancelBtn} onPress={handleCancel} activeOpacity={0.75}>
               <Text style={rr.cancelTxt}>Cancel</Text>
@@ -1123,13 +1262,11 @@ function RejectReasonModal({ visible, hospitalName, onConfirm, onCancel }: Rejec
               <Text style={rr.confirmTxt}>✕  Confirm Reject</Text>
             </TouchableOpacity>
           </View>
-
         </View>
       </View>
     </Modal>
   );
 }
-
 const rr = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.5)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
   sheet: { backgroundColor: '#fff', borderRadius: 20, padding: 24, width: '100%', maxWidth: 420, alignItems: 'center', ...Platform.select({ ios: { shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 24, shadowOffset: { width: 0, height: 8 } }, android: { elevation: 12 } }) },
@@ -1151,13 +1288,9 @@ const rr = StyleSheet.create({
 
 // ─── Stats Row ────────────────────────────────────────────────────────────────
 interface StatCardProps {
-  icon: string;
-  iconBg: string;
-  iconColor: string;
-  badge: string;
-  badgeColor: string;
-  value: string;
-  label: string;
+  icon: string; iconBg: string; iconColor: string;
+  badge: string; badgeColor: string;
+  value: string; label: string;
 }
 function StatCard({ icon, iconBg, iconColor, badge, badgeColor, value, label }: StatCardProps) {
   return (
@@ -1174,61 +1307,43 @@ function StatCard({ icon, iconBg, iconColor, badge, badgeColor, value, label }: 
   );
 }
 const sc = StyleSheet.create({
-  card: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E9ECF0',
-    padding: 14,
-    gap: 4,
-  },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  iconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  card: { flex: 1, backgroundColor: '#fff', borderRadius: 14, borderWidth: 1, borderColor: '#E9ECF0', padding: 14, gap: 4 },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  iconBox: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   iconTxt: { fontSize: 18 },
   badge: { fontSize: 11, fontWeight: '700' },
   value: { fontSize: 26, fontWeight: '800', color: '#0F172A', lineHeight: 30 },
   label: { fontSize: 11, fontWeight: '600', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5 },
 });
 
-
-
 // ─── Main Export ──────────────────────────────────────────────────────────────
 export default function HospitalListSection() {
-  // ── Filter draft state (what's typed but not yet applied) ──────────────────
+  // ── Draft filter state ────────────────────────────────────────────────────
   const [searchDraft, setSearchDraft] = useState('');
   const [statusDraft, setStatusDraft] = useState('All Statuses');
   const [cityDraft, setCityDraft] = useState('All Cities');
 
-  // ── Applied filter state (used for chip display & refetch on clear) ────────
+  // ── Applied filter state ──────────────────────────────────────────────────
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('All Statuses');
   const [city, setCity] = useState('All Cities');
   const [currentPage, setCurrentPage] = useState(1);
 
-  // ── Data ───────────────────────────────────────────────────────────────────
+  // ── Status tab ────────────────────────────────────────────────────────────
+  const [activeTab, setActiveTab] = useState<TabKey>('ALL');
+
+  // ── Data ──────────────────────────────────────────────────────────────────
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [allHospitals, setAllHospitals] = useState<Hospital[]>([]); // full list for tab counts
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [activeHospital, setActiveHospital] = useState<Hospital | null>(null);
 
-  // ── Modal/menu visibility ──────────────────────────────────────────────────
+  // ── Modal / menu ──────────────────────────────────────────────────────────
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuAnchorY, setMenuAnchorY] = useState(0);
   const [menuAnchorX, setMenuAnchorX] = useState(0);
   const [reviewVisible, setReviewVisible] = useState(false);
-
   const [rejectReasonVisible, setRejectReasonVisible] = useState(false);
   const [pendingRejectTarget, setPendingRejectTarget] = useState<Hospital | null>(null);
 
@@ -1247,29 +1362,54 @@ export default function HospitalListSection() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // ── Fetch with server-side filters ────────────────────────────────────────
+  // ── Tab counts derived from allHospitals ──────────────────────────────────
+  const tabCounts = useCallback((): Partial<Record<TabKey, number>> => {
+    const counts: Partial<Record<TabKey, number>> = {};
+    counts['ALL'] = allHospitals.length;
+    for (const tab of STATUS_TABS) {
+      if (tab.key !== 'ALL') {
+        const c = allHospitals.filter(h => h.licenseStatus === tab.key).length;
+        counts[tab.key] = c;
+      }
+    }
+    return counts;
+  }, [allHospitals]);
+
+  // ── Fetch ─────────────────────────────────────────────────────────────────
   const fetchHospitals = useCallback(async (opts?: {
-    search?: string; status?: string; city?: string; page?: number;
+    search?: string; status?: string; city?: string;
+    page?: number; tabStatus?: TabKey;
   }) => {
     try {
       setLoading(true);
       const params: Record<string, any> = {};
 
       if (opts?.search) params.search = opts.search;
-      if (opts?.status && opts.status !== 'All Statuses') params.status = toApiStatus(opts.status);
+
+      // Tab status overrides the dropdown status filter
+      const tabKey = opts?.tabStatus ?? activeTab;
+      if (tabKey && tabKey !== 'ALL') {
+        params.status = tabKey.toLowerCase().replace('_', '-');
+      } else if (opts?.status && opts.status !== 'All Statuses') {
+        params.status = toApiStatus(opts.status);
+      }
+
       if (opts?.city && opts.city !== 'All Cities') params.city = opts.city;
       if (opts?.page && opts.page > 1) params.page = opts.page;
 
       const res = await adminAPI.getHospitals(params);
-
-      // API shape: { success, hospitals: [...], pagination: {...} }
       const list = res?.data?.hospitals ?? res?.hospitals ?? res?.data ?? [];
-      const mapped: Hospital[] = list.map(mapHospital);
-      // Compute stats from the mapped list
-      const totalStaff = mapped.reduce((sum, h) => sum + h.totalStaff, 0);
-      const pendingVerification = mapped.filter(h => h.licenseStatus === 'PENDING').length;
-      const approvedClinicians = mapped.filter(h => h.licenseStatus === 'VERIFIED').length;
-      const onDuty = mapped.reduce((sum, h) => sum + h.occupiedDuties, 0);
+      const mapped: Hospital[] = Array.isArray(list) ? list.map(mapHospital) : [];
+
+      // Keep a full unfiltered copy for tab counts (only on initial / no-tab fetch)
+      if (!opts?.tabStatus && (!opts?.status || opts.status === 'All Statuses')) {
+        setAllHospitals(mapped);
+      }
+
+      const totalStaff = mapped.reduce((sum, h) => sum + (h.totalStaff || 0), 0);
+      const pendingVerification = mapped.filter(h => h.licenseStatus === 'PENDING' || h.licenseStatus === 'MANUAL_PENDING').length;
+      const approvedClinicians = mapped.filter(h => h.licenseStatus === 'VERIFIED' || h.licenseStatus === 'AUTO_VERIFIED').length;
+      const onDuty = mapped.reduce((sum, h) => sum + (h.occupiedDuties || 0), 0);
       setStats({ totalStaff, pendingVerification, approvedClinicians, onDuty });
       setHospitals(mapped);
       setPagination(res?.data?.pagination ?? res?.pagination ?? null);
@@ -1278,45 +1418,52 @@ export default function HospitalListSection() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeTab]);
 
   // Initial load
   useEffect(() => { fetchHospitals(); }, [fetchHospitals]);
 
+  // Refetch when tab changes
+  const handleTabSelect = (tab: TabKey) => {
+    setActiveTab(tab);
+    setCurrentPage(1);
+    fetchHospitals({ search, status, city, page: 1, tabStatus: tab });
+  };
+
   const hasActiveFilters = search !== '' || status !== 'All Statuses' || city !== 'All Cities';
 
-  // ── Apply / Clear ──────────────────────────────────────────────────────────
+  // ── Apply / Clear ─────────────────────────────────────────────────────────
   const handleApply = () => {
     setSearch(searchDraft);
     setStatus(statusDraft);
     setCity(cityDraft);
     setCurrentPage(1);
-    fetchHospitals({ search: searchDraft, status: statusDraft, city: cityDraft, page: 1 });
+    fetchHospitals({ search: searchDraft, status: statusDraft, city: cityDraft, page: 1, tabStatus: activeTab });
   };
 
   const handleClear = () => {
     setSearchDraft(''); setStatusDraft('All Statuses'); setCityDraft('All Cities');
     setSearch(''); setStatus('All Statuses'); setCity('All Cities');
     setCurrentPage(1);
-    fetchHospitals({});
+    fetchHospitals({ tabStatus: activeTab });
   };
 
-  // ── Pagination ─────────────────────────────────────────────────────────────
+  // ── Pagination ────────────────────────────────────────────────────────────
   const handlePrevPage = () => {
     if (!pagination?.hasPrevPage) return;
     const page = currentPage - 1;
     setCurrentPage(page);
-    fetchHospitals({ search, status, city, page });
+    fetchHospitals({ search, status, city, page, tabStatus: activeTab });
   };
 
   const handleNextPage = () => {
     if (!pagination?.hasNextPage) return;
     const page = currentPage + 1;
     setCurrentPage(page);
-    fetchHospitals({ search, status, city, page });
+    fetchHospitals({ search, status, city, page, tabStatus: activeTab });
   };
 
-  // ── Action menu ────────────────────────────────────────────────────────────
+  // ── Action menu ───────────────────────────────────────────────────────────
   const handleDotsPress = (h: Hospital, pageY: number, pageX: number) => {
     setActiveHospital(h);
     setMenuAnchorY(pageY);
@@ -1327,43 +1474,28 @@ export default function HospitalListSection() {
   const handleVerify = async (h: Hospital | null = activeHospital) => {
     if (!h) return;
     try {
-      // PATCH /api/admin/hospitals/:id/verify
       await adminAPI.verifyHospital(h.id);
       showToast(`${h.name} has been verified`, 'success');
-      fetchHospitals({ search, status, city, page: currentPage });
+      fetchHospitals({ search, status, city, page: currentPage, tabStatus: activeTab });
     } catch {
       showToast('Verification failed', 'error');
     }
   };
 
-  // const handleReject = async (h: Hospital | null = activeHospital, reason = 'Invalid details') => {
-  //   if (!h) return;
-  //   try {
-  //     // PATCH /api/admin/hospitals/:id/reject  (body: { rejectionReason })
-  //     await adminAPI.rejectHospital(h.id, reason);
-  //     showToast(`${h.name} has been rejected`, 'error');
-  //     fetchHospitals({ search, status, city, page: currentPage });
-  //   } catch {
-  //     showToast('Rejection failed', 'error');
-  //   }
-  // };
-
-  // Step 1 — show the reason modal
   const handleReject = (h: Hospital | null = activeHospital) => {
     if (!h) return;
     setPendingRejectTarget(h);
-    setMenuVisible(false);   // close action menu if open
+    setMenuVisible(false);
     setRejectReasonVisible(true);
   };
 
-  // Step 2 — called when user confirms with a reason
   const handleConfirmReject = async (reason: string) => {
     setRejectReasonVisible(false);
     if (!pendingRejectTarget) return;
     try {
       await adminAPI.rejectHospital(pendingRejectTarget.id, reason);
       showToast(`${pendingRejectTarget.name} has been rejected`, 'error');
-      fetchHospitals({ search, status, city, page: currentPage });
+      fetchHospitals({ search, status, city, page: currentPage, tabStatus: activeTab });
     } catch {
       showToast('Rejection failed', 'error');
     } finally {
@@ -1374,7 +1506,7 @@ export default function HospitalListSection() {
   const totalPages = pagination?.totalPages ?? 1;
   const totalItems = pagination?.totalItems ?? hospitals.length;
   const displayCount = hospitals.length;
-
+  const counts = tabCounts();
 
   return (
     <View style={s.card}>
@@ -1413,7 +1545,7 @@ export default function HospitalListSection() {
             <View style={s.chip}>
               <Text style={s.chipTxt}>"{search}"</Text>
               <TouchableOpacity
-                onPress={() => { setSearch(''); setSearchDraft(''); fetchHospitals({ status, city, page: 1 }); }}
+                onPress={() => { setSearch(''); setSearchDraft(''); fetchHospitals({ status, city, page: 1, tabStatus: activeTab }); }}
                 hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
               >
                 <Text style={s.chipX}>✕</Text>
@@ -1424,7 +1556,7 @@ export default function HospitalListSection() {
             <View style={s.chip}>
               <Text style={s.chipTxt}>{status}</Text>
               <TouchableOpacity
-                onPress={() => { setStatus('All Statuses'); setStatusDraft('All Statuses'); fetchHospitals({ search, city, page: 1 }); }}
+                onPress={() => { setStatus('All Statuses'); setStatusDraft('All Statuses'); fetchHospitals({ search, city, page: 1, tabStatus: activeTab }); }}
                 hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
               >
                 <Text style={s.chipX}>✕</Text>
@@ -1435,7 +1567,7 @@ export default function HospitalListSection() {
             <View style={s.chip}>
               <Text style={s.chipTxt}>{city}</Text>
               <TouchableOpacity
-                onPress={() => { setCity('All Cities'); setCityDraft('All Cities'); fetchHospitals({ search, status, page: 1 }); }}
+                onPress={() => { setCity('All Cities'); setCityDraft('All Cities'); fetchHospitals({ search, status, page: 1, tabStatus: activeTab }); }}
                 hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
               >
                 <Text style={s.chipX}>✕</Text>
@@ -1448,45 +1580,36 @@ export default function HospitalListSection() {
       {/* ── Stat Cards ── */}
       <View style={s.statsRow}>
         <StatCard
-          icon="🛡️"
-          iconBg="#EEF2FF"
-          iconColor="#4F46E5"
-          badge="+12%"
-          badgeColor="#16A34A"
-          value={stats.totalStaff.toLocaleString()}
-          label="Total Staff"
+          icon="🛡️" iconBg="#EEF2FF" iconColor="#4F46E5"
+          badge="+12%" badgeColor="#16A34A"
+          value={stats.totalStaff.toLocaleString()} label="Total Staff"
         />
         <StatCard
-          icon="⚠️"
-          iconBg="#FEF3C7"
-          iconColor="#D97706"
-          badge="Action Req."
-          badgeColor="#D97706"
-          value={String(stats.pendingVerification)}
-          label="Pending Verification"
+          icon="⚠️" iconBg="#FEF3C7" iconColor="#D97706"
+          badge="Action Req." badgeColor="#D97706"
+          value={String(stats.pendingVerification)} label="Pending Verification"
         />
         <StatCard
-          icon="🖥️"
-          iconBg="#ECFDF5"
-          iconColor="#16A34A"
-          badge="98% Verified"
-          badgeColor="#16A34A"
-          value={stats.approvedClinicians.toLocaleString()}
-          label="Approved Clinicians"
+          icon="🖥️" iconBg="#ECFDF5" iconColor="#16A34A"
+          badge="98% Verified" badgeColor="#16A34A"
+          value={stats.approvedClinicians.toLocaleString()} label="Approved Clinicians"
         />
         <StatCard
-          icon="🔖"
-          iconBg="#F5F3FF"
-          iconColor="#7C3AED"
-          badge="Active"
-          badgeColor="#7C3AED"
-          value={String(stats.onDuty)}
-          label="On-Duty Currently"
+          icon="🔖" iconBg="#F5F3FF" iconColor="#7C3AED"
+          badge="Active" badgeColor="#7C3AED"
+          value={String(stats.onDuty)} label="On-Duty Currently"
         />
       </View>
 
       {/* ── Toast ── */}
       {toast && <Toast message={toast.msg} type={toast.type} />}
+
+      {/* ── Status Tab Bar ── */}
+      <StatusTabBar
+        activeTab={activeTab}
+        counts={counts}
+        onSelect={handleTabSelect}
+      />
 
       {/* ── Table ── */}
       {loading ? (
@@ -1593,10 +1716,5 @@ const s = StyleSheet.create({
   navActive: { borderColor: '#BFDBFE' },
   navDisabled: { opacity: 0.4 },
   navTxt: { fontSize: 15, color: '#64748B', lineHeight: 20 },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingBottom: 14,
-  },
+  statsRow: { flexDirection: 'row', gap: 12, paddingHorizontal: 16, paddingBottom: 14 },
 });

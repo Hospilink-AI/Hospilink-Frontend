@@ -10,7 +10,7 @@ import {
 import RangeDropdown from '../../component/cards/hospital/live-tracking/RangeDropdown';
 import { dutyAPI } from '../../service/api';
 import { DoctorWithDistance, Hospital, NearbyStaffResponse, RangeKm } from '../../types/duty';
-import { adaptStaffToDoctor } from '../../utils/distanceDecoder';
+import { adaptStaffToDoctor , jitterDuplicates} from '../../utils/distanceDecoder';
 
 const LiveMap = React.lazy(
   () => import('../../component/cards/hospital/live-tracking/LiveMap.web')
@@ -67,7 +67,8 @@ export default function MapScreen() {
             address: data.hospital.name,
           },
         };
-        const doctorsData = data.staff.map(adaptStaffToDoctor);
+        // const doctorsData = data.staff.map(adaptStaffToDoctor);
+        const doctorsData = jitterDuplicates(data.staff.map(adaptStaffToDoctor));
 
         cache.data = { hospital: hospitalData, doctors: doctorsData };
         cache.range = selectedRange;
