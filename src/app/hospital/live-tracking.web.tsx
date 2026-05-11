@@ -1,16 +1,16 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Platform,
-    StyleSheet,
-    Text,
-    View
+  ActivityIndicator,
+  Platform,
+  StyleSheet,
+  Text,
+  View
 } from 'react-native';
 
 import RangeDropdown from '../../component/cards/hospital/live-tracking/RangeDropdown';
 import { dutyAPI } from '../../service/api';
 import { DoctorWithDistance, Hospital, NearbyStaffResponse, RangeKm } from '../../types/duty';
-import { adaptStaffToDoctor , jitterDuplicates} from '../../utils/distanceDecoder';
+import { adaptStaffToDoctor, jitterDuplicates } from '../../utils/distanceDecoder';
 
 const LiveMap = React.lazy(
   () => import('../../component/cards/hospital/live-tracking/LiveMap.web')
@@ -25,6 +25,7 @@ const cache: {
 
 export default function MapScreen() {
   const [selectedRange, setSelectedRange] = useState<RangeKm>(5);
+  const [selectedRole, setSelectedRole] = useState('');
   const [doctors, setDoctors] = useState<DoctorWithDistance[]>([]);
   const [hospital, setHospital] = useState<Hospital | null>(null);
   const [loading, setLoading] = useState(false);
@@ -32,12 +33,34 @@ export default function MapScreen() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);//this
   const [isSatellite, setIsSatellite] = useState(false);
 
+  const ROLES = [
+    { label: 'All Roles', value: '' },
+    { label: 'RMO', value: 'rmo' },
+    { label: 'DMO', value: 'dmo' },
+    { label: 'General Physician', value: 'general_physician' },
+    { label: 'Intensivist / ICU', value: 'intensivist' },
+    { label: 'Emergency Doctor', value: 'emergency_doctor' },
+    { label: 'Anesthetist', value: 'anesthetist' },
+    { label: 'Pediatrician', value: 'pediatrician' },
+    { label: 'Gynecologist', value: 'gynecologist' },
+    { label: 'Orthopedic Surgeon', value: 'orthopedic_surgeon' },
+    { label: 'General Surgeon', value: 'general_surgeon' },
+    { label: 'Radiologist', value: 'radiologist' },
+    { label: 'Staff Nurse', value: 'staff_nurse' },
+    { label: 'ICU Nurse', value: 'icu_nurse' },
+    { label: 'Emergency Nurse', value: 'emergency_nurse' },
+    { label: 'Lab Technician', value: 'lab_technician' },
+    { label: 'Ward Boy', value: 'ward_boy' },
+    { label: 'Pharmacist', value: 'pharmacist' },
+    { label: 'Ambulance Driver', value: 'ambulance_driver' },
+  ];
+
   const handleRefresh = () => {
-  cache.data = null;
-  cache.range = null;
-  cache.fetching = false;
-  setRefreshTrigger(prev => prev + 1);
-};
+    cache.data = null;
+    cache.range = null;
+    cache.fetching = false;
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   useEffect(() => {
     if (cache.fetching) return;
@@ -55,8 +78,23 @@ export default function MapScreen() {
 
     const load = async () => {
       try {
-        const data: NearbyStaffResponse = await dutyAPI.getNearbyStaff(selectedRange);
+        // const data: NearbyStaffResponse = await dutyAPI.getNearbyStaff(selectedRange);
+        // if (cancelled) return;
+        const res = await dutyAPI.getNearbyStaff(selectedRange, selectedRole); // ✅ pass role
         if (cancelled) return;
+
+        const data = res.data;
+
+        // const hospitalData: Hospital = {
+        //   id: 'hospital-main',
+        //   name: data.hospital.name,
+        //   location: {
+        //     latitude: data.hospital.location.latitude,
+        //     longitude: data.hospital.location.longitude,
+        //     address: data.hospital.name,
+        //   },
+        // };
+
 
         const hospitalData: Hospital = {
           id: 'hospital-main',
@@ -64,11 +102,14 @@ export default function MapScreen() {
           location: {
             latitude: data.hospital.location.latitude,
             longitude: data.hospital.location.longitude,
-            address: data.hospital.name,
+            address: data.hospital.hospital?.address?.currentAddress ?? data.hospital.name,
           },
         };
         // const doctorsData = data.staff.map(adaptStaffToDoctor);
-        const doctorsData = jitterDuplicates(data.staff.map(adaptStaffToDoctor));
+        // const doctorsData = jitterDuplicates(data.staff.map(adaptStaffToDoctor));
+        const doctorsData = jitterDuplicates(
+  data.staff.map(adaptStaffToDoctor)
+) as DoctorWithDistance[]; // ✅ explicit cast
 
         cache.data = { hospital: hospitalData, doctors: doctorsData };
         cache.range = selectedRange;
@@ -90,19 +131,45 @@ export default function MapScreen() {
       cancelled = true;
       cache.fetching = false;
     };
-  }, [selectedRange,refreshTrigger]);
+  }, [selectedRange, selectedRole, refreshTrigger]);
 
   const availableCount = doctors.filter((d) => d.available).length;
 
   return (
-   
+
     <View style={styles.screen}>
       {/* Map area */}
       <View style={styles.mapWrapper}>
+        {/* <View style={styles.dropdownOverlay}>
+          <RangeDropdown selectedRange={selectedRange} onRangeChange={setSelectedRange} />
+        </View> */}
         <View style={styles.dropdownOverlay}>
+          {/* Role filter */}
+          <View style={styles.roleDropdownWrapper}>
+            <select
+              value={selectedRole}
+              onChange={(e: any) => {
+                cache.data = null;
+                cache.range = null;
+                setSelectedRole(e.target.value);
+              }}
+              style={{
+                padding: '8px 12px', borderRadius: 8,
+                border: '1px solid #E5E7EB', fontSize: 13,
+                fontWeight: '600', backgroundColor: '#fff',
+                color: '#374151', cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                marginBottom: 8,
+                width: '100%',
+              }}
+            >
+              {ROLES.map(r => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </select>
+          </View>
           <RangeDropdown selectedRange={selectedRange} onRangeChange={setSelectedRange} />
         </View>
-
         {loading && (
           <View style={styles.loadingOverlay}>
             <ActivityIndicator size="large" color="#1565C0" />
@@ -112,7 +179,7 @@ export default function MapScreen() {
 
         {hospital ? (
           <Suspense fallback={<View style={styles.mapLoading} />}>
-            <LiveMap hospital={hospital} doctors={doctors} rangeKm={selectedRange}  onRefresh={handleRefresh} isSatellite={isSatellite}  onToggleSatellite={() => setIsSatellite(v => !v)}/>
+            <LiveMap hospital={hospital} doctors={doctors} rangeKm={selectedRange} onRefresh={handleRefresh} isSatellite={isSatellite} onToggleSatellite={() => setIsSatellite(v => !v)} />
           </Suspense>
         ) : !loading ? (
           <View style={styles.mapLoading}>
@@ -128,7 +195,7 @@ export default function MapScreen() {
               </View>
               <View style={styles.hospitalTextBox}>
                 <Text style={styles.hospitalName}>{hospital.name}</Text>
-                
+
               </View>
               <View style={styles.liveBadge}>
                 <View style={styles.liveDot} />
@@ -140,28 +207,28 @@ export default function MapScreen() {
       </View>
 
       {/* Scrollable section */}
-      
-        <View style={styles.legend}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#E53935' }]} />
-            <Text style={styles.legendLabel}>Hospital</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#43A047' }]} />
-            <Text style={styles.legendLabel}>Available</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#FB8C00' }]} />
-            <Text style={styles.legendLabel}>Busy</Text>
-          </View>
-          <Text style={styles.countText}>
-            {availableCount} available · {doctors.length} total in {selectedRange} km
-          </Text>
+
+      <View style={styles.legend}>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: '#E53935' }]} />
+          <Text style={styles.legendLabel}>Hospital</Text>
         </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: '#43A047' }]} />
+          <Text style={styles.legendLabel}>Available</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: '#FB8C00' }]} />
+          <Text style={styles.legendLabel}>Busy</Text>
+        </View>
+        <Text style={styles.countText}>
+          {availableCount} available · {doctors.length} total in {selectedRange} km
+        </Text>
+      </View>
 
-        {error && <Text style={styles.errorText}>{error}</Text>}
+      {error && <Text style={styles.errorText}>{error}</Text>}
 
-        {/* <View style={styles.listSection}>
+      {/* <View style={styles.listSection}>
           <Text style={styles.listTitle}>Staff Nearby</Text>
           {loading ? (
             <ActivityIndicator size="small" color="#1565C0" style={{ marginTop: 20 }} />
@@ -173,14 +240,14 @@ export default function MapScreen() {
             doctors.map((doc) => <DoctorCard key={doc.id} doctor={doc} />)
           )}
         </View> */}
-      
+
     </View>
-   
+
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#F5F7FA' ,paddingRight:3},
+  screen: { flex: 1, backgroundColor: '#F5F7FA', paddingRight: 3 },
   mapWrapper: {
     height: 'calc(100vh - 64px)' as any,
     width: '100%',
@@ -215,6 +282,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
+  roleDropdownWrapper: { marginBottom: 4, minWidth: 180 },
   hospitalEmoji: { fontSize: 20 },
   hospitalTextBox: { flex: 1 },
   hospitalName: { fontSize: 13, fontWeight: '700', color: '#FFFFFF', letterSpacing: 0.2 },

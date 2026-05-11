@@ -2,6 +2,7 @@
 
 import { Doctor, DoctorWithDistance, Hospital, RangeKm } from '../types/duty';
 import { StaffMember } from '../types/duty'; 
+import { NearbyStaffMember } from '../types/duty';
 /**
  * Haversine formula — returns straight-line distance in km
  * between two lat/lng coordinates.
@@ -33,16 +34,20 @@ export function filterDoctorsByRange(
   rangeKm: RangeKm,
 ): DoctorWithDistance[] {
   return doctors
-    .map((doc) => ({
+  .map((doc) => {
+    const distanceKm = getDistanceKm(
+      hospital.location.latitude,
+      hospital.location.longitude,
+      doc.location.latitude,
+      doc.location.longitude,
+    );
+    return {
       ...doc,
-      distanceKm: getDistanceKm(
-        hospital.location.latitude,
-        hospital.location.longitude,
-        doc.location.latitude,
-        doc.location.longitude,
-      ),
-    }))
-    .filter((doc) => doc.distanceKm <= rangeKm)
+      distanceKm,
+      distanceText: `${distanceKm.toFixed(1)} km`, // ✅ added
+    };
+  })
+  .filter((doc) => doc.distanceKm <= rangeKm)
     .sort((a, b) => a.distanceKm - b.distanceKm); // closest first
 }
 
@@ -58,46 +63,27 @@ export function getInitials(name: string): string {
 }
 
 
-
-export function adaptStaffToDoctor(staff: StaffMember): DoctorWithDistance {
-  // return {
-  //   id: staff._id,
-  //   // name: staff.fullName,
-  //   name: staff.fullName ?? staff.user?.name ?? 'Unknown',
-  //   specialty: formatJobRole(staff.jobRole),
-  //   qualification: '',
-  //   experience: 0,
-  //   rating: staff.averageRating ?? 0,
-  //   reviewCount: 0,
-  //   available: staff.isAvailable,
-  //   consultationFee: 0,
-  //   phone: staff.phoneNumber,
-  //   distanceKm: staff.distance,  // ✅ API already sends km directly
-  //   email:staff.user.email,
-  //   location: {
-  //     latitude: staff.location.latitude,
-  //     longitude: staff.location.longitude,
-  //     address: `${staff.area}, ${staff.city}`,
-  //   },
-  // };
+export function adaptStaffToDoctor(staff: NearbyStaffMember): DoctorWithDistance {
   return {
-    id: staff._id,
-    name: staff.fullName ?? staff.user?.name ?? 'Unknown',
-    specialty: formatJobRole(staff.jobRole),
-    qualification: '',
-    experience: 0,
-    rating: staff.averageRating ?? 0,
-    reviewCount: 0,
-    available: staff.isAvailable,
-    consultationFee: 0,
-    phone: staff.phoneNumber,
+    id: staff.id,
+    name: staff.name,
+    specialty: staff.role,
+    phone: staff.phone,
+    email: staff.email ?? '',
+    available: staff.isAvailable === true,
     distanceKm: staff.distance,
-    email: staff.user?.email ??  '',  // ✅ safe access
+    distanceText: staff.distanceText,
     location: {
       latitude: staff.location.latitude,
       longitude: staff.location.longitude,
-      address: `${staff.city}, ${staff.state}`,     // ✅ staff.area doesn't exist on type
+      address: staff.address?.currentAddress ?? '',
     },
+    // Doctor base fields — set defaults since API doesn't return these
+    qualification: '',
+    experience: 0,
+    rating: staff.rating,
+    reviewCount: 0,
+    consultationFee: 0,
   };
 }
 
@@ -114,28 +100,59 @@ function formatJobRole(role: string): string {
  * Slightly offset markers sharing identical coordinates
  * so they fan out and stay individually clickable on the map.
  */
-export function jitterDuplicates(
-  doctors: DoctorWithDistance[],
-): DoctorWithDistance[] {
-  const seen = new Map<string, number>(); // "lat,lng" → count
+// export function jitterDuplicates(
+//   doctors: DoctorWithDistance[],
+// ): DoctorWithDistance[] {
+//   const seen = new Map<string, number>(); // "lat,lng" → count
 
-  return doctors.map((doc) => {
-    const key = `${doc.location.latitude.toFixed(6)},${doc.location.longitude.toFixed(6)}`;
+//   return doctors.map((doc) => {
+//     const key = `${doc.location.latitude.toFixed(6)},${doc.location.longitude.toFixed(6)}`;
+//     const count = seen.get(key) ?? 0;
+//     seen.set(key, count + 1);
+
+//     if (count === 0) return doc; // first occurrence — no change
+
+//     // Spiral offset: ~15–40 m per step, invisible at city zoom
+//     const angle = (count * 137.5 * Math.PI) / 180; // golden angle spread
+//     const radius = 0.00015 * count;                 // ~15 m per ring
+
+//     return {
+//       ...doc,
+//       location: {
+//         ...doc.location,
+//         latitude: doc.location.latitude + radius * Math.cos(angle),
+//         longitude: doc.location.longitude + radius * Math.sin(angle),
+//       },
+//     };
+//   });
+// }
+
+
+// utils/distanceDecoder.ts
+
+type WithLocation = {
+  location: { latitude: number; longitude: number };
+};
+
+export function jitterDuplicates<T extends WithLocation>(items: T[]): T[] {
+  const seen = new Map<string, number>();
+
+  return items.map((item) => {
+    const key = `${item.location.latitude.toFixed(6)},${item.location.longitude.toFixed(6)}`;
     const count = seen.get(key) ?? 0;
     seen.set(key, count + 1);
 
-    if (count === 0) return doc; // first occurrence — no change
+    if (count === 0) return item;
 
-    // Spiral offset: ~15–40 m per step, invisible at city zoom
-    const angle = (count * 137.5 * Math.PI) / 180; // golden angle spread
-    const radius = 0.00015 * count;                 // ~15 m per ring
+    const angle = (count * 137.5 * Math.PI) / 180;
+    const radius = 0.00015 * count;
 
     return {
-      ...doc,
+      ...item,
       location: {
-        ...doc.location,
-        latitude: doc.location.latitude + radius * Math.cos(angle),
-        longitude: doc.location.longitude + radius * Math.sin(angle),
+        ...item.location,
+        latitude:  item.location.latitude  + radius * Math.cos(angle),
+        longitude: item.location.longitude + radius * Math.sin(angle),
       },
     };
   });

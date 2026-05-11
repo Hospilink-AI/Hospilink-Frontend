@@ -250,13 +250,7 @@ function StatusTabBar({ activeTab, counts, onSelect }: StatusTabBarProps) {
               <Text style={[stb.tabTxt, isActive && stb.tabTxtActive]}>
                 {tab.label}
               </Text>
-              {count !== undefined && count > 0 && (
-                <View style={[stb.badge, isActive && stb.badgeActive]}>
-                  <Text style={[stb.badgeTxt, isActive && stb.badgeTxtActive]}>
-                    {count}
-                  </Text>
-                </View>
-              )}
+             
             </TouchableOpacity>
           );
         })}

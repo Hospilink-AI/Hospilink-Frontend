@@ -145,9 +145,9 @@ export const authAPI = {
     return response.data;
   },
 
-  adminLogout:async () => {
-      const response = await api.post('api/admin/logout')
-      return response.data;
+  adminLogout: async () => {
+    const response = await api.post('api/admin/logout')
+    return response.data;
   },
 
   // Forgot Password — sends reset link to email
@@ -165,13 +165,13 @@ export const authAPI = {
   // },
 
   resetPassword: async (token, newPassword, confirmPassword) => {
-  const response = await api.post('/api/auth/reset-password', { 
-    token, 
-    newPassword, 
-    confirmPassword  // ← API requires this field
-  });
-  return response.data;
-}
+    const response = await api.post('/api/auth/reset-password', {
+      token,
+      newPassword,
+      confirmPassword  // ← API requires this field
+    });
+    return response.data;
+  }
 };
 
 // Profile API's 
@@ -189,7 +189,7 @@ export const profileAPI = {
   //   });
   //   return response.data;
   // },
- 
+
 
 
   createMedicalStaffProfileWithLocation: async (profileData) => {
@@ -215,7 +215,7 @@ export const profileAPI = {
 
   // Create hospital profile
   createHospitalProfile: async (profileData) => {
-    const response = await api.post('/api/profile/hospital',profileData );
+    const response = await api.post('/api/profile/hospital', profileData);
     return response.data;
   },
 
@@ -238,12 +238,12 @@ export const profileAPI = {
   // },
 
   updateMyProfile: async (profileData) => {
-  const response = await api.put('/api/profile/me', {
-    ...profileData, // spreads everything: fullName, jobRole, city, area, phoneNumber,
-                    // profileSummary, education, skills
-  });
-  return response.data;
-},
+    const response = await api.put('/api/profile/me', {
+      ...profileData, // spreads everything: fullName, jobRole, city, area, phoneNumber,
+      // profileSummary, education, skills
+    });
+    return response.data;
+  },
 
   // Check profile completion status
   checkProfileStatus: async () => {
@@ -295,7 +295,7 @@ export const profileAPI = {
     return response.data;
   },
 
-uploadProfilePicture: async (imageUri) => {
+  uploadProfilePicture: async (imageUri) => {
     console.log("API CALLED: uploadProfilePicture");
 
     // 1. Get Token
@@ -312,7 +312,7 @@ uploadProfilePicture: async (imageUri) => {
       const rawBlob = await res.blob();
       const mimeType = rawBlob.type || "image/jpeg";
       const ext = mimeType.split("/")[1] || "jpg";
-      
+
       const correctedBlob = new Blob([rawBlob], { type: mimeType });
       formData.append(fieldName, correctedBlob, `profile.${ext}`);
     } else {
@@ -392,7 +392,7 @@ uploadProfilePicture: async (imageUri) => {
   getSkills: async () => {
     try {
       const response = await api.get('/api/profile/skills');
-      return response.data; 
+      return response.data;
     } catch (error) {
       console.error("Error fetching skills:", error);
       throw error;
@@ -404,7 +404,7 @@ uploadProfilePicture: async (imageUri) => {
   addSkills: async (skillsArray) => {
     try {
       const response = await api.post('/api/profile/skills', { skills: skillsArray });
-      return response.data; 
+      return response.data;
     } catch (error) {
       console.error("Error adding skills:", error);
       throw error;
@@ -416,13 +416,13 @@ uploadProfilePicture: async (imageUri) => {
   updateSkills: async (skillsArray) => {
     try {
       const response = await api.patch('/api/profile/skills', { skills: skillsArray });
-      return response.data; 
+      return response.data;
     } catch (error) {
       console.error("Error updating skills:", error);
       throw error;
     }
   }
- 
+
 }
 
 
@@ -491,10 +491,10 @@ export const dutyAPI = {
   },
 
   getPublishedDutiesH: async (filters = {}) => {
-  // filters could be { status: 'completed', staffRole: 'staff_nurse', page: 1, limit: 10 }
-  const response = await api.get('/api/duties-published', { params: filters });
-  return response.data;
-},
+    // filters could be { status: 'completed', staffRole: 'staff_nurse', page: 1, limit: 10 }
+    const response = await api.get('/api/duties-published', { params: filters });
+    return response.data;
+  },
 
   // For updating duty, edit duty details (for hospital)
   updatePublishedDuty: async (dutyId, updatedData) => {
@@ -601,10 +601,19 @@ export const dutyAPI = {
   },
 
   // For hospitals for live tracking 
-  getNearbyStaff: async (radiusKm = 5) => {
-    const response = await api.get(`/api/profile/nearby-staff?radius=${radiusKm}`);
-    return response.data;
-  },
+  // getNearbyStaff: async (radiusKm = 5) => {
+  //   const response = await api.get(`/api/profile/nearby-staff?radius=${radiusKm}`);
+  //   return response.data;
+  // },
+
+ getNearbyStaff: async (radius = 5, role = '') => {
+  let url = `/api/profile/nearby-staff?radius=${radius}`;
+  if (role && role !== '') {
+    url += `&role=${role}`;
+  }
+  const response = await api.get(url);
+  return response.data; // returns { success, cached, data: { hospital, staff } }
+},
 
   // Live location monitoring APIs
   updateLiveLocation: async (latitude, longitude) => {
@@ -627,7 +636,7 @@ export const dutyAPI = {
     return response.data;
   },
 
-  getHospitalActiveDuties : async () => {
+  getHospitalActiveDuties: async () => {
     const response = await api.get('api/duties/active-duties')
     return response.data;
   },
@@ -868,12 +877,12 @@ export const adminAPI = {
     return response.data.data; // returns { total, approved, pending, rejected, approvedPct, pendingPct, rejectedPct, recentActions }
   },
 
-  getHospitals:async (params = {}) => {
+  getHospitals: async (params = {}) => {
     const query = {};
     if (params.search) query.search = params.search;
     if (params.status) query.status = params.status; // e.g. "Verified", "Rejected", "Pending"
-    if (params.city)   query.city   = params.city;
-    if (params.page)   query.page   = params.page;
+    if (params.city) query.city = params.city;
+    if (params.page) query.page = params.page;
     return await api.get('api/admin/hospitals', { params: query }).then(res => res.data);
   },
 
@@ -882,17 +891,17 @@ export const adminAPI = {
     return response.data;
   },
 
-  getHospitalByName: async(name) =>{
+  getHospitalByName: async (name) => {
     const response = await api.get(`/api/admin/hospitals?name=/${name}`);
     return response.data;
   },
 
-  getHospitalByStatus: async(name) =>{
+  getHospitalByStatus: async (name) => {
     const response = await api.get(`/api/admin/hospitals?status=/${name}`);
     return response.data;
   },
 
-  getHospitalByCity: async(name) =>{
+  getHospitalByCity: async (name) => {
     const response = await api.get(`/api/admin/hospitals?city=/${name}`);
     return response.data;
   },
@@ -912,12 +921,12 @@ export const adminAPI = {
   },
 
 
-  getStatsAdminDashboard:async () =>{
+  getStatsAdminDashboard: async () => {
     const response = await api.get('/api/admin/dashboard-stats');
     return response.data;
   },
 
-  getStaffStatsDashboard :async () =>{
+  getStaffStatsDashboard: async () => {
     const response = await api.get('/api/admin/staff-stats');
     return response.data;
   },
@@ -974,17 +983,26 @@ export const adminAPI = {
   //   return response.data;
   // },
   // Update your API file to accept the 3rd parameter
-  getNearbyStaff: async (hospitalId, distance, role) => {
-    const params = {
-      hospital_id: hospitalId,
-      distance: distance
-    };
+  // getNearbyStaff: async (hospitalId, distance, role) => {
+  //   const params = {
+  //     hospital_id: hospitalId,
+  //     distance: distance
+  //   };
 
-    // Pass role only if it's explicitly selected (not empty string / default option)
-    if (role && role !== '') {
-      params.role = role;
-    }
+  //   // Pass role only if it's explicitly selected (not empty string / default option)
+  //   if (role && role !== '') {
+  //     params.role = role;
+  //   }
 
+  //   const response = await api.get('/api/admin/nearby-staff', { params });
+  //   return response.data;
+  // },
+
+  getNearbyStaff: async (hospitalId, radius, role) => {
+    const params = { hospital_id: hospitalId, radius };
+    if (role && role !== '') params.role = role;
+
+    console.log('Sending params:', params); 
     const response = await api.get('/api/admin/nearby-staff', { params });
     return response.data;
   },
@@ -1000,7 +1018,7 @@ export const adminAPI = {
     const response = await api.get('/api/admin/hospitals-list', { params });
     return response.data;
   },
-   
+
 
   getDuty: async (dutyId) => {
     const response = await api.get(`/api/admin/duties/${dutyId}`);
@@ -1011,12 +1029,12 @@ export const adminAPI = {
     return response.data;
   },
 
-  getActiveDuties : async () => {
+  getActiveDuties: async () => {
     const response = await api.get('/api/admin/active-duties')
     return response.data;
   },
 
-  
+
 
 
   getTrackStaffLocation: async (dutyId) => {
@@ -1034,7 +1052,7 @@ export const adminAPI = {
     return response.data;
   },
 
-  getOvernightDuties :async () => {
+  getOvernightDuties: async () => {
     const response = await api.get('/api/admin/overnight-duties')
     return response.data;
   },
@@ -1055,60 +1073,60 @@ export const adminAPI = {
 
   // ─── Activity Logs APIs ────────────────────────────────────────────────────
 
-// 1. Get all logs (with optional filters)
-getActivityLogs: async (params = {}) => {
+  // 1. Get all logs (with optional filters)
+  getActivityLogs: async (params = {}) => {
     const response = await api.get('/api/admin/activity-logs', { params });
     // Return response.data to match the { success, data, pagination, filters } structure
-    return response.data; 
+    return response.data;
   },
 
-// 2. Get single log by ID
-getActivityLogById: async (id) => {
-  const response = await api.get(`/api/admin/activity-logs/${id}`);
-  return response.data;
-},
+  // 2. Get single log by ID
+  getActivityLogById: async (id) => {
+    const response = await api.get(`/api/admin/activity-logs/${id}`);
+    return response.data;
+  },
 
-// 3. Search logs (requires q or search param)
-searchActivityLogs: async (params = {}) => {
-  const response = await api.get('/api/admin/activity-logs/search', { params });
-  return response.data;
-},
+  // 3. Search logs (requires q or search param)
+  searchActivityLogs: async (params = {}) => {
+    const response = await api.get('/api/admin/activity-logs/search', { params });
+    return response.data;
+  },
 
-// 4.export Activit Logs
+  // 4.export Activit Logs
 
-exportActivityLogs: async (params = {}) => {
-    const response = await api.get('/api/admin/activity-logs/export', { 
+  exportActivityLogs: async (params = {}) => {
+    const response = await api.get('/api/admin/activity-logs/export', {
       params,
       responseType: 'blob', // IMPORTANT: This tells axios to treat the response as a file
     });
-    return response.data; 
+    return response.data;
   },
 
-   // GET /api/notifications?limit=50&skip=0
+  // GET /api/notifications?limit=50&skip=0
   getNotifications: async (params) => {
     const { limit = 50, skip = 0 } = params;
     const response = await api.get(`/api/notifications`);
     return response.data; // { success, count, data: Notification[] }
   },
- 
+
   // GET /api/notifications/unread-count
   getUnreadCount: async () => {
     const response = await api.get('/api/notifications/unread-count');
     return response.data; // { success, count: number }
   },
- 
+
   // PUT /api/notifications/:id/read
   markAsRead: async (notificationId) => {
     const response = await api.put(`/api/notifications/${notificationId}/read`);
     return response.data; // { success, message, data: Notification }
   },
- 
+
   // PUT /api/notifications/read-all
   markAllAsRead: async () => {
     const response = await api.put('/api/notifications/read-all');
     return response.data; // { success, message }
   },
- 
+
   // PUT /api/notifications/read-multiple
   markMultipleAsRead: async (ids) => {
     const response = await api.put('/api/notifications/read-multiple', { ids });
@@ -1117,42 +1135,42 @@ exportActivityLogs: async (params = {}) => {
 
 
   // Get Active Emergency Requests
-getEmergencyDashboard: async (page = 1) => {
-  const response = await api.get(`/api/admin/emergency-dashboard?page=${page}`);
-  return response.data;
-},
+  getEmergencyDashboard: async (page = 1) => {
+    const response = await api.get(`/api/admin/emergency-dashboard?page=${page}`);
+    return response.data;
+  },
 
-// Get Medical Staff List
-// getMedicalStaff: async (search = '', page = 1) => {
-//   const response = await api.get(`/api/admin/medical-staff?search=${search}&page=${page}`);
-//   return response.data;
-// },
+  // Get Medical Staff List
+  // getMedicalStaff: async (search = '', page = 1) => {
+  //   const response = await api.get(`/api/admin/medical-staff?search=${search}&page=${page}`);
+  //   return response.data;
+  // },
 
-getMedicalStaff: async (search = '', page = 1, role = '') => {
-  const roleQuery = role ? `&role=${role}` : '';
-  const response = await api.get(`/api/admin/medical-staff?search=${search}&page=${page}${roleQuery}`);
-  return response.data;
-},
+  getMedicalStaff: async (search = '', page = 1, role = '') => {
+    const roleQuery = role ? `&role=${role}` : '';
+    const response = await api.get(`/api/admin/medical-staff?search=${search}&page=${page}${roleQuery}`);
+    return response.data;
+  },
 
-// Assign Staff to Duty
-// assignDuty: async (hospitalId, dutyId, staffId) => {
-//   const response = await api.post('/api/admin/assign-duty', { hospitalId, dutyId, staffId });
-//   return response.data;
-// },
+  // Assign Staff to Duty
+  // assignDuty: async (hospitalId, dutyId, staffId) => {
+  //   const response = await api.post('/api/admin/assign-duty', { hospitalId, dutyId, staffId });
+  //   return response.data;
+  // },
 
-assignDuty: async (hospitalId, dutyId, staffId) => {
-  const response = await api.post('/api/admin/assign-duty', {
-    hospital_id: hospitalId,
-    duty_id: dutyId,
-    staff_id: staffId,
-  });
-  return response.data;
-},
+  assignDuty: async (hospitalId, dutyId, staffId) => {
+    const response = await api.post('/api/admin/assign-duty', {
+      hospital_id: hospitalId,
+      duty_id: dutyId,
+      staff_id: staffId,
+    });
+    return response.data;
+  },
 
-recentAction : async () => {
-  const response = await api.get('/api/admin/documents/stats');
-  return response.data;
-}
+  recentAction: async () => {
+    const response = await api.get('/api/admin/documents/stats');
+    return response.data;
+  }
 
 }
 
