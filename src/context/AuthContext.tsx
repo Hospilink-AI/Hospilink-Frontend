@@ -10,6 +10,7 @@ type AuthContextType = {
   isLoading: boolean;
   logout: () => Promise<void>;
   setSession: (token: string, user: User) => void; 
+  
 };
 
 
