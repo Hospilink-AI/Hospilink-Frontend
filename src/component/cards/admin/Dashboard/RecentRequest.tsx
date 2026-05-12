@@ -76,11 +76,13 @@ const getPriority = (urgency: string, status: string): Priority => {
   return 'STANDARD';
 };
 
-const getPriorityStyle = (priority: Priority) => {
-  switch (priority) {
-    case 'CRITICAL': return { bg: '#FEE2E2', text: '#DC2626' };
-    case 'HIGH': return { bg: '#FEF3C7', text: '#D97706' };
-    case 'STANDARD': return { bg: '#DBEAFE', text: '#2563EB' };
+const getPriorityStyle = (urgency: string) => {
+  switch (urgency?.toLowerCase()) {
+    case 'emergency': return { bg: '#FEE2E2', text: '#DC2626' };
+    case 'urgent':    return { bg: '#FEF3C7', text: '#D97706' };
+    case 'normal':
+    case 'routine':   return { bg: '#DBEAFE', text: '#2563EB' };
+    default:          return { bg: '#F3F4F6', text: '#6B7280' };
   }
 };
 
@@ -312,7 +314,8 @@ export default function RecentRequests() {
               {/* Rows */}
               {requests.map((req, index) => {
                 const priority = getPriority(req.urgency, req.status);
-                const priorityStyle = getPriorityStyle(priority);
+                // const priorityStyle = getPriorityStyle(priority);
+                const priorityStyle = getPriorityStyle(req.urgency);
                 const statusColor = getStatusColor(req.status);
                 const statusLabel = getStatusLabel(req.status);
                 const etaColor = getEtaColor(req.eta);
@@ -325,7 +328,8 @@ export default function RecentRequests() {
                       <View style={[styles.priorityBadge, { backgroundColor: priorityStyle.bg }]}>
                         <View style={[styles.priorityDot, { backgroundColor: priorityStyle.text }]} />
                         <Text style={[styles.priorityText, { color: priorityStyle.text }]}>
-                          {priority}
+                          {/* {priority} */}
+                          {req.urgency.toUpperCase()}
                         </Text>
                       </View>
                     </View>

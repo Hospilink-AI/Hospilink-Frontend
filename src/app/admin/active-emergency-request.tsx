@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, Platform, Pressable } from 'react-native';
 
 interface Request {
-  priority: 'CRITICAL' | 'HIGH' | 'STANDARD';
+  priority: 'emergency' | 'urgent' | 'normal' | 'routine';
   hospital: string;
   requirement: string;
   eta: string;
@@ -12,12 +12,12 @@ interface Request {
 }
 
 const REQUESTS: Request[] = [
-  { priority: 'CRITICAL', hospital: 'North Hills Trauma Center', requirement: '2x Trauma Nurse', eta: '05 min', status: 'Dispatching', statusColor: '#F59E0B' },
-  { priority: 'HIGH', hospital: "St. Mary's General", requirement: '1x Anesthesiologist', eta: '15 min', status: 'Matching', statusColor: '#3B82F6' },
-  { priority: 'STANDARD', hospital: "Pacific Children's Clinic", requirement: '3x Gen. Staff', eta: '45 min', status: 'Pending', statusColor: '#9CA3AF' },
-  { priority: 'CRITICAL', hospital: 'Riverside Medical Hub', requirement: '1x Surgeon Asst.', eta: 'Immediate', status: 'Alert Sent', statusColor: '#EF4444' },
-  { priority: 'STANDARD', hospital: "Pacific Children's Clinic", requirement: '3x Gen. Staff', eta: '45 min', status: 'Pending', statusColor: '#9CA3AF' },
-  { priority: 'HIGH', hospital: "St. Mary's General", requirement: '1x Anesthesiologist', eta: '15 min', status: 'Matching', statusColor: '#3B82F6' },
+  { priority: 'emergency', hospital: 'North Hills Trauma Center', requirement: '2x Trauma Nurse', eta: '05 min', status: 'Dispatching', statusColor: '#F59E0B' },
+  { priority: 'urgent', hospital: "St. Mary's General", requirement: '1x Anesthesiologist', eta: '15 min', status: 'Matching', statusColor: '#3B82F6' },
+  { priority: 'normal', hospital: "Pacific Children's Clinic", requirement: '3x Gen. Staff', eta: '45 min', status: 'Pending', statusColor: '#9CA3AF' },
+  { priority: 'emergency', hospital: 'Riverside Medical Hub', requirement: '1x Surgeon Asst.', eta: 'Immediate', status: 'Alert Sent', statusColor: '#EF4444' },
+  { priority: 'normal', hospital: "Pacific Children's Clinic", requirement: '3x Gen. Staff', eta: '45 min', status: 'Pending', statusColor: '#9CA3AF' },
+  { priority: 'urgent', hospital: "St. Mary's General", requirement: '1x Anesthesiologist', eta: '15 min', status: 'Matching', statusColor: '#3B82F6' },
 ];
 
 const DOCTORS = [
@@ -25,27 +25,63 @@ const DOCTORS = [
   { id: '2', name: 'Dr. Atharva Kale', role: 'BAMS', distance: '1.9 km', avatar: 'https://i.pravatar.cc/150?img=12' },
 ];
 
+
+// ✅ ADD HERE — before the component function
+const mapStatus = (status: string) => {
+  switch (status) {
+    case 'in-progress': return 'Dispatching';
+    case 'available':   return 'Pending';
+    case 'assigned':    return 'Matching';
+    default:            return status;
+  }
+};
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'in-progress': return '#F59E0B';
+    case 'available':   return '#9CA3AF';
+    case 'assigned':    return '#3B82F6';
+    default:            return '#9CA3AF';
+  }
+};
+
+const mapApiToRequests = (apiData: any[]): Request[] => {
+  return apiData.map(item => ({
+    priority: item.urgency,
+    hospital: item.hospital.name,
+    requirement: item.staffRole.toUpperCase(),
+    eta: item.eta ?? 'N/A',
+    status: mapStatus(item.status),
+    statusColor: getStatusColor(item.status),
+  }));
+};
+
 export default function RecentRequests() {
+   const [requests, setRequests] = useState<Request[]>([]);
   const [activePopupIndex, setActivePopupIndex] = useState<number | null>(null);
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>('1');
 
-  const getPriorityStyle = (priority: string) => {
-    switch (priority) {
-      case 'CRITICAL': return { bg: '#FEE2E2', text: '#DC2626' };
-      case 'HIGH': return { bg: '#FEF3C7', text: '#D97706' };
-      case 'STANDARD': return { bg: '#DBEAFE', text: '#2563EB' };
-      default: return { bg: '#F3F4F6', text: '#6B7280' };
-    }
-  };
+  
 
-  const renderPriorityIcon = (priority: string) => {
-    switch (priority) {
-      case 'CRITICAL': return <Text style={styles.criticalIcon}>!</Text>;
-      case 'HIGH': return <Ionicons name="triangle" size={10} color="#D97706" />;
-      case 'STANDARD': return <Ionicons name="information-circle" size={12} color="#2563EB" />;
-      default: return null;
-    }
-  };
+  const getPriorityStyle = (priority: string) => {
+  switch (priority?.toLowerCase()) {
+    case 'emergency': return { bg: '#FEE2E2', text: '#DC2626' };
+    case 'urgent':    return { bg: '#FEF3C7', text: '#D97706' };
+    case 'normal':
+    case 'routine':   return { bg: '#DBEAFE', text: '#2563EB' };
+    default:          return { bg: '#F3F4F6', text: '#6B7280' };
+  }
+};
+
+const renderPriorityIcon = (priority: string) => {
+  switch (priority?.toLowerCase()) {
+    case 'emergency': return <Text style={styles.criticalIcon}>!</Text>;
+    case 'urgent':    return <Ionicons name="triangle" size={10} color="#D97706" />;
+    case 'normal':
+    case 'routine':   return <Ionicons name="information-circle" size={12} color="#2563EB" />;
+    default:          return null;
+  }
+};
 
   const getEtaColor = (eta: string) => {
     if (eta.includes('Immediate') || eta.includes('05')) return '#EF4444';
@@ -86,7 +122,7 @@ export default function RecentRequests() {
             </View>
 
             {/* Table Rows */}
-            {REQUESTS.map((req, index) => {
+            {requests.map((req, index) => {
               const priorityStyle = getPriorityStyle(req.priority);
               const etaColor = getEtaColor(req.eta);
               const isPopupOpen = activePopupIndex === index;

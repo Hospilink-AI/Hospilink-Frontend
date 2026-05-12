@@ -98,7 +98,7 @@ export interface Doctor {
 /** Doctor enriched with computed distance — used in UI */
 export interface DoctorWithDistance extends Doctor {
   distanceKm: number;
-  
+  distanceText: string;
 }
 
 
@@ -146,24 +146,89 @@ export interface StaffMember {
   averageRating: number;
 }
 
-export interface NearbyStaffResponse {
-  // success: boolean;
-  // hospital: {
-  //   name: string;
-  //   location: StaffLocation;
-  // };
-  // searchRadius: number;
-  // totalStaffFound: number;
-  // staff: StaffMember[];
-  // message: string;
-  success: boolean;
-  hospital: {
-    name: string;
-    location: { latitude: number; longitude: number };
-    address: { currentAddress: string; city: string; state: string; pincode: string };
+// export interface NearbyStaffResponse {
+//   // success: boolean;
+//   // hospital: {
+//   //   name: string;
+//   //   location: StaffLocation;
+//   // };
+//   // searchRadius: number;
+//   // totalStaffFound: number;
+//   // staff: StaffMember[];
+//   // message: string;
+//   success: boolean;
+//   hospital: {
+//     name: string;
+//     location: { latitude: number; longitude: number };
+//     address: { currentAddress: string; city: string; state: string; pincode: string };
+//   };
+//   staff: StaffMember[];
+//   totalStaffFound: number;   
+//   searchRadius: number;
+//   message: string;
+// }
+
+// ── Nearby Staff API (profile side) ──────────────────────────────────────────
+
+export interface NearbyStaffMember {
+  id: string;
+  name: string;
+  email: string | null;
+  role: string;
+  phone: string;
+  rating: number;
+  isAvailable: boolean;
+  verificationStatus: string;
+  distance: number;           // km
+  distanceText: string;       // e.g. "6.7 km"
+  estimatedTime: number;      // minutes
+  estimatedTimeText: string;  // e.g. "15 mins"
+  availabilityStatus: string;
+  hasActiveDuty: boolean;
+  hasUpcomingDuty: boolean;
+  address: {
+    currentAddress: string;
+    city: string;
+    state: string;
+    pincode: string;
   };
-  staff: StaffMember[];
-  totalStaffFound: number;   
-  searchRadius: number;
+  location: {
+    latitude: number;
+    longitude: number;
+  };
+}
+
+export interface NearbyStaffResponse {
+  success: boolean;
+  cached: boolean;
+  data: {
+    hospital: {
+      id: string;
+      name: string;
+      address: {
+        currentAddress: string;
+        city: string;
+        state: string;
+        pincode: string;
+      };
+      location: {
+        latitude: number;
+        longitude: number;
+      };
+    };
+    search: {
+      radius: number;
+      roleFilter: string;
+      totalFound: number;
+    };
+    staff: NearbyStaffMember[];
+    summary: {
+      totalStaff: number;
+      fullyAvailable: number;
+      hasUpcomingDuties: number;
+      hasActiveDuties: number;
+    };
+  };
   message: string;
+  timestamp: string;
 }
