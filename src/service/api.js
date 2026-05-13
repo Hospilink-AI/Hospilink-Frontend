@@ -1170,6 +1170,11 @@ export const adminAPI = {
   recentAction: async () => {
     const response = await api.get('/api/admin/documents/stats');
     return response.data;
+  },
+
+  getHospitalManagementStats: async () => {
+    const response = await api.get('/api/admin/hospitals/stats')
+    return response.data
   }
 
 }

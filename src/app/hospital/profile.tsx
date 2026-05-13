@@ -1324,6 +1324,7 @@ type ProfileData = {
   isProfileComplete: boolean;
   verificationStatus: string;
   profilePicture: string | null;
+  description: string;
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -1396,6 +1397,7 @@ function mapAPIToProfile(data: any): ProfileData {
     isProfileComplete: profile.isProfileComplete ?? false,
     verificationStatus: profile.verificationStatus ?? "",
     profilePicture: profile.profilePicture ?? null,
+    description: profile.description ?? "",
   };
 }
 
@@ -1581,7 +1583,7 @@ const tSt = StyleSheet.create({
   tagCloseTxt: { fontSize: 14, color: WHITE },
   addBtn: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: BORDER, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: WHITE },
   addBtnTxt: { fontSize: 12, color: TEXT_SECONDARY, fontWeight: "600" },
-  panel: { borderWidth: 1, borderColor: BORDER, borderRadius: 10, backgroundColor: WHITE, marginBottom: 10, maxHeight: 200},
+  panel: { borderWidth: 1, borderColor: BORDER, borderRadius: 10, backgroundColor: WHITE, marginBottom: 10, maxHeight: 200 },
   serviceRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
   serviceName: { fontSize: 14, color: TEXT_SECONDARY },
   serviceNameSelected: { color: BLUE, fontWeight: "700" },
@@ -1858,6 +1860,7 @@ const Profile = () => {
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showImageMenu, setShowImageMenu] = useState(false);
+  const [description, setDescription] = useState("");
 
   // ── Edit modal state ──
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -1925,6 +1928,7 @@ const Profile = () => {
       setIsProfileComplete(mapped.isProfileComplete);
       setVerificationStatus(mapped.verificationStatus || null);
       setProfilePicture(mapped.profilePicture);
+      setDescription(mapped.description);
 
       // Also load documents from the same response if available
       if (Array.isArray(data?.documents) && data.documents.length > 0) {
@@ -2140,6 +2144,16 @@ const Profile = () => {
             <Text style={gSt.statLabel}>Bed Capacity</Text>
           </View>
         </View>
+
+        {/* ── Description Card ── */}
+        {!!description && (
+          <View style={gSt.sectionCard}>
+            <Text style={gSt.sectionTitle}>Description</Text>
+            <Text style={{ fontSize: 14, color: TEXT_SECONDARY, lineHeight: 22, marginTop: 10 }}>
+              {description}
+            </Text>
+          </View>
+        )}
 
         {/* ── Departments & Services ── */}
         <View style={gSt.sectionCard}>

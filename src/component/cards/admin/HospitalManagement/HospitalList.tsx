@@ -250,7 +250,7 @@ function StatusTabBar({ activeTab, counts, onSelect }: StatusTabBarProps) {
               <Text style={[stb.tabTxt, isActive && stb.tabTxtActive]}>
                 {tab.label}
               </Text>
-             
+
             </TouchableOpacity>
           );
         })}
@@ -1341,11 +1341,16 @@ export default function HospitalListSection() {
   const [rejectReasonVisible, setRejectReasonVisible] = useState(false);
   const [pendingRejectTarget, setPendingRejectTarget] = useState<Hospital | null>(null);
 
+  // const [stats, setStats] = useState({
+  //   totalStaff: 0,
+  //   pendingVerification: 0,
+  //   approvedClinicians: 0,
+  //   onDuty: 0,
+  // });
   const [stats, setStats] = useState({
-    totalStaff: 0,
+    totalHospitals: 0,
     pendingVerification: 0,
-    approvedClinicians: 0,
-    onDuty: 0,
+    verifiedHospitals: 0,
   });
 
   // ── Toast ──────────────────────────────────────────────────────────────────
@@ -1399,12 +1404,6 @@ export default function HospitalListSection() {
       if (!opts?.tabStatus && (!opts?.status || opts.status === 'All Statuses')) {
         setAllHospitals(mapped);
       }
-
-      const totalStaff = mapped.reduce((sum, h) => sum + (h.totalStaff || 0), 0);
-      const pendingVerification = mapped.filter(h => h.licenseStatus === 'PENDING' || h.licenseStatus === 'MANUAL_PENDING').length;
-      const approvedClinicians = mapped.filter(h => h.licenseStatus === 'VERIFIED' || h.licenseStatus === 'AUTO_VERIFIED').length;
-      const onDuty = mapped.reduce((sum, h) => sum + (h.occupiedDuties || 0), 0);
-      setStats({ totalStaff, pendingVerification, approvedClinicians, onDuty });
       setHospitals(mapped);
       setPagination(res?.data?.pagination ?? res?.pagination ?? null);
     } catch {
@@ -1414,8 +1413,25 @@ export default function HospitalListSection() {
     }
   }, [activeTab]);
 
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await adminAPI.getHospitalManagementStats();
+      const data = res?.data ?? res;
+      setStats({
+        totalHospitals: Number(data?.totalHospitals) || 0,
+        pendingVerification: Number(data?.pendingVerification) || 0,
+        verifiedHospitals: Number(data?.verifiedHospitals) || 0,
+      });
+    } catch {
+      // silently fail — stats are non-critical
+    }
+  }, []);
+
   // Initial load
-  useEffect(() => { fetchHospitals(); }, [fetchHospitals]);
+  useEffect(() => {
+    fetchHospitals();
+    fetchStats();
+  }, [fetchHospitals, fetchStats]);
 
   // Refetch when tab changes
   const handleTabSelect = (tab: TabKey) => {
@@ -1574,9 +1590,9 @@ export default function HospitalListSection() {
       {/* ── Stat Cards ── */}
       <View style={s.statsRow}>
         <StatCard
-          icon="🛡️" iconBg="#EEF2FF" iconColor="#4F46E5"
+          icon="🏥" iconBg="#EEF2FF" iconColor="#4F46E5"
           badge="+12%" badgeColor="#16A34A"
-          value={stats.totalStaff.toLocaleString()} label="Total Staff"
+          value={stats.totalHospitals.toLocaleString()} label="Total Hospitals"
         />
         <StatCard
           icon="⚠️" iconBg="#FEF3C7" iconColor="#D97706"
@@ -1584,14 +1600,10 @@ export default function HospitalListSection() {
           value={String(stats.pendingVerification)} label="Pending Verification"
         />
         <StatCard
-          icon="🖥️" iconBg="#ECFDF5" iconColor="#16A34A"
-          badge="98% Verified" badgeColor="#16A34A"
-          value={stats.approvedClinicians.toLocaleString()} label="Approved Clinicians"
-        />
-        <StatCard
-          icon="🔖" iconBg="#F5F3FF" iconColor="#7C3AED"
-          badge="Active" badgeColor="#7C3AED"
-          value={String(stats.onDuty)} label="On-Duty Currently"
+          icon="✅" iconBg="#ECFDF5" iconColor="#16A34A"
+          badge={`${stats.totalHospitals > 0 ? Math.round((stats.verifiedHospitals / stats.totalHospitals) * 100) : 0}% Verified`}
+          badgeColor="#16A34A"
+          value={stats.verifiedHospitals.toLocaleString()} label="Approved Hospitals"
         />
       </View>
 

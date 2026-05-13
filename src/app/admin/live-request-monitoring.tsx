@@ -394,15 +394,24 @@ export default function LiveRequestMonitoring() {
   const dutyStatus = (duty as any).status?.status || duty.status || 'unknown';
 
   const timelineSteps = [
-    { key: 'available', label: 'Posted', icon: 'checkmark' },
-    { key: 'assigned', label: 'Accepted', icon: 'checkmark' },
-    { key: 'accepted', label: 'Enroute', icon: 'checkmark' },
-    { key: 'enroute', label: 'In Progress', icon: 'car' },
-    { key: 'in-progress', label: 'Completed', icon: 'location' }
+    // { key: 'available', label: 'Posted', icon: 'checkmark' },
+    // { key: 'assigned', label: 'Accepted', icon: 'checkmark' },
+    // { key: 'accepted', label: 'Enroute', icon: 'checkmark' },
+    // { key: 'enroute', label: 'In Progress', icon: 'car' },
+    // { key: 'in-progress', label: 'Completed', icon: 'location' }
+     { key: 'available',    label: 'Posted',      icon: 'checkmark' },
+  { key: 'assigned',     label: 'Accepted',    icon: 'checkmark' },
+  { key: 'enroute',      label: 'Enroute',     icon: 'car' },       // ✅ car icon here
+  { key: 'in-progress',  label: 'In Progress', icon: 'checkmark' },
+  { key: 'completed',    label: 'Completed',   icon: 'checkmark' },
   ];
 
   const currentStatusMap: Record<string, number> = {
-    'available': 0, 'assigned': 1, 'accepted': 2, 'enroute': 3, 'in-progress': 4, 'completed': 5
+   'available':    0,
+  'assigned':     1,
+  'enroute':      2,  
+  'in-progress':  3,   
+  'completed':    4,   
   };
   const currentStepIndex = currentStatusMap[dutyStatus] ?? 0;
 

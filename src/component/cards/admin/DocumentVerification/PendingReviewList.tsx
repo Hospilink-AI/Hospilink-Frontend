@@ -79,11 +79,19 @@ const STATUS_STYLE: Record<string, { bg: string; text: string; label: string }> 
   'auto-verified': { bg: '#F0FDF4', text: '#15803D', label: 'AUTO VERIFIED' },
 };
 
+// const STATUS_FILTERS = [
+//   { label: 'All', status: '' },
+//   { label: 'Manual Review', status: 'manual-pending-verification' },
+//   { label: 'Pending', status: 'pending' },
+//   { label: 'Auto Verified', status: 'auto-verified' },
+// ];
 const STATUS_FILTERS = [
-  { label: 'All', status: '' },
-  { label: 'Manual Review', status: 'manual-pending-verification' },
-  { label: 'Pending', status: 'pending' },
+  { label: 'All',           status: '' },
+  { label: 'Verified',      status: 'verified' },
   { label: 'Auto Verified', status: 'auto-verified' },
+  { label: 'Pending',       status: 'pending' },
+  { label: 'Manual Review', status: 'manual-pending-verification' },
+  { label: 'Rejected',      status: 'rejected' },
 ];
 
 const ROLE_FILTERS = [
@@ -660,6 +668,154 @@ function PendingRow({
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
+// export default function PendingReviewList({
+//   documents,
+//   pagination,
+//   loading,
+//   error,
+//   statusFilter,
+//   roleFilter,
+//   currentPage,
+//   onStatusFilterChange,
+//   onRoleFilterChange,
+//   onClearFilters,
+//   onFetchDocuments,
+//   onStatusChange,
+// }: PendingReviewListProps) {
+//   const [showFilter, setShowFilter] = useState(false);
+//   const [reviewVisible, setReviewVisible] = useState(false);
+//   const [activeItem, setActiveItem] = useState<DocumentItem | null>(null);
+
+//   const handleReview = (item: DocumentItem) => {
+//     setActiveItem(item);
+//     setReviewVisible(true);
+//   };
+
+//   const pendingCount = documents.filter(d =>
+//     d.verificationStatus === 'pending' || d.verificationStatus === 'manual-pending-verification'
+//   ).length;
+
+//   return (
+//     <View style={s.card}>
+//       {/* ── Header ── */}
+//       <View style={s.titleRow}>
+//         <Text style={s.title}>Pending Review List</Text>
+//         {pendingCount > 0 && (
+//           <View style={s.badge}>
+//             <Text style={s.badgeTxt}>{pendingCount} Pending</Text>
+//           </View>
+//         )}
+//         <TouchableOpacity onPress={() => onFetchDocuments(currentPage)} style={s.refreshBtn}>
+//           <Ionicons name="refresh-outline" size={16} color="#64748B" />
+//         </TouchableOpacity>
+//       </View>
+
+//       {/* ── Filter Toggle ── */}
+//       <View style={s.controls}>
+//         <TouchableOpacity style={s.filterBtn} onPress={() => setShowFilter(v => !v)}>
+//           <Ionicons name="options-outline" size={14} color={showFilter ? '#2563EB' : '#64748B'} />
+//           <Text style={[s.filterTxt, showFilter && { color: '#2563EB' }]}>Filter</Text>
+//         </TouchableOpacity>
+//         {(statusFilter || roleFilter) && (
+//           <TouchableOpacity onPress={onClearFilters}>
+//             <Text style={s.clearTxt}>Clear filters ✕</Text>
+//           </TouchableOpacity>
+//         )}
+//       </View>
+
+//       {/* ── Filter Panel ── */}
+//       {showFilter && (
+//         <View style={s.filterPanel}>
+//           <Text style={s.filterGroupLabel}>By Status</Text>
+//           <View style={s.filterChips}>
+//             {STATUS_FILTERS.map(f => (
+//               <TouchableOpacity
+//                 key={f.label}
+//                 style={[s.chip, statusFilter === f.status && s.chipActive]}
+//                 onPress={() => onStatusFilterChange(f.status)}
+//               >
+//                 <Text style={[s.chipTxt, statusFilter === f.status && s.chipActiveTxt]}>
+//                   {f.label}
+//                 </Text>
+//               </TouchableOpacity>
+//             ))}
+//           </View>
+
+//           <Text style={[s.filterGroupLabel, { marginTop: 10 }]}>By Role</Text>
+//           <View style={s.filterChips}>
+//             {ROLE_FILTERS.map(f => (
+//               <TouchableOpacity
+//                 key={f.label}
+//                 style={[s.chip, roleFilter === f.userRole && s.chipActive]}
+//                 onPress={() => onRoleFilterChange(f.userRole)}
+//               >
+//                 <Text style={[s.chipTxt, roleFilter === f.userRole && s.chipActiveTxt]}>
+//                   {f.label}
+//                 </Text>
+//               </TouchableOpacity>
+//             ))}
+//           </View>
+//         </View>
+//       )}
+
+//       {/* ── Document List ── */}
+//       {error ? (
+//         <View style={s.center}>
+//           <Text style={s.errorTxt}>{error}</Text>
+//           <TouchableOpacity style={s.retryBtn} onPress={() => onFetchDocuments(currentPage)}>
+//             <Text style={s.retryTxt}>Retry</Text>
+//           </TouchableOpacity>
+//         </View>
+//       ) : documents.length === 0 ? (
+//         <View style={s.center}>
+//           <Text style={s.centerTxt}>No documents found</Text>
+//         </View>
+//       ) : (
+//         documents.map((item, i) => (
+//           <PendingRow
+//             key={item.documentId}
+//             item={item}
+//             isLast={i === documents.length - 1}
+//             onReview={handleReview}
+//           />
+//         ))
+//       )}
+
+//       {/* ── Pagination ── */}
+//       {pagination && pagination.totalPages > 1 && (
+//         <View style={s.pagination}>
+//           <TouchableOpacity
+//             style={[s.pageBtn, !pagination.hasPrevPage && s.pageBtnDisabled]}
+//             onPress={() => pagination.hasPrevPage && onFetchDocuments(currentPage - 1)}
+//             disabled={!pagination.hasPrevPage}
+//           >
+//             <Text style={s.pageBtnTxt}>← Prev</Text>
+//           </TouchableOpacity>
+//           <Text style={s.pageInfo}>
+//             {pagination.currentPage} / {pagination.totalPages}
+//           </Text>
+//           <TouchableOpacity
+//             style={[s.pageBtn, !pagination.hasNextPage && s.pageBtnDisabled]}
+//             onPress={() => pagination.hasNextPage && onFetchDocuments(currentPage + 1)}
+//             disabled={!pagination.hasNextPage}
+//           >
+//             <Text style={s.pageBtnTxt}>Next →</Text>
+//           </TouchableOpacity>
+//         </View>
+//       )}
+
+//       {/* ── Review Modal ── */}
+//       <DocumentViewerModal
+//         visible={reviewVisible}
+//         item={activeItem}
+//         onClose={() => { setReviewVisible(false); setActiveItem(null); }}
+//         onVerified={(id) => onStatusChange(id, 'verified')}
+//         onRejected={(id) => onStatusChange(id, 'rejected')}
+//       />
+//     </View>
+//   );
+// }
+
 export default function PendingReviewList({
   documents,
   pagination,
@@ -674,9 +830,9 @@ export default function PendingReviewList({
   onFetchDocuments,
   onStatusChange,
 }: PendingReviewListProps) {
-  const [showFilter, setShowFilter] = useState(false);
   const [reviewVisible, setReviewVisible] = useState(false);
   const [activeItem, setActiveItem] = useState<DocumentItem | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleReview = (item: DocumentItem) => {
     setActiveItem(item);
@@ -687,8 +843,19 @@ export default function PendingReviewList({
     d.verificationStatus === 'pending' || d.verificationStatus === 'manual-pending-verification'
   ).length;
 
+  // ── Local filter by userName search ──
+  const filteredDocuments = searchQuery.trim()
+    ? documents.filter(d =>
+        d.userName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        d.userEmail?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : documents;
+
+  const hasActiveFilters = statusFilter || roleFilter;
+
   return (
     <View style={s.card}>
+
       {/* ── Header ── */}
       <View style={s.titleRow}>
         <Text style={s.title}>Pending Review List</Text>
@@ -702,52 +869,65 @@ export default function PendingReviewList({
         </TouchableOpacity>
       </View>
 
-      {/* ── Filter Toggle ── */}
-      <View style={s.controls}>
-        <TouchableOpacity style={s.filterBtn} onPress={() => setShowFilter(v => !v)}>
-          <Ionicons name="options-outline" size={14} color={showFilter ? '#2563EB' : '#64748B'} />
-          <Text style={[s.filterTxt, showFilter && { color: '#2563EB' }]}>Filter</Text>
-        </TouchableOpacity>
-        {(statusFilter || roleFilter) && (
-          <TouchableOpacity onPress={onClearFilters}>
-            <Text style={s.clearTxt}>Clear filters ✕</Text>
+      {/* ── Search Bar ── */}
+      <View style={s.searchWrap}>
+        <Ionicons name="search-outline" size={15} color="#94A3B8" style={s.searchIcon} />
+        <TextInput
+          style={s.searchInput}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Search by name or email…"
+          placeholderTextColor="#CBD5E1"
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="close-circle" size={15} color="#CBD5E1" />
           </TouchableOpacity>
         )}
       </View>
 
-      {/* ── Filter Panel ── */}
-      {showFilter && (
-        <View style={s.filterPanel}>
-          <Text style={s.filterGroupLabel}>By Status</Text>
-          <View style={s.filterChips}>
-            {STATUS_FILTERS.map(f => (
-              <TouchableOpacity
-                key={f.label}
-                style={[s.chip, statusFilter === f.status && s.chipActive]}
-                onPress={() => onStatusFilterChange(f.status)}
-              >
-                <Text style={[s.chipTxt, statusFilter === f.status && s.chipActiveTxt]}>
-                  {f.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+      {/* ── Status Filters (always visible) ── */}
+      <View style={s.filterGroup}>
+        <Text style={s.filterGroupLabel}>Status</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterChips}>
+          {STATUS_FILTERS.map(f => (
+            <TouchableOpacity
+              key={f.label}
+              style={[s.chip, statusFilter === f.status && s.chipActive]}
+              onPress={() => onStatusFilterChange(f.status)}
+            >
+              <Text style={[s.chipTxt, statusFilter === f.status && s.chipActiveTxt]}>
+                {f.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
-          <Text style={[s.filterGroupLabel, { marginTop: 10 }]}>By Role</Text>
-          <View style={s.filterChips}>
-            {ROLE_FILTERS.map(f => (
-              <TouchableOpacity
-                key={f.label}
-                style={[s.chip, roleFilter === f.userRole && s.chipActive]}
-                onPress={() => onRoleFilterChange(f.userRole)}
-              >
-                <Text style={[s.chipTxt, roleFilter === f.userRole && s.chipActiveTxt]}>
-                  {f.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+      {/* ── Role Filters (always visible) ── */}
+      <View style={[s.filterGroup, { marginBottom: 14 }]}>
+        <Text style={s.filterGroupLabel}>Role</Text>
+        <View style={s.filterChips}>
+          {ROLE_FILTERS.map(f => (
+            <TouchableOpacity
+              key={f.label}
+              style={[s.chip, roleFilter === f.userRole && s.chipActive]}
+              onPress={() => onRoleFilterChange(f.userRole)}
+            >
+              <Text style={[s.chipTxt, roleFilter === f.userRole && s.chipActiveTxt]}>
+                {f.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
+      </View>
+
+      {/* ── Clear Filters ── */}
+      {hasActiveFilters && (
+        <TouchableOpacity onPress={onClearFilters} style={s.clearRow}>
+          <Ionicons name="close-circle-outline" size={13} color="#DC2626" />
+          <Text style={s.clearTxt}>Clear filters</Text>
+        </TouchableOpacity>
       )}
 
       {/* ── Document List ── */}
@@ -758,23 +938,26 @@ export default function PendingReviewList({
             <Text style={s.retryTxt}>Retry</Text>
           </TouchableOpacity>
         </View>
-      ) : documents.length === 0 ? (
+      ) : filteredDocuments.length === 0 ? (
         <View style={s.center}>
-          <Text style={s.centerTxt}>No documents found</Text>
+          <Ionicons name="document-outline" size={28} color="#CBD5E1" />
+          <Text style={s.centerTxt}>
+            {searchQuery ? `No results for "${searchQuery}"` : 'No documents found'}
+          </Text>
         </View>
       ) : (
-        documents.map((item, i) => (
+        filteredDocuments.map((item, i) => (
           <PendingRow
             key={item.documentId}
             item={item}
-            isLast={i === documents.length - 1}
+            isLast={i === filteredDocuments.length - 1}
             onReview={handleReview}
           />
         ))
       )}
 
       {/* ── Pagination ── */}
-      {pagination && pagination.totalPages > 1 && (
+      {pagination && pagination.totalPages > 1 && !searchQuery && (
         <View style={s.pagination}>
           <TouchableOpacity
             style={[s.pageBtn, !pagination.hasPrevPage && s.pageBtnDisabled]}
@@ -783,9 +966,7 @@ export default function PendingReviewList({
           >
             <Text style={s.pageBtnTxt}>← Prev</Text>
           </TouchableOpacity>
-          <Text style={s.pageInfo}>
-            {pagination.currentPage} / {pagination.totalPages}
-          </Text>
+          <Text style={s.pageInfo}>{pagination.currentPage} / {pagination.totalPages}</Text>
           <TouchableOpacity
             style={[s.pageBtn, !pagination.hasNextPage && s.pageBtnDisabled]}
             onPress={() => pagination.hasNextPage && onFetchDocuments(currentPage + 1)}
@@ -1214,4 +1395,32 @@ const s = StyleSheet.create({
   pageBtnDisabled: { opacity: 0.4 },
   pageBtnTxt: { fontSize: 12, color: '#2563EB', fontWeight: '600' },
   pageInfo: { fontSize: 12, color: '#64748B' },
+  // add inside the existing `s = StyleSheet.create({...})`
+searchWrap: {
+   flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#F1F5F9',   // subtle fill instead of border
+  borderRadius: 10,
+  paddingHorizontal: 12,
+  paddingVertical: 9,
+  marginBottom: 14,
+  gap: 8,
+  // borderWidth and borderColor removed ✅
+},
+searchIcon: { flexShrink: 0 },
+searchInput: {
+  flex: 1,
+  fontSize: 13,
+  color: '#0F172A',
+  padding: 0,          // removes default RN input padding
+},
+filterGroup: {
+  marginBottom: 10,
+},
+clearRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 5,
+  marginBottom: 10,
+},
 });

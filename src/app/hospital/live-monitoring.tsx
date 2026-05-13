@@ -202,11 +202,11 @@ const staffId   = duty.staff?.id   ?? '000000';
           activeOpacity={0.8}
           onPress={() => onShowMap(duty.dutyId)}
         >
-          <Text style={styles.primaryBtnText}>Show on Map</Text>
+          <Text style={styles.primaryBtnText}>Monitor Status</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.secondaryBtn} activeOpacity={0.8}>
+        {/* <TouchableOpacity style={styles.secondaryBtn} activeOpacity={0.8}>
           <Text style={styles.secondaryBtnText}>Monitor Status</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
     </View>
   );
