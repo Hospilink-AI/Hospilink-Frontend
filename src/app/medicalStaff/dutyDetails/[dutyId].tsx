@@ -457,10 +457,10 @@ export default function DutyDetailsScreen() {
 
             {/* Extra details row */}
             <View style={[styles.extrasRow, isMobile && styles.extrasRowMobile]}>
-              <View style={styles.extraChip}>
+              {/* <View style={styles.extraChip}>
                 <Ionicons name="cash-outline" size={14} color="#10B981" />
                 <Text style={styles.extraChipText}>₹{duty.offeredRate}/hr</Text>
-              </View>
+              </View> */}
               <View style={styles.extraChip}>
                 <Ionicons name="wallet-outline" size={14} color="#2563EB" />
                 <Text style={styles.extraChipText}>Total ₹{duty.totalPayment}</Text>

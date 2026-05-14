@@ -29,12 +29,36 @@ interface DutyDetail {
   status: string;
   distance?: number;
   distanceText?: string;
+  // hospital: {
+  //   hospitalLegalName: string;
+  //   currentAddress: string;
+  //   location?: string;
+  // };
   hospital: {
     hospitalLegalName: string;
     currentAddress: string;
     location?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    coordinates?: {
+      coordinates?: {
+        latitude: number;
+        longitude: number;
+      };
+    };
   };
-  hospitalLocation?: {
+  // hospitalLocation?: {
+  //   latitude: number;
+  //   longitude: number;
+  //   address: {
+  //     currentAddress: string;
+  //     city: string;
+  //     state: string;
+  //     pincode: string;
+  //   };
+  // };
+  hospitalLocation?: {                       // keep for backward compat, but unused now
     latitude: number;
     longitude: number;
     address: {
@@ -139,6 +163,8 @@ function formatTime(t: string) {
   const hour = h % 12 || 12;
   return `${hour}:${String(m).padStart(2, '0')} ${ampm}`;
 }
+
+
 
 // ─── Status badge config ──────────────────────────────────
 const STATUS_CONFIG: Record<string, { bg: string; text: string; dot: string; label: string }> = {
@@ -333,6 +359,13 @@ export default function DutyDetailsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const handleEdit = (id: string) => {
+    router.push({
+      pathname: '/hospital/create-duty',
+      params: { dutyId: id, mode: 'edit' },
+    });
+  };
+
   useEffect(() => {
     if (!dutyId) return;
     (async () => {
@@ -374,10 +407,18 @@ export default function DutyDetailsScreen() {
   // ── Data extraction ──
   const staffName =
     duty.assignedTo?.fullName ?? duty.assignedTo?.user?.name ?? 'Staff';
-  const hospLat = duty.hospitalLocation?.latitude;
-  const hospLng = duty.hospitalLocation?.longitude;
+  // const hospLat = duty.hospitalLocation?.latitude;
+  // const hospLng = duty.hospitalLocation?.longitude;
+  // const staffLat = duty.assignedTo?.coordinates?.coordinates?.latitude;
+  // const staffLng = duty.assignedTo?.coordinates?.coordinates?.longitude;
+  // ✅ Hospital coords come from duty.hospital.coordinates.coordinates
+  const hospLat = duty.hospital?.coordinates?.coordinates?.latitude;
+  const hospLng = duty.hospital?.coordinates?.coordinates?.longitude;
+
+  // ✅ Staff coords — only when duty is assigned
   const staffLat = duty.assignedTo?.coordinates?.coordinates?.latitude;
   const staffLng = duty.assignedTo?.coordinates?.coordinates?.longitude;
+
   const hasMap = hospLat != null && hospLng != null;
   const urgencyCfg = URGENCY_CONFIG[duty.urgency] ?? { bg: '#F3F4F6', text: '#374151' };
   const mapHeight = isMobile ? 200 : 240;
@@ -398,11 +439,27 @@ export default function DutyDetailsScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* ── Page heading ── */}
-        <View style={styles.pageHeading}>
+        {/* <View style={styles.pageHeading}>
           <Text style={styles.pageTitle}>Duty Details</Text>
           <Text style={styles.pageSubtitle}>
             Review specific operational requirements and scheduling parameters for the assigned clinical duty.
           </Text>
+        </View> */}
+        {/* ── Page heading ── */}
+        <View style={[styles.pageHeading, { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }]}>
+          <View style={{ flex: 1, marginRight: 12 }}>
+            <Text style={styles.pageTitle}>Duty Details</Text>
+            <Text style={styles.pageSubtitle}>
+              Review specific operational requirements and scheduling parameters for the assigned clinical duty.
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.editBtn}
+            onPress={() => handleEdit(dutyId)}   // ← dutyId already from useLocalSearchParams
+            activeOpacity={0.8}
+          >
+            <Text style={styles.editBtnText}>Edit Duty</Text>
+          </TouchableOpacity>
         </View>
 
         {/* ── Two-column (or single on mobile) ── */}
@@ -469,10 +526,10 @@ export default function DutyDetailsScreen() {
 
             {/* Extra details row */}
             <View style={[styles.extrasRow, isMobile && styles.extrasRowMobile]}>
-              <View style={styles.extraChip}>
+              {/* <View style={styles.extraChip}>
                 <Ionicons name="cash-outline" size={14} color="#10B981" />
                 <Text style={styles.extraChipText}>₹{duty.offeredRate}/hr</Text>
-              </View>
+              </View> */}
               <View style={styles.extraChip}>
                 <Ionicons name="wallet-outline" size={14} color="#2563EB" />
                 <Text style={styles.extraChipText}>Total ₹{duty.totalPayment}</Text>
@@ -523,7 +580,7 @@ export default function DutyDetailsScreen() {
                     <Text style={styles.locationBarSub} numberOfLines={2}>
                       {duty.hospital?.hospitalLegalName}
                     </Text>
-                    {duty.hospitalLocation?.address ? (
+                    {/* {duty.hospitalLocation?.address ? (
                       <Text style={styles.locationBarAddr} numberOfLines={2}>
                         {[
                           duty.hospitalLocation.address.currentAddress,
@@ -532,7 +589,15 @@ export default function DutyDetailsScreen() {
                           duty.hospitalLocation.address.pincode,
                         ].filter(Boolean).join(', ')}
                       </Text>
-                    ) : null}
+                    ) : null} */}
+                    <Text style={styles.locationBarAddr} numberOfLines={2}>
+                      {[
+                        duty.hospital?.currentAddress,
+                        duty.hospital?.city,
+                        duty.hospital?.state,
+                        duty.hospital?.pincode,
+                      ].filter(Boolean).join(', ')}
+                    </Text>
                   </View>
                   {duty.distanceText ? (
                     <Text style={styles.distanceText}>{duty.distanceText}</Text>
@@ -658,6 +723,18 @@ const styles = StyleSheet.create({
   topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12 },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   backText: { fontSize: 13, fontWeight: '500', color: '#6B7280' },
+  editBtn: {
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 8,
+    flexShrink: 0,
+  },
+  editBtnText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
 
   // Scroll
   scroll: { flex: 1 },
