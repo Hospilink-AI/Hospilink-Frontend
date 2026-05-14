@@ -553,7 +553,7 @@ export default function CreateDutyScreen() {
       description: form.dutyDescription,
       offered_rate: Number(form.offerRate),
       is_overnight_duty: form.overtimeDuty,
-      staffCount: form.staffCount ? Number(form.staffCount) : undefined,
+      staff_count: form.staffCount ? Number(form.staffCount) : undefined,
     };
 
     try {
