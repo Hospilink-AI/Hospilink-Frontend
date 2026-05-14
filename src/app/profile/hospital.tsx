@@ -245,6 +245,7 @@ export default function HospitalProfile() {
   const [showServiceDropdown, setShowServiceDropdown] = useState(false);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [description, setDescription] = useState("");
 
   // ── Dynamic completion percentage ──
   // 9 tracked fields: email & staffCount always count (prefilled/defaulted)
@@ -258,6 +259,7 @@ export default function HospitalProfile() {
       city.trim().length > 0,
       pincode.trim().length === 6,
       state.trim().length > 0,
+       description.trim().length > 0, 
       selectedServices.length > 0,
     ].filter(Boolean).length /
       9) *
@@ -370,6 +372,7 @@ export default function HospitalProfile() {
       servicesAvailable: selectedServices,
       // location: city.trim(),
       staffCount: staffCount.value,
+      description: description.trim(),
     };
 
     console.log("📤 Submitting hospital profile:", payload);
@@ -492,7 +495,7 @@ export default function HospitalProfile() {
                 maxLength={15}
               />
             </View> */}
-            
+
             <View style={styles.inputRow}>
               <Ionicons name="call-outline" size={15} color="#94a3b8" style={{ marginRight: 8 }} />
               <View style={styles.phonePrefix}>
@@ -590,7 +593,22 @@ export default function HospitalProfile() {
                 </ScrollView>
               </View>
             )}
+
+            <Text style={styles.label}>Hospital Description</Text>
+          <View style={[styles.inputRow, { height: 'auto', alignItems: 'flex-start', paddingVertical: 10 }]}>
+            <TextInput
+              placeholder="e.g. A premier multispeciality hospital providing quality healthcare..."
+              placeholderTextColor="#b0bec5"
+              style={[styles.inputInner, { minHeight: 90, textAlignVertical: 'top' }]}
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              numberOfLines={4}
+            />
           </View>
+          </View>
+          {/* ── Description ── */}
+          
 
           {/* ── RIGHT CARD: Capacity & Services ── */}
           <View style={[styles.card, isDesktop && { marginLeft: 16 }]}>

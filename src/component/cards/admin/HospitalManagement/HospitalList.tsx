@@ -34,7 +34,8 @@ interface HospitalDocument {
   description?: string;
   pages?: number;
   fileSize?: string;
-  url?: string;
+  url?: string;  
+
 }
 
 interface PaginationInfo {
@@ -69,6 +70,7 @@ interface Hospital {
   occupiedDuties: number;
   documents: HospitalDocument[];
   servicesAvailable?: string[];
+  profilePictureUrl: string | null;
 }
 
 // ─── Mapper ───────────────────────────────────────────────────────────────────
@@ -135,6 +137,12 @@ const mapHospital = (h: any): Hospital => {
   const totalDuties = Number(h?.totalDuties) || 0;
   const occupiedDuties = Number(h?.occupiedDuties) || 0;
   const dutyPercent = totalDuties > 0 ? Math.round((occupiedDuties / totalDuties) * 100) : 0;
+  const pic = h?.profilePicture;
+  const profilePictureUrl =
+    typeof pic === 'string' ? pic :          // direct URL string
+      pic?.url ? pic.url :                     // object with url field
+        pic?.s3Key ? `https://YOUR-BUCKET.s3.amazonaws.com/${pic.s3Key}` : // construct from s3Key
+          null;
 
   return {
     id: safeStr(h?._id ?? h?.id, 'unknown'),
@@ -158,6 +166,7 @@ const mapHospital = (h: any): Hospital => {
     totalDuties,
     occupiedDuties,
     documents: Array.isArray(h?.documents) ? h.documents.map(mapDoc) : [],
+    profilePictureUrl,
   };
 };
 
@@ -1047,7 +1056,15 @@ function HospitalRow({ h, onDotsPress }: HospitalRowProps) {
     <View style={hr.row}>
       <View style={[hr.cell, hr.colName, { flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
         <View style={[hr.iconBox, { backgroundColor: h.iconBg }]}>
-          <Text style={hr.iconTxt}>{h.iconEmoji}</Text>
+          {h.profilePictureUrl ? (
+            <Image
+              source={{ uri: h.profilePictureUrl }}
+              style={{ width: 44, height: 44, borderRadius: 12 }}
+              resizeMode="cover"
+            />
+          ) : (
+            <Text style={hr.iconTxt}>{h.iconEmoji}</Text>
+          )}
         </View>
         <View style={{ flex: 1 }}>
           <Text style={hr.name} numberOfLines={1}>{h.name}</Text>

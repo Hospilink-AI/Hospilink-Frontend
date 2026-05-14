@@ -34,6 +34,7 @@ interface MedicalStaff {
   status: AvailabilityStatus;
   verificationStatus: VerificationStatus;
   phoneNumber?: string;
+   profilePictureUrl: string | null;
 }
 
 interface StaffDocument {
@@ -108,6 +109,7 @@ const mapStaff = (s: any): MedicalStaff => ({
   status: s.isAvailable ? 'AVAILABLE' : 'UNAVAILABLE',
   verificationStatus: s.verificationStatus || 'pending',
   phoneNumber: s.phoneNumber,
+  profilePictureUrl: s.profilePicture?.s3Key ?? null,
 });
 
 const JOB_ROLE_OPTIONS = [
@@ -445,6 +447,9 @@ interface FilterBarProps {
   onApply: () => void; onClear: () => void;
   hasActiveFilters: boolean;
 }
+const getProfilePictureUrl = (profilePicture?: { s3Key?: string | null }): string | null => {
+  return profilePicture?.s3Key ?? null;
+};
 function FilterBar({ search, setSearch, status, setStatus, role, setRole, onApply, onClear, hasActiveFilters }: FilterBarProps) {
   return (
     <View style={fb.wrap}>
@@ -902,8 +907,15 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
             ) : (
               <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
                 <View style={pm.profileHeader}>
-                  <View style={[pm.avatarLarge, { backgroundColor: roleColor.bg }]}>
-                    <Text style={[pm.avatarInitials, { color: roleColor.text }]}>{initials}</Text>
+                  <View style={[pm.avatarLarge, { backgroundColor: roleColor.bg, overflow: 'hidden' }]}>
+                    {(() => {
+                      const picUrl = getProfilePictureUrl((staffDetails as any).profilePicture);
+                      return picUrl ? (
+                        <Image source={{ uri: picUrl }} style={{ width: 76, height: 76, borderRadius: 20 }} resizeMode="cover" />
+                      ) : (
+                        <Text style={[pm.avatarInitials, { color: roleColor.text }]}>{initials}</Text>
+                      );
+                    })()}
                   </View>
                   <Text style={pm.staffName}>{staffDetails.fullName || '—'}</Text>
                   <View style={pm.roleBadgeWrap}>
@@ -1213,7 +1225,15 @@ function StaffRow({ staff, onDotsPress }: StaffRowProps) {
     <View style={sr.row}>
       <View style={[sr.cell, sr.colName, { flexDirection: 'row', alignItems: 'center', gap: 10 }]}>
         <View style={[sr.avatar, { backgroundColor: roleColor.bg }]}>
-          <Text style={[sr.avatarTxt, { color: roleColor.text }]}>{initials}</Text>
+          {staff.profilePictureUrl ? (
+            <Image
+              source={{ uri: staff.profilePictureUrl }}
+              style={sr.avatarImg}
+              resizeMode="cover"
+            />
+          ) : (
+            <Text style={[sr.avatarTxt, { color: roleColor.text }]}>{initials}</Text>
+          )}
         </View>
         <View style={{ flex: 1 }}>
           <Text style={sr.name} numberOfLines={1}>{staff.fullName || '—'}</Text>
@@ -1255,6 +1275,7 @@ function StaffRow({ staff, onDotsPress }: StaffRowProps) {
 const sr = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#F1F5F9', backgroundColor: '#fff' },
   cell: { overflow: 'hidden' },
+  avatarImg: { width: 40, height: 40, borderRadius: 12 },
   colName: { flex: 2.2 },
   colRole: { flex: 1.8 },
   colLocation: { flex: 1.8 },

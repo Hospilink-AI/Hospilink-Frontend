@@ -32,6 +32,7 @@ type FormState = {
   overtimeDuty: boolean;
   offerRate: string;
   dutyDescription: string;
+  staffCount: string;
 };
 
 interface Hospital {
@@ -383,9 +384,9 @@ function DatePickerField({ value, onChange, placeholder }: {
           value={htmlValue}
           onChange={(e: any) => {
             const raw = e.target.value;
-            if (raw) { 
-              const [y, m, d] = raw.split('-'); 
-              onChange(`${m}/${d}/${y}`); 
+            if (raw) {
+              const [y, m, d] = raw.split('-');
+              onChange(`${m}/${d}/${y}`);
             }
             else onChange('');
           }}
@@ -403,9 +404,9 @@ function DatePickerField({ value, onChange, placeholder }: {
   return (
     <View>
       {/* Click trigger moved to the wrapper for full-box interaction */}
-      <TouchableOpacity 
-        style={styles.inputWrap} 
-        onPress={handlePress} 
+      <TouchableOpacity
+        style={styles.inputWrap}
+        onPress={handlePress}
         activeOpacity={0.8}
       >
         <Ionicons name="calendar-outline" size={15} color="#9CA3AF" style={{ marginRight: 6 }} />
@@ -419,18 +420,18 @@ function DatePickerField({ value, onChange, placeholder }: {
           value={tempDate}
           mode="date"
           display="calendar"
-          onChange={(_e: any, date?: Date) => { 
-            setShowPicker(false); 
-            if (date) onChange(formatDateDisplay(date)); 
+          onChange={(_e: any, date?: Date) => {
+            setShowPicker(false);
+            if (date) onChange(formatDateDisplay(date));
           }}
         />
       )}
 
       {Platform.OS === 'ios' && (
-        <Modal 
-          visible={showPicker} 
-          transparent 
-          animationType="slide" 
+        <Modal
+          visible={showPicker}
+          transparent
+          animationType="slide"
           onRequestClose={() => setShowPicker(false)}
         >
           <View style={styles.dateModalOverlay}>
@@ -512,9 +513,9 @@ function TimePickerField({ value, onChange, placeholder, error }: {
     }
 
     return (
-      <TouchableOpacity 
-        style={[styles.inputWrap]} 
-        onPress={handlePress} 
+      <TouchableOpacity
+        style={[styles.inputWrap]}
+        onPress={handlePress}
         activeOpacity={0.8}
       >
         {/* pointerEvents="none" makes the touch go "through" the icon/text to the wrapper */}
@@ -546,10 +547,10 @@ function TimePickerField({ value, onChange, placeholder, error }: {
       )}
 
       {Platform.OS === 'ios' && (
-        <Modal 
-          visible={showPicker} 
-          transparent 
-          animationType="slide" 
+        <Modal
+          visible={showPicker}
+          transparent
+          animationType="slide"
           onRequestClose={() => setShowPicker(false)}
         >
           <View style={styles.dateModalOverlay}>
@@ -559,10 +560,10 @@ function TimePickerField({ value, onChange, placeholder, error }: {
                   <Text style={styles.dateModalCancel}>Cancel</Text>
                 </TouchableOpacity>
                 <Text style={styles.dateModalTitle}>Select Time</Text>
-                <TouchableOpacity 
-                  onPress={() => { 
-                    onChange(formatTime(tempTime)); 
-                    setShowPicker(false); 
+                <TouchableOpacity
+                  onPress={() => {
+                    onChange(formatTime(tempTime));
+                    setShowPicker(false);
                   }}
                 >
                   <Text style={styles.dateModalDone}>Done</Text>
@@ -621,7 +622,7 @@ function InputField({ placeholder, value, onChangeText, prefix, multiline, keybo
         numberOfLines={multiline ? 5 : 1}
         keyboardType={keyboardType}
         textAlignVertical={multiline ? 'top' : 'center'}
-        
+
       />
     </View>
   );
@@ -637,7 +638,7 @@ export default function CreateDutyScreen() {
   const [form, setForm] = useState<FormState>({
     hospitalId: '', hospitalName: '', staffRole: '', urgencyLevel: 'medium',
     startingDate: '', endingDate: '', startTime: '', endTime: '',
-    overtimeDuty: false, offerRate: '', dutyDescription: '',
+    overtimeDuty: false, offerRate: '', dutyDescription: '', staffCount: '',
   });
 
   const [publishing, setPublishing] = useState(false);
@@ -680,6 +681,7 @@ export default function CreateDutyScreen() {
           overtimeDuty: d.is_overnight_duty ?? d.isOvernightDuty ?? false,
           offerRate: String(d.offered_rate ?? d.offeredRate ?? ''),
           dutyDescription: d.description ?? '',
+          staffCount: String(d.staff_count ?? d.staffCount ?? ''),
         });
       } catch (err: any) {
         Alert.alert(
@@ -709,6 +711,7 @@ export default function CreateDutyScreen() {
       description: form.dutyDescription,
       offered_rate: Number(form.offerRate),
       is_overnight_duty: form.overtimeDuty,
+      staffCount: form.staffCount ? Number(form.staffCount) : undefined,
     };
 
     try {
@@ -740,24 +743,24 @@ export default function CreateDutyScreen() {
   }
 
 
-// ─── AUTO-TOGGLE OVERNIGHT LOGIC ───
-useEffect(() => {
-  if (!form.startingDate || !form.endingDate) return;
+  // ─── AUTO-TOGGLE OVERNIGHT LOGIC ───
+  useEffect(() => {
+    if (!form.startingDate || !form.endingDate) return;
 
-  const start = parseDateString(form.startingDate);
-  const end = parseDateString(form.endingDate);
+    const start = parseDateString(form.startingDate);
+    const end = parseDateString(form.endingDate);
 
-  // Set hours to 0 to compare the calendar dates only
-  start.setHours(0, 0, 0, 0);
-  end.setHours(0, 0, 0, 0);
+    // Set hours to 0 to compare the calendar dates only
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
 
-  // If End Date is later than Start Date, it is an overnight shift
-  const isNextDay = end > start;
+    // If End Date is later than Start Date, it is an overnight shift
+    const isNextDay = end > start;
 
-  if (isNextDay !== form.overtimeDuty) {
-    setForm(prev => ({ ...prev, overtimeDuty: isNextDay }));
-  }
-}, [form.startingDate, form.endingDate]);
+    if (isNextDay !== form.overtimeDuty) {
+      setForm(prev => ({ ...prev, overtimeDuty: isNextDay }));
+    }
+  }, [form.startingDate, form.endingDate]);
 
   return (
     <View style={styles.screen}>
@@ -794,8 +797,8 @@ useEffect(() => {
             {publishing
               ? <ActivityIndicator size="small" color="#fff" />
               : <Text style={styles.publishText}>
-                  {isEditMode ? 'Save Changes' : 'Publish Duty'}
-                </Text>
+                {isEditMode ? 'Save Changes' : 'Publish Duty'}
+              </Text>
             }
           </TouchableOpacity>
         </View>
@@ -860,6 +863,17 @@ useEffect(() => {
                     onSelect={set('urgencyLevel')}
                   />
                 </View>
+              </View>
+              {/* Staff Count */}
+              <View style={{ marginTop: 4 }}>
+                <FieldLabel label="Number of Staff Required" />
+                <InputField
+                  placeholder="e.g. 2"
+                  value={form.staffCount}
+                  onChangeText={set('staffCount')}
+                  keyboardType="number-pad"
+                  // error={errors.staffCount}
+                />
               </View>
             </View>
 
@@ -1079,16 +1093,16 @@ const styles = StyleSheet.create({
   inputPrefix: { fontSize: 13, color: '#6B7280', marginRight: 4 },
   input: { flex: 1, fontSize: 13, color: '#111827', paddingVertical: Platform.OS === 'ios' ? 12 : 10, ...Platform.select({ web: { outlineWidth: 0 } as any }), },
   inputRow: {
-  borderWidth: 1,
-  borderColor: "#e2e8f0",
-  backgroundColor: "#f8fafc",
-},
-inputInner: {
-  backgroundColor: "transparent",
-  ...Platform.select({
-    web: { outlineStyle: "none" }
-  })
-},
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    backgroundColor: "#f8fafc",
+  },
+  inputInner: {
+    backgroundColor: "transparent",
+    ...Platform.select({
+      web: { outlineStyle: "none" }
+    })
+  },
   inputMulti: { minHeight: 110, paddingTop: 10 },
 
   // ── Date/Time modal ──
