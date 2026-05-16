@@ -213,28 +213,28 @@ export default function HospitalProfile() {
   //   : (params.email as string) ?? "";
 
   const params = useLocalSearchParams();
-const signupName = Array.isArray(params.signupName)
-  ? params.signupName[0]
-  : (params.signupName as string) ?? "";
+  const signupName = Array.isArray(params.signupName)
+    ? params.signupName[0]
+    : (params.signupName as string) ?? "";
 
-const prefillName = Array.isArray(params.prefillName)
-  ? params.prefillName[0]
-  : (params.prefillName as string) ?? "";
+  const prefillName = Array.isArray(params.prefillName)
+    ? params.prefillName[0]
+    : (params.prefillName as string) ?? "";
 
-const signupEmail = Array.isArray(params.email)
-  ? params.email[0]
-  : (params.email as string) ?? "";
+  const signupEmail = Array.isArray(params.email)
+    ? params.email[0]
+    : (params.email as string) ?? "";
 
-const prefillEmail = Array.isArray(params.prefillEmail)
-  ? params.prefillEmail[0]
-  : (params.prefillEmail as string) ?? "";
+  const prefillEmail = Array.isArray(params.prefillEmail)
+    ? params.prefillEmail[0]
+    : (params.prefillEmail as string) ?? "";
 
   // ── Form state
   // const [hospitalName, setHospitalName] = useState(signupName);
   const [hospitalName, setHospitalName] = useState(prefillName || signupName || "");
   // const [email] = useState(signupEmail);                // ← prefilled, non-editable (no setter exposed)
   const [email] = useState(prefillEmail || signupEmail || "");
-  const [phoneNumber, setPhoneNumber] = useState("+91 ");   // ← new
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
@@ -245,6 +245,7 @@ const prefillEmail = Array.isArray(params.prefillEmail)
   const [showServiceDropdown, setShowServiceDropdown] = useState(false);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [description, setDescription] = useState("");
 
   // ── Dynamic completion percentage ──
   // 9 tracked fields: email & staffCount always count (prefilled/defaulted)
@@ -258,6 +259,7 @@ const prefillEmail = Array.isArray(params.prefillEmail)
       city.trim().length > 0,
       pincode.trim().length === 6,
       state.trim().length > 0,
+       description.trim().length > 0, 
       selectedServices.length > 0,
     ].filter(Boolean).length /
       9) *
@@ -361,7 +363,8 @@ const prefillEmail = Array.isArray(params.prefillEmail)
     const payload = {
       hospitalLegalName: hospitalName.trim(),
       email: email.trim(),                  // ← added
-      phoneNumber: phoneNumber.trim(),       // ← added
+      // phoneNumber: phoneNumber.trim(),       // ← added
+      phoneNumber: `+91 ${phoneNumber}`,
       currentAddress: fullAddress,
       city: city.trim(),
       state: state,
@@ -369,6 +372,7 @@ const prefillEmail = Array.isArray(params.prefillEmail)
       servicesAvailable: selectedServices,
       // location: city.trim(),
       staffCount: staffCount.value,
+      description: description.trim(),
     };
 
     console.log("📤 Submitting hospital profile:", payload);
@@ -479,7 +483,7 @@ const prefillEmail = Array.isArray(params.prefillEmail)
 
             {/* ── NEW: Phone Number ── */}
             <Text style={styles.label}>Phone Number</Text>
-            <View style={styles.inputRow}>
+            {/* <View style={styles.inputRow}>
               <Ionicons name="call-outline" size={15} color="#94a3b8" style={{ marginRight: 8 }} />
               <TextInput
                 placeholder="+91 98765 43210"
@@ -489,6 +493,23 @@ const prefillEmail = Array.isArray(params.prefillEmail)
                 onChangeText={(v) => setPhoneNumber(v.replace(/[^0-9+\-\s()]/g, '').slice(0, 15))}
                 keyboardType="phone-pad"
                 maxLength={15}
+              />
+            </View> */}
+
+            <View style={styles.inputRow}>
+              <Ionicons name="call-outline" size={15} color="#94a3b8" style={{ marginRight: 8 }} />
+              <View style={styles.phonePrefix}>
+                <Text style={styles.phonePrefixText}>+91</Text>
+              </View>
+              <View style={styles.phoneDivider} />
+              <TextInput
+                placeholder="98765 43210"
+                placeholderTextColor="#b0bec5"
+                style={styles.inputInner}
+                value={phoneNumber}
+                onChangeText={(v) => setPhoneNumber(v.replace(/\D/g, "").slice(0, 10))}
+                keyboardType="number-pad"
+                maxLength={10}
               />
             </View>
 
@@ -572,7 +593,22 @@ const prefillEmail = Array.isArray(params.prefillEmail)
                 </ScrollView>
               </View>
             )}
+
+            <Text style={styles.label}>Hospital Description</Text>
+          <View style={[styles.inputRow, { height: 'auto', alignItems: 'flex-start', paddingVertical: 10 }]}>
+            <TextInput
+              placeholder="e.g. A premier multispeciality hospital providing quality healthcare..."
+              placeholderTextColor="#b0bec5"
+              style={[styles.inputInner, { minHeight: 90, textAlignVertical: 'top' }]}
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              numberOfLines={4}
+            />
           </View>
+          </View>
+          {/* ── Description ── */}
+          
 
           {/* ── RIGHT CARD: Capacity & Services ── */}
           <View style={[styles.card, isDesktop && { marginLeft: 16 }]}>
@@ -749,6 +785,9 @@ const prefillEmail = Array.isArray(params.prefillEmail)
 /* ─── Styles ─────────────────────────────────────────────────────────────── */
 const styles = StyleSheet.create({
   outerContainer: { flex: 1, backgroundColor: "#f0f4f8" },
+  phonePrefix: { paddingRight: 8 },
+  phonePrefixText: { color: "#0f172a", fontSize: 14, fontWeight: "400" },
+  phoneDivider: { width: 1, height: 20, backgroundColor: "#e2e8f0", marginRight: 10 },
   navbar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 28, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "#e2e8f0", backgroundColor: "#ffffff" },
   navLeft: { flexDirection: "row", alignItems: "center" },
   logoBox: { width: 32, height: 32, backgroundColor: "#2563eb", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 10 },

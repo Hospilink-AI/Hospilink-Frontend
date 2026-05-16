@@ -71,6 +71,16 @@ const ROLES: { label: string; value: string }[] = [
   { label: "HR & Accounts", value: "hr_accounts" },
 ];
 
+const EXPERIENCE_OPTIONS = [
+  "0-1 year",
+  "1-3 years",
+  "3-5 years",
+  "5-10 years",
+  "10-15 years",
+  "15-20 years",
+  "20+ years",
+];
+
 // ── Education entry type
 interface EducationEntry {
   universityName: string;
@@ -110,10 +120,10 @@ export default function MedicalStaffProfile() {
   const signupEmail = Array.isArray(params.email)
     ? params.email[0]
     : (params.email as string) ?? "";
-  
+
   const prefillEmail = Array.isArray(params.prefillEmail)
-  ? params.prefillEmail[0]
-  : (params.prefillEmail as string) ?? "";  
+    ? params.prefillEmail[0]
+    : (params.prefillEmail as string) ?? "";
 
   // ── Form state — name & email are READ-ONLY, pre-filled from signup
   // const [fullName] = useState(signupName ?? "");
@@ -153,6 +163,9 @@ export default function MedicalStaffProfile() {
   // ── Location state (invisible to user)
   const [capturedLocation, setCapturedLocation] = useState<CapturedLocation | null>(null);
   const [locationChecked, setLocationChecked] = useState(false);
+
+  const [experience, setExperience] = useState("");
+  const [showExperienceDropdown, setShowExperienceDropdown] = useState(false);
 
   // ── Filtered states for search
   const filteredStates = INDIAN_STATES.filter((s) =>
@@ -303,6 +316,7 @@ export default function MedicalStaffProfile() {
         profileSummary: profileSummary.trim() || undefined,
         education: educationArray.length > 0 ? educationArray : undefined,
         skills: skillsList.length > 0 ? skillsList : undefined,
+        // experience: experience || undefined,
       };
 
       let response: any;
@@ -758,8 +772,65 @@ export default function MedicalStaffProfile() {
               <Text style={styles.addEducationText}>Add another degree / qualification</Text>
             </TouchableOpacity>
 
+            {/* ── Experience Section ── */}
+            <View style={[styles.sectionHeader, { marginTop: 10 }]}>
+              <Ionicons name="briefcase-outline" size={15} color="#2563eb" />
+              <Text style={styles.sectionTitle}>Experience</Text>
+            </View>
+
+            <Text style={styles.label}>Years of Experience</Text>
+            <TouchableOpacity
+              style={styles.inputRow}
+              onPress={() => {
+                setShowExperienceDropdown(!showExperienceDropdown);
+                setShowRoleDropdown(false);
+                setShowStateDropdown(false);
+              }}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="time-outline" size={16} color="#94a3b8" style={styles.inputIcon} />
+              <Text style={[styles.dropdownText, experience ? styles.dropdownSelected : null]}>
+                {experience || "Select experience"}
+              </Text>
+              <Ionicons
+                name={showExperienceDropdown ? "chevron-up" : "chevron-down"}
+                size={16}
+                color="#94a3b8"
+              />
+            </TouchableOpacity>
+
+            {showExperienceDropdown && (
+              <View style={styles.dropdownList}>
+                <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+                  {EXPERIENCE_OPTIONS.map((option) => (
+                    <TouchableOpacity
+                      key={option}
+                      style={[
+                        styles.dropdownItem,
+                        experience === option && styles.dropdownItemActive,
+                      ]}
+                      onPress={() => {
+                        setExperience(option);
+                        setShowExperienceDropdown(false);
+                      }}
+                    >
+                      <Text style={[
+                        styles.dropdownItemText,
+                        experience === option && styles.dropdownItemTextActive,
+                      ]}>
+                        {option}
+                      </Text>
+                      {experience === option && (
+                        <Ionicons name="checkmark" size={14} color="#2563eb" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
             {/* ── Skills ── */}
-            <View style={[styles.sectionHeader, { marginTop: 28 }]}>
+            <View style={[styles.sectionHeader, { marginTop: 18 }]}>
               <Ionicons name="flash-outline" size={15} color="#2563eb" />
               <Text style={styles.sectionTitle}>
                 Skills <Text style={styles.optionalTag}>(optional)</Text>

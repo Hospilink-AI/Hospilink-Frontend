@@ -32,6 +32,7 @@ type FormState = {
   overtimeDuty: boolean;
   offerRate: string;
   dutyDescription: string;
+  staffCount: string;
 };
 
 interface Hospital {
@@ -637,7 +638,7 @@ export default function CreateDutyScreen() {
   const [form, setForm] = useState<FormState>({
     hospitalId: '', hospitalName: '', staffRole: '', urgencyLevel: 'emergency',
     startingDate: '', endingDate: '', startTime: '', endTime: '',
-    overtimeDuty: false, offerRate: '', dutyDescription: '',
+    overtimeDuty: false, offerRate: '', dutyDescription: '', staffCount: '',
   });
 
   const [publishing, setPublishing] = useState(false);
@@ -680,6 +681,7 @@ export default function CreateDutyScreen() {
           overtimeDuty: d.is_overnight_duty ?? d.isOvernightDuty ?? false,
           offerRate: String(d.offered_rate ?? d.offeredRate ?? ''),
           dutyDescription: d.description ?? '',
+          staffCount: String(d.staff_count ?? d.staffCount ?? ''),
         });
       } catch (err: any) {
         Alert.alert(
@@ -709,6 +711,7 @@ export default function CreateDutyScreen() {
       description: form.dutyDescription,
       offered_rate: Number(form.offerRate),
       is_overnight_duty: form.overtimeDuty,
+      staff_count: form.staffCount ? Number(form.staffCount) : undefined,
     };
 
     try {
@@ -861,6 +864,17 @@ export default function CreateDutyScreen() {
                     <Ionicons name="lock-closed-outline" size={13} color="#DC2626" />
                   </View>
                 </View>
+              </View>
+              {/* Staff Count */}
+              <View style={{ marginTop: 4 }}>
+                <FieldLabel label="Staff Count" />
+                <InputField
+                  placeholder="e.g. 2"
+                  value={form.staffCount}
+                  onChangeText={set('staffCount')}
+                  keyboardType="number-pad"
+                  // error={errors.staffCount}
+                />
               </View>
             </View>
 

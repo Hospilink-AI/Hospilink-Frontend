@@ -147,12 +147,12 @@ export default function DocumentVerification() {
   // ─── HANDLE FILTER CHANGE (only one active) ─────────────────────────────
   const handleStatusFilterChange = (status: string) => {
     setStatusFilter(status);
-    setRoleFilter(''); // Clear other filter
+    // setRoleFilter(''); // Clear other filter
   };
 
   const handleRoleFilterChange = (role: string) => {
     setRoleFilter(role);
-    setStatusFilter(''); // Clear other filter
+    // setStatusFilter(''); // Clear other filter
   };
 
   const handleClearFilters = () => {

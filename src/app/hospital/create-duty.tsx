@@ -29,6 +29,7 @@ type FormState = {
   overtimeDuty: boolean;
   offerRate: string;
   dutyDescription: string;
+  staffCount: string;
 };
 
 type FormErrors = Partial<Record<keyof FormState, string>>;
@@ -111,7 +112,7 @@ function toAPIDate(val: string): string {
 function fromAPIDate(val: string): string {
   if (!val) return '';
   // FIX: Split by 'T' first to remove the timestamp part (e.g., "2026-04-10T00:00:00.000Z")
-  const dateOnly = val.split('T')[0]; 
+  const dateOnly = val.split('T')[0];
   const [y, m, d] = dateOnly.split('-');
   if (!y || !m || !d) return '';
   return `${m}/${d}/${y}`;
@@ -140,7 +141,7 @@ function Toast({ visible, message }: { visible: boolean; message: string }) {
     ]).start();
   }, [visible]);
 
-  
+
 
   return (
     <Animated.View style={[styles.toast, { transform: [{ translateY }], opacity }]} pointerEvents="none">
@@ -483,14 +484,14 @@ function InputField({ placeholder, value, onChangeText, prefix, multiline, keybo
 export default function CreateDutyScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const isTablet = width >= 900; 
+  const isTablet = width >= 900;
 
   const { dutyId, mode } = useLocalSearchParams<{ dutyId: string; mode: string }>();
   const isEditMode = mode === 'edit';
 
   const [form, setForm] = useState<FormState>({
     staffRole: '', urgencyLevel: 'medium', startingDate: '', endingDate: '',
-    startTime: '', endTime: '', overtimeDuty: false, offerRate: '', dutyDescription: '',
+    startTime: '', endTime: '', overtimeDuty: false, offerRate: '', dutyDescription: '', staffCount: '',
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -538,6 +539,7 @@ export default function CreateDutyScreen() {
           overtimeDuty: d.is_overnight_duty ?? d.isOvernightDuty ?? false,
           offerRate: String(d.offered_rate ?? d.offeredRate ?? ''),
           dutyDescription: d.description ?? '',
+          staffCount: String(d.staff_count ?? d.staffCount ?? ''),
         });
       } catch (err: any) {
         setApiError(err?.response?.data?.message ?? err?.message ?? 'Failed to load duty details.');
@@ -549,12 +551,12 @@ export default function CreateDutyScreen() {
 
   const handleSubmit = async () => {
     setApiError('');
-    
+
     // Trigger Frontend Validation
     const validationErrors = validateForm(form);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      return; 
+      return;
     }
 
     const payload = {
@@ -567,6 +569,7 @@ export default function CreateDutyScreen() {
       description: form.dutyDescription,
       offered_rate: Number(form.offerRate),
       is_overnight_duty: form.overtimeDuty,
+      staff_count: form.staffCount ? Number(form.staffCount) : undefined,
     };
 
     try {
@@ -574,7 +577,7 @@ export default function CreateDutyScreen() {
       if (isEditMode && dutyId) {
         await dutyAPI.updatePublishedDuty(dutyId, payload);
         showToast('Duty updated successfully!');
-        setTimeout(() => router.push('/hospital/dashboard'), 1800); 
+        setTimeout(() => router.push('/hospital/dashboard'), 1800);
       } else {
         await dutyAPI.createDuty(payload);
         showToast('Duty created successfully!');
@@ -589,21 +592,21 @@ export default function CreateDutyScreen() {
   };
 
   useEffect(() => {
-  if (!form.startingDate || !form.endingDate) return;
+    if (!form.startingDate || !form.endingDate) return;
 
-  const start = parseDateString(form.startingDate);
-  const end = parseDateString(form.endingDate);
+    const start = parseDateString(form.startingDate);
+    const end = parseDateString(form.endingDate);
 
-  // Normalize times to midnight to compare dates only
-  start.setHours(0, 0, 0, 0);
-  end.setHours(0, 0, 0, 0);
+    // Normalize times to midnight to compare dates only
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
 
-  const shouldBeOvernight = end > start;
+    const shouldBeOvernight = end > start;
 
-  if (shouldBeOvernight !== form.overtimeDuty) {
-    setForm(prev => ({ ...prev, overtimeDuty: shouldBeOvernight }));
-  }
-}, [form.startingDate, form.endingDate]);
+    if (shouldBeOvernight !== form.overtimeDuty) {
+      setForm(prev => ({ ...prev, overtimeDuty: shouldBeOvernight }));
+    }
+  }, [form.startingDate, form.endingDate]);
 
   if (loadingDuty) {
     return (
@@ -642,7 +645,7 @@ export default function CreateDutyScreen() {
                 : 'Specify details for the upcoming hospital shift and assign requirements.'}
             </Text>
           </View>
-          
+
           <View style={styles.actions}>
             <TouchableOpacity
               style={styles.cancelBtn}
@@ -677,9 +680,9 @@ export default function CreateDutyScreen() {
         ) : null}
 
         <View style={[styles.mainGrid, isTablet && styles.mainGridTablet]}>
-          
+
           <View style={[styles.column, isTablet && { flex: 1.1 }]}>
-            
+
             <View style={styles.card}>
               <SectionHeader icon="list-outline" label="Duty Specifications" color="#2563EB" />
               <View style={styles.row2}>
@@ -703,13 +706,24 @@ export default function CreateDutyScreen() {
                   />
                 </View>
               </View>
+              {/* Staff Count */}
+              <View style={{ marginTop: 4 }}>
+                <FieldLabel label="Staff Count" />
+                <InputField
+                  placeholder="e.g. 2"
+                  value={form.staffCount}
+                  onChangeText={set('staffCount')}
+                  keyboardType="number-pad"
+                  error={errors.staffCount}
+                />
+              </View>
             </View>
 
             <View style={styles.card}>
-              <SectionHeader 
-                icon="calendar-outline" 
-                label="Schedule Details" 
-                color="#2563EB" 
+              <SectionHeader
+                icon="calendar-outline"
+                label="Schedule Details"
+                color="#2563EB"
                 rightElement={
                   <View style={styles.overtimePill}>
                     <Ionicons name="moon" size={14} color="#6B7280" />
@@ -727,19 +741,19 @@ export default function CreateDutyScreen() {
               <View style={styles.row2}>
                 <View style={styles.col}>
                   <FieldLabel label="Starting Date" required />
-                  <DatePickerField 
-                    value={form.startingDate} 
-                    onChange={set('startingDate')} 
-                    placeholder="dd-mm-yyyy" 
+                  <DatePickerField
+                    value={form.startingDate}
+                    onChange={set('startingDate')}
+                    placeholder="dd-mm-yyyy"
                     error={errors.startingDate}
                   />
                 </View>
                 <View style={styles.col}>
                   <FieldLabel label="Ending Date" />
-                  <DatePickerField 
-                    value={form.endingDate} 
-                    onChange={set('endingDate')} 
-                    placeholder="dd-mm-yyyy" 
+                  <DatePickerField
+                    value={form.endingDate}
+                    onChange={set('endingDate')}
+                    placeholder="dd-mm-yyyy"
                     error={errors.endingDate}
                   />
                 </View>
@@ -770,7 +784,7 @@ export default function CreateDutyScreen() {
           </View>
 
           <View style={[styles.column, isTablet && { flex: 0.9 }]}>
-            
+
             <View style={styles.card}>
               <SectionHeader icon="document-text-outline" label="Terms & Description" color="#2563EB" />
               <FieldLabel label="Offer Rate per Hour (₹)" required />
@@ -823,7 +837,7 @@ const styles = StyleSheet.create({
 
   scroll: { flex: 1 },
   content: { padding: 24, paddingBottom: 40 },
-  
+
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },
   backText: { fontSize: 13, fontWeight: '600', color: '#6B7280' },
 

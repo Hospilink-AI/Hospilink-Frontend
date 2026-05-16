@@ -8,6 +8,7 @@ import {
   Clipboard,
   useWindowDimensions,
 } from 'react-native';
+import { useRouter } from "expo-router";
 
 interface Props {
   pendingCount: number;
@@ -30,6 +31,8 @@ export default function VerificationAlertCard({
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+  
+  const router = useRouter();
 
   return (
     <View style={styles.wrapper}>
@@ -54,7 +57,9 @@ export default function VerificationAlertCard({
                   Ensure all medical licenses and board certifications are cross-referenced with the national registry before approval.
                 </Text>
                 <View style={styles.alertActions}>
-                  <TouchableOpacity style={styles.reviewBtn} onPress={onReviewQueue} activeOpacity={0.85}>
+                  <TouchableOpacity style={styles.reviewBtn} onPress={() =>
+                        router.push("/admin/document-verification")
+                    } activeOpacity={0.85}>
                     <Text style={styles.reviewBtnText}>Review Queue</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.dismissBtn} onPress={() => setDismissed(true)} activeOpacity={0.75}>

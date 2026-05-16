@@ -29,6 +29,7 @@ type FormState = {
   overtimeDuty: boolean;
   offerRate: string;
   dutyDescription: string;
+  staffCount: string;
 };
 
 type FormErrors = Partial<Record<keyof FormState, string>>;
@@ -475,7 +476,7 @@ export default function CreateDutyScreen() {
 
   const [form, setForm] = useState<FormState>({
     staffRole: '', urgencyLevel: 'emergency', startingDate: '', endingDate: '',
-    startTime: '', endTime: '', overtimeDuty: false, offerRate: '', dutyDescription: '',
+    startTime: '', endTime: '', overtimeDuty: false, offerRate: '', dutyDescription: '', staffCount: '',
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -524,6 +525,7 @@ export default function CreateDutyScreen() {
           overtimeDuty: d.is_overnight_duty ?? d.isOvernightDuty ?? false,
           offerRate: String(d.offered_rate ?? d.offeredRate ?? ''),
           dutyDescription: d.description ?? '',
+          staffCount: String(d.staff_count ?? d.staffCount ?? ''),
         });
       } catch (err: any) {
         setApiError(err?.response?.data?.message ?? err?.message ?? 'Failed to load duty details.');
@@ -551,6 +553,7 @@ export default function CreateDutyScreen() {
       description: form.dutyDescription,
       offered_rate: Number(form.offerRate),
       is_overnight_duty: form.overtimeDuty,
+      staff_count: form.staffCount ? Number(form.staffCount) : undefined,
     };
 
     try {
@@ -639,8 +642,8 @@ export default function CreateDutyScreen() {
               {publishing
                 ? <ActivityIndicator size="small" color="#fff" />
                 : <Text style={styles.publishText}>
-                    {isEditMode ? 'Save Changes' : 'Publish Duty'}
-                  </Text>
+                  {isEditMode ? 'Save Changes' : 'Publish Duty'}
+                </Text>
               }
             </TouchableOpacity>
           </View>
@@ -680,6 +683,18 @@ export default function CreateDutyScreen() {
                     <Ionicons name="lock-closed" size={12} color="#9CA3AF" style={{ marginLeft: 'auto' }} />
                   </View>
                 </View>
+
+              </View>
+              {/* Staff Count */}
+              <View style={{ marginTop: 4 }}>
+                <FieldLabel label="Staff Count" />
+                <InputField
+                  placeholder="e.g. 2"
+                  value={form.staffCount}
+                  onChangeText={set('staffCount')}
+                  keyboardType="number-pad"
+                  error={errors.staffCount}
+                />
               </View>
             </View>
 

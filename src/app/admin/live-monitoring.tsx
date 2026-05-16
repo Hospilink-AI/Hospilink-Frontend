@@ -170,11 +170,11 @@ export default function LiveMonitoring() {
             onPress={() => staff && handleShowOnMap(dutyId)}
             disabled={!staff}
           >
-            <Text style={styles.mapBtnText}>Show on Map</Text>
+            <Text style={styles.mapBtnText}>Monitor Status</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.monitorBtn} activeOpacity={0.8}>
+          {/* <TouchableOpacity style={styles.monitorBtn} activeOpacity={0.8}>
             <Text style={styles.monitorBtnText}>Monitor Status</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
     );
