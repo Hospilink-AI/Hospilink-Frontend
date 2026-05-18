@@ -34,7 +34,7 @@ interface MedicalStaff {
   status: AvailabilityStatus;
   verificationStatus: VerificationStatus;
   phoneNumber?: string;
-   profilePictureUrl: string | null;
+  profilePictureUrl: string | null;
 }
 
 interface StaffDocument {
@@ -109,7 +109,8 @@ const mapStaff = (s: any): MedicalStaff => ({
   status: s.isAvailable ? 'AVAILABLE' : 'UNAVAILABLE',
   verificationStatus: s.verificationStatus || 'pending',
   phoneNumber: s.phoneNumber,
-  profilePictureUrl: s.profilePicture?.s3Key ?? null,
+  // profilePictureUrl: s.profilePicture?.s3Key ?? null,
+  profilePictureUrl: typeof s.profilePicture === 'string' ? s.profilePicture : null,
 });
 
 const JOB_ROLE_OPTIONS = [
@@ -447,7 +448,8 @@ interface FilterBarProps {
   onApply: () => void; onClear: () => void;
   hasActiveFilters: boolean;
 }
-const getProfilePictureUrl = (profilePicture?: { s3Key?: string | null }): string | null => {
+const getProfilePictureUrl = (profilePicture?: string | { s3Key?: string | null } | null): string | null => {
+  if (typeof profilePicture === 'string') return profilePicture;
   return profilePicture?.s3Key ?? null;
 };
 function FilterBar({ search, setSearch, status, setStatus, role, setRole, onApply, onClear, hasActiveFilters }: FilterBarProps) {

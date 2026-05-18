@@ -9,11 +9,12 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/expo.icon.png",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "...",
-        "NSCameraUsageDescription": "..."
-      }
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library.",
+        "NSCameraUsageDescription": "This app needs access to your camera."
+      },
+      "bundleIdentifier": "com.hospilinkfrontend"
     },
     "android": {
       "package": "com.hospilinkfrontend",
@@ -27,6 +28,13 @@
         "foregroundImage": "./assets/Images/foreground.png",
         "monochromeImage": "./assets/Images/loginbg.png"
       },
+      "package": "com.hospilinkfrontend",
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "READ_MEDIA_IMAGES",
+        "CAMERA",
+        "POST_NOTIFICATIONS"
+      ]
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -43,6 +51,8 @@
           "imageWidth": 76
         }
       ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging",
       "@react-native-community/datetimepicker",
       "expo-web-browser",
       "expo-font"

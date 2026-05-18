@@ -6,6 +6,12 @@
   "build": {
     "development": {
       "developmentClient": true,
+      "distribution": "internal",
+      "android": {
+        "gradleCommand": ":app:assembleDebug",
+        "buildType": "apk"
+      }
+    },
       "distribution": "internal"
     },
 
@@ -15,6 +21,13 @@
         "buildType": "apk"
       }
     },
+    "production": {
+      "android": {
+        "buildType": "apk"
+      }
+    }
+  }
+}
 
     "production": {
       "autoIncrement": true,

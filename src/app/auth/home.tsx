@@ -638,6 +638,1094 @@
 
 
 
+// import React, { useRef, useState } from "react";
+// import {
+//     View,
+//     Text,
+//     ScrollView,
+//     TouchableOpacity,
+//     StyleSheet,
+//     Dimensions,
+//     StatusBar,
+//     Image,
+//     Platform,
+// } from "react-native";
+// import { useRouter } from "expo-router";
+// import Svg, {
+//     Path,
+//     Rect,
+//     Circle,
+//     Polyline,
+//     Line,
+//     Polygon,
+// } from "react-native-svg";
+
+// const NAVY = "#0B1730";
+// const MUTED = "#6B7280";
+// const BORDER = "#E5E7EB";
+
+// const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
+// const isDesktop = SCREEN_WIDTH >= 900;
+
+// interface Service {
+//     Icon: React.FC;
+//     title: string;
+//     desc: string;
+// }
+
+// interface FAQ {
+//     q: string;
+//     a: string;
+// }
+
+// const LinkIcon: React.FC<{ size?: number; color?: string }> = ({
+//     size = 17,
+//     color = "#fff",
+// }) => (
+//     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+//         <Path
+//             d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
+//             stroke={color}
+//             strokeWidth="2.2"
+//             strokeLinecap="round"
+//             strokeLinejoin="round"
+//         />
+//         <Path
+//             d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+//             stroke={color}
+//             strokeWidth="2.2"
+//             strokeLinecap="round"
+//             strokeLinejoin="round"
+//         />
+//     </Svg>
+// );
+
+// const BrainIcon: React.FC = () => (
+//     <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+//         <Path
+//             d="M9.5 2a2.5 2.5 0 0 1 5 0"
+//             stroke="#374151"
+//             strokeWidth="1.5"
+//         />
+//     </Svg>
+// );
+
+// const ClockIcon: React.FC = () => (
+//     <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+//         <Circle cx="12" cy="12" r="9" stroke="#374151" strokeWidth="1.5" />
+//         <Polyline
+//             points="12 7 12 12 15 15"
+//             stroke="#374151"
+//             strokeWidth="1.5"
+//             strokeLinecap="round"
+//         />
+//     </Svg>
+// );
+
+// const ShieldIcon: React.FC = () => (
+//     <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+//         <Path
+//             d="M12 2L4 6v6c0 5.25 3.5 10.15 8 11.5"
+//             stroke="#374151"
+//             strokeWidth="1.5"
+//         />
+//     </Svg>
+// );
+
+// const PayIcon: React.FC = () => (
+//     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+//         <Rect
+//             x="2"
+//             y="5"
+//             width="20"
+//             height="14"
+//             rx="3"
+//             stroke={NAVY}
+//             strokeWidth="1.5"
+//         />
+//     </Svg>
+// );
+
+// const DutyIcon: React.FC = () => (
+//     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+//         <Rect
+//             x="3"
+//             y="4"
+//             width="18"
+//             height="18"
+//             rx="2"
+//             stroke={NAVY}
+//             strokeWidth="1.5"
+//         />
+//     </Svg>
+// );
+
+// const SuperviseIcon: React.FC = () => (
+//     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+//         <Circle cx="12" cy="8" r="4" stroke={NAVY} strokeWidth="1.5" />
+//     </Svg>
+// );
+
+// const ChevronDownIcon: React.FC<{ open: boolean }> = ({ open }) => (
+//     <Svg
+//         width={18}
+//         height={18}
+//         viewBox="0 0 24 24"
+//         fill="none"
+//         style={{
+//             transform: [{ rotate: open ? "180deg" : "0deg" }],
+//         }}
+//     >
+//         <Polyline
+//             points="6 9 12 15 18 9"
+//             stroke="#9CA3AF"
+//             strokeWidth="2"
+//             strokeLinecap="round"
+//         />
+//     </Svg>
+// );
+
+// const services: Service[] = [
+//     {
+//         Icon: PayIcon,
+//         title: "One-Hand Payments",
+//         desc: "Integrated payment system for seamless, one-hand processing from onboarding and payouts to salaries.",
+//     },
+//     {
+//         Icon: DutyIcon,
+//         title: "Duty Management",
+//         desc: "Streamlined scheduling of duty rosters, shift management, and attendance tracking.",
+//     },
+//     {
+//         Icon: SuperviseIcon,
+//         title: "Clinical Supervision",
+//         desc: "Experienced intensivists provide clinical oversight and quality compliance.",
+//     },
+// ];
+
+// const faqs: FAQ[] = [
+//     {
+//         q: "What services does Hospilink provide?",
+//         a: "Hospilink provides AI-powered healthcare staffing solutions.",
+//     },
+//     {
+//         q: "Who can use Hospilink?",
+//         a: "Hospitals and medical professionals can use Hospilink.",
+//     },
+//     {
+//         q: "How does Hospilink verify medical professionals?",
+//         a: "All professionals undergo strict verification checks.",
+//     },
+//     {
+//         q: "Is my personal and professional information secure?",
+//         a: "Yes, all information is securely encrypted.",
+//     },
+//     {
+//         q: "Is there a registration fee to join Hospilink?",
+//         a: "Registration is free for medical staff.",
+//     },
+// ];
+
+// export default function LandingPage() {
+//     const router = useRouter();
+
+//     const scrollRef = useRef<ScrollView>(null);
+
+//     const featureY = useRef(0);
+//     const solutionY = useRef(0);
+//     const aboutY = useRef(0);
+
+//     const [faqOpen, setFaqOpen] = useState<number | null>(null);
+
+//     const scrollTo = (y: number) => {
+//         scrollRef.current?.scrollTo({
+//             y,
+//             animated: true,
+//         });
+//     };
+
+//     return (
+//         <View style={styles.root}>
+//             <StatusBar
+//                 backgroundColor={NAVY}
+//                 barStyle="light-content"
+//             />
+
+//             {/* NAVBAR */}
+
+//             <View style={styles.navbar}>
+//                 <View style={styles.container}>
+//                     <View style={styles.navInner}>
+//                         <TouchableOpacity style={styles.logoRow}
+//                                     onPress={() =>
+//                                         router.push("/auth/home")
+//                                     }
+//                                 >
+//                                     <View style={styles.logoIcon}>
+//                                         <LinkIcon />
+//                                     </View>
+
+//                                     <Text style={styles.logoText}>
+//                                         HOSPILINK
+//                                     </Text>
+//                                 </TouchableOpacity>
+
+//                         {isDesktop && (
+//                             <View style={styles.desktopNav}>
+//                                 <TouchableOpacity
+//                                     onPress={() => scrollTo(featureY.current)}
+//                                 >
+//                                     <Text style={styles.navLink}>
+//                                         Features
+//                                     </Text>
+//                                 </TouchableOpacity>
+
+//                                 <TouchableOpacity
+//                                     onPress={() => scrollTo(solutionY.current)}
+//                                 >
+//                                     <Text style={styles.navLink}>
+//                                         Solutions
+//                                     </Text>
+//                                 </TouchableOpacity>
+
+//                                 <TouchableOpacity
+//                                     onPress={() => scrollTo(aboutY.current)}
+//                                 >
+//                                     <Text style={styles.navLink}>
+//                                         About Us
+//                                     </Text>
+//                                 </TouchableOpacity>
+
+//                                 <TouchableOpacity onPress={() =>
+//                                         router.push("/auth/login")
+//                                     }  style={styles.whiteBtn}>
+//                                     <Text style={styles.whiteBtnText}>
+//                                         Sign In
+//                                     </Text>
+//                                 </TouchableOpacity>
+//                             </View>
+//                         )}
+//                     </View>
+//                 </View>
+//             </View>
+
+//             {/* BODY */}
+
+//             <ScrollView
+//                 ref={scrollRef}
+//                 showsVerticalScrollIndicator={false}
+//             >
+//                 {/* HERO */}
+
+//                 <View style={styles.container}>
+//                     <View style={styles.heroContainer}>
+//                         <View style={styles.heroLeft}>
+//                             <Text style={styles.heroTitle}>
+//                                 Revolutionizing Healthcare Staff
+//                                 Management
+//                             </Text>
+
+//                             <Text style={styles.heroSubtitle}>
+//                                 Connect hospitals with qualified medical
+//                                 staff seamlessly
+//                             </Text>
+
+//                             <TouchableOpacity style={styles.darkBtn}>
+//                                 <Text style={styles.darkBtnText}>
+//                                     Sign In
+//                                 </Text>
+//                             </TouchableOpacity>
+//                         </View>
+
+//                         <View style={styles.heroRight}>
+//                             <View style={styles.heroShape} />
+
+//                             <Image
+//                                 source={require("../../../assets/Images/hero-doctor.png")}
+//                                 style={styles.heroImage}
+//                                 resizeMode="contain"
+//                             />
+//                         </View>
+//                     </View>
+
+//                     {/* STATS */}
+
+//                     <View style={styles.statsBar}>
+//                         {[
+//                             ["99.9%", "Satisfaction Rate"],
+//                             ["500+", "Hospitals"],
+//                             ["10,000+", "Medical Staff"],
+//                             ["50,000+", "Duties Completed"],
+//                         ].map(([num, label], i) => (
+//                             <View
+//                                 key={i}
+//                                 style={[
+//                                     styles.statItem,
+//                                     i !== 3 && styles.statBorder,
+//                                 ]}
+//                             >
+//                                 <Text style={styles.statNumber}>
+//                                     {num}
+//                                 </Text>
+
+//                                 <Text style={styles.statLabel}>
+//                                     {label}
+//                                 </Text>
+//                             </View>
+//                         ))}
+//                     </View>
+//                 </View>
+
+//                 {/* WHY CHOOSE */}
+
+//                 <View
+//                     onLayout={(e) => {
+//                         featureY.current =
+//                             e.nativeEvent.layout.y;
+//                     }}
+//                     style={styles.section}
+//                 >
+//                     <View style={styles.container}>
+//                         <View style={styles.whyContainer}>
+//                             <Image
+//                                 source={require("../../../assets/Images/hero-doctor.png")}
+//                                 style={styles.teamImage}
+//                                 resizeMode="cover"
+//                             />
+
+//                             <View style={styles.whyContent}>
+//                                 <Text style={styles.sectionTitle}>
+//                                     Why Choose Hospilink
+//                                 </Text>
+
+//                                 <Text style={styles.sectionSubtitle}>
+//                                     Comprehensive solution for modern
+//                                     healthcare staffing needs
+//                                 </Text>
+
+//                                 {[
+//                                     {
+//                                         Icon: BrainIcon,
+//                                         title: "Smart Staff Matching",
+//                                     },
+//                                     {
+//                                         Icon: ClockIcon,
+//                                         title: "Real Time Scheduling",
+//                                     },
+//                                     {
+//                                         Icon: ShieldIcon,
+//                                         title: "Verified Professionals",
+//                                     },
+//                                 ].map(({ Icon, title }, i) => (
+//                                     <View
+//                                         key={i}
+//                                         style={styles.featureRow}
+//                                     >
+//                                         <View style={styles.featureIcon}>
+//                                             <Icon />
+//                                         </View>
+
+//                                         <View style={{ flex: 1 }}>
+//                                             <Text style={styles.featureTitle}>
+//                                                 {title}
+//                                             </Text>
+
+//                                             <Text style={styles.featureDesc}>
+//                                                 AI-powered staffing system for
+//                                                 healthcare professionals.
+//                                             </Text>
+//                                         </View>
+//                                     </View>
+//                                 ))}
+//                             </View>
+//                         </View>
+//                     </View>
+//                 </View>
+
+//                 {/* SERVICES */}
+
+//                 <View
+//                     onLayout={(e) => {
+//                         solutionY.current =
+//                             e.nativeEvent.layout.y;
+//                     }}
+//                     style={styles.section}
+//                 >
+//                     <View style={styles.container}>
+//                         <Text style={styles.centerTitle}>
+//                             Empowering Hospitals with Reliable
+//                             Doctor Workforce Management Services
+//                         </Text>
+
+//                         <View style={styles.serviceRow}>
+//                             {services.map((item, i) => (
+//                                 <View
+//                                     key={i}
+//                                     style={styles.serviceCard}
+//                                 >
+//                                     <View style={styles.serviceIcon}>
+//                                         <item.Icon />
+//                                     </View>
+
+//                                     <Text style={styles.serviceTitle}>
+//                                         {item.title}
+//                                     </Text>
+
+//                                     <Text style={styles.serviceDesc}>
+//                                         {item.desc}
+//                                     </Text>
+//                                 </View>
+//                             ))}
+//                         </View>
+//                     </View>
+//                 </View>
+
+//                 {/* HOW IT WORKS */}
+
+//                 <View
+//                     onLayout={(e) => {
+//                         aboutY.current =
+//                             e.nativeEvent.layout.y;
+//                     }}
+//                     style={styles.section}
+//                 >
+//                     <View style={styles.container}>
+//                         <Text style={styles.sectionTitle}>
+//                             How It Works
+//                         </Text>
+
+//                         {[
+//                             "Create Account",
+//                             "Complete Profile",
+//                             "Start Connecting",
+//                         ].map((step, i) => (
+//                             <View
+//                                 key={i}
+//                                 style={styles.stepRow}
+//                             >
+//                                 <Text style={styles.stepNumber}>
+//                                     {i + 1}
+//                                 </Text>
+
+//                                 <Text style={styles.stepTitle}>
+//                                     {step}
+//                                 </Text>
+
+//                                 <Text style={styles.stepDesc}>
+//                                     Sign up as a hospital or medical
+//                                     professional.
+//                                 </Text>
+//                             </View>
+//                         ))}
+//                     </View>
+//                 </View>
+
+//                 {/* CTA */}
+
+//                 <View style={styles.ctaSection}>
+//                     <View style={styles.container}>
+//                         <View style={styles.ctaWrapper}>
+//                             <Image
+//                                 source={require("../../../assets/Images/hero-doctor.png")}
+//                                 style={styles.ctaImage}
+//                             />
+
+//                             <View style={styles.ctaContent}>
+//                                 <Text style={styles.ctaTitle}>
+//                                     Ready to Transform Healthcare
+//                                     Staffing?
+//                                 </Text>
+
+//                                 <Text style={styles.ctaSubtitle}>
+//                                     Join thousands of healthcare
+//                                     professionals already using
+//                                     Hospilink
+//                                 </Text>
+
+//                                 <TouchableOpacity
+//                                     style={styles.whiteBtn}
+//                                 >
+//                                     <Text style={styles.whiteBtnText}>
+//                                         Get Started Today
+//                                     </Text>
+//                                 </TouchableOpacity>
+//                             </View>
+//                         </View>
+//                     </View>
+//                 </View>
+
+//                 {/* FAQ */}
+
+//                 <View style={styles.section}>
+//                     <View style={styles.container}>
+//                         <View style={styles.faqWrapper}>
+//                             <View style={styles.faqLeft}>
+//                                 <Text style={styles.sectionTitle}>
+//                                     Frequently Asked Questions
+//                                 </Text>
+
+//                                 <Text style={styles.sectionSubtitle}>
+//                                     Find answers to common questions
+//                                     about Hospilink.
+//                                 </Text>
+//                             </View>
+
+//                             <View style={styles.faqRight}>
+//                                 {faqs.map((faq, i) => (
+//                                     <View
+//                                         key={i}
+//                                         style={styles.faqItem}
+//                                     >
+//                                         <TouchableOpacity
+//                                             style={styles.faqButton}
+//                                             onPress={() =>
+//                                                 setFaqOpen(
+//                                                     faqOpen === i ? null : i
+//                                                 )
+//                                             }
+//                                         >
+//                                             <Text
+//                                                 style={styles.faqQuestion}
+//                                             >
+//                                                 {faq.q}
+//                                             </Text>
+
+//                                             <ChevronDownIcon
+//                                                 open={faqOpen === i}
+//                                             />
+//                                         </TouchableOpacity>
+
+//                                         {faqOpen === i && (
+//                                             <Text style={styles.faqAnswer}>
+//                                                 {faq.a}
+//                                             </Text>
+//                                         )}
+//                                     </View>
+//                                 ))}
+//                             </View>
+//                         </View>
+//                     </View>
+//                 </View>
+
+//                 {/* FOOTER */}
+
+//                 <View style={styles.footer}>
+//                     <View style={styles.container}>
+//                         <View style={styles.footerGrid}>
+//                             <View>
+
+//                                 <TouchableOpacity style={styles.logoRow}
+//                                     onPress={() =>
+//                                         router.push("/auth/contact-us")
+//                                     }
+//                                 >
+//                                     <View style={styles.logoIcon}>
+//                                         <LinkIcon />
+//                                     </View>
+
+//                                     <Text style={styles.logoText}>
+//                                         HOSPILINK
+//                                     </Text>
+//                                 </TouchableOpacity>
+
+//                                 <Text style={styles.footerText}>
+//                                     Connect with us for seamless
+//                                     healthcare staffing solutions.
+//                                 </Text>
+//                             </View>
+
+//                             <View>
+//                                 <Text style={styles.footerHeading}>
+//                                     For Hospitals
+//                                 </Text>
+
+//                                 <Text style={styles.footerLink}>
+//                                     Post Duties
+//                                 </Text>
+
+//                                 <Text style={styles.footerLink}>
+//                                     Find Staff
+//                                 </Text>
+//                             </View>
+
+//                             <View>
+//                                 <Text style={styles.footerHeading}>
+//                                     Support
+//                                 </Text>
+
+//                                 <TouchableOpacity
+//                                     onPress={() =>
+//                                         router.push("/auth/contact-us")
+//                                     }
+//                                 >
+//                                     <Text style={styles.footerLink}>
+//                                         Contact Us
+//                                     </Text>
+//                                 </TouchableOpacity>
+
+//                                 <TouchableOpacity
+//                                     onPress={() =>
+//                                         router.push(
+//                                             "/auth/privacy-policy"
+//                                         )
+//                                     }
+//                                 >
+//                                     <Text style={styles.footerLink}>
+//                                         Privacy Policy
+//                                     </Text>
+//                                 </TouchableOpacity>
+//                             </View>
+//                         </View>
+
+//                         <View style={styles.footerBottom}>
+//                             <Text style={styles.copyText}>
+//                                 © 2025 Hospilink. All rights
+//                                 reserved.
+//                             </Text>
+//                         </View>
+//                     </View>
+//                 </View>
+//             </ScrollView>
+//         </View>
+//     );
+// }
+
+// const styles = StyleSheet.create({
+//     root: {
+//         flex: 1,
+//         backgroundColor: "#fff",
+//     },
+
+//     container: {
+//         width: "100%",
+//         maxWidth: 1200,
+//         alignSelf: "center",
+//         paddingHorizontal: 20,
+//     },
+
+//     navbar: {
+//         height: 64,
+//         backgroundColor: NAVY,
+//         justifyContent: "center",
+//         ...Platform.select({
+//             ios: {
+//                 shadowColor: "#000",
+//                 shadowOpacity: 0.1,
+//                 shadowRadius: 4,
+//             },
+//             android: {
+//                 elevation: 5,
+//             },
+//         }),
+//     },
+
+//     navInner: {
+//         flexDirection: "row",
+//         justifyContent: "space-between",
+//         alignItems: "center",
+//     },
+
+//     logoRow: {
+//         flexDirection: "row",
+//         alignItems: "center",
+//     },
+
+//     logoIcon: {
+//         width: 34,
+//         height: 34,
+//         borderRadius: 8,
+//         backgroundColor: "rgba(255,255,255,0.08)",
+//         alignItems: "center",
+//         justifyContent: "center",
+//         marginRight: 10,
+//     },
+
+//     logoText: {
+//         color: "#fff",
+//         fontWeight: "700",
+//         fontSize: 15,
+//         letterSpacing: 1,
+//     },
+
+//     desktopNav: {
+//         flexDirection: "row",
+//         alignItems: "center",
+//         gap: 36,
+//     },
+
+//     navLink: {
+//         color: "#E5E7EB",
+//         fontSize: 14,
+//         fontWeight: "500",
+//     },
+
+//     heroContainer: {
+//         flexDirection: isDesktop ? "row" : "column",
+//         alignItems: "center",
+//         justifyContent: "space-between",
+//         paddingTop: 70,
+//         gap: 60,
+//     },
+
+//     heroLeft: {
+//         flex: 1,
+//         maxWidth: 580,
+//     },
+
+//     heroTitle: {
+//         fontSize: isDesktop ? 58 : 36,
+//         lineHeight: isDesktop ? 66 : 44,
+//         fontWeight: "800",
+//         color: NAVY,
+//         marginBottom: 20,
+//         letterSpacing: -2,
+//     },
+
+//     heroSubtitle: {
+//         fontSize: 16,
+//         color: MUTED,
+//         lineHeight: 28,
+//         marginBottom: 30,
+//         maxWidth: 400,
+//     },
+
+//     heroRight: {
+//         width: isDesktop ? 430 : "100%",
+//         height: isDesktop ? 480 : 320,
+//         position: "relative",
+//         justifyContent: "flex-end",
+//     },
+
+//     heroShape: {
+//         position: "absolute",
+//         width: "100%",
+//         height: "80%",
+//         backgroundColor: "#E7EEF8",
+//         borderRadius: 120,
+//         bottom: 0,
+//     },
+
+//     heroImage: {
+//         width: "100%",
+//         height: "100%",
+//     },
+
+//     darkBtn: {
+//         backgroundColor: NAVY,
+//         paddingHorizontal: 28,
+//         paddingVertical: 14,
+//         borderRadius: 8,
+//         alignSelf: "flex-start",
+//     },
+
+//     darkBtnText: {
+//         color: "#fff",
+//         fontWeight: "600",
+//     },
+
+//     whiteBtn: {
+//         backgroundColor: "#fff",
+//         paddingHorizontal: 26,
+//         paddingVertical: 13,
+//         borderRadius: 8,
+//         alignSelf: "flex-start",
+//     },
+
+//     whiteBtnText: {
+//         color: NAVY,
+//         fontWeight: "600",
+//     },
+
+//     statsBar: {
+//         flexDirection: "row",
+//         marginTop: 40,
+//         borderWidth: 1,
+//         borderColor: BORDER,
+//         borderRadius: 10,
+//         overflow: "hidden",
+//         marginBottom: 60,
+//     },
+
+//     statItem: {
+//         flex: 1,
+//         paddingVertical: 22,
+//         alignItems: "center",
+//     },
+
+//     statBorder: {
+//         borderRightWidth: 1,
+//         borderRightColor: BORDER,
+//     },
+
+//     statNumber: {
+//         fontSize: 24,
+//         fontWeight: "800",
+//         color: NAVY,
+//     },
+
+//     statLabel: {
+//         fontSize: 12,
+//         color: MUTED,
+//         marginTop: 6,
+//     },
+
+//     section: {
+//         paddingVertical: 70,
+//     },
+
+//     whyContainer: {
+//         flexDirection: isDesktop ? "row" : "column",
+//         gap: 50,
+//         alignItems: "center",
+//     },
+
+//     teamImage: {
+//         width: isDesktop ? 420 : "100%",
+//         height: 320,
+//         borderRadius: 8,
+//     },
+
+//     whyContent: {
+//         flex: 1,
+//     },
+
+//     sectionTitle: {
+//         fontSize: 40,
+//         fontWeight: "800",
+//         color: NAVY,
+//         marginBottom: 14,
+//         lineHeight: 48,
+//     },
+
+//     sectionSubtitle: {
+//         fontSize: 14,
+//         color: MUTED,
+//         lineHeight: 24,
+//         marginBottom: 28,
+//     },
+
+//     featureRow: {
+//         flexDirection: "row",
+//         gap: 16,
+//         marginBottom: 24,
+//     },
+
+//     featureIcon: {
+//         width: 44,
+//         height: 44,
+//         borderWidth: 1,
+//         borderColor: BORDER,
+//         borderRadius: 8,
+//         justifyContent: "center",
+//         alignItems: "center",
+//     },
+
+//     featureTitle: {
+//         fontWeight: "700",
+//         color: NAVY,
+//         marginBottom: 6,
+//     },
+
+//     featureDesc: {
+//         color: MUTED,
+//         lineHeight: 22,
+//         fontSize: 14,
+//     },
+
+//     centerTitle: {
+//         fontSize: 38,
+//         fontWeight: "800",
+//         textAlign: "center",
+//         lineHeight: 50,
+//         marginBottom: 50,
+//         color: NAVY,
+//     },
+
+//     serviceRow: {
+//         flexDirection: isDesktop ? "row" : "column",
+//         gap: 20,
+//     },
+
+//     serviceCard: {
+//         flex: 1,
+//         borderWidth: 1,
+//         borderColor: BORDER,
+//         padding: 30,
+//         alignItems: "center",
+//     },
+
+//     serviceIcon: {
+//         width: 60,
+//         height: 60,
+//         borderRadius: 30,
+//         borderWidth: 1,
+//         borderColor: BORDER,
+//         justifyContent: "center",
+//         alignItems: "center",
+//         marginBottom: 20,
+//     },
+
+//     serviceTitle: {
+//         fontWeight: "700",
+//         marginBottom: 12,
+//         color: NAVY,
+//     },
+
+//     serviceDesc: {
+//         color: MUTED,
+//         textAlign: "center",
+//         lineHeight: 22,
+//         fontSize: 14,
+//     },
+
+//     stepRow: {
+//         flexDirection: "row",
+//         alignItems: "center",
+//         borderBottomWidth: 1,
+//         borderBottomColor: BORDER,
+//         paddingVertical: 28,
+//     },
+
+//     stepNumber: {
+//         width: 80,
+//         fontSize: 28,
+//         fontWeight: "600",
+//         color: NAVY,
+//     },
+
+//     stepTitle: {
+//         width: 260,
+//         fontSize: 24,
+//         fontWeight: "700",
+//         color: NAVY,
+//     },
+
+//     stepDesc: {
+//         flex: 1,
+//         color: MUTED,
+//         lineHeight: 24,
+//     },
+
+//     ctaSection: {
+//         backgroundColor: NAVY,
+//         paddingVertical: 80,
+//     },
+
+//     ctaWrapper: {
+//         flexDirection: isDesktop ? "row" : "column",
+//         gap: 50,
+//         alignItems: "center",
+//     },
+
+//     ctaImage: {
+//         width: isDesktop ? 240 : "100%",
+//         height: 280,
+//         borderRadius: 10,
+//     },
+
+//     ctaContent: {
+//         flex: 1,
+//     },
+
+//     ctaTitle: {
+//         color: "#fff",
+//         fontSize: 52,
+//         lineHeight: 60,
+//         fontWeight: "800",
+//         marginBottom: 18,
+//     },
+
+//     ctaSubtitle: {
+//         color: "#A5B4C7",
+//         fontSize: 16,
+//         lineHeight: 28,
+//         marginBottom: 30,
+//     },
+
+//     faqWrapper: {
+//         flexDirection: isDesktop ? "row" : "column",
+//         gap: 60,
+//     },
+
+//     faqLeft: {
+//         width: isDesktop ? 300 : "100%",
+//     },
+
+//     faqRight: {
+//         flex: 1,
+//     },
+
+//     faqItem: {
+//         borderBottomWidth: 1,
+//         borderBottomColor: BORDER,
+//     },
+
+//     faqButton: {
+//         flexDirection: "row",
+//         justifyContent: "space-between",
+//         alignItems: "center",
+//         paddingVertical: 24,
+//     },
+
+//     faqQuestion: {
+//         fontSize: 16,
+//         color: NAVY,
+//         fontWeight: "500",
+//         flex: 1,
+//         paddingRight: 20,
+//     },
+
+//     faqAnswer: {
+//         color: MUTED,
+//         lineHeight: 24,
+//         paddingBottom: 20,
+//     },
+
+//     footer: {
+//         backgroundColor: NAVY,
+//         paddingTop: 80,
+//         paddingBottom: 30,
+//     },
+
+//     footerGrid: {
+//         flexDirection: isDesktop ? "row" : "column",
+//         justifyContent: "space-between",
+//         gap: 40,
+//         borderBottomWidth: 1,
+//         borderBottomColor: "rgba(255,255,255,0.08)",
+//         paddingBottom: 40,
+//     },
+
+//     footerHeading: {
+//         color: "#fff",
+//         fontWeight: "700",
+//         marginBottom: 18,
+//     },
+
+//     footerText: {
+//         color: "#A5B4C7",
+//         lineHeight: 24,
+//         marginTop: 14,
+//         maxWidth: 240,
+//     },
+
+//     footerLink: {
+//         color: "#A5B4C7",
+//         marginBottom: 12,
+//     },
+
+//     footerBottom: {
+//         paddingTop: 24,
+//     },
+
+//     copyText: {
+//         color: "#7B8794",
+//         fontSize: 13,
+//     },
+// });
+
+
 import React, { useRef, useState } from "react";
 import {
     View,
@@ -657,27 +1745,18 @@ import Svg, {
     Circle,
     Polyline,
     Line,
-    Polygon,
+    Ellipse,
 } from "react-native-svg";
 
 const NAVY = "#0B1730";
+const BLUE = "#3B82F6";       // bright blue for hero btn + CTA bg
 const MUTED = "#6B7280";
 const BORDER = "#E5E7EB";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-
 const isDesktop = SCREEN_WIDTH >= 900;
 
-interface Service {
-    Icon: React.FC;
-    title: string;
-    desc: string;
-}
-
-interface FAQ {
-    q: string;
-    a: string;
-}
+/* ─────────────── ICONS ─────────────── */
 
 const LinkIcon: React.FC<{ size?: number; color?: string }> = ({
     size = 17,
@@ -701,69 +1780,77 @@ const LinkIcon: React.FC<{ size?: number; color?: string }> = ({
     </Svg>
 );
 
+/** Brain icon – complete */
 const BrainIcon: React.FC = () => (
     <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
         <Path
-            d="M9.5 2a2.5 2.5 0 0 1 5 0"
-            stroke="#374151"
+            d="M9 3a4 4 0 0 0-4 4c0 .34.04.67.11.98A4.002 4.002 0 0 0 3 11a4 4 0 0 0 2.38 3.65A4 4 0 0 0 9 21h6a4 4 0 0 0 3.62-5.35A4 4 0 0 0 21 12a4.002 4.002 0 0 0-2.11-3.52c.07-.3.11-.63.11-.98a4 4 0 0 0-4-4"
+            stroke="#3B82F6"
             strokeWidth="1.5"
+            strokeLinecap="round"
         />
+        <Line x1="12" y1="7" x2="12" y2="21" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round" />
     </Svg>
 );
 
+/** Clock icon – complete */
 const ClockIcon: React.FC = () => (
     <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-        <Circle cx="12" cy="12" r="9" stroke="#374151" strokeWidth="1.5" />
+        <Circle cx="12" cy="12" r="9" stroke="#3B82F6" strokeWidth="1.5" />
         <Polyline
             points="12 7 12 12 15 15"
-            stroke="#374151"
+            stroke="#3B82F6"
             strokeWidth="1.5"
             strokeLinecap="round"
         />
     </Svg>
 );
 
+/** Shield icon – complete */
 const ShieldIcon: React.FC = () => (
     <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
         <Path
-            d="M12 2L4 6v6c0 5.25 3.5 10.15 8 11.5"
-            stroke="#374151"
+            d="M12 2l8 3.5v5C20 15.5 16.5 20.3 12 22 7.5 20.3 4 15.5 4 10.5v-5L12 2z"
+            stroke="#3B82F6"
             strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+        <Polyline
+            points="9 12 11 14 15 10"
+            stroke="#3B82F6"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
         />
     </Svg>
 );
 
+/** Credit-card icon for "One-Hand Payments" */
 const PayIcon: React.FC = () => (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-        <Rect
-            x="2"
-            y="5"
-            width="20"
-            height="14"
-            rx="3"
-            stroke={NAVY}
-            strokeWidth="1.5"
-        />
+        <Rect x="2" y="5" width="20" height="14" rx="3" stroke="#fff" strokeWidth="1.8" />
+        <Line x1="2" y1="10" x2="22" y2="10" stroke="#fff" strokeWidth="1.8" />
+        <Line x1="6" y1="15" x2="10" y2="15" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
     </Svg>
 );
 
+/** Calendar icon for "Duty Management" */
 const DutyIcon: React.FC = () => (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-        <Rect
-            x="3"
-            y="4"
-            width="18"
-            height="18"
-            rx="2"
-            stroke={NAVY}
-            strokeWidth="1.5"
-        />
+        <Rect x="3" y="4" width="18" height="18" rx="2" stroke="#fff" strokeWidth="1.8" />
+        <Line x1="3" y1="9" x2="21" y2="9" stroke="#fff" strokeWidth="1.8" />
+        <Line x1="8" y1="2" x2="8" y2="6" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
+        <Line x1="16" y1="2" x2="16" y2="6" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
+        <Polyline points="8 13 10 15 14 11" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
 );
 
+/** Person/user icon for "Clinical Supervision" */
 const SuperviseIcon: React.FC = () => (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-        <Circle cx="12" cy="8" r="4" stroke={NAVY} strokeWidth="1.5" />
+        <Circle cx="12" cy="8" r="4" stroke="#fff" strokeWidth="1.8" />
+        <Path d="M4 20c0-4 3.58-7 8-7s8 3 8 7" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
     </Svg>
 );
 
@@ -773,9 +1860,7 @@ const ChevronDownIcon: React.FC<{ open: boolean }> = ({ open }) => (
         height={18}
         viewBox="0 0 24 24"
         fill="none"
-        style={{
-            transform: [{ rotate: open ? "180deg" : "0deg" }],
-        }}
+        style={{ transform: [{ rotate: open ? "180deg" : "0deg" }] }}
     >
         <Polyline
             points="6 9 12 15 18 9"
@@ -786,7 +1871,45 @@ const ChevronDownIcon: React.FC<{ open: boolean }> = ({ open }) => (
     </Svg>
 );
 
-const services: Service[] = [
+const ChevronLeftIcon: React.FC = () => (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+        <Polyline points="15 18 9 12 15 6" stroke={NAVY} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+);
+
+const ChevronRightIcon: React.FC = () => (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+        <Polyline points="9 18 15 12 9 6" stroke={NAVY} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+);
+
+/* Social icons for footer */
+const TwitterIcon: React.FC = () => (
+    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+        <Path d="M22 4.01c-.77.35-1.6.58-2.46.69a4.3 4.3 0 0 0 1.88-2.37 8.59 8.59 0 0 1-2.72 1.04 4.28 4.28 0 0 0-7.3 3.9A12.14 12.14 0 0 1 3 3.13a4.28 4.28 0 0 0 1.32 5.71 4.26 4.26 0 0 1-1.94-.53v.05a4.28 4.28 0 0 0 3.43 4.2 4.3 4.3 0 0 1-1.93.07 4.28 4.28 0 0 0 4 2.97A8.58 8.58 0 0 1 2 17.54a12.11 12.11 0 0 0 6.56 1.92c7.88 0 12.19-6.53 12.19-12.19 0-.19 0-.37-.01-.56A8.7 8.7 0 0 0 22 4.01z" stroke="#A5B4C7" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+);
+
+const LinkedInIcon: React.FC = () => (
+    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+        <Rect x="2" y="2" width="20" height="20" rx="4" stroke="#A5B4C7" strokeWidth="1.5" />
+        <Line x1="8" y1="11" x2="8" y2="16" stroke="#A5B4C7" strokeWidth="1.5" strokeLinecap="round" />
+        <Line x1="8" y1="8" x2="8" y2="8.5" stroke="#A5B4C7" strokeWidth="2" strokeLinecap="round" />
+        <Path d="M12 16v-5m0 0a3 3 0 0 1 5 2.2V16" stroke="#A5B4C7" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+);
+
+const InstagramIcon: React.FC = () => (
+    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+        <Rect x="2" y="2" width="20" height="20" rx="5" stroke="#A5B4C7" strokeWidth="1.5" />
+        <Circle cx="12" cy="12" r="4" stroke="#A5B4C7" strokeWidth="1.5" />
+        <Circle cx="17.5" cy="6.5" r="1" fill="#A5B4C7" />
+    </Svg>
+);
+
+/* ─────────────── DATA ─────────────── */
+
+const services = [
     {
         Icon: PayIcon,
         title: "One-Hand Payments",
@@ -795,41 +1918,75 @@ const services: Service[] = [
     {
         Icon: DutyIcon,
         title: "Duty Management",
-        desc: "Streamlined scheduling of duty rosters, shift management, and attendance tracking.",
+        desc: "Streamlined scheduling of duty rosters, shift management, and attendance tracking to ensure seamless hospital operations.",
     },
     {
         Icon: SuperviseIcon,
         title: "Clinical Supervision",
-        desc: "Experienced intensivists provide clinical oversight and quality compliance.",
+        desc: "Experienced intensivists provide clinical oversight, ensuring quality compliance and improved patient outcomes.",
     },
 ];
 
-const faqs: FAQ[] = [
+const faqs = [
     {
         q: "What services does Hospilink provide?",
-        a: "Hospilink provides AI-powered healthcare staffing solutions.",
+        a: "Hospilink provides AI-powered healthcare staffing solutions including smart staff matching, duty management, clinical supervision, and integrated payment processing for hospitals and medical professionals.",
     },
     {
         q: "Who can use Hospilink?",
-        a: "Hospitals and medical professionals can use Hospilink.",
+        a: "Hospitals and medical professionals including doctors, nurses, and other healthcare staff can use Hospilink to connect, schedule duties, and manage payments.",
     },
     {
         q: "How does Hospilink verify medical professionals?",
-        a: "All professionals undergo strict verification checks.",
+        a: "All professionals undergo strict verification checks including credential validation, license verification, and comprehensive background checks for complete peace of mind.",
     },
     {
         q: "Is my personal and professional information secure?",
-        a: "Yes, all information is securely encrypted.",
+        a: "Yes, all information is securely encrypted using industry-standard protocols. Your data privacy and security is our top priority.",
     },
     {
         q: "Is there a registration fee to join Hospilink?",
-        a: "Registration is free for medical staff.",
+        a: "Registration is completely free for medical staff. Hospitals can get started with our flexible plans tailored to their needs.",
     },
 ];
 
+const steps = [
+    {
+        label: "Create Account",
+        desc: "Sign up as a hospital or medical staff member with a simple registration process.",
+    },
+    {
+        label: "Complete Profile",
+        desc: "Add your professional details, preferences, and availability for better matching.",
+    },
+    {
+        label: "Start Connecting",
+        desc: "Hospitals post duties and staff accept them instantly through our platform.",
+    },
+];
+
+const features = [
+    {
+        Icon: BrainIcon,
+        title: "Smart Staff Matching",
+        desc: "AI-powered matching system connects hospitals with the right medical professionals based on skills, availability, and preferences.",
+    },
+    {
+        Icon: ClockIcon,
+        title: "Real Time Scheduling",
+        desc: "Dynamic duty management with instant notifications, conflict prevention, and automated scheduling for optimal staff utilization.",
+    },
+    {
+        Icon: ShieldIcon,
+        title: "Verified Professionals",
+        desc: "All medical staff are thoroughly verified with credentials, licenses, and background checks for complete peace of mind.",
+    },
+];
+
+/* ─────────────── COMPONENT ─────────────── */
+
 export default function LandingPage() {
     const router = useRouter();
-
     const scrollRef = useRef<ScrollView>(null);
 
     const featureY = useRef(0);
@@ -837,72 +1994,55 @@ export default function LandingPage() {
     const aboutY = useRef(0);
 
     const [faqOpen, setFaqOpen] = useState<number | null>(null);
+    const [serviceIndex, setServiceIndex] = useState(0);
 
-    const scrollTo = (y: number) => {
-        scrollRef.current?.scrollTo({
-            y,
-            animated: true,
-        });
-    };
+    const scrollTo = (y: number) =>
+        scrollRef.current?.scrollTo({ y, animated: true });
+
+    const prevService = () =>
+        setServiceIndex((i) => (i === 0 ? services.length - 1 : i - 1));
+    const nextService = () =>
+        setServiceIndex((i) => (i === services.length - 1 ? 0 : i + 1));
+
+    /* On desktop show all 3 cards; on mobile carousel-style */
+    const visibleServices = isDesktop
+        ? services
+        : [services[serviceIndex]];
 
     return (
         <View style={styles.root}>
-            <StatusBar
-                backgroundColor={NAVY}
-                barStyle="light-content"
-            />
+            <StatusBar backgroundColor={NAVY} barStyle="light-content" />
 
-            {/* NAVBAR */}
-
+            {/* ── NAVBAR ── */}
             <View style={styles.navbar}>
                 <View style={styles.container}>
                     <View style={styles.navInner}>
-                        <TouchableOpacity style={styles.logoRow}
-                                    onPress={() =>
-                                        router.push("/auth/home")
-                                    }
-                                >
-                                    <View style={styles.logoIcon}>
-                                        <LinkIcon />
-                                    </View>
-
-                                    <Text style={styles.logoText}>
-                                        HOSPILINK
-                                    </Text>
-                                </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.logoRow}
+                            onPress={() => router.push("/auth/home")}
+                        >
+                            <View style={styles.logoIcon}>
+                                <LinkIcon />
+                            </View>
+                            <Text style={styles.logoText}>HOSPILINK</Text>
+                        </TouchableOpacity>
 
                         {isDesktop && (
                             <View style={styles.desktopNav}>
-                                <TouchableOpacity
-                                    onPress={() => scrollTo(featureY.current)}
-                                >
-                                    <Text style={styles.navLink}>
-                                        Features
-                                    </Text>
+                                <TouchableOpacity onPress={() => scrollTo(featureY.current)}>
+                                    <Text style={styles.navLink}>Features</Text>
                                 </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    onPress={() => scrollTo(solutionY.current)}
-                                >
-                                    <Text style={styles.navLink}>
-                                        Solutions
-                                    </Text>
+                                <TouchableOpacity onPress={() => scrollTo(solutionY.current)}>
+                                    <Text style={styles.navLink}>Solutions</Text>
                                 </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    onPress={() => scrollTo(aboutY.current)}
-                                >
-                                    <Text style={styles.navLink}>
-                                        About Us
-                                    </Text>
+                                <TouchableOpacity onPress={() => scrollTo(aboutY.current)}>
+                                    <Text style={styles.navLink}>About Us</Text>
                                 </TouchableOpacity>
-
-                                <TouchableOpacity onPress={() =>
-                                        router.push("/auth/login")
-                                    }  style={styles.whiteBtn}>
-                                    <Text style={styles.whiteBtnText}>
-                                        Sign In
-                                    </Text>
+                                <TouchableOpacity
+                                    onPress={() => router.push("/auth/login")}
+                                    style={styles.outlineBtn}
+                                >
+                                    <Text style={styles.outlineBtnText}>Sign In</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
@@ -910,37 +2050,29 @@ export default function LandingPage() {
                 </View>
             </View>
 
-            {/* BODY */}
+            {/* ── BODY ── */}
+            <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false}>
 
-            <ScrollView
-                ref={scrollRef}
-                showsVerticalScrollIndicator={false}
-            >
-                {/* HERO */}
-
+                {/* ── HERO ── */}
                 <View style={styles.container}>
                     <View style={styles.heroContainer}>
                         <View style={styles.heroLeft}>
                             <Text style={styles.heroTitle}>
-                                Revolutionizing Healthcare Staff
-                                Management
+                                Revolutionizing Healthcare Staff Management
                             </Text>
-
                             <Text style={styles.heroSubtitle}>
-                                Connect hospitals with qualified medical
-                                staff seamlessly
+                                Connect hospitals with qualified medical staff seamlessly
                             </Text>
-
-                            <TouchableOpacity style={styles.darkBtn}>
-                                <Text style={styles.darkBtnText}>
-                                    Sign In
-                                </Text>
+                            <TouchableOpacity
+                                style={styles.blueBtn}
+                                onPress={() => router.push("/auth/login")}
+                            >
+                                <Text style={styles.blueBtnText}>Sign Up</Text>
                             </TouchableOpacity>
                         </View>
 
                         <View style={styles.heroRight}>
                             <View style={styles.heroShape} />
-
                             <Image
                                 source={require("../../../assets/Images/hero-doctor.png")}
                                 style={styles.heroImage}
@@ -950,7 +2082,6 @@ export default function LandingPage() {
                     </View>
 
                     {/* STATS */}
-
                     <View style={styles.statsBar}>
                         {[
                             ["99.9%", "Satisfaction Rate"],
@@ -960,30 +2091,18 @@ export default function LandingPage() {
                         ].map(([num, label], i) => (
                             <View
                                 key={i}
-                                style={[
-                                    styles.statItem,
-                                    i !== 3 && styles.statBorder,
-                                ]}
+                                style={[styles.statItem, i !== 3 && styles.statBorder]}
                             >
-                                <Text style={styles.statNumber}>
-                                    {num}
-                                </Text>
-
-                                <Text style={styles.statLabel}>
-                                    {label}
-                                </Text>
+                                <Text style={styles.statNumber}>{num}</Text>
+                                <Text style={styles.statLabel}>{label}</Text>
                             </View>
                         ))}
                     </View>
                 </View>
 
-                {/* WHY CHOOSE */}
-
+                {/* ── WHY CHOOSE ── */}
                 <View
-                    onLayout={(e) => {
-                        featureY.current =
-                            e.nativeEvent.layout.y;
-                    }}
+                    onLayout={(e) => { featureY.current = e.nativeEvent.layout.y; }}
                     style={styles.section}
                 >
                     <View style={styles.container}>
@@ -995,46 +2114,19 @@ export default function LandingPage() {
                             />
 
                             <View style={styles.whyContent}>
-                                <Text style={styles.sectionTitle}>
-                                    Why Choose Hospilink
-                                </Text>
-
+                                <Text style={styles.sectionTitle}>Why Choose Hospilink</Text>
                                 <Text style={styles.sectionSubtitle}>
-                                    Comprehensive solution for modern
-                                    healthcare staffing needs
+                                    Comprehensive solution for modern healthcare staffing needs
                                 </Text>
 
-                                {[
-                                    {
-                                        Icon: BrainIcon,
-                                        title: "Smart Staff Matching",
-                                    },
-                                    {
-                                        Icon: ClockIcon,
-                                        title: "Real Time Scheduling",
-                                    },
-                                    {
-                                        Icon: ShieldIcon,
-                                        title: "Verified Professionals",
-                                    },
-                                ].map(({ Icon, title }, i) => (
-                                    <View
-                                        key={i}
-                                        style={styles.featureRow}
-                                    >
+                                {features.map(({ Icon, title, desc }, i) => (
+                                    <View key={i} style={styles.featureRow}>
                                         <View style={styles.featureIcon}>
                                             <Icon />
                                         </View>
-
                                         <View style={{ flex: 1 }}>
-                                            <Text style={styles.featureTitle}>
-                                                {title}
-                                            </Text>
-
-                                            <Text style={styles.featureDesc}>
-                                                AI-powered staffing system for
-                                                healthcare professionals.
-                                            </Text>
+                                            <Text style={styles.featureTitle}>{title}</Text>
+                                            <Text style={styles.featureDesc}>{desc}</Text>
                                         </View>
                                     </View>
                                 ))}
@@ -1043,86 +2135,68 @@ export default function LandingPage() {
                     </View>
                 </View>
 
-                {/* SERVICES */}
-
+                {/* ── SERVICES ── */}
                 <View
-                    onLayout={(e) => {
-                        solutionY.current =
-                            e.nativeEvent.layout.y;
-                    }}
+                    onLayout={(e) => { solutionY.current = e.nativeEvent.layout.y; }}
                     style={styles.section}
                 >
                     <View style={styles.container}>
                         <Text style={styles.centerTitle}>
-                            Empowering Hospitals with Reliable
-                            Doctor Workforce Management Services
+                            Empowering Hospitals with Reliable Doctor Workforce Management Services
                         </Text>
 
-                        <View style={styles.serviceRow}>
-                            {services.map((item, i) => (
-                                <View
-                                    key={i}
-                                    style={styles.serviceCard}
-                                >
-                                    <View style={styles.serviceIcon}>
-                                        <item.Icon />
+                        <View style={styles.carouselWrapper}>
+                            {/* Left arrow */}
+                            {!isDesktop && (
+                                <TouchableOpacity style={styles.carouselArrow} onPress={prevService}>
+                                    <ChevronLeftIcon />
+                                </TouchableOpacity>
+                            )}
+                            {isDesktop && (
+                                <TouchableOpacity style={styles.carouselArrow} onPress={prevService}>
+                                    <ChevronLeftIcon />
+                                </TouchableOpacity>
+                            )}
+
+                            <View style={styles.serviceRow}>
+                                {visibleServices.map((item, i) => (
+                                    <View key={i} style={styles.serviceCard}>
+                                        <View style={styles.serviceIconBg}>
+                                            <item.Icon />
+                                        </View>
+                                        <Text style={styles.serviceTitle}>{item.title}</Text>
+                                        <Text style={styles.serviceDesc}>{item.desc}</Text>
                                     </View>
+                                ))}
+                            </View>
 
-                                    <Text style={styles.serviceTitle}>
-                                        {item.title}
-                                    </Text>
-
-                                    <Text style={styles.serviceDesc}>
-                                        {item.desc}
-                                    </Text>
-                                </View>
-                            ))}
+                            {/* Right arrow */}
+                            <TouchableOpacity style={styles.carouselArrow} onPress={nextService}>
+                                <ChevronRightIcon />
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </View>
 
-                {/* HOW IT WORKS */}
-
+                {/* ── HOW IT WORKS ── */}
                 <View
-                    onLayout={(e) => {
-                        aboutY.current =
-                            e.nativeEvent.layout.y;
-                    }}
+                    onLayout={(e) => { aboutY.current = e.nativeEvent.layout.y; }}
                     style={styles.section}
                 >
                     <View style={styles.container}>
-                        <Text style={styles.sectionTitle}>
-                            How It Works
-                        </Text>
+                        <Text style={styles.sectionTitle}>How It Works</Text>
 
-                        {[
-                            "Create Account",
-                            "Complete Profile",
-                            "Start Connecting",
-                        ].map((step, i) => (
-                            <View
-                                key={i}
-                                style={styles.stepRow}
-                            >
-                                <Text style={styles.stepNumber}>
-                                    {i + 1}
-                                </Text>
-
-                                <Text style={styles.stepTitle}>
-                                    {step}
-                                </Text>
-
-                                <Text style={styles.stepDesc}>
-                                    Sign up as a hospital or medical
-                                    professional.
-                                </Text>
+                        {steps.map((step, i) => (
+                            <View key={i} style={styles.stepRow}>
+                                <Text style={styles.stepNumber}>{i + 1}</Text>
+                                <Text style={styles.stepTitle}>{step.label}</Text>
+                                <Text style={styles.stepDesc}>{step.desc}</Text>
                             </View>
                         ))}
                     </View>
                 </View>
 
-                {/* CTA */}
-
+                {/* ── CTA ── */}
                 <View style={styles.ctaSection}>
                     <View style={styles.container}>
                         <View style={styles.ctaWrapper}>
@@ -1130,76 +2204,44 @@ export default function LandingPage() {
                                 source={require("../../../assets/Images/hero-doctor.png")}
                                 style={styles.ctaImage}
                             />
-
                             <View style={styles.ctaContent}>
                                 <Text style={styles.ctaTitle}>
-                                    Ready to Transform Healthcare
-                                    Staffing?
+                                    Ready to Transform Healthcare Staffing?
                                 </Text>
-
                                 <Text style={styles.ctaSubtitle}>
-                                    Join thousands of healthcare
-                                    professionals already using
-                                    Hospilink
+                                    Join thousands of healthcare professionals already using Hospilink
                                 </Text>
-
-                                <TouchableOpacity
-                                    style={styles.whiteBtn}
-                                >
-                                    <Text style={styles.whiteBtnText}>
-                                        Get Started Today
-                                    </Text>
+                                <TouchableOpacity style={styles.whiteBtn}>
+                                    <Text style={styles.whiteBtnText}>Get Started Today</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
                     </View>
                 </View>
 
-                {/* FAQ */}
-
+                {/* ── FAQ ── */}
                 <View style={styles.section}>
                     <View style={styles.container}>
                         <View style={styles.faqWrapper}>
                             <View style={styles.faqLeft}>
-                                <Text style={styles.sectionTitle}>
-                                    Frequently Asked Questions
-                                </Text>
-
+                                <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
                                 <Text style={styles.sectionSubtitle}>
-                                    Find answers to common questions
-                                    about Hospilink.
+                                    Find answers to common questions about Hospilink, healthcare staffing, account management, and platform services.
                                 </Text>
                             </View>
 
                             <View style={styles.faqRight}>
                                 {faqs.map((faq, i) => (
-                                    <View
-                                        key={i}
-                                        style={styles.faqItem}
-                                    >
+                                    <View key={i} style={styles.faqItem}>
                                         <TouchableOpacity
                                             style={styles.faqButton}
-                                            onPress={() =>
-                                                setFaqOpen(
-                                                    faqOpen === i ? null : i
-                                                )
-                                            }
+                                            onPress={() => setFaqOpen(faqOpen === i ? null : i)}
                                         >
-                                            <Text
-                                                style={styles.faqQuestion}
-                                            >
-                                                {faq.q}
-                                            </Text>
-
-                                            <ChevronDownIcon
-                                                open={faqOpen === i}
-                                            />
+                                            <Text style={styles.faqQuestion}>{faq.q}</Text>
+                                            <ChevronDownIcon open={faqOpen === i} />
                                         </TouchableOpacity>
-
                                         {faqOpen === i && (
-                                            <Text style={styles.faqAnswer}>
-                                                {faq.a}
-                                            </Text>
+                                            <Text style={styles.faqAnswer}>{faq.a}</Text>
                                         )}
                                     </View>
                                 ))}
@@ -1208,94 +2250,80 @@ export default function LandingPage() {
                     </View>
                 </View>
 
-                {/* FOOTER */}
-
+                {/* ── FOOTER ── */}
                 <View style={styles.footer}>
                     <View style={styles.container}>
                         <View style={styles.footerGrid}>
-                            <View>
-
-                                <TouchableOpacity style={styles.logoRow}
-                                    onPress={() =>
-                                        router.push("/auth/contact-us")
-                                    }
+                            {/* Brand */}
+                            <View style={styles.footerBrandCol}>
+                                <TouchableOpacity
+                                    style={styles.logoRow}
+                                    onPress={() => router.push("/auth/home")}
                                 >
                                     <View style={styles.logoIcon}>
                                         <LinkIcon />
                                     </View>
-
-                                    <Text style={styles.logoText}>
-                                        HOSPILINK
-                                    </Text>
+                                    <Text style={styles.logoText}>HOSPILINK</Text>
                                 </TouchableOpacity>
-
                                 <Text style={styles.footerText}>
-                                    Connect with us for seamless
-                                    healthcare staffing solutions.
+                                    Connect with us for seamless healthcare staffing solutions and opportunities.
                                 </Text>
                             </View>
 
+                            {/* For Hospitals */}
                             <View>
-                                <Text style={styles.footerHeading}>
-                                    For Hospitals
-                                </Text>
-
-                                <Text style={styles.footerLink}>
-                                    Post Duties
-                                </Text>
-
-                                <Text style={styles.footerLink}>
-                                    Find Staff
-                                </Text>
+                                <Text style={styles.footerHeading}>For Hospitals</Text>
+                                <Text style={styles.footerLink}>Post Duties</Text>
+                                <Text style={styles.footerLink}>Find Staff</Text>
+                                <Text style={styles.footerLink}>Manage Schedules</Text>
                             </View>
 
+                            {/* For Medical Staff */}
                             <View>
-                                <Text style={styles.footerHeading}>
-                                    Support
-                                </Text>
+                                <Text style={styles.footerHeading}>For Medical Staff</Text>
+                                <Text style={styles.footerLink}>Find Opportunities</Text>
+                                <Text style={styles.footerLink}>Manage Availability</Text>
+                                <Text style={styles.footerLink}>Track Earnings</Text>
+                            </View>
 
-                                <TouchableOpacity
-                                    onPress={() =>
-                                        router.push("/auth/contact-us")
-                                    }
-                                >
-                                    <Text style={styles.footerLink}>
-                                        Contact Us
-                                    </Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    onPress={() =>
-                                        router.push(
-                                            "/auth/privacy-policy"
-                                        )
-                                    }
-                                >
-                                    <Text style={styles.footerLink}>
-                                        Privacy Policy
-                                    </Text>
+                            {/* Support */}
+                            <View>
+                                <Text style={styles.footerHeading}>Support</Text>
+                                <Text style={styles.footerLink}>Help Center</Text>
+                                <TouchableOpacity onPress={() => router.push("/auth/contact-us")}>
+                                    <Text style={styles.footerLink}>Contact Us</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
 
+                        {/* Footer bottom */}
                         <View style={styles.footerBottom}>
                             <Text style={styles.copyText}>
-                                © 2025 Hospilink. All rights
-                                reserved.
+                                © 2025 Hospilink. All rights reserved.{" "}
+                                <Text
+                                    style={styles.copyLink}
+                                    onPress={() => router.push("/auth/privacy-policy")}
+                                >
+                                    Privacy Policy
+                                </Text>
                             </Text>
+                            <View style={styles.socialRow}>
+                                <View style={styles.socialIcon}><TwitterIcon /></View>
+                                <View style={styles.socialIcon}><LinkedInIcon /></View>
+                                <View style={styles.socialIcon}><InstagramIcon /></View>
+                            </View>
                         </View>
                     </View>
                 </View>
+
             </ScrollView>
         </View>
     );
 }
 
+/* ─────────────── STYLES ─────────────── */
 const styles = StyleSheet.create({
-    root: {
-        flex: 1,
-        backgroundColor: "#fff",
-    },
+    root: { flex: 1, backgroundColor: "#fff" },
 
     container: {
         width: "100%",
@@ -1304,19 +2332,14 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
     },
 
+    /* NAVBAR */
     navbar: {
         height: 64,
         backgroundColor: NAVY,
         justifyContent: "center",
         ...Platform.select({
-            ios: {
-                shadowColor: "#000",
-                shadowOpacity: 0.1,
-                shadowRadius: 4,
-            },
-            android: {
-                elevation: 5,
-            },
+            ios: { shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 4 },
+            android: { elevation: 5 },
         }),
     },
 
@@ -1326,10 +2349,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
 
-    logoRow: {
-        flexDirection: "row",
-        alignItems: "center",
-    },
+    logoRow: { flexDirection: "row", alignItems: "center" },
 
     logoIcon: {
         width: 34,
@@ -1354,12 +2374,39 @@ const styles = StyleSheet.create({
         gap: 36,
     },
 
-    navLink: {
-        color: "#E5E7EB",
-        fontSize: 14,
-        fontWeight: "500",
-    },
+    navLink: { color: "#E5E7EB", fontSize: 14, fontWeight: "500" },
 
+    /* Outlined white button (navbar Sign In) */
+    outlineBtn: {
+        borderWidth: 1,
+        borderColor: "#fff",
+        paddingHorizontal: 20,
+        paddingVertical: 8,
+        borderRadius: 8,
+    },
+    outlineBtnText: { color: "#fff", fontWeight: "600", fontSize: 14 },
+
+    /* Blue filled button (hero Sign Up) */
+    blueBtn: {
+        backgroundColor: BLUE,
+        paddingHorizontal: 28,
+        paddingVertical: 14,
+        borderRadius: 8,
+        alignSelf: "flex-start",
+    },
+    blueBtnText: { color: "#fff", fontWeight: "600" },
+
+    /* White filled button (CTA) */
+    whiteBtn: {
+        backgroundColor: "#fff",
+        paddingHorizontal: 26,
+        paddingVertical: 13,
+        borderRadius: 8,
+        alignSelf: "flex-start",
+    },
+    whiteBtnText: { color: NAVY, fontWeight: "600" },
+
+    /* HERO */
     heroContainer: {
         flexDirection: isDesktop ? "row" : "column",
         alignItems: "center",
@@ -1368,10 +2415,7 @@ const styles = StyleSheet.create({
         gap: 60,
     },
 
-    heroLeft: {
-        flex: 1,
-        maxWidth: 580,
-    },
+    heroLeft: { flex: 1, maxWidth: 580 },
 
     heroTitle: {
         fontSize: isDesktop ? 58 : 36,
@@ -1406,37 +2450,9 @@ const styles = StyleSheet.create({
         bottom: 0,
     },
 
-    heroImage: {
-        width: "100%",
-        height: "100%",
-    },
+    heroImage: { width: "100%", height: "100%" },
 
-    darkBtn: {
-        backgroundColor: NAVY,
-        paddingHorizontal: 28,
-        paddingVertical: 14,
-        borderRadius: 8,
-        alignSelf: "flex-start",
-    },
-
-    darkBtnText: {
-        color: "#fff",
-        fontWeight: "600",
-    },
-
-    whiteBtn: {
-        backgroundColor: "#fff",
-        paddingHorizontal: 26,
-        paddingVertical: 13,
-        borderRadius: 8,
-        alignSelf: "flex-start",
-    },
-
-    whiteBtnText: {
-        color: NAVY,
-        fontWeight: "600",
-    },
-
+    /* STATS */
     statsBar: {
         flexDirection: "row",
         marginTop: 40,
@@ -1447,48 +2463,16 @@ const styles = StyleSheet.create({
         marginBottom: 60,
     },
 
-    statItem: {
-        flex: 1,
-        paddingVertical: 22,
-        alignItems: "center",
-    },
+    statItem: { flex: 1, paddingVertical: 22, alignItems: "center" },
 
-    statBorder: {
-        borderRightWidth: 1,
-        borderRightColor: BORDER,
-    },
+    statBorder: { borderRightWidth: 1, borderRightColor: BORDER },
 
-    statNumber: {
-        fontSize: 24,
-        fontWeight: "800",
-        color: NAVY,
-    },
+    statNumber: { fontSize: 24, fontWeight: "800", color: NAVY },
 
-    statLabel: {
-        fontSize: 12,
-        color: MUTED,
-        marginTop: 6,
-    },
+    statLabel: { fontSize: 12, color: MUTED, marginTop: 6 },
 
-    section: {
-        paddingVertical: 70,
-    },
-
-    whyContainer: {
-        flexDirection: isDesktop ? "row" : "column",
-        gap: 50,
-        alignItems: "center",
-    },
-
-    teamImage: {
-        width: isDesktop ? 420 : "100%",
-        height: 320,
-        borderRadius: 8,
-    },
-
-    whyContent: {
-        flex: 1,
-    },
+    /* SECTIONS */
+    section: { paddingVertical: 70 },
 
     sectionTitle: {
         fontSize: 40,
@@ -1505,11 +2489,22 @@ const styles = StyleSheet.create({
         marginBottom: 28,
     },
 
-    featureRow: {
-        flexDirection: "row",
-        gap: 16,
-        marginBottom: 24,
+    /* WHY CHOOSE */
+    whyContainer: {
+        flexDirection: isDesktop ? "row" : "column",
+        gap: 50,
+        alignItems: "center",
     },
+
+    teamImage: {
+        width: isDesktop ? 420 : "100%",
+        height: 320,
+        borderRadius: 8,
+    },
+
+    whyContent: { flex: 1 },
+
+    featureRow: { flexDirection: "row", gap: 16, marginBottom: 24 },
 
     featureIcon: {
         width: 44,
@@ -1519,20 +2514,14 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         justifyContent: "center",
         alignItems: "center",
+        backgroundColor: "#F0F5FF",
     },
 
-    featureTitle: {
-        fontWeight: "700",
-        color: NAVY,
-        marginBottom: 6,
-    },
+    featureTitle: { fontWeight: "700", color: NAVY, marginBottom: 6 },
 
-    featureDesc: {
-        color: MUTED,
-        lineHeight: 22,
-        fontSize: 14,
-    },
+    featureDesc: { color: MUTED, lineHeight: 22, fontSize: 14 },
 
+    /* SERVICES CAROUSEL */
     centerTitle: {
         fontSize: 38,
         fontWeight: "800",
@@ -1542,7 +2531,25 @@ const styles = StyleSheet.create({
         color: NAVY,
     },
 
+    carouselWrapper: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+    },
+
+    carouselArrow: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: BORDER,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "#fff",
+    },
+
     serviceRow: {
+        flex: 1,
         flexDirection: isDesktop ? "row" : "column",
         gap: 20,
     },
@@ -1553,14 +2560,14 @@ const styles = StyleSheet.create({
         borderColor: BORDER,
         padding: 30,
         alignItems: "center",
+        borderRadius: 4,
     },
 
-    serviceIcon: {
+    serviceIconBg: {
         width: 60,
         height: 60,
-        borderRadius: 30,
-        borderWidth: 1,
-        borderColor: BORDER,
+        borderRadius: 14,
+        backgroundColor: BLUE,
         justifyContent: "center",
         alignItems: "center",
         marginBottom: 20,
@@ -1570,6 +2577,7 @@ const styles = StyleSheet.create({
         fontWeight: "700",
         marginBottom: 12,
         color: NAVY,
+        fontSize: 15,
     },
 
     serviceDesc: {
@@ -1579,6 +2587,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
 
+    /* HOW IT WORKS */
     stepRow: {
         flexDirection: "row",
         alignItems: "center",
@@ -1601,14 +2610,11 @@ const styles = StyleSheet.create({
         color: NAVY,
     },
 
-    stepDesc: {
-        flex: 1,
-        color: MUTED,
-        lineHeight: 24,
-    },
+    stepDesc: { flex: 1, color: MUTED, lineHeight: 24 },
 
+    /* CTA – bright blue */
     ctaSection: {
-        backgroundColor: NAVY,
+        backgroundColor: BLUE,
         paddingVertical: 80,
     },
 
@@ -1624,9 +2630,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
     },
 
-    ctaContent: {
-        flex: 1,
-    },
+    ctaContent: { flex: 1 },
 
     ctaTitle: {
         color: "#fff",
@@ -1637,29 +2641,23 @@ const styles = StyleSheet.create({
     },
 
     ctaSubtitle: {
-        color: "#A5B4C7",
+        color: "rgba(255,255,255,0.8)",
         fontSize: 16,
         lineHeight: 28,
         marginBottom: 30,
     },
 
+    /* FAQ */
     faqWrapper: {
         flexDirection: isDesktop ? "row" : "column",
         gap: 60,
     },
 
-    faqLeft: {
-        width: isDesktop ? 300 : "100%",
-    },
+    faqLeft: { width: isDesktop ? 300 : "100%" },
 
-    faqRight: {
-        flex: 1,
-    },
+    faqRight: { flex: 1 },
 
-    faqItem: {
-        borderBottomWidth: 1,
-        borderBottomColor: BORDER,
-    },
+    faqItem: { borderBottomWidth: 1, borderBottomColor: BORDER },
 
     faqButton: {
         flexDirection: "row",
@@ -1676,17 +2674,10 @@ const styles = StyleSheet.create({
         paddingRight: 20,
     },
 
-    faqAnswer: {
-        color: MUTED,
-        lineHeight: 24,
-        paddingBottom: 20,
-    },
+    faqAnswer: { color: MUTED, lineHeight: 24, paddingBottom: 20 },
 
-    footer: {
-        backgroundColor: NAVY,
-        paddingTop: 80,
-        paddingBottom: 30,
-    },
+    /* FOOTER */
+    footer: { backgroundColor: NAVY, paddingTop: 80, paddingBottom: 30 },
 
     footerGrid: {
         flexDirection: isDesktop ? "row" : "column",
@@ -1696,6 +2687,8 @@ const styles = StyleSheet.create({
         borderBottomColor: "rgba(255,255,255,0.08)",
         paddingBottom: 40,
     },
+
+    footerBrandCol: { maxWidth: 240 },
 
     footerHeading: {
         color: "#fff",
@@ -1707,20 +2700,30 @@ const styles = StyleSheet.create({
         color: "#A5B4C7",
         lineHeight: 24,
         marginTop: 14,
-        maxWidth: 240,
     },
 
-    footerLink: {
-        color: "#A5B4C7",
-        marginBottom: 12,
-    },
+    footerLink: { color: "#A5B4C7", marginBottom: 12 },
 
     footerBottom: {
         paddingTop: 24,
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
     },
 
-    copyText: {
-        color: "#7B8794",
-        fontSize: 13,
+    copyText: { color: "#7B8794", fontSize: 13 },
+
+    copyLink: { color: "#A5B4C7", textDecorationLine: "underline" },
+
+    socialRow: { flexDirection: "row", gap: 12 },
+
+    socialIcon: {
+        width: 32,
+        height: 32,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.12)",
+        justifyContent: "center",
+        alignItems: "center",
     },
 });

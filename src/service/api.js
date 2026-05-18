@@ -1179,6 +1179,30 @@ export const adminAPI = {
 
 }
 
+export const notificationAPI = {
+  // POST /api/auth/fcm-token
+// Body: { fcmToken, deviceId, platform }
+// Returns: { success: true, message: "FCM token registered" } (assumed)
+registerFCMToken: async (fcmToken, deviceId, platform) => {
+  const response = await api.post('/api/auth/fcm-token', {
+    fcmToken,
+    deviceId,
+    platform,
+  });
+  return response.data;
+},
+
+// DELETE /api/auth/fcm-token
+// Body: { fcmToken }
+// Returns: { success: true, message: "FCM token removed" } (assumed)
+deleteFCMToken: async (fcmToken) => {
+  const response = await api.delete('/api/auth/fcm-token', {
+    data: { fcmToken },
+  });
+  return response.data;
+},
+}
+
 
 
 export default api;
