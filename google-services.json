@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "736906300814",
+    "project_id": "hospilink-96b54",
+    "storage_bucket": "hospilink-96b54.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:736906300814:android:66ecc3e5924ffc2bcba8df",
+        "android_client_info": {
+          "package_name": "com.hospilinkfrontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyClRVwTo9HkDnZpChfxf7_EVxIzxjkLaf0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
