@@ -7,7 +7,7 @@
     "icon": "./assets/Images/loginbg.png",
     "scheme": "hospilinkfrontend",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "ios": {
       "icon": "./assets/expo.icon.png",
       "infoPlist": {
@@ -17,6 +17,12 @@
       "bundleIdentifier": "com.hospilinkfrontend"
     },
     "android": {
+      "package": "com.hospilinkfrontend",
+      "versionCode": 1,
+      "permissions": [
+        "READ_MEDIA_IMAGES",
+        "CAMERA"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/Images/foreground.png",
@@ -29,6 +35,7 @@
         "CAMERA",
         "POST_NOTIFICATIONS"
       ]
+      "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "single",
@@ -57,7 +64,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "687a3338-0501-4cc4-b947-3bde64a0ca52"
+        "projectId": "a7def692-214a-4fe9-85a2-bc4e451c8a8b"
       }
     }
   }
