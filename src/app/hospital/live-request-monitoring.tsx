@@ -459,7 +459,9 @@ export default function LiveRequestMonitoring() {
             <Text style={styles.cardSectionTitle}>Request Details</Text>
 
             <View style={styles.detailItem}>
-              <View style={styles.iconBox} />
+              <View style={styles.iconBox}>
+                <Ionicons name="document-text-outline" size={20} color="#2563EB" />
+              </View>
               <View style={styles.detailTextCol}>
                 <Text style={styles.detailLabel}>REQUEST ID</Text>
                 <Text style={styles.detailValueBold}>
@@ -469,7 +471,9 @@ export default function LiveRequestMonitoring() {
             </View>
 
             <View style={styles.detailItem}>
-              <View style={styles.iconBox} />
+              <View style={styles.iconBox}>
+                <Ionicons name="business-outline" size={20} color="#2563EB" />
+              </View>
               <View style={styles.detailTextCol}>
                 <Text style={styles.detailLabel}>HOSPITAL NAME</Text>
                 <Text style={styles.detailValueBold}>{hospital.name}</Text>
@@ -481,7 +485,9 @@ export default function LiveRequestMonitoring() {
             </View>
 
             <View style={styles.detailItem}>
-              <View style={styles.iconBox} />
+              <View style={styles.iconBox}>
+                <Ionicons name="time-outline" size={20} color="#2563EB" />
+              </View>
               <View style={styles.detailTextCol}>
                 <Text style={styles.detailLabel}>SHIFT TIME</Text>
                 <Text style={styles.detailValueBold}>
@@ -494,7 +500,9 @@ export default function LiveRequestMonitoring() {
             </View>
 
             <View style={styles.detailItem}>
-              <View style={styles.iconBox} />
+              <View style={styles.iconBox}>
+                <Ionicons name="person-outline" size={20} color="#2563EB" />
+              </View>
               <View style={styles.detailTextCol}>
                 <Text style={styles.detailLabel}>ROLE REQUIRED</Text>
                 <Text style={styles.detailValueBold}>
@@ -509,7 +517,9 @@ export default function LiveRequestMonitoring() {
             {/* Distance & Duration from route */}
             {routeInfo && (
               <View style={styles.detailItem}>
-                <View style={styles.iconBox} />
+                <View style={styles.iconBox}>
+                  <Ionicons name="navigate-outline" size={20} color="#2563EB" />
+                </View>
                 <View style={styles.detailTextCol}>
                   <Text style={styles.detailLabel}>ROUTE INFO</Text>
                   <Text style={styles.detailValueBold}>{routeInfo.distanceText}</Text>
@@ -877,7 +887,14 @@ const styles = StyleSheet.create({
   },
   cardSectionTitle: { fontSize: 16, fontWeight: '700', color: '#1E293B', marginBottom: 20 },
   detailItem: { flexDirection: 'row', gap: 12, marginBottom: 20 },
-  iconBox: { width: 40, height: 40, backgroundColor: '#EFF6FF', borderRadius: 8 },
+  iconBox: {
+  width: 40,
+  height: 40,
+  backgroundColor: '#EFF6FF',
+  borderRadius: 8,
+  alignItems: 'center',      // ← add this
+  justifyContent: 'center',  // ← add this
+},
   detailTextCol: { flex: 1, justifyContent: 'center' },
   detailLabel: {
     fontSize: 11, fontWeight: '700', color: '#94A3B8', letterSpacing: 0.5, marginBottom: 4,
@@ -937,8 +954,8 @@ const styles = StyleSheet.create({
   timelineNodeCompleted: { backgroundColor: '#2563EB', borderColor: '#2563EB' },
   timelineNodeCurrent: {
     // backgroundColor: '#FFF',
-    backgroundColor: '#2563EB', 
-     borderColor: '#2563EB',
+    backgroundColor: '#2563EB',
+    borderColor: '#2563EB',
     borderWidth: 3, width: 32, height: 32, marginTop: -4,
   },
   nodeIconText: { color: '#FFF', fontSize: 12, fontWeight: '700' },

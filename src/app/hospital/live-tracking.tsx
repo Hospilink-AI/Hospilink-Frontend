@@ -5,7 +5,7 @@ import { RangeKm } from '../../types/duty';
 // Metro resolves these to .web.tsx or .native.tsx automatically
 import RangeDropdown from '../../component/cards/hospital/live-tracking/RangeDropdown';
 const LiveMap = React.lazy(
-    () => import('../../component/cards/hospital/live-tracking/LiveMap.web')
+    () => import('../../component/cards/hospital/live-tracking/LiveMap')
 );
 
 const LiveTracking: React.FC = () => {

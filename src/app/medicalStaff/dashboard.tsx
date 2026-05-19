@@ -65,8 +65,8 @@ export default function Dashboard() {
   const [ongoingLoading, setOngoingLoading] = useState(false);
   const [averageRating, setAverageRating] = useState<number>(0);
   const [ratingGrowth, setRatingGrowth] = useState({
-  percent: 0, trend: "neutral", label: "+0%"
-});
+    percent: 0, trend: "neutral", label: "+0%"
+  });
 
 
   const router = useRouter();
@@ -88,7 +88,7 @@ export default function Dashboard() {
       case 'enroute':
         return { percent: 50, label: '50% Complete' };
       case 'in-progress':
-        return { percent: 85, label: '85% Complete' };
+        return { percent: 75, label: '75% Complete' };
       default:
         return { percent: 0, label: '0% Complete' };
     }
@@ -224,11 +224,11 @@ export default function Dashboard() {
         console.log(response.data)
         // setEarnings(response.data);
         setEarnings({
-        totalEarnings: response.data.totalEarnings,
-        completedDutiesCount: response.data.completedDutiesCount,
-        averagePerDuty: response.data.averagePerDuty,
-        growth: response.data.growth,   
-      });
+          totalEarnings: response.data.totalEarnings,
+          completedDutiesCount: response.data.completedDutiesCount,
+          averagePerDuty: response.data.averagePerDuty,
+          growth: response.data.growth,
+        });
       }
     } catch (err: any) {
     } finally {
@@ -240,7 +240,7 @@ export default function Dashboard() {
     try {
       const response = await profileAPI.getStaffOverview();
       setAverageRating(response.data?.profile?.averageRating || 0);
-       setRatingGrowth(response.data?.growth || { percent: 0, trend: "neutral", label: "+0%" });
+      setRatingGrowth(response.data?.growth || { percent: 0, trend: "neutral", label: "+0%" });
     } catch (err) {
     }
   };
@@ -334,7 +334,7 @@ export default function Dashboard() {
     fetchOngoingDuties();
   }, []);
 
-  
+
 
   return (
     <ScrollView
@@ -354,7 +354,10 @@ export default function Dashboard() {
               </View>
               <View>
                 <Text style={styles.activeDutyLabel}>ACTIVE DUTY</Text>
-                <Text style={styles.activeDutyTitle}>
+                {/* <Text style={styles.activeDutyTitle}>
+                  {activeDuty.title} at {activeDuty.hospital}
+                </Text> */}
+                <Text style={styles.activeDutyTitle} numberOfLines={2} ellipsizeMode="tail">
                   {activeDuty.title} at {activeDuty.hospital}
                 </Text>
               </View>
@@ -405,7 +408,7 @@ export default function Dashboard() {
           icon="cash-outline"
           value={earningsLoading ? "..." : `₹ ${earnings.totalEarnings.toLocaleString()}`}
           label="Total Earnings"
-          trend={earnings.growth.label} 
+          trend={earnings.growth.label}
           trendUp={earnings.growth.trend === "up"}
           isMobile={isMobile}
         />
@@ -425,7 +428,7 @@ export default function Dashboard() {
           icon="star-outline"
           value={averageRating.toString()}
           label="Avg. Rating"
-          trend={ratingGrowth.label} 
+          trend={ratingGrowth.label}
           trendUp={ratingGrowth.trend === "up"}
           isMobile={isMobile}
         />
@@ -582,12 +585,12 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   content: { padding: 24, paddingBottom: 40, gap: 20 },
   contentMobile: { padding: 16, gap: 16 },
-  activeDutyCard: { backgroundColor: COLORS.white, borderRadius: 14, padding: 18, borderWidth: 1, borderColor: COLORS.border, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
-  activeDutyTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8, marginBottom: 14 },
-  activeDutyLeft: { flexDirection: "row", alignItems: "flex-start", gap: 12, flex: 1, minWidth: 0 },
+  activeDutyCard: { backgroundColor: COLORS.white, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: COLORS.border, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
+  activeDutyTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8, marginBottom: 12 },
+  activeDutyLeft: { flexDirection: "row", alignItems: "flex-start", gap: 11, flex: 1, minWidth: 0 },
   activeDutyIconWrap: { width: 36, height: 36, borderRadius: 10, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
-  activeDutyLabel: { fontSize: 11, color: COLORS.subText, fontWeight: "600", letterSpacing: 0.5, marginBottom: 2 },
-  activeDutyTitle: { fontSize: 14, fontWeight: "700", color: COLORS.text, flexShrink: 1 },
+  activeDutyLabel: { fontSize: 11, color: COLORS.subText, fontWeight: "600", letterSpacing: 0.5, marginBottom: 4 },
+  activeDutyTitle: { fontSize: 12, fontWeight: "600", color: COLORS.text, flexShrink: 0.9,lineHeight: 18,  },
   activeDutyRight: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 4 },
   activeDutyPercent: { fontSize: 12, fontWeight: "700", color: COLORS.primary },
   activeDutySep: { color: COLORS.border, fontSize: 12 },

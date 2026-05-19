@@ -286,8 +286,8 @@ const styles = StyleSheet.create({
 
   // Layout
   mainLayout: { flexDirection: "row", gap: 20, alignItems: "flex-start" },
-  mainLayoutMobile: { flexDirection: "column" },
-  leftCol: { flex: 1, gap: 16 },
+  mainLayoutMobile: { flexDirection: "column",width: "100%", },
+  leftCol: { flex: 1, gap: 16 ,width: "100%",},
   rightCol: { width: 260, gap: 16 },
 
   // Card

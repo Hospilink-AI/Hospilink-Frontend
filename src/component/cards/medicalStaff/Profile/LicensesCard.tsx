@@ -15,6 +15,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+   useWindowDimensions, 
 } from "react-native";
 import { documentAPI } from "../../../../service/api"; 
 import { useNavigation } from "@react-navigation/native";
@@ -441,6 +442,9 @@ export default function CredentialComplianceCard({ initialItems = [] }: Props) {
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [viewLoading, setViewLoading]           = useState(false);
 
+const { width } = useWindowDimensions();
+const isMobile = width < 600;
+
   // ── Fetch all docs ────────────────────────────────────────────────────────
   const fetchDocuments = useCallback(async () => {
     try {
@@ -760,11 +764,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
-  colLabel:   { fontSize: 10, fontWeight: "700", color: "#94A3B8", letterSpacing: 0.6 },
+  colLabel:   { fontSize: 10, fontWeight: "700", color: "#94A3B8", letterSpacing: 0.4 },
   col:        { paddingRight: 8 },
   colName:    { flex: 3 },
-  colStatus:  { flex: 2 },
-  colDate:    { flex: 2 },
+  colStatus:  { flex: 1.7 },
+  colDate:    { flex: 2.2 },
   colActions: { flex: 1, paddingRight: 0 },
   list:       { maxHeight: 340 },
   row: {
@@ -776,17 +780,17 @@ const styles = StyleSheet.create({
   rowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.border },
   rowName:    { flexDirection: "row", alignItems: "center", gap: 10 },
   fileIcon:   { width: 30, height: 30, borderRadius: 8, alignItems: "center", justifyContent: "center" },
-  docName:    { fontSize: 13, fontWeight: "600", color: COLORS.text },
+  docName:    { fontSize: 12, fontWeight: "600", color: COLORS.text },
   docSub:     { fontSize: 10, color: COLORS.subText, marginTop: 2 },
   pill: {
     flexDirection: "row", alignItems: "center",
-    gap: 5, paddingHorizontal: 9, paddingVertical: 4,
+    gap: 5, paddingHorizontal: 7, paddingVertical: 4,
     borderRadius: 20, alignSelf: "flex-start",
   },
   dot:        { width: 6, height: 6, borderRadius: 3 },
-  pillText:   { fontSize: 11, fontWeight: "700" },
-  dateText:   { fontSize: 12, color: COLORS.subText },
-  actionsRow: { flexDirection: "row", gap: 6, justifyContent: "flex-end" },
+  pillText:   { fontSize: 10, fontWeight: "700" },
+  dateText:   { fontSize: 11, color: COLORS.subText },
+  actionsRow: { flexDirection: "row", gap: 5, justifyContent: "flex-end" },
   actionBtn: {
     width: 28, height: 28, borderRadius: 7,
     backgroundColor: "#F1F5F9",

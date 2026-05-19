@@ -316,7 +316,7 @@ export default function MedicalStaffProfile() {
         profileSummary: profileSummary.trim() || undefined,
         education: educationArray.length > 0 ? educationArray : undefined,
         skills: skillsList.length > 0 ? skillsList : undefined,
-        // experience: experience || undefined,
+        experience: experience || undefined,
       };
 
       let response: any;
