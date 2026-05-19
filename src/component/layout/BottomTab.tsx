@@ -110,7 +110,7 @@
 //     height: 5,
 //     borderRadius: 3,
 //     marginTop: 3,
-    
+
 //   },
 // });
 
@@ -128,6 +128,8 @@ import {
   View,
 } from "react-native";
 import { authAPI } from "../../service/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 
 // ─── Types ────────────────────────────────────────────────
 type IoniconName = ComponentProps<typeof Ionicons>["name"];
@@ -147,26 +149,26 @@ type NavConfigType = {
 // ─── Config ───────────────────────────────────────────────
 const NavConfig: NavConfigType = {
   medicalStaff: [
-    { label: "Dashboard", icon: "grid-outline",      route: "/medicalStaff/dashboard" },
-    { label: "History",   icon: "time-outline",      route: "/medicalStaff/history"   },
+    { label: "Dashboard", icon: "grid-outline", route: "/medicalStaff/dashboard" },
+    { label: "History", icon: "time-outline", route: "/medicalStaff/history" },
     { label: "Vacancies", icon: "briefcase-outline", route: "/medicalStaff/vacancies" },
-    { label: "Profile",   icon: "person-outline",    route: "/medicalStaff/profile"   },
+    { label: "Profile", icon: "person-outline", route: "/medicalStaff/profile" },
   ],
   hospital: [
-    { label: "Dashboard",       icon: "grid-outline",   route: "/hospital/dashboard"       },
-    { label: "Live Tracking",   icon: "locate-outline", route: "/hospital/live-tracking"   },
-    { label: "Live Monitoring", icon: "eye-outline",    route: "/hospital/live-monitoring" },
-    { label: "Duty History",    icon: "time-outline",   route: "/hospital/duty-history"    },
-    { label: "Profile",         icon: "person-outline", route: "/hospital/profile"         },
+    { label: "Dashboard", icon: "grid-outline", route: "/hospital/dashboard" },
+    { label: "Live Tracking", icon: "locate-outline", route: "/hospital/live-tracking" },
+    { label: "Live Monitoring", icon: "eye-outline", route: "/hospital/live-monitoring" },
+    { label: "Duty History", icon: "time-outline", route: "/hospital/duty-history" },
+    { label: "Profile", icon: "person-outline", route: "/hospital/profile" },
   ],
   admin: [
-    { label: "Dashboard",             icon: "grid-outline",             route: "/admin/dashboard"             },
-    { label: "Hospital Management",   icon: "business-outline",         route: "/admin/hospital-management"   },
-    { label: "Medical Staff",         icon: "people-outline",           route: "/admin/medical-staff"         },
+    { label: "Dashboard", icon: "grid-outline", route: "/admin/dashboard" },
+    { label: "Hospital Management", icon: "business-outline", route: "/admin/hospital-management" },
+    { label: "Medical Staff", icon: "people-outline", route: "/admin/medical-staff" },
     { label: "Document Verification", icon: "shield-checkmark-outline", route: "/admin/document-verification" },
-    { label: "Duty Tracking",         icon: "calendar-outline",         route: "/admin/duty-overnight"        },
-    { label: "Live Tracking",         icon: "locate-outline",           route: "/admin/live-tracking"         },
-    { label: "Activity Logs",         icon: "reload-outline",           route: "/admin/activity-logs"         },
+    { label: "Duty Tracking", icon: "calendar-outline", route: "/admin/duty-overnight" },
+    { label: "Live Tracking", icon: "locate-outline", route: "/admin/live-tracking" },
+    { label: "Activity Logs", icon: "reload-outline", route: "/admin/activity-logs" },
   ],
 };
 
@@ -183,9 +185,9 @@ function useNavItems(): NavItem[] {
 
 // ─── BottomTab ────────────────────────────────────────────
 export default function BottomTab() {
-  const router   = useRouter();
+  const router = useRouter();
   const pathname = usePathname();
-  const tabs     = useNavItems();
+  const tabs = useNavItems();
 
   const role = pathname.startsWith("/admin")
     ? "admin"
@@ -194,6 +196,16 @@ export default function BottomTab() {
       : "medicalStaff";
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  const clearStorage = async () => {
+    if (Platform.OS === "web") {
+      localStorage.removeItem("hospilink_token");
+      localStorage.removeItem("hospilink_user");
+    } else {
+      await AsyncStorage.removeItem("hospilink_token");
+      await AsyncStorage.removeItem("hospilink_user");
+    }
+  };
 
   const doLogout = async () => {
     setShowLogoutModal(false);
@@ -206,9 +218,12 @@ export default function BottomTab() {
     } catch (e) {
       console.warn("Logout API error (ignored):", e);
     } finally {
-      localStorage.removeItem("hospilink_token");
-      localStorage.removeItem("hospilink_user");
-      router.replace("/");
+      try {
+        await clearStorage();   
+      } catch (e) {
+        console.warn("Storage clear error (ignored):", e);
+      }
+      router.replace("/");    
     }
   };
 

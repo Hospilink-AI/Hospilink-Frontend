@@ -119,7 +119,7 @@ export default function Profile() {
     if (s.label === "Verified Docs")
       return { ...s, value: String(apiProfile.verifiedDocs ?? 0) };
     if (s.label === "Total Experience")
-      return { ...s, value: `${apiProfile.totalExperience ?? 0} yrs` };
+      return { ...s, value: `${apiProfile.experience ?? 0}` };
     return s;
   });
 
@@ -194,6 +194,7 @@ export default function Profile() {
         profileSummary={displaySummary}
         education={displayEducation}
         skills={displaySkills}
+        experience={apiProfile?.experience ?? null}
         onProfileUpdated={(updated) => {
           setApiProfile((prev: any) => ({ ...(prev || {}), ...updated }));
         }}
