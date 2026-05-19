@@ -34,7 +34,7 @@
         "READ_MEDIA_IMAGES",
         "CAMERA",
         "POST_NOTIFICATIONS"
-      ]
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {
