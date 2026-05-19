@@ -6,7 +6,6 @@ import {
   Text,
   View
 } from 'react-native';
-
 import RangeDropdown from '../../component/cards/hospital/live-tracking/RangeDropdown';
 import { dutyAPI } from '../../service/api';
 import { DoctorWithDistance, Hospital, NearbyStaffResponse, RangeKm } from '../../types/duty';

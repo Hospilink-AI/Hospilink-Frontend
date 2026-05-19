@@ -8,13 +8,14 @@ import {
   ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
+import { Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { dutyAPI } from '@/service/api';
 import { decodePolyline } from '@/utils/polylineDecoderA'; // adjust path to your utils
 import { useTrackingReceiver } from '@/hooks/useTrackingReceiver'; // adjust path to your hooks
 
-const isWeb = typeof window !== 'undefined' && !!window.document;
+// const isWeb = typeof window !== 'undefined' && !!window.document;
 
 // ─── Tile Sources ─────────────────────────────────────────────────────────────
 const STREET_TILE = {
@@ -26,6 +27,10 @@ const SATELLITE_TILE = {
   url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
   attribution: '© Esri, Maxar, Earthstar Geographics',
 };
+
+const NativeMap = Platform.OS !== 'web'
+  ? require('./NativeMap').default
+  : null;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface StaffLocation {
@@ -176,13 +181,14 @@ interface WebMapProps {
 
 const WebMap = ({ staffLocation, hospitalLocation, routePolylines, status, isSatellite,
   onToggleSatellite }: WebMapProps) => {
-  const mapRef = useRef<HTMLDivElement>(null);
+  // const mapRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<any>(null);
   const mapInstanceRef = useRef<any>(null);
   const tileLayerRef = useRef<any>(null);
 
 
   useEffect(() => {
-    if (!isWeb || !mapRef.current) return;
+    if (!mapRef.current) return;
 
     const loadLeaflet = async () => {
       if (!(window as any).L) {
@@ -459,7 +465,9 @@ export default function LiveRequestMonitoring() {
             <Text style={styles.cardSectionTitle}>Request Details</Text>
 
             <View style={styles.detailItem}>
-              <View style={styles.iconBox} />
+              <View style={styles.iconBox}>
+                <Ionicons name="document-text-outline" size={20} color="#2563EB" />
+              </View>
               <View style={styles.detailTextCol}>
                 <Text style={styles.detailLabel}>REQUEST ID</Text>
                 <Text style={styles.detailValueBold}>
@@ -469,7 +477,9 @@ export default function LiveRequestMonitoring() {
             </View>
 
             <View style={styles.detailItem}>
-              <View style={styles.iconBox} />
+              <View style={styles.iconBox}>
+                <Ionicons name="business-outline" size={20} color="#2563EB" />
+              </View>
               <View style={styles.detailTextCol}>
                 <Text style={styles.detailLabel}>HOSPITAL NAME</Text>
                 <Text style={styles.detailValueBold}>{hospital.name}</Text>
@@ -481,7 +491,9 @@ export default function LiveRequestMonitoring() {
             </View>
 
             <View style={styles.detailItem}>
-              <View style={styles.iconBox} />
+              <View style={styles.iconBox}>
+                <Ionicons name="time-outline" size={20} color="#2563EB" />
+              </View>
               <View style={styles.detailTextCol}>
                 <Text style={styles.detailLabel}>SHIFT TIME</Text>
                 <Text style={styles.detailValueBold}>
@@ -494,7 +506,9 @@ export default function LiveRequestMonitoring() {
             </View>
 
             <View style={styles.detailItem}>
-              <View style={styles.iconBox} />
+              <View style={styles.iconBox}>
+                <Ionicons name="person-outline" size={20} color="#2563EB" />
+              </View>
               <View style={styles.detailTextCol}>
                 <Text style={styles.detailLabel}>ROLE REQUIRED</Text>
                 <Text style={styles.detailValueBold}>
@@ -509,7 +523,9 @@ export default function LiveRequestMonitoring() {
             {/* Distance & Duration from route */}
             {routeInfo && (
               <View style={styles.detailItem}>
-                <View style={styles.iconBox} />
+                <View style={styles.iconBox}>
+                  <Ionicons name="navigate-outline" size={20} color="#2563EB" />
+                </View>
                 <View style={styles.detailTextCol}>
                   <Text style={styles.detailLabel}>ROUTE INFO</Text>
                   <Text style={styles.detailValueBold}>{routeInfo.distanceText}</Text>
@@ -560,6 +576,31 @@ export default function LiveRequestMonitoring() {
           <View style={styles.mapWrapper}>
             {/* Map Container */}
             <View style={styles.mapContainer}>
+              {Platform.OS === 'web' ? (
+                <WebMap
+                  staffLocation={{ latitude: staff.location.latitude, longitude: staff.location.longitude }}
+                  hospitalLocation={{ latitude: hospital.coordinates.latitude, longitude: hospital.coordinates.longitude }}
+                  routePolylines={routeInfo?.stepPolylines ?? []}
+                  status={duty.status}
+                  isSatellite={isSatellite}
+                  onToggleSatellite={() => setIsSatellite(v => !v)}
+                />
+              ) : NativeMap ? (
+                <NativeMap
+                  staffLocation={{ latitude: staff.location.latitude, longitude: staff.location.longitude }}
+                  hospitalLocation={{ latitude: hospital.coordinates.latitude, longitude: hospital.coordinates.longitude }}
+                  routePolylines={routeInfo?.stepPolylines ?? []}
+                  status={duty.status}
+                  isSatellite={isSatellite}
+                  onToggleSatellite={() => setIsSatellite(v => !v)}
+                />
+              ) : (
+                <View style={styles.mapPlaceholder}>
+                  <ActivityIndicator color="#2563EB" />
+                </View>
+              )}
+            </View>
+            {/* <View style={styles.mapContainer}>
               {isWeb ? (
                 <WebMap
                   staffLocation={{
@@ -583,7 +624,7 @@ export default function LiveRequestMonitoring() {
                   </Text>
                 </View>
               )}
-            </View>
+            </View> */}
 
             {/* Horizontal Timeline */}
             <View style={styles.horizontalTimeline}>
@@ -877,7 +918,14 @@ const styles = StyleSheet.create({
   },
   cardSectionTitle: { fontSize: 16, fontWeight: '700', color: '#1E293B', marginBottom: 20 },
   detailItem: { flexDirection: 'row', gap: 12, marginBottom: 20 },
-  iconBox: { width: 40, height: 40, backgroundColor: '#EFF6FF', borderRadius: 8 },
+  iconBox: {
+    width: 40,
+    height: 40,
+    backgroundColor: '#EFF6FF',
+    borderRadius: 8,
+    alignItems: 'center',      // ← add this
+    justifyContent: 'center',  // ← add this
+  },
   detailTextCol: { flex: 1, justifyContent: 'center' },
   detailLabel: {
     fontSize: 11, fontWeight: '700', color: '#94A3B8', letterSpacing: 0.5, marginBottom: 4,
@@ -906,13 +954,29 @@ const styles = StyleSheet.create({
   lastUpdatedValue: { fontSize: 13, fontWeight: '700', color: '#1E293B', marginTop: 2 },
 
   // Map
+  // mapWrapper: {
+  //   flex: 1, minHeight: 500, backgroundColor: '#FFF',
+  //   borderBottomLeftRadius: 12, borderBottomRightRadius: 12,
+  //   borderWidth: 1, borderTopWidth: 0, borderColor: '#E2E8F0',
+  //   overflow: 'hidden', flexDirection: 'column',
+  // },
   mapWrapper: {
-    flex: 1, minHeight: 500, backgroundColor: '#FFF',
-    borderBottomLeftRadius: 12, borderBottomRightRadius: 12,
-    borderWidth: 1, borderTopWidth: 0, borderColor: '#E2E8F0',
-    overflow: 'hidden', flexDirection: 'column',
-  },
-  mapContainer: { flex: 1, minHeight: 400, position: 'relative', zIndex: 1 },
+  height: Platform.OS === 'web' ? undefined : 500,
+  flex: Platform.OS === 'web' ? 1 : undefined,
+  minHeight: 500,
+  backgroundColor: '#FFF',
+  borderBottomLeftRadius: 12, borderBottomRightRadius: 12,
+  borderWidth: 1, borderTopWidth: 0, borderColor: '#E2E8F0',
+  overflow: 'hidden', flexDirection: 'column',
+},
+  // mapContainer: { flex: 1, minHeight: 400, position: 'relative', zIndex: 1 },
+  mapContainer: { 
+  height: Platform.OS === 'web' ? undefined : 400,
+  flex: Platform.OS === 'web' ? 1 : undefined,
+  minHeight: 400, 
+  position: 'relative', 
+  zIndex: 1 
+},
   mapPlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   // Timeline
@@ -937,8 +1001,8 @@ const styles = StyleSheet.create({
   timelineNodeCompleted: { backgroundColor: '#2563EB', borderColor: '#2563EB' },
   timelineNodeCurrent: {
     // backgroundColor: '#FFF',
-    backgroundColor: '#2563EB', 
-     borderColor: '#2563EB',
+    backgroundColor: '#2563EB',
+    borderColor: '#2563EB',
     borderWidth: 3, width: 32, height: 32, marginTop: -4,
   },
   nodeIconText: { color: '#FFF', fontSize: 12, fontWeight: '700' },

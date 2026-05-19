@@ -317,7 +317,7 @@ export default function NotificationPopup({
             <Text style={styles.stateText}>No notifications yet</Text>
           </View>
         ) : (
-          <ScrollView style={styles.listArea} showsVerticalScrollIndicator={false}>
+          <ScrollView style={styles.listArea} showsVerticalScrollIndicator={false} nestedScrollEnabled={true} >
             {notifications.map((item) => {
               const config    = TYPE_CONFIG[item.type] ?? FALLBACK_CONFIG;
               const isPending = pendingRead.has(item._id);
@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 64,
     right: 20,
-    width: 350,
+    width: 300,
     zIndex: 9999,
   },
   backdrop: {
@@ -428,18 +428,47 @@ const styles = StyleSheet.create({
     right: -1000,
     bottom: -1000,
   },
+  // popupBox: {
+  //   backgroundColor: "#fff",
+  //   borderRadius: 14,
+  //   borderWidth: 1,
+  //   borderColor: "#e2e8f0",
+  //   maxHeight: 500,
+  //   overflow: "hidden",
+  //   ...Platform.select({
+  //     web:     { boxShadow: "0 12px 30px rgba(0,0,0,0.12)" } as any,
+  //     default: { shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.12, shadowRadius: 14, elevation: 12 },
+  //   }),
+  // },
   popupBox: {
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    maxHeight: 500,
-    overflow: "hidden",
-    ...Platform.select({
-      web:     { boxShadow: "0 12px 30px rgba(0,0,0,0.12)" } as any,
-      default: { shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.12, shadowRadius: 14, elevation: 12 },
-    }),
-  },
+  backgroundColor: "#fff",
+  borderRadius: 14,
+  borderWidth: 1,
+  borderColor: "#e2e8f0",
+  maxHeight: 500,
+  // Android needs overflow visible so ScrollView can receive touch/scroll events
+  // iOS/Web use hidden for visual corner clipping
+  ...Platform.select({
+    android: {
+      overflow: "visible",
+      elevation: 12,
+    },
+    ios: {
+      overflow: "hidden",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.12,
+      shadowRadius: 14,
+    },
+    web: {
+      overflow: "hidden",
+      boxShadow: "0 12px 30px rgba(0,0,0,0.12)",
+    } as any,
+    default: {
+      overflow: "hidden",
+    },
+  }),
+},
   headerRow:        { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, paddingBottom: 12 },
   headerLeft:       { flexDirection: "row", alignItems: "center", gap: 8 },
   headerTitle:      { fontSize: 15, fontWeight: "700", color: "#0f172a" },

@@ -19,10 +19,6 @@
     "android": {
       "package": "com.hospilinkfrontend",
       "versionCode": 1,
-      "permissions": [
-        "READ_MEDIA_IMAGES",
-        "CAMERA"
-      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/Images/foreground.png",

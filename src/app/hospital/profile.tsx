@@ -1,3 +1,5 @@
+
+
 // import * as DocumentPicker from "expo-document-picker";
 // import * as ImagePicker from "expo-image-picker";
 // import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -71,25 +73,12 @@
 //   mimeType?: string;
 // };
 
-// // type ProfileData = {
-// //   userEmail: string;
-// //   userName: string;
-// //   isEmailVerified: boolean;
-// //   hospitalLegalName: string;
-// //   currentAddress: string;
-// //   location: string;
-// //   servicesAvailable: string[];
-// //   staffCount: string;
-// //   isProfileComplete: boolean;
-// // };
-
 // type ProfileData = {
 //   userEmail: string;
 //   userName: string;
 //   isEmailVerified: boolean;
 //   hospitalLegalName: string;
 //   currentAddress: string;
-//   location: string;
 //   city: string;
 //   state: string;
 //   pincode: string;
@@ -97,6 +86,9 @@
 //   servicesAvailable: string[];
 //   staffCount: string;
 //   isProfileComplete: boolean;
+//   verificationStatus: string;
+//   profilePicture: string | null;
+//   description: string;
 // };
 
 // // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -136,7 +128,7 @@
 //     "Document";
 
 //   return {
-//     id: doc.documentId ?? doc._id ?? Date.now().toString(),
+//     id: doc.id ?? doc.documentId ?? doc._id ?? Date.now().toString(),
 //     name: displayName,
 //     status: mapVerificationStatus(doc.verificationStatus),
 //     updated: new Date(doc.uploadedAt ?? doc.updatedAt).toLocaleDateString(
@@ -149,38 +141,27 @@
 //   };
 // }
 
-// // function mapAPIToProfile(data: any): ProfileData {
-// //   return {
-// //     userEmail: data?.user?.email ?? "",
-// //     userName: data?.user?.name ?? "",
-// //     isEmailVerified: data?.user?.isEmailVerified ?? false,
-// //     hospitalLegalName: data?.profile?.hospitalLegalName ?? "",
-// //     currentAddress: data?.profile?.currentAddress ?? "",
-// //     location: data?.profile?.location ?? "",
-// //     servicesAvailable: Array.isArray(data?.profile?.servicesAvailable)
-// //       ? data.profile.servicesAvailable
-// //       : [],
-// //     staffCount: data?.profile?.staffCount ?? "",
-// //     isProfileComplete: data?.profile?.isProfileComplete ?? false,
-// //   };
-// // }
-
-
+// // ─── FIX: API response is { user, profile, documents }
+// //         so read from data.profile.* and data.user.*
 // function mapAPIToProfile(data: any): ProfileData {
+//   const profile = data?.profile ?? {};
+//   const user = data?.user ?? {};
 //   return {
-//     userEmail: data?.user?.email ?? data?.email ?? "",
-//     userName: data?.user?.name ?? "",
-//     isEmailVerified: data?.user?.isEmailVerified ?? false,
-//     hospitalLegalName: data?.hospitalLegalName ?? "",
-//     currentAddress: data?.currentAddress ?? "",
-//     location: data?.city ?? "",
-//     city: data?.city ?? "",
-//     state: data?.state ?? "",
-//     pincode: data?.pincode ?? "",
-//     phoneNumber: data?.phoneNumber ?? "",
-//     servicesAvailable: Array.isArray(data?.servicesAvailable) ? data.servicesAvailable : [],
-//     staffCount: data?.staffCount ?? "",
-//     isProfileComplete: data?.isProfileComplete ?? false,
+//     userEmail: user.email ?? profile.email ?? "",
+//     userName: user.name ?? "",
+//     isEmailVerified: user.isEmailVerified ?? false,
+//     hospitalLegalName: profile.hospitalLegalName ?? "",
+//     currentAddress: profile.currentAddress ?? "",
+//     city: profile.city ?? "",
+//     state: profile.state ?? "",
+//     pincode: profile.pincode ?? "",
+//     phoneNumber: profile.phoneNumber ?? "",
+//     servicesAvailable: Array.isArray(profile.servicesAvailable) ? profile.servicesAvailable : [],
+//     staffCount: profile.staffCount ?? "",
+//     isProfileComplete: profile.isProfileComplete ?? false,
+//     verificationStatus: profile.verificationStatus ?? "",
+//     profilePicture: profile.profilePicture ?? null,
+//     description: profile.description ?? "",
 //   };
 // }
 
@@ -209,7 +190,9 @@
 // });
 
 // // ─── Labeled Input ────────────────────────────────────────────────────────────
-// const LabeledInput = ({ label, value, onChangeText, half, placeholder }: { label: string; value: string; onChangeText: (t: string) => void; half?: boolean; placeholder?: string; }) => (
+// const LabeledInput = ({ label, value, onChangeText, half, placeholder }: {
+//   label: string; value: string; onChangeText: (t: string) => void; half?: boolean; placeholder?: string;
+// }) => (
 //   <View style={[iSt.group, half && iSt.half]}>
 //     <Text style={iSt.label}>{label}</Text>
 //     <TextInput
@@ -221,16 +204,46 @@
 //     />
 //   </View>
 // );
+
+// // ─── Locked Input (non-editable) ──────────────────────────────────────────────
+// const LockedInput = ({ label, value, iconName }: {
+//   label: string; value: string; iconName: any;
+// }) => (
+//   <View style={iSt.group}>
+//     <Text style={iSt.label}>{label}</Text>
+//     <View style={[iSt.input, iSt.lockedRow]}>
+//       <Ionicons name={iconName} size={15} color="#94a3b8" style={{ marginRight: 8 }} />
+//       <Text style={iSt.lockedText} numberOfLines={1}>{value}</Text>
+//       <Ionicons name="lock-closed" size={13} color="#cbd5e1" />
+//     </View>
+//   </View>
+// );
+
 // const iSt = StyleSheet.create({
 //   group: { marginBottom: 16, flex: 1 },
 //   half: { flex: 1 },
 //   label: { fontSize: 12, fontWeight: "600", color: TEXT_SECONDARY, marginBottom: 6 },
 //   input: { borderWidth: 1, borderColor: BORDER, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: TEXT_PRIMARY, backgroundColor: WHITE },
+//   lockedRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', borderColor: BORDER },
+//   lockedText: { flex: 1, fontSize: 14, color: '#64748b' },
 // });
 
 // // ─── Dropdown ─────────────────────────────────────────────────────────────────
 // const STAFF_OPTIONS = ["2-10", "11-50", "51-100", "100+"];
-// const Dropdown = ({ label, value, options, onSelect }: { label: string; value: string; options: string[]; onSelect: (v: string) => void; }) => {
+// const INDIAN_STATES = [
+//   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+//   'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
+//   'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur',
+//   'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
+//   'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
+//   'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+//   'Andaman and Nicobar Islands', 'Chandigarh',
+//   'Dadra and Nagar Haveli and Daman and Diu',
+//   'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry',
+// ];
+// const Dropdown = ({ label, value, options, onSelect }: {
+//   label: string; value: string; options: string[]; onSelect: (v: string) => void;
+// }) => {
 //   const [open, setOpen] = useState(false);
 //   return (
 //     <View style={[iSt.group, iSt.half, { zIndex: 10 }]}>
@@ -259,16 +272,19 @@
 //   itemTxt: { fontSize: 14, color: TEXT_PRIMARY },
 // });
 
-// // ─── Department Tags – edit mode ──────────────────────────────────────────────
-// const ALL_SERVICES = ["Emergency Care", "General Surgery", "Cardiology", "Neurology", "Orthopedics", "Pediatrics", "Obstetrics & Gynecology", "Internal Medicine", "Radiology", "Laboratory Services"];
-// const DepartmentTags = ({ departments, setDepartments }: { departments: string[]; setDepartments: (d: string[]) => void; }) => {
+// // ─── Department Tags ──────────────────────────────────────────────────────────
+// const ALL_SERVICES = [
+//   "Emergency Care", "General Surgery", "Cardiology", "Neurology", "Orthopedics",
+//   "Pediatrics", "Obstetrics & Gynecology", "Internal Medicine", "Radiology", "Laboratory Services",
+// ];
+// const DepartmentTags = ({ departments, setDepartments }: {
+//   departments: string[]; setDepartments: (d: string[]) => void;
+// }) => {
 //   const [panelOpen, setPanelOpen] = useState(false);
-
 //   const toggle = (service: string) => {
 //     if (departments.includes(service)) setDepartments(departments.filter((x) => x !== service));
 //     else setDepartments([...departments, service]);
 //   };
-
 //   return (
 //     <View style={tSt.wrapper}>
 //       <Text style={iSt.label}>Available Clinical Services</Text>
@@ -286,7 +302,7 @@
 //           <Text style={tSt.addBtnTxt}>+ Add Service</Text>
 //         </TouchableOpacity>
 //       </View>
-//       {panelOpen && (
+//       {/* {panelOpen && (
 //         <View style={tSt.panel}>
 //           {ALL_SERVICES.map((service) => {
 //             const selected = departments.includes(service);
@@ -299,6 +315,23 @@
 //               </TouchableOpacity>
 //             );
 //           })}
+//         </View>
+//       )} */}
+//       {panelOpen && (
+//         <View style={tSt.panel}>
+//           <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false} style={{ maxHeight: 250 }}>
+//             {ALL_SERVICES.map((service) => {
+//               const selected = departments.includes(service);
+//               return (
+//                 <TouchableOpacity key={service} style={tSt.serviceRow} onPress={() => toggle(service)} activeOpacity={0.7}>
+//                   <Text style={[tSt.serviceName, selected && tSt.serviceNameSelected]}>{service}</Text>
+//                   <View style={[tSt.checkCircle, selected && tSt.checkCircleSelected]}>
+//                     {selected && <Text style={tSt.checkMark}>✓</Text>}
+//                   </View>
+//                 </TouchableOpacity>
+//               );
+//             })}
+//           </ScrollView>
 //         </View>
 //       )}
 //     </View>
@@ -314,7 +347,7 @@
 //   tagCloseTxt: { fontSize: 14, color: WHITE },
 //   addBtn: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: BORDER, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: WHITE },
 //   addBtnTxt: { fontSize: 12, color: TEXT_SECONDARY, fontWeight: "600" },
-//   panel: { borderWidth: 1, borderColor: BORDER, borderRadius: 10, backgroundColor: WHITE, marginBottom: 10, maxHeight: 200, overflow: 'hidden' },
+//   panel: { borderWidth: 1, borderColor: BORDER, borderRadius: 10, backgroundColor: WHITE, marginBottom: 10, maxHeight: 200 },
 //   serviceRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
 //   serviceName: { fontSize: 14, color: TEXT_SECONDARY },
 //   serviceNameSelected: { color: BLUE, fontWeight: "700" },
@@ -326,7 +359,9 @@
 // // ═══════════════════════════════════════════════════════════════════════════════
 // //  MODALS
 // // ═══════════════════════════════════════════════════════════════════════════════
-// const UploadDocModal = ({ visible, onClose, onAdd }: { visible: boolean; onClose: () => void; onAdd: (c: Credential) => void; }) => {
+// const UploadDocModal = ({ visible, onClose, onAdd }: {
+//   visible: boolean; onClose: () => void; onAdd: (c: Credential) => void;
+// }) => {
 //   const [docType, setDocType] = useState("");
 //   const [pickedFile, setPickedFile] = useState<PickedFile | null>(null);
 //   const [uploading, setUploading] = useState(false);
@@ -451,7 +486,9 @@
 //   pickerOptionTextActive: { color: BLUE, fontWeight: "600" },
 // });
 
-// const ViewDocModal = ({ visible, doc, onClose, loading }: { visible: boolean; doc: Credential | null; onClose: () => void; loading?: boolean; }) => {
+// const ViewDocModal = ({ visible, doc, onClose, loading }: {
+//   visible: boolean; doc: Credential | null; onClose: () => void; loading?: boolean;
+// }) => {
 //   const isImageUrl = (f?: string, u?: string) => /\.(jpg|jpeg|png|webp|gif)$/i.test(f ?? u ?? "");
 //   return (
 //     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -482,7 +519,10 @@
 //               <TouchableOpacity style={vdSt.openBtn} onPress={() => Linking.openURL(doc.url!)}><Text style={vdSt.openBtnTxt}>Open Document</Text></TouchableOpacity>
 //             </View>
 //           ) : (
-//             <View style={[vdSt.previewBox, { height: 200 }]}><Ionicons name="folder-open-outline" size={48} color={BORDER} /><Text style={vdSt.previewHint}>No preview available</Text></View>
+//             <View style={[vdSt.previewBox, { height: 200 }]}>
+//               <Ionicons name="folder-open-outline" size={48} color={BORDER} />
+//               <Text style={vdSt.previewHint}>No preview available</Text>
+//             </View>
 //           )}
 //         </View>
 //       </View>
@@ -506,7 +546,9 @@
 // });
 
 // // ─── Credential Row ───────────────────────────────────────────────────────────
-// const CredentialRow = ({ cred, onView, onRemove, last }: { cred: Credential; onView: () => void; onRemove: () => void; last?: boolean; }) => (
+// const CredentialRow = ({ cred, onView, onRemove, last }: {
+//   cred: Credential; onView: () => void; onRemove: () => void; last?: boolean;
+// }) => (
 //   <View style={[crSt.row, last && { borderBottomWidth: 0 }]}>
 //     <View style={crSt.nameCell}>
 //       <View style={crSt.iconBox}><Ionicons name="document-text" size={16} color={TEXT_SECONDARY} /></View>
@@ -519,7 +561,7 @@
 //     <View style={crSt.dateCell}><Text style={crSt.date}>{cred.updated}</Text></View>
 //     <View style={crSt.actionsCell}>
 //       <TouchableOpacity onPress={onView}><Text style={crSt.viewTxt}>View</Text></TouchableOpacity>
-//       <TouchableOpacity onPress={onRemove} style={crSt.removeBtn}><Ionicons name="close" size={14} color={RED_TEXT} /></TouchableOpacity>
+//       <TouchableOpacity onPress={onRemove} style={crSt.removeBtn}><Ionicons name="trash-outline" size={14} color={RED_TEXT} /></TouchableOpacity>
 //     </View>
 //   </View>
 // );
@@ -534,7 +576,14 @@
 //   date: { fontSize: 13, color: TEXT_SECONDARY },
 //   actionsCell: { flex: 1, flexDirection: "row", gap: 12, justifyContent: "flex-end", alignItems: "center" },
 //   viewTxt: { fontSize: 13, color: BLUE, fontWeight: "600" },
-//   removeBtn: { width: 24, height: 24, borderRadius: 12, backgroundColor: RED_BG, alignItems: "center", justifyContent: "center" },
+// removeBtn: {
+//   width: 28,
+//   height: 28,
+//   borderRadius: 7,
+//   backgroundColor: RED_BG,
+//   alignItems: "center",
+//   justifyContent: "center",
+// },
 // });
 
 // // ═══════════════════════════════════════════════════════════════════════════════
@@ -567,10 +616,14 @@
 //     });
 //   };
 
+//   // ── Profile state ──
 //   const [hospitalLegalName, setHospitalLegalName] = useState("");
 //   const [userEmail, setUserEmail] = useState("");
 //   const [currentAddress, setCurrentAddress] = useState("");
-//   const [location, setLocation] = useState("");
+//   const [city, setCity] = useState("");
+//   const [state, setState] = useState("");
+//   const [pincode, setPincode] = useState("");
+//   const [phoneNumber, setPhoneNumber] = useState("");
 //   const [staffCount, setStaffCount] = useState("");
 //   const [services, setServices] = useState<string[]>([]);
 //   const [isProfileComplete, setIsProfileComplete] = useState(false);
@@ -578,36 +631,35 @@
 //   const [profilePicture, setProfilePicture] = useState<string | null>(null);
 //   const [uploadingImage, setUploadingImage] = useState(false);
 //   const [showImageMenu, setShowImageMenu] = useState(false);
-//   const [city, setCity] = useState("");
-//   const [state2, setState2] = useState("");
-//   const [pincode, setPincode] = useState("");
-//   const [phoneNumber, setPhoneNumber] = useState("");
+//   const [description, setDescription] = useState("");
 
-//   // const STATIC_PHONE = "+917498965650";
-
+//   // ── Edit modal state ──
 //   const [editModalVisible, setEditModalVisible] = useState(false);
 //   const [draftName, setDraftName] = useState("");
 //   const [draftAddress, setDraftAddress] = useState("");
-//   const [draftLocation, setDraftLocation] = useState("");
-//   const [draftStaff, setDraftStaff] = useState("");
-//   const [draftServices, setDraftServices] = useState<string[]>([]);
-//   // ✅ Add alongside other draft states
 //   const [draftCity, setDraftCity] = useState("");
 //   const [draftState, setDraftState] = useState("");
 //   const [draftPincode, setDraftPincode] = useState("");
+//   const [draftStaff, setDraftStaff] = useState("");
+//   const [draftServices, setDraftServices] = useState<string[]>([]);
+//   const [showStateDropdown, setShowStateDropdown] = useState(false);
+//   const [stateSearch, setStateSearch] = useState("");
 
+//   // ── Documents state ──
 //   const [credentials, setCredentials] = useState<Credential[]>([]);
 //   const [credsLoading, setCredsLoading] = useState(true);
-
 //   const [uploadModal, setUploadModal] = useState(false);
 //   const [viewModal, setViewModal] = useState(false);
 //   const [selectedDoc, setSelectedDoc] = useState<Credential | null>(null);
 
+//   // ─── fetchDocuments ──────────────────────────────────────────────────────────
 //   const fetchDocuments = useCallback(async () => {
 //     try {
 //       setCredsLoading(true);
 //       const data = await documentAPI.getDocuments();
-//       if (data?.success) setCredentials(Array.isArray(data.documents) ? data.documents.map(mapAPIDocument) : []);
+//       if (data?.success) {
+//         setCredentials(Array.isArray(data.documents) ? data.documents.map(mapAPIDocument) : []);
+//       }
 //     } catch (err) {
 //       console.error("fetchDocuments error:", err);
 //     } finally { setCredsLoading(false); }
@@ -623,36 +675,37 @@
 //     }
 //   };
 
+//   // ─── fetchProfile ────────────────────────────────────────────────────────────
+//   // API response shape: { success, user: {...}, profile: {...}, documents: [...] }
 //   const fetchProfile = useCallback(async () => {
 //     try {
-//       setLoading(true); setApiError(null);
+//       setLoading(true);
+//       setApiError(null);
 //       const data: any = await profileAPI.getMyProfile();
 //       console.log('API Response:', JSON.stringify(data, null, 2));
+
 //       const mapped = mapAPIToProfile(data);
 //       console.log('Mapped Profile:', mapped);
-//       // setHospitalLegalName(mapped.hospitalLegalName || "ABC Hospital");
-//       // setUserEmail(mapped.userEmail || "abhishekpimpalkar35@gmail.com");
-//       // setCurrentAddress(mapped.currentAddress || "Mumbai, Goregaon");
-//       // setLocation(mapped.location || "Mumbai");
-//       // setStaffCount(mapped.staffCount || "124");
-//       // setServices(mapped.servicesAvailable?.length ? mapped.servicesAvailable : ["Emergency & Acute Care", "Diagnostics & Imaging", "Support Services"]);
-//       // setIsProfileComplete(mapped.isProfileComplete || false);
-//       // setVerificationStatus(data?.profile?.verificationStatus ?? null);
-//       // setProfilePicture(data?.profile?.profilePicture || null);
 
-//       setHospitalLegalName(mapped.hospitalLegalName || "");
-//       setUserEmail(mapped.userEmail || "");
-//       setCurrentAddress(mapped.currentAddress || "");
-//       setLocation(mapped.city || "");
-//       setCity(mapped.city || "");
-//       setState2(mapped.state || "");
-//       setPincode(mapped.pincode || "");
-//       setPhoneNumber(mapped.phoneNumber || "");
-//       setStaffCount(mapped.staffCount || "");
-//       setServices(mapped.servicesAvailable?.length ? mapped.servicesAvailable : []);
-//       setIsProfileComplete(mapped.isProfileComplete || false);
-//       setVerificationStatus(data?.verificationStatus ?? null);
-//       setProfilePicture(data?.profilePicture?.url || null);
+//       setHospitalLegalName(mapped.hospitalLegalName);
+//       setUserEmail(mapped.userEmail);
+//       setCurrentAddress(mapped.currentAddress);
+//       setCity(mapped.city);
+//       setState(mapped.state);
+//       setPincode(mapped.pincode);
+//       setPhoneNumber(mapped.phoneNumber);
+//       setStaffCount(mapped.staffCount);
+//       setServices(mapped.servicesAvailable);
+//       setIsProfileComplete(mapped.isProfileComplete);
+//       setVerificationStatus(mapped.verificationStatus || null);
+//       setProfilePicture(mapped.profilePicture);
+//       setDescription(mapped.description);
+
+//       // Also load documents from the same response if available
+//       if (Array.isArray(data?.documents) && data.documents.length > 0) {
+//         setCredentials(data.documents.map(mapAPIDocument));
+//         setCredsLoading(false);
+//       }
 //     } catch (err: any) {
 //       console.error('Profile fetch error:', err);
 //       setApiError(err?.response?.data?.message ?? "Failed to load profile.");
@@ -664,25 +717,17 @@
 //     fetchDocuments();
 //   }, [fetchProfile, fetchDocuments]);
 
-//   // const handleStartEdit = () => {
-//   //   setDraftName(hospitalLegalName);
-//   //   setDraftAddress(currentAddress);
-//   //   setDraftLocation(location);
-//   //   setDraftStaff(staffCount);
-//   //   setDraftServices([...services]);
-//   //   setEditModalVisible(true);
-
-//   // };
-
+//   // ─── Edit handlers ───────────────────────────────────────────────────────────
 //   const handleStartEdit = () => {
 //     setDraftName(hospitalLegalName);
 //     setDraftAddress(currentAddress);
-//     setDraftLocation(location);
 //     setDraftCity(city);
-//     setDraftState(state2);
+//     setDraftState(state);
 //     setDraftPincode(pincode);
 //     setDraftStaff(staffCount);
 //     setDraftServices([...services]);
+//     setShowStateDropdown(false);
+//     setStateSearch("");
 //     setEditModalVisible(true);
 //   };
 
@@ -690,13 +735,6 @@
 //     if (!draftName.trim()) { Alert.alert("Required", "Hospital name cannot be empty."); return; }
 //     try {
 //       setSaving(true);
-//       // const payload = {
-//       //   hospitalLegalName: draftName.trim(),
-//       //   currentAddress: draftAddress.trim(),
-//       //   location: draftLocation.trim(),
-//       //   staffCount: draftStaff,
-//       //   servicesAvailable: draftServices,
-//       // };
 //       const payload = {
 //         hospitalLegalName: draftName.trim(),
 //         currentAddress: draftAddress.trim(),
@@ -709,9 +747,8 @@
 //       await profileAPI.updateMyProfile(payload);
 //       setHospitalLegalName(draftName.trim());
 //       setCurrentAddress(draftAddress.trim());
-//       setLocation(draftLocation.trim());
 //       setCity(draftCity.trim());
-//       setState2(draftState.trim());
+//       setState(draftState.trim());
 //       setPincode(draftPincode.trim());
 //       setStaffCount(draftStaff);
 //       setServices(draftServices);
@@ -722,6 +759,7 @@
 //     } finally { setSaving(false); }
 //   };
 
+//   // ─── Image handlers ──────────────────────────────────────────────────────────
 //   const processImageUpload = async (uri: string) => {
 //     try {
 //       setUploadingImage(true);
@@ -734,45 +772,23 @@
 //     } catch (error) {
 //       console.error("Upload failed:", error);
 //       Alert.alert("Error", "Failed to upload profile picture.");
-//       setProfilePicture(profilePicture);
-//     } finally {
-//       setUploadingImage(false);
-//     }
+//     } finally { setUploadingImage(false); }
 //   };
 
 //   const handleUpload = async () => {
 //     setShowImageMenu(false);
 //     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-//     if (status !== "granted") {
-//       Alert.alert("Permission required", "Please allow access to your photo library.");
-//       return;
-//     }
-//     const result = await ImagePicker.launchImageLibraryAsync({
-//       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-//       allowsEditing: true,
-//       aspect: [1, 1],
-//       quality: 0.8,
-//     });
-//     if (!result.canceled && result.assets[0]) {
-//       await processImageUpload(result.assets[0].uri);
-//     }
+//     if (status !== "granted") { Alert.alert("Permission required", "Please allow access to your photo library."); return; }
+//     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1, 1], quality: 0.8 });
+//     if (!result.canceled && result.assets[0]) await processImageUpload(result.assets[0].uri);
 //   };
 
 //   const handleCamera = async () => {
 //     setShowImageMenu(false);
 //     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-//     if (status !== "granted") {
-//       Alert.alert("Permission required", "Please allow camera access.");
-//       return;
-//     }
-//     const result = await ImagePicker.launchCameraAsync({
-//       allowsEditing: true,
-//       aspect: [1, 1],
-//       quality: 0.8,
-//     });
-//     if (!result.canceled && result.assets[0]) {
-//       await processImageUpload(result.assets[0].uri);
-//     }
+//     if (status !== "granted") { Alert.alert("Permission required", "Please allow camera access."); return; }
+//     const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.8 });
+//     if (!result.canceled && result.assets[0]) await processImageUpload(result.assets[0].uri);
 //   };
 
 //   const handleRemove = async () => {
@@ -780,16 +796,11 @@
 //     try {
 //       setUploadingImage(true);
 //       const res = await profileAPI.deleteProfilePicture();
-//       if (res.success) {
-//         setProfilePicture(null);
-//         showToast("Profile picture removed!");
-//       }
+//       if (res.success) { setProfilePicture(null); showToast("Profile picture removed!"); }
 //     } catch (error) {
 //       console.error("Delete failed:", error);
 //       Alert.alert("Error", "Failed to delete profile picture.");
-//     } finally {
-//       setUploadingImage(false);
-//     }
+//     } finally { setUploadingImage(false); }
 //   };
 
 //   if (loading) {
@@ -806,12 +817,8 @@
 //       <ScrollView contentContainerStyle={gSt.scrollContent} showsVerticalScrollIndicator={false}>
 
 //         {/* ── Top Header Card ── */}
-//         {/* ── Top Header Card ── */}
 //         <View style={gSt.headerCard}>
-//           {/* 1. On mobile, switch the main row to a column so the Edit Button drops to the bottom */}
 //           <View style={[gSt.headerRow, isMobile && { flexDirection: "column" }]}>
-
-//             {/* 2. Top-align the avatar and text using alignItems: "flex-start" */}
 //             <View style={[gSt.headerLeft, { flex: 1, alignItems: "flex-start" }]}>
 //               <TouchableOpacity style={[gSt.avatarCircle, { marginTop: 4 }]} onPress={() => setShowImageMenu(true)} activeOpacity={0.85}>
 //                 {uploadingImage ? (
@@ -826,11 +833,11 @@
 
 //               <View style={{ flex: 1 }}>
 //                 <Text style={gSt.hospitalTitle}>{hospitalLegalName}</Text>
-//                 <Text style={gSt.hospitalSub}>Multispeciality Hospital • ICU Specialist</Text>
+//                 <Text style={gSt.hospitalSub}>Multispeciality Hospital • {city}{state ? `, ${state}` : ""}</Text>
+//               </View>
 
-//                 {/* 3. Added a slight top margin to separate badges from the subtitle */}
-//                 <View style={[gSt.badgeRow, { marginTop: 10 }, isMobile && gSt.badgeRowMobile]}>
-//                   <View style={gSt.blueBadge}><Text style={gSt.blueBadgeTxt}>MD, FRCP</Text></View>
+//             </View>
+//             <View style={[gSt.badgeRow, { marginTop: 10 }, isMobile && gSt.badgeRowMobile]}>
 //                   {verificationStatus === "verified" ? (
 //                     <View style={gSt.greenBadge}>
 //                       <Ionicons name="checkmark-circle" size={12} color={GREEN} />
@@ -853,18 +860,28 @@
 //                       <Text style={gSt.completeBadgeTxt}>Profile Complete</Text>
 //                     </View>
 //                   )}
-//                   <View style={gSt.grayBadge}><Ionicons name="call" size={11} color={TEXT_SECONDARY} /><Text style={gSt.grayBadgeTxt}>{phoneNumber}</Text></View>
-//                   <View style={gSt.grayBadge}><Ionicons name="mail" size={11} color={TEXT_SECONDARY} /><Text style={gSt.grayBadgeTxt}>{userEmail}</Text></View>
+//                   {!!phoneNumber && (
+//                     <View style={gSt.grayBadge}>
+//                       <Ionicons name="call" size={11} color={TEXT_SECONDARY} />
+//                       <Text style={gSt.grayBadgeTxt}>{phoneNumber}</Text>
+//                     </View>
+//                   )}
+//                   {!!userEmail && (
+//                     <View style={gSt.grayBadge}>
+//                       <Ionicons name="mail" size={11} color={TEXT_SECONDARY} />
+//                       <Text style={gSt.grayBadgeTxt}>{userEmail}</Text>
+//                     </View>
+//                   )}
+//                   {!!currentAddress && (
+//                     <View style={gSt.grayBadge}>
+//                       <Ionicons name="location" size={11} color={TEXT_SECONDARY} />
+//                       <Text style={gSt.grayBadgeTxt} numberOfLines={1}>{city}{state ? `, ${state}` : ""} {pincode}</Text>
+//                     </View>
+//                   )}
 //                 </View>
-//               </View>
-//             </View>
 
-//             {/* 4. On mobile, make the Edit Button 100% width and center the text */}
 //             <TouchableOpacity
-//               style={[
-//                 gSt.editBtn,
-//                 isMobile && { width: "100%", justifyContent: "center", marginTop: 12 }
-//               ]}
+//               style={[gSt.editBtn, isMobile && { width: "100%", justifyContent: "center", marginTop: 12 }]}
 //               onPress={handleStartEdit}
 //               activeOpacity={0.8}
 //             >
@@ -884,12 +901,12 @@
 //           </View>
 //           <View style={[gSt.statCard, isMobile && gSt.statCardMobile]}>
 //             <View style={[gSt.statIconWrap, { backgroundColor: GREEN_LIGHT }]}><Ionicons name="shield-checkmark" size={18} color={GREEN} /></View>
-//             <Text style={gSt.statValue}>{credentials.filter(c => c.status === 'Verified').length || '12'}</Text>
+//             <Text style={gSt.statValue}>{credentials.filter(c => c.status === 'Verified' || c.status === 'Auto Verified').length}</Text>
 //             <Text style={gSt.statLabel}>Verified Docs</Text>
 //           </View>
 //           <View style={[gSt.statCard, isMobile && gSt.statCardMobile]}>
 //             <View style={[gSt.statIconWrap, { backgroundColor: ORANGE_LIGHT }]}><Ionicons name="people" size={18} color={ORANGE} /></View>
-//             <Text style={gSt.statValue}>{staffCount}</Text>
+//             <Text style={gSt.statValue}>{staffCount || "—"}</Text>
 //             <Text style={gSt.statLabel}>Staff Count</Text>
 //           </View>
 //           <View style={[gSt.statCard, isMobile && gSt.statCardMobile]}>
@@ -898,6 +915,16 @@
 //             <Text style={gSt.statLabel}>Bed Capacity</Text>
 //           </View>
 //         </View>
+
+//         {/* ── Description Card ── */}
+//         {!!description && (
+//           <View style={gSt.sectionCard}>
+//             <Text style={gSt.sectionTitle}>Description</Text>
+//             <Text style={{ fontSize: 14, color: TEXT_SECONDARY, lineHeight: 22, marginTop: 10 }}>
+//               {description}
+//             </Text>
+//           </View>
+//         )}
 
 //         {/* ── Departments & Services ── */}
 //         <View style={gSt.sectionCard}>
@@ -929,17 +956,21 @@
 //                   <Text style={gSt.deptMiniTitle} numberOfLines={1}>{srv}</Text>
 //                   <Ionicons name="arrow-forward" size={12} color={TEXT_SECONDARY} />
 //                 </View>
-//                 <View style={gSt.progressBarBg}><View style={[gSt.progressBarFill, { width: `${Math.floor(Math.random() * 50) + 40}%`, backgroundColor: BLUE }]} /></View>
+//                 <View style={gSt.progressBarBg}>
+//                   <View style={[gSt.progressBarFill, { width: `${Math.floor(Math.random() * 50) + 40}%`, backgroundColor: BLUE }]} />
+//                 </View>
 //               </View>
 //             ))}
 //           </View>
 //         </View>
 
 //         {/* ── Licenses & Certifications ── */}
-//         <View style={gSt.sectionCard}>
+//         {/* <View style={gSt.sectionCard}>
 //           <View style={gSt.sectionHeader}>
 //             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-//               <View style={[gSt.statIconWrap, { backgroundColor: BLUE_LIGHT, width: 32, height: 32, borderRadius: 8 }]}><Ionicons name="shield-checkmark" size={16} color={BLUE} /></View>
+//               <View style={[gSt.statIconWrap, { backgroundColor: BLUE_LIGHT, width: 32, height: 32, borderRadius: 8 }]}>
+//                 <Ionicons name="shield-checkmark" size={16} color={BLUE} />
+//               </View>
 //               <Text style={gSt.sectionTitle}>Licenses & Certifications</Text>
 //             </View>
 //             <TouchableOpacity style={gSt.plusBtn} onPress={() => setUploadModal(true)}>
@@ -957,18 +988,73 @@
 //           ) : credentials.length === 0 ? (
 //             <View style={gSt.centerContainer}>
 //               <Text style={{ color: TEXT_SECONDARY, marginBottom: 12 }}>No documents uploaded.</Text>
-//               <TouchableOpacity style={gSt.outlineBtn} onPress={() => setUploadModal(true)}><Text style={{ color: BLUE, fontWeight: '600' }}>Upload Document</Text></TouchableOpacity>
+//               <TouchableOpacity style={gSt.outlineBtn} onPress={() => setUploadModal(true)}>
+//                 <Text style={{ color: BLUE, fontWeight: '600' }}>Upload Document</Text>
+//               </TouchableOpacity>
 //             </View>
 //           ) : (
 //             credentials.map((cred, idx) => (
 //               <CredentialRow
-//                 key={cred.id} cred={cred} last={idx === credentials.length - 1}
+//                 key={cred.id}
+//                 cred={cred}
+//                 last={idx === credentials.length - 1}
 //                 onView={() => { setSelectedDoc(cred); setViewModal(true); }}
 //                 onRemove={() => handleDeleteDocument(cred.id)}
 //               />
 //             ))
 //           )}
+//         </View> */}
+//         <View style={gSt.sectionCard}>
+//   <View style={gSt.sectionHeader}>
+//     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+//       <View style={[gSt.statIconWrap, { backgroundColor: BLUE_LIGHT, width: 32, height: 32, borderRadius: 8 }]}>
+//         <Ionicons name="shield-checkmark" size={16} color={BLUE} />
+//       </View>
+//       <Text style={gSt.sectionTitle}>Licenses & Certifications</Text>
+//     </View>
+//     <TouchableOpacity style={gSt.plusBtn} onPress={() => setUploadModal(true)}>
+//       <Ionicons name="add" size={16} color={WHITE} />
+//     </TouchableOpacity>
+//   </View>
+
+//   {/* ── Horizontal scroll so columns never overlap on mobile ── */}
+//   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+//     <View style={{ minWidth: 480 }}>
+
+//       <View style={gSt.tableHeader}>
+//         <Text style={[gSt.thText, { flex: 2.5 }]}>DOCUMENT NAME</Text>
+//         <Text style={[gSt.thText, { flex: 1.5 }]}>STATUS</Text>
+//         <Text style={[gSt.thText, { flex: 1.5 }]}>LAST UPDATED</Text>
+//         <Text style={[gSt.thText, { flex: 1, textAlign: "right" }]}>ACTIONS</Text>
+//       </View>
+
+//       {credsLoading ? (
+//         <View style={gSt.centerContainer}>
+//           <ActivityIndicator size="small" color={BLUE} />
 //         </View>
+//       ) : credentials.length === 0 ? (
+//         <View style={gSt.centerContainer}>
+//           <Text style={{ color: TEXT_SECONDARY, marginBottom: 12 }}>No documents uploaded.</Text>
+//           <TouchableOpacity style={gSt.outlineBtn} onPress={() => setUploadModal(true)}>
+//             <Text style={{ color: BLUE, fontWeight: '600' }}>Upload Document</Text>
+//           </TouchableOpacity>
+//         </View>
+//       ) : (
+//         credentials.map((cred, idx) => (
+//           <CredentialRow
+//             key={cred.id}
+//             cred={cred}
+//             last={idx === credentials.length - 1}
+//             onView={() => { setSelectedDoc(cred); setViewModal(true); }}
+//             onRemove={() => handleDeleteDocument(cred.id)}
+//           />
+//         ))
+//       )}
+
+//     </View>
+//   </ScrollView>
+// </View>
+        
 //       </ScrollView>
 
 //       {/* ── Edit Profile Modal ── */}
@@ -978,9 +1064,13 @@
 //             <View style={[gSt.modalBox, isMobile && gSt.modalBoxMobile]}>
 //               <View style={gSt.modalHeader}>
 //                 <Text style={gSt.modalTitle}>Edit Profile</Text>
-//                 <TouchableOpacity onPress={() => setEditModalVisible(false)}><Ionicons name="close" size={24} color={TEXT_SECONDARY} /></TouchableOpacity>
+//                 <TouchableOpacity onPress={() => setEditModalVisible(false)}>
+//                   <Ionicons name="close" size={24} color={TEXT_SECONDARY} />
+//                 </TouchableOpacity>
 //               </View>
 //               <ScrollView showsVerticalScrollIndicator={false} style={gSt.modalScroll}>
+
+//                 {/* Avatar row */}
 //                 <View style={gSt.modalAvatarRow}>
 //                   {uploadingImage ? (
 //                     <View style={[gSt.modalAvatar, { alignItems: 'center', justifyContent: 'center' }]}>
@@ -998,51 +1088,107 @@
 //                     <Text style={gSt.changePhotoTxt}>Change Photo</Text>
 //                   </TouchableOpacity>
 //                 </View>
-//                 {/* <LabeledInput label="Full Name (Hospital Name)" value={draftName} onChangeText={setDraftName} /> */}
+
+//                 {/* Hospital Name — editable */}
 //                 <LabeledInput label="Hospital Legal Name" value={draftName} onChangeText={setDraftName} />
-//                 {/* <Dropdown label="Staff Count" value={draftStaff} options={STAFF_OPTIONS} onSelect={setDraftStaff} />
+
+//                 {/* Email — locked */}
+//                 <LockedInput label="Email Address" value={userEmail} iconName="mail-outline" />
+
+//                 {/* Phone — locked */}
+//                 <LockedInput label="Phone Number" value={phoneNumber} iconName="call-outline" />
+
+//                 {/* Address — editable */}
+//                 <LabeledInput label="Current Address" value={draftAddress} onChangeText={setDraftAddress} placeholder="Street address" />
+
+//                 {/* City + Pincode row */}
 //                 <View style={{ flexDirection: 'row', gap: 12 }}>
-//                   <LabeledInput label="City" value={draftLocation} onChangeText={setDraftLocation} half />
-//                   <LabeledInput label="Area" value={draftAddress} onChangeText={setDraftAddress} half />
-//                 </View>
-//                 <View style={iSt.group}>
-//                   <Text style={iSt.label}>Phone Number</Text>
-//                   <View style={gSt.phoneInputWrap}>
-//                     <Text style={gSt.phonePrefix}>+91</Text>
-//                     <TextInput style={gSt.phoneInput} value={STATIC_PHONE.replace('+91', '')} editable={false} />
-//                   </View>
-//                 </View> */}
-//                 {/* Email — non-editable */}
-//                 <View style={iSt.group}>
-//                   <Text style={iSt.label}>Email Address</Text>
-//                   <View style={[iSt.input, { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9' }]}>
-//                     <Ionicons name="mail-outline" size={15} color="#94a3b8" style={{ marginRight: 8 }} />
-//                     <Text style={{ flex: 1, fontSize: 14, color: '#64748b' }}>{userEmail}</Text>
-//                     <Ionicons name="lock-closed" size={13} color="#cbd5e1" />
-//                   </View>
+//                   <LabeledInput label="City" value={draftCity} onChangeText={setDraftCity} half placeholder="City" />
+//                   <LabeledInput label="Pincode" value={draftPincode} onChangeText={setDraftPincode} half placeholder="Pincode" />
 //                 </View>
 
-//                 {/* Phone — non-editable */}
-//                 <View style={iSt.group}>
-//                   <Text style={iSt.label}>Phone Number</Text>
-//                   <View style={[iSt.input, { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9' }]}>
-//                     <Ionicons name="call-outline" size={15} color="#94a3b8" style={{ marginRight: 8 }} />
-//                     <Text style={{ flex: 1, fontSize: 14, color: '#64748b' }}>{phoneNumber}</Text>
-//                     <Ionicons name="lock-closed" size={13} color="#cbd5e1" />
-//                   </View>
+//                 {/* State — editable */}
+//                 {/* <LabeledInput label="State" value={draftState} onChangeText={setDraftState} placeholder="State" /> */}
+//                 {/* State — searchable dropdown */}
+//                 <View style={{ marginBottom: 16, zIndex: 20 }}>
+//                   <Text style={iSt.label}>State</Text>
+
+//                   {/* Trigger */}
+//                   <TouchableOpacity
+//                     style={[iSt.input, { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}
+//                     onPress={() => { setShowStateDropdown((v) => !v); setStateSearch(""); }}
+//                     activeOpacity={0.8}
+//                   >
+//                     <Text style={{ fontSize: 14, color: draftState ? TEXT_PRIMARY : "#9CA3AF", flex: 1 }}>
+//                       {draftState || "Select state"}
+//                     </Text>
+//                     {draftState ? (
+//                       <TouchableOpacity
+//                         onPress={(e) => { e.stopPropagation(); setDraftState(""); setShowStateDropdown(false); }}
+//                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+//                       >
+//                         <Ionicons name="close-circle" size={16} color="#94a3b8" />
+//                       </TouchableOpacity>
+//                     ) : (
+//                       <Ionicons name={showStateDropdown ? "chevron-up" : "chevron-down"} size={16} color={TEXT_SECONDARY} />
+//                     )}
+//                   </TouchableOpacity>
+
+//                   {/* Dropdown panel */}
+//                   {showStateDropdown && (
+//                     <View style={stDropSt.dropdown}>
+//                       {/* Search */}
+//                       <View style={stDropSt.searchRow}>
+//                         <TextInput
+//                           value={stateSearch}
+//                           onChangeText={setStateSearch}
+//                           placeholder="🔍  Search state..."
+//                           placeholderTextColor="#9CA3AF"
+//                           style={stDropSt.searchInput}
+//                           autoFocus
+//                         />
+//                         {stateSearch.length > 0 && (
+//                           <TouchableOpacity onPress={() => setStateSearch("")}>
+//                             <Ionicons name="close" size={14} color="#94a3b8" />
+//                           </TouchableOpacity>
+//                         )}
+//                       </View>
+
+//                       <ScrollView nestedScrollEnabled style={{ maxHeight: 180 }} showsVerticalScrollIndicator={false}>
+//                         {INDIAN_STATES
+//                           .filter((s) => s.toLowerCase().includes(stateSearch.toLowerCase()))
+//                           .map((s) => (
+//                             <TouchableOpacity
+//                               key={s}
+//                               style={[stDropSt.item, draftState === s && stDropSt.itemActive]}
+//                               onPress={() => { setDraftState(s); setShowStateDropdown(false); setStateSearch(""); }}
+//                             >
+//                               <Text style={[stDropSt.itemText, draftState === s && stDropSt.itemTextActive]}>{s}</Text>
+//                               {draftState === s && <Ionicons name="checkmark" size={13} color={BLUE} />}
+//                             </TouchableOpacity>
+//                           ))
+//                         }
+//                         {INDIAN_STATES.filter((s) => s.toLowerCase().includes(stateSearch.toLowerCase())).length === 0 && (
+//                           <View style={{ paddingVertical: 14, alignItems: "center" }}>
+//                             <Text style={{ fontSize: 13, color: "#94a3b8" }}>No state found</Text>
+//                           </View>
+//                         )}
+//                       </ScrollView>
+//                     </View>
+//                   )}
 //                 </View>
 
-//                 <LabeledInput label="Current Address" value={draftAddress} onChangeText={setDraftAddress} />
-//                 <View style={{ flexDirection: 'row', gap: 12 }}>
-//                   <LabeledInput label="City" value={draftCity} onChangeText={setDraftCity} half />
-//                   <LabeledInput label="Pincode" value={draftPincode} onChangeText={setDraftPincode} half />
-//                 </View>
-//                 <LabeledInput label="State" value={draftState} onChangeText={setDraftState} />
+//                 {/* Staff Count dropdown */}
 //                 <Dropdown label="Staff Count" value={draftStaff} options={STAFF_OPTIONS} onSelect={setDraftStaff} />
+
+//                 {/* Services */}
 //                 <DepartmentTags departments={draftServices} setDepartments={setDraftServices} />
+
 //               </ScrollView>
 //               <View style={gSt.modalFooter}>
-//                 <TouchableOpacity style={gSt.modalCancel} onPress={() => setEditModalVisible(false)}><Text style={gSt.modalCancelTxt}>Cancel</Text></TouchableOpacity>
+//                 <TouchableOpacity style={gSt.modalCancel} onPress={() => setEditModalVisible(false)}>
+//                   <Text style={gSt.modalCancelTxt}>Cancel</Text>
+//                 </TouchableOpacity>
 //                 <TouchableOpacity style={gSt.modalSave} onPress={handleSave} disabled={saving}>
 //                   {saving ? <ActivityIndicator size="small" color={WHITE} /> : <Text style={gSt.modalSaveTxt}>✓ Save Changes</Text>}
 //                 </TouchableOpacity>
@@ -1119,49 +1265,73 @@
 // };
 
 // // ─── Global Styles ────────────────────────────────────────────────────────────
+// const stDropSt = StyleSheet.create({
+//   dropdown: { position: "absolute", top: 72, left: 0, right: 0, zIndex: 999, backgroundColor: WHITE, borderWidth: 1, borderColor: BORDER, borderRadius: 8, overflow: "hidden", ...Platform.select({ web: { boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }, default: { elevation: 16 } }) },
+//   searchRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#F1F5F9", backgroundColor: "#F8FAFC" },
+//   searchInput: { flex: 1, fontSize: 13, color: TEXT_PRIMARY, ...Platform.select({ web: { outlineStyle: "none" } as any }) },
+//   item: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
+//   itemActive: { backgroundColor: "#EFF6FF" },
+//   itemText: { fontSize: 13, color: TEXT_SECONDARY },
+//   itemTextActive: { color: BLUE, fontWeight: "600" },
+// });
 // const gSt = StyleSheet.create({
 //   safe: { flex: 1, backgroundColor: BG },
-//   centerContainer: { padding: 30, alignItems: "center", justifyContent: "center" },
+//   centerContainer: { padding: 20, alignItems: "center", justifyContent: "center" },
 //   scrollContent: { padding: 24, paddingBottom: 40, marginHorizontal: 'auto', width: '100%' },
 
 //   // Header Card
-//   headerCard: { backgroundColor: WHITE, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: BLUE, marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
-//   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 },
+//   headerCard: { backgroundColor: WHITE, borderRadius: 16, padding: 10, borderWidth: 1, borderColor: BLUE, marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+//   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10 },
 //   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 20 },
 //   avatarCircle: { width: 70, height: 70, borderRadius: 35, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center', position: 'relative' },
 //   avatarImage: { width: 70, height: 70, borderRadius: 35 },
 //   cameraBadge: { position: 'absolute', bottom: -2, right: -2, width: 26, height: 26, borderRadius: 13, backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: WHITE, zIndex: 10 },
 //   hospitalTitle: { fontSize: 22, fontWeight: '700', color: TEXT_PRIMARY, marginBottom: 4 },
 //   hospitalSub: { fontSize: 13, color: TEXT_SECONDARY, marginBottom: 8 },
-//   badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6, flexWrap: 'wrap' },
+//   badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10, flexWrap: 'wrap' },
 //   badgeRowMobile: { gap: 4 },
-//   chipRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-//   // shared pill base
 //   pill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
 //   pillTxt: { fontSize: 11, fontWeight: '600' },
-//   blueBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: BLUE_LIGHT, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: "#BFDBFE" },
-//   blueBadgeTxt: { color: BLUE, fontSize: 11, fontWeight: '700' },
-//   greenBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: GREEN_LIGHT, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: "#6EE7B7" },
-//   greenBadgeTxt: { color: "#065F46", fontSize: 11, fontWeight: '700' },
+//   greenBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: GREEN_LIGHT, paddingHorizontal: 5, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: "#6EE7B7" },
+//   greenBadgeTxt: { color: "#065F46", fontSize: 10, fontWeight: '600' },
 //   grayBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F8FAFC', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: BORDER },
 //   grayBadgeTxt: { color: TEXT_SECONDARY, fontSize: 11, fontWeight: '600' },
 //   completeBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F0FDF4', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: '#BBF7D0' },
 //   completeBadgeTxt: { color: '#15803D', fontSize: 11, fontWeight: '700' },
-//   incompleteBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FFFBEB', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: '#FDE68A' },
-//   incompleteBadgeTxt: { color: '#B45309', fontSize: 11, fontWeight: '700' },
-//   outlineBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: GREEN_LIGHT },
-//   outlineBadgeTxt: { color: GREEN, fontSize: 11, fontWeight: '600' },
-//   badgesWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
 //   editBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: BLUE, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
 //   editBtnTxt: { color: WHITE, fontSize: 13, fontWeight: '600' },
 //   outlineBtn: { borderWidth: 1, borderColor: BLUE, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
 
 //   // Stats Row
-//   statsRow: { flexDirection: 'row', gap: 16, marginBottom: 24 },
-//   statsRowMobile: { flexWrap: 'wrap' },
-//   statCard: { flex: 1, backgroundColor: WHITE, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: BORDER, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 6, elevation: 1 },
-//   // ✅ FIX: removed `flex: 'none'` — invalid in React Native (flex only accepts numbers)
-//   statCardMobile: { width: '47%' },
+//  statsRow: { 
+//     flexDirection: 'row', 
+//     gap: 16, 
+//     marginBottom: 24 
+//   },
+//   statsRowMobile: {
+//     flexDirection: 'row', // Explicitly keep row direction
+//     flexWrap: 'wrap', 
+//     justifyContent: 'space-between', 
+//     gap: 12, 
+//   },
+//   statCard: { 
+//     flex: 1, 
+//     backgroundColor: WHITE, 
+//     borderRadius: 12, 
+//     padding: 16, 
+//     borderWidth: 1, 
+//     borderColor: BORDER, 
+//     shadowColor: '#000', 
+//     shadowOffset: { width: 0, height: 2 }, 
+//     shadowOpacity: 0.03, 
+//     shadowRadius: 6, 
+//     elevation: 1
+//   },
+//   statCardMobile: { 
+//     width: '48%',
+//     flexBasis: 'auto', // Overrides the base flex basis calculation safely
+//     flexGrow: 0,       // Completely stops the cards from expanding vertically/horizontally
+//   },
 //   statIconWrap: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
 //   statValue: { fontSize: 20, fontWeight: '800', color: TEXT_PRIMARY, marginBottom: 2 },
 //   statLabel: { fontSize: 12, color: TEXT_SECONDARY, marginBottom: 10 },
@@ -1202,9 +1372,6 @@
 //   modalAvatar: { width: 70, height: 70, borderRadius: 35, backgroundColor: '#E2E8F0' },
 //   changePhotoBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: BLUE, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: WHITE },
 //   changePhotoTxt: { color: BLUE, fontSize: 13, fontWeight: '600' },
-//   phoneInputWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: BORDER, borderRadius: 8, backgroundColor: WHITE, overflow: 'hidden' },
-//   phonePrefix: { paddingHorizontal: 14, paddingVertical: 12, backgroundColor: '#F8FAFC', color: TEXT_SECONDARY, fontWeight: '600', borderRightWidth: 1, borderRightColor: BORDER },
-//   phoneInput: { flex: 1, paddingHorizontal: 14, fontSize: 14, color: TEXT_PRIMARY },
 //   modalFooter: { flexDirection: 'row', gap: 12, marginTop: 24, borderTopWidth: 1, borderTopColor: BORDER, paddingTop: 20 },
 //   modalCancel: { flex: 1, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: BORDER, alignItems: 'center' },
 //   modalCancelTxt: { color: TEXT_SECONDARY, fontSize: 14, fontWeight: '600' },
@@ -1231,7 +1398,6 @@
 // });
 
 // export default Profile;
-
 
 
 
@@ -1377,8 +1543,6 @@ function mapAPIDocument(doc: any): Credential {
   };
 }
 
-// ─── FIX: API response is { user, profile, documents }
-//         so read from data.profile.* and data.user.*
 function mapAPIToProfile(data: any): ProfileData {
   const profile = data?.profile ?? {};
   const user = data?.user ?? {};
@@ -1441,7 +1605,7 @@ const LabeledInput = ({ label, value, onChangeText, half, placeholder }: {
   </View>
 );
 
-// ─── Locked Input (non-editable) ──────────────────────────────────────────────
+// ─── Locked Input ─────────────────────────────────────────────────────────────
 const LockedInput = ({ label, value, iconName }: {
   label: string; value: string; iconName: any;
 }) => (
@@ -1538,21 +1702,6 @@ const DepartmentTags = ({ departments, setDepartments }: {
           <Text style={tSt.addBtnTxt}>+ Add Service</Text>
         </TouchableOpacity>
       </View>
-      {/* {panelOpen && (
-        <View style={tSt.panel}>
-          {ALL_SERVICES.map((service) => {
-            const selected = departments.includes(service);
-            return (
-              <TouchableOpacity key={service} style={tSt.serviceRow} onPress={() => toggle(service)} activeOpacity={0.7}>
-                <Text style={[tSt.serviceName, selected && tSt.serviceNameSelected]}>{service}</Text>
-                <View style={[tSt.checkCircle, selected && tSt.checkCircleSelected]}>
-                  {selected && <Text style={tSt.checkMark}>✓</Text>}
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      )} */}
       {panelOpen && (
         <View style={tSt.panel}>
           <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false} style={{ maxHeight: 250 }}>
@@ -1797,7 +1946,9 @@ const CredentialRow = ({ cred, onView, onRemove, last }: {
     <View style={crSt.dateCell}><Text style={crSt.date}>{cred.updated}</Text></View>
     <View style={crSt.actionsCell}>
       <TouchableOpacity onPress={onView}><Text style={crSt.viewTxt}>View</Text></TouchableOpacity>
-      <TouchableOpacity onPress={onRemove} style={crSt.removeBtn}><Ionicons name="close" size={14} color={RED_TEXT} /></TouchableOpacity>
+      <TouchableOpacity onPress={onRemove} style={crSt.removeBtn}>
+        <Ionicons name="trash-outline" size={14} color={RED_TEXT} />
+      </TouchableOpacity>
     </View>
   </View>
 );
@@ -1812,7 +1963,7 @@ const crSt = StyleSheet.create({
   date: { fontSize: 13, color: TEXT_SECONDARY },
   actionsCell: { flex: 1, flexDirection: "row", gap: 12, justifyContent: "flex-end", alignItems: "center" },
   viewTxt: { fontSize: 13, color: BLUE, fontWeight: "600" },
-  removeBtn: { width: 24, height: 24, borderRadius: 12, backgroundColor: RED_BG, alignItems: "center", justifyContent: "center" },
+  removeBtn: { width: 28, height: 28, borderRadius: 7, backgroundColor: RED_BG, alignItems: "center", justifyContent: "center" },
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1905,17 +2056,12 @@ const Profile = () => {
   };
 
   // ─── fetchProfile ────────────────────────────────────────────────────────────
-  // API response shape: { success, user: {...}, profile: {...}, documents: [...] }
   const fetchProfile = useCallback(async () => {
     try {
       setLoading(true);
       setApiError(null);
       const data: any = await profileAPI.getMyProfile();
-      console.log('API Response:', JSON.stringify(data, null, 2));
-
       const mapped = mapAPIToProfile(data);
-      console.log('Mapped Profile:', mapped);
-
       setHospitalLegalName(mapped.hospitalLegalName);
       setUserEmail(mapped.userEmail);
       setCurrentAddress(mapped.currentAddress);
@@ -1929,14 +2075,11 @@ const Profile = () => {
       setVerificationStatus(mapped.verificationStatus || null);
       setProfilePicture(mapped.profilePicture);
       setDescription(mapped.description);
-
-      // Also load documents from the same response if available
       if (Array.isArray(data?.documents) && data.documents.length > 0) {
         setCredentials(data.documents.map(mapAPIDocument));
         setCredsLoading(false);
       }
     } catch (err: any) {
-      console.error('Profile fetch error:', err);
       setApiError(err?.response?.data?.message ?? "Failed to load profile.");
     } finally { setLoading(false); }
   }, []);
@@ -1999,7 +2142,6 @@ const Profile = () => {
         showToast("Profile picture updated!");
       }
     } catch (error) {
-      console.error("Upload failed:", error);
       Alert.alert("Error", "Failed to upload profile picture.");
     } finally { setUploadingImage(false); }
   };
@@ -2027,7 +2169,6 @@ const Profile = () => {
       const res = await profileAPI.deleteProfilePicture();
       if (res.success) { setProfilePicture(null); showToast("Profile picture removed!"); }
     } catch (error) {
-      console.error("Delete failed:", error);
       Alert.alert("Error", "Failed to delete profile picture.");
     } finally { setUploadingImage(false); }
   };
@@ -2047,9 +2188,19 @@ const Profile = () => {
 
         {/* ── Top Header Card ── */}
         <View style={gSt.headerCard}>
-          <View style={[gSt.headerRow, isMobile && { flexDirection: "column" }]}>
-            <View style={[gSt.headerLeft, { flex: 1, alignItems: "flex-start" }]}>
-              <TouchableOpacity style={[gSt.avatarCircle, { marginTop: 4 }]} onPress={() => setShowImageMenu(true)} activeOpacity={0.85}>
+
+          {/* ── ROW 1: Avatar + Name  |  Edit Button ── */}
+          <View style={[
+            gSt.headerRow,
+            isMobile && { flexDirection: 'row', alignItems: 'flex-start' },
+          ]}>
+            {/* Left: Avatar + Name/Sub */}
+            <View style={gSt.headerLeft}>
+              <TouchableOpacity
+                style={gSt.avatarCircle}
+                onPress={() => setShowImageMenu(true)}
+                activeOpacity={0.85}
+              >
                 {uploadingImage ? (
                   <ActivityIndicator size="small" color={BLUE} />
                 ) : profilePicture ? (
@@ -2057,89 +2208,111 @@ const Profile = () => {
                 ) : (
                   <Ionicons name="person" size={40} color="#94A3B8" />
                 )}
-                <View style={gSt.cameraBadge}><Ionicons name="camera" size={12} color={WHITE} /></View>
+                <View style={gSt.cameraBadge}>
+                  <Ionicons name="camera" size={12} color={WHITE} />
+                </View>
               </TouchableOpacity>
 
               <View style={{ flex: 1 }}>
                 <Text style={gSt.hospitalTitle}>{hospitalLegalName}</Text>
-                <Text style={gSt.hospitalSub}>Multispeciality Hospital • {city}{state ? `, ${state}` : ""}</Text>
-
-                <View style={[gSt.badgeRow, { marginTop: 10 }, isMobile && gSt.badgeRowMobile]}>
-                  {verificationStatus === "verified" ? (
-                    <View style={gSt.greenBadge}>
-                      <Ionicons name="checkmark-circle" size={12} color={GREEN} />
-                      <Text style={gSt.greenBadgeTxt}>Verified Profile</Text>
-                    </View>
-                  ) : verificationStatus === "rejected" ? (
-                    <View style={[gSt.pill, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
-                      <Ionicons name="close-circle" size={12} color="#DC2626" />
-                      <Text style={[gSt.pillTxt, { color: "#DC2626" }]}>Rejected</Text>
-                    </View>
-                  ) : (
-                    <View style={[gSt.pill, { backgroundColor: "#FFFBEB", borderColor: "#FDE68A" }]}>
-                      <Ionicons name="time-outline" size={12} color="#A16207" />
-                      <Text style={[gSt.pillTxt, { color: "#A16207" }]}>Verification Under Process</Text>
-                    </View>
-                  )}
-                  {isProfileComplete && (
-                    <View style={gSt.completeBadge}>
-                      <Ionicons name="checkmark-done-circle" size={12} color="#15803D" />
-                      <Text style={gSt.completeBadgeTxt}>Profile Complete</Text>
-                    </View>
-                  )}
-                  {!!phoneNumber && (
-                    <View style={gSt.grayBadge}>
-                      <Ionicons name="call" size={11} color={TEXT_SECONDARY} />
-                      <Text style={gSt.grayBadgeTxt}>{phoneNumber}</Text>
-                    </View>
-                  )}
-                  {!!userEmail && (
-                    <View style={gSt.grayBadge}>
-                      <Ionicons name="mail" size={11} color={TEXT_SECONDARY} />
-                      <Text style={gSt.grayBadgeTxt}>{userEmail}</Text>
-                    </View>
-                  )}
-                  {!!currentAddress && (
-                    <View style={gSt.grayBadge}>
-                      <Ionicons name="location" size={11} color={TEXT_SECONDARY} />
-                      <Text style={gSt.grayBadgeTxt} numberOfLines={1}>{city}{state ? `, ${state}` : ""} {pincode}</Text>
-                    </View>
-                  )}
-                </View>
+                <Text style={gSt.hospitalSub}>
+                  Multispeciality Hospital • {city}{state ? `, ${state}` : ""}
+                </Text>
               </View>
             </View>
 
+            {/* Right: Edit Button */}
             <TouchableOpacity
-              style={[gSt.editBtn, isMobile && { width: "100%", justifyContent: "center", marginTop: 12 }]}
+              style={[
+                gSt.editBtn,
+                isMobile && { alignSelf: 'stretch', justifyContent: 'center', marginTop: 12 },
+              ]}
               onPress={handleStartEdit}
               activeOpacity={0.8}
             >
               <Ionicons name="pencil" size={14} color={WHITE} />
-              <Text style={gSt.editBtnTxt}>Edit Profile</Text>
+               {!isMobile && <Text style={gSt.editBtnTxt}>Edit Profile</Text>}
             </TouchableOpacity>
           </View>
+
+          {/* ── ROW 2: Badges (always below on both web & mobile) ── */}
+          <View style={[gSt.badgeRow, isMobile && gSt.badgeRowMobile]}>
+            {verificationStatus === "verified" ? (
+              <View style={gSt.greenBadge}>
+                <Ionicons name="checkmark-circle" size={12} color={GREEN} />
+                <Text style={gSt.greenBadgeTxt}>Verified Profile</Text>
+              </View>
+            ) : verificationStatus === "rejected" ? (
+              <View style={[gSt.pill, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
+                <Ionicons name="close-circle" size={12} color="#DC2626" />
+                <Text style={[gSt.pillTxt, { color: "#DC2626" }]}>Rejected</Text>
+              </View>
+            ) : (
+              <View style={[gSt.pill, { backgroundColor: "#FFFBEB", borderColor: "#FDE68A" }]}>
+                <Ionicons name="time-outline" size={12} color="#A16207" />
+                <Text style={[gSt.pillTxt, { color: "#A16207" }]}>Verification Under Process</Text>
+              </View>
+            )}
+            {isProfileComplete && (
+              <View style={gSt.completeBadge}>
+                <Ionicons name="checkmark-done-circle" size={12} color="#15803D" />
+                <Text style={gSt.completeBadgeTxt}>Profile Complete</Text>
+              </View>
+            )}
+            {!!phoneNumber && (
+              <View style={gSt.grayBadge}>
+                <Ionicons name="call" size={11} color={TEXT_SECONDARY} />
+                <Text style={gSt.grayBadgeTxt}>{phoneNumber}</Text>
+              </View>
+            )}
+            {!!userEmail && (
+              <View style={gSt.grayBadge}>
+                <Ionicons name="mail" size={11} color={TEXT_SECONDARY} />
+                <Text style={gSt.grayBadgeTxt}>{userEmail}</Text>
+              </View>
+            )}
+            {!!currentAddress && (
+              <View style={gSt.grayBadge}>
+                <Ionicons name="location" size={11} color={TEXT_SECONDARY} />
+                <Text style={gSt.grayBadgeTxt} numberOfLines={1}>
+                  {city}{state ? `, ${state}` : ""} {pincode}
+                </Text>
+              </View>
+            )}
+          </View>
+
         </View>
 
         {/* ── 4 Stats Cards ── */}
         <View style={[gSt.statsRow, isMobile && gSt.statsRowMobile]}>
           <View style={[gSt.statCard, isMobile && gSt.statCardMobile]}>
-            <View style={[gSt.statIconWrap, { backgroundColor: BLUE_LIGHT }]}><Ionicons name="checkmark-done" size={18} color={BLUE} /></View>
+            <View style={[gSt.statIconWrap, { backgroundColor: BLUE_LIGHT }]}>
+              <Ionicons name="checkmark-done" size={18} color={BLUE} />
+            </View>
             <Text style={gSt.statValue}>{isProfileComplete ? '90%' : '50%'}</Text>
             <Text style={gSt.statLabel}>Profile Completion</Text>
-            <View style={gSt.progressBarBg}><View style={[gSt.progressBarFill, { width: isProfileComplete ? '90%' : '50%', backgroundColor: BLUE }]} /></View>
+            <View style={gSt.progressBarBg}>
+              <View style={[gSt.progressBarFill, { width: isProfileComplete ? '90%' : '50%', backgroundColor: BLUE }]} />
+            </View>
           </View>
           <View style={[gSt.statCard, isMobile && gSt.statCardMobile]}>
-            <View style={[gSt.statIconWrap, { backgroundColor: GREEN_LIGHT }]}><Ionicons name="shield-checkmark" size={18} color={GREEN} /></View>
+            <View style={[gSt.statIconWrap, { backgroundColor: GREEN_LIGHT }]}>
+              <Ionicons name="shield-checkmark" size={18} color={GREEN} />
+            </View>
             <Text style={gSt.statValue}>{credentials.filter(c => c.status === 'Verified' || c.status === 'Auto Verified').length}</Text>
             <Text style={gSt.statLabel}>Verified Docs</Text>
           </View>
           <View style={[gSt.statCard, isMobile && gSt.statCardMobile]}>
-            <View style={[gSt.statIconWrap, { backgroundColor: ORANGE_LIGHT }]}><Ionicons name="people" size={18} color={ORANGE} /></View>
+            <View style={[gSt.statIconWrap, { backgroundColor: ORANGE_LIGHT }]}>
+              <Ionicons name="people" size={18} color={ORANGE} />
+            </View>
             <Text style={gSt.statValue}>{staffCount || "—"}</Text>
             <Text style={gSt.statLabel}>Staff Count</Text>
           </View>
           <View style={[gSt.statCard, isMobile && gSt.statCardMobile]}>
-            <View style={[gSt.statIconWrap, { backgroundColor: PURPLE_LIGHT }]}><Ionicons name="bed" size={18} color="#9333EA" /></View>
+            <View style={[gSt.statIconWrap, { backgroundColor: PURPLE_LIGHT }]}>
+              <Ionicons name="bed" size={18} color="#9333EA" />
+            </View>
             <Text style={gSt.statValue}>50</Text>
             <Text style={gSt.statLabel}>Bed Capacity</Text>
           </View>
@@ -2206,33 +2379,41 @@ const Profile = () => {
               <Ionicons name="add" size={16} color={WHITE} />
             </TouchableOpacity>
           </View>
-          <View style={gSt.tableHeader}>
-            <Text style={[gSt.thText, { flex: 2.5 }]}>DOCUMENT NAME</Text>
-            <Text style={[gSt.thText, { flex: 1.5 }]}>STATUS</Text>
-            <Text style={[gSt.thText, { flex: 1.5 }]}>LAST UPDATED</Text>
-            <Text style={[gSt.thText, { flex: 1, textAlign: "right" }]}>ACTIONS</Text>
-          </View>
-          {credsLoading ? (
-            <View style={gSt.centerContainer}><ActivityIndicator size="small" color={BLUE} /></View>
-          ) : credentials.length === 0 ? (
-            <View style={gSt.centerContainer}>
-              <Text style={{ color: TEXT_SECONDARY, marginBottom: 12 }}>No documents uploaded.</Text>
-              <TouchableOpacity style={gSt.outlineBtn} onPress={() => setUploadModal(true)}>
-                <Text style={{ color: BLUE, fontWeight: '600' }}>Upload Document</Text>
-              </TouchableOpacity>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={{ minWidth: 480 }}>
+              <View style={gSt.tableHeader}>
+                <Text style={[gSt.thText, { flex: 2.5 }]}>DOCUMENT NAME</Text>
+                <Text style={[gSt.thText, { flex: 1.5 }]}>STATUS</Text>
+                <Text style={[gSt.thText, { flex: 1.5 }]}>LAST UPDATED</Text>
+                <Text style={[gSt.thText, { flex: 1, textAlign: "right" }]}>ACTIONS</Text>
+              </View>
+              {credsLoading ? (
+                <View style={gSt.centerContainer}>
+                  <ActivityIndicator size="small" color={BLUE} />
+                </View>
+              ) : credentials.length === 0 ? (
+                <View style={gSt.centerContainer}>
+                  <Text style={{ color: TEXT_SECONDARY, marginBottom: 12 }}>No documents uploaded.</Text>
+                  <TouchableOpacity style={gSt.outlineBtn} onPress={() => setUploadModal(true)}>
+                    <Text style={{ color: BLUE, fontWeight: '600' }}>Upload Document</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                credentials.map((cred, idx) => (
+                  <CredentialRow
+                    key={cred.id}
+                    cred={cred}
+                    last={idx === credentials.length - 1}
+                    onView={() => { setSelectedDoc(cred); setViewModal(true); }}
+                    onRemove={() => handleDeleteDocument(cred.id)}
+                  />
+                ))
+              )}
             </View>
-          ) : (
-            credentials.map((cred, idx) => (
-              <CredentialRow
-                key={cred.id}
-                cred={cred}
-                last={idx === credentials.length - 1}
-                onView={() => { setSelectedDoc(cred); setViewModal(true); }}
-                onRemove={() => handleDeleteDocument(cred.id)}
-              />
-            ))
-          )}
+          </ScrollView>
         </View>
+
       </ScrollView>
 
       {/* ── Edit Profile Modal ── */}
@@ -2261,37 +2442,28 @@ const Profile = () => {
                       <Ionicons name="person" size={32} color="#94A3B8" />
                     </View>
                   )}
-                  <TouchableOpacity style={gSt.changePhotoBtn} onPress={() => { setEditModalVisible(false); setTimeout(() => setShowImageMenu(true), 300); }}>
+                  <TouchableOpacity
+                    style={gSt.changePhotoBtn}
+                    onPress={() => { setEditModalVisible(false); setTimeout(() => setShowImageMenu(true), 300); }}
+                  >
                     <Ionicons name="camera-outline" size={16} color={BLUE} />
                     <Text style={gSt.changePhotoTxt}>Change Photo</Text>
                   </TouchableOpacity>
                 </View>
 
-                {/* Hospital Name — editable */}
                 <LabeledInput label="Hospital Legal Name" value={draftName} onChangeText={setDraftName} />
-
-                {/* Email — locked */}
                 <LockedInput label="Email Address" value={userEmail} iconName="mail-outline" />
-
-                {/* Phone — locked */}
                 <LockedInput label="Phone Number" value={phoneNumber} iconName="call-outline" />
-
-                {/* Address — editable */}
                 <LabeledInput label="Current Address" value={draftAddress} onChangeText={setDraftAddress} placeholder="Street address" />
 
-                {/* City + Pincode row */}
                 <View style={{ flexDirection: 'row', gap: 12 }}>
                   <LabeledInput label="City" value={draftCity} onChangeText={setDraftCity} half placeholder="City" />
                   <LabeledInput label="Pincode" value={draftPincode} onChangeText={setDraftPincode} half placeholder="Pincode" />
                 </View>
 
-                {/* State — editable */}
-                {/* <LabeledInput label="State" value={draftState} onChangeText={setDraftState} placeholder="State" /> */}
-                {/* State — searchable dropdown */}
+                {/* State searchable dropdown */}
                 <View style={{ marginBottom: 16, zIndex: 20 }}>
                   <Text style={iSt.label}>State</Text>
-
-                  {/* Trigger */}
                   <TouchableOpacity
                     style={[iSt.input, { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}
                     onPress={() => { setShowStateDropdown((v) => !v); setStateSearch(""); }}
@@ -2311,11 +2483,8 @@ const Profile = () => {
                       <Ionicons name={showStateDropdown ? "chevron-up" : "chevron-down"} size={16} color={TEXT_SECONDARY} />
                     )}
                   </TouchableOpacity>
-
-                  {/* Dropdown panel */}
                   {showStateDropdown && (
                     <View style={stDropSt.dropdown}>
-                      {/* Search */}
                       <View style={stDropSt.searchRow}>
                         <TextInput
                           value={stateSearch}
@@ -2331,7 +2500,6 @@ const Profile = () => {
                           </TouchableOpacity>
                         )}
                       </View>
-
                       <ScrollView nestedScrollEnabled style={{ maxHeight: 180 }} showsVerticalScrollIndicator={false}>
                         {INDIAN_STATES
                           .filter((s) => s.toLowerCase().includes(stateSearch.toLowerCase()))
@@ -2356,10 +2524,7 @@ const Profile = () => {
                   )}
                 </View>
 
-                {/* Staff Count dropdown */}
                 <Dropdown label="Staff Count" value={draftStaff} options={STAFF_OPTIONS} onSelect={setDraftStaff} />
-
-                {/* Services */}
                 <DepartmentTags departments={draftServices} setDepartments={setDraftServices} />
 
               </ScrollView>
@@ -2377,13 +2542,17 @@ const Profile = () => {
       </Modal>
 
       {/* ── Sub-Modals ── */}
-      <UploadDocModal visible={uploadModal} onClose={() => setUploadModal(false)} onAdd={(c) => { setCredentials(p => [...p, c]); fetchDocuments(); }} />
+      <UploadDocModal
+        visible={uploadModal}
+        onClose={() => setUploadModal(false)}
+        onAdd={(c) => { setCredentials(p => [...p, c]); fetchDocuments(); }}
+      />
       <ViewDocModal visible={viewModal} doc={selectedDoc} onClose={() => setViewModal(false)} />
 
       {/* ── Photo Menu Modal ── */}
       <Modal visible={showImageMenu} transparent animationType="fade" onRequestClose={() => setShowImageMenu(false)}>
         <TouchableOpacity style={gSt.photoMenuOverlay} activeOpacity={1} onPress={() => setShowImageMenu(false)}>
-          <TouchableOpacity activeOpacity={1} style={gSt.photoMenuBox} onPress={() => { }}>
+          <TouchableOpacity activeOpacity={1} style={gSt.photoMenuBox} onPress={() => {}}>
             <View style={gSt.photoMenuHeader}>
               <Text style={gSt.photoMenuTitle}>Profile Photo</Text>
               <TouchableOpacity onPress={() => setShowImageMenu(false)}>
@@ -2434,7 +2603,10 @@ const Profile = () => {
       </Modal>
 
       {/* ── Toast ── */}
-      <Animated.View pointerEvents="none" style={[gSt.toast, { opacity: toastOpacity, transform: [{ translateY: toastTranslateY }] }]}>
+      <Animated.View
+        pointerEvents="none"
+        style={[gSt.toast, { opacity: toastOpacity, transform: [{ translateY: toastTranslateY }] }]}
+      >
         <Ionicons name="checkmark-circle" size={20} color={WHITE} />
         <Text style={gSt.toastTxt}>{toastMsg}</Text>
       </Animated.View>
@@ -2444,7 +2616,11 @@ const Profile = () => {
 
 // ─── Global Styles ────────────────────────────────────────────────────────────
 const stDropSt = StyleSheet.create({
-  dropdown: { position: "absolute", top: 72, left: 0, right: 0, zIndex: 999, backgroundColor: WHITE, borderWidth: 1, borderColor: BORDER, borderRadius: 8, overflow: "hidden", ...Platform.select({ web: { boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }, default: { elevation: 16 } }) },
+  dropdown: {
+    position: "absolute", top: 72, left: 0, right: 0, zIndex: 999,
+    backgroundColor: WHITE, borderWidth: 1, borderColor: BORDER, borderRadius: 8, overflow: "hidden",
+    ...Platform.select({ web: { boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }, default: { elevation: 16 } }),
+  },
   searchRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#F1F5F9", backgroundColor: "#F8FAFC" },
   searchInput: { flex: 1, fontSize: 13, color: TEXT_PRIMARY, ...Platform.select({ web: { outlineStyle: "none" } as any }) },
   item: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
@@ -2452,53 +2628,104 @@ const stDropSt = StyleSheet.create({
   itemText: { fontSize: 13, color: TEXT_SECONDARY },
   itemTextActive: { color: BLUE, fontWeight: "600" },
 });
+
 const gSt = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BG },
-  centerContainer: { padding: 30, alignItems: "center", justifyContent: "center" },
+  centerContainer: { padding: 20, alignItems: "center", justifyContent: "center" },
   scrollContent: { padding: 24, paddingBottom: 40, marginHorizontal: 'auto', width: '100%' },
 
-  // Header Card
-  headerCard: { backgroundColor: WHITE, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: BLUE, marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 20 },
-  avatarCircle: { width: 70, height: 70, borderRadius: 35, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  // ── Header Card ──
+  headerCard: {
+    backgroundColor: WHITE,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: BLUE,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+
+  // ROW 1 — static (isMobile overrides applied inline in JSX)
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+  // Avatar + name block (left side of row 1)
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    flex: 1,
+  },
+
+  avatarCircle: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
   avatarImage: { width: 70, height: 70, borderRadius: 35 },
-  cameraBadge: { position: 'absolute', bottom: -2, right: -2, width: 26, height: 26, borderRadius: 13, backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: WHITE, zIndex: 10 },
+  cameraBadge: {
+    position: 'absolute', bottom: -2, right: -2,
+    width: 26, height: 26, borderRadius: 13,
+    backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 3, borderColor: WHITE, zIndex: 10,
+  },
   hospitalTitle: { fontSize: 22, fontWeight: '700', color: TEXT_PRIMARY, marginBottom: 4 },
-  hospitalSub: { fontSize: 13, color: TEXT_SECONDARY, marginBottom: 8 },
-  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6, flexWrap: 'wrap' },
+  hospitalSub: { fontSize: 13, color: TEXT_SECONDARY },
+
+  // ROW 2 — badges
+  badgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+  },
   badgeRowMobile: { gap: 4 },
+
   pill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
   pillTxt: { fontSize: 11, fontWeight: '600' },
-  greenBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: GREEN_LIGHT, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: "#6EE7B7" },
-  greenBadgeTxt: { color: "#065F46", fontSize: 11, fontWeight: '700' },
+  greenBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: GREEN_LIGHT, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: "#6EE7B7" },
+  greenBadgeTxt: { color: "#065F46", fontSize: 11, fontWeight: '600' },
   grayBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F8FAFC', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: BORDER },
   grayBadgeTxt: { color: TEXT_SECONDARY, fontSize: 11, fontWeight: '600' },
   completeBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F0FDF4', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: '#BBF7D0' },
   completeBadgeTxt: { color: '#15803D', fontSize: 11, fontWeight: '700' },
-  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: BLUE, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
+
+  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: BLUE, paddingHorizontal: 10, paddingVertical: 0, borderRadius: 8 },
   editBtnTxt: { color: WHITE, fontSize: 13, fontWeight: '600' },
   outlineBtn: { borderWidth: 1, borderColor: BLUE, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
 
-  // Stats Row
+  // ── Stats Row ──
   statsRow: { flexDirection: 'row', gap: 16, marginBottom: 24 },
-  statsRowMobile: { flexWrap: 'wrap' },
+  statsRowMobile: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 },
   statCard: { flex: 1, backgroundColor: WHITE, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: BORDER, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 6, elevation: 1 },
-  statCardMobile: { width: '47%' },
+  statCardMobile: { width: '48%', flexBasis: 'auto', flexGrow: 0 },
   statIconWrap: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   statValue: { fontSize: 20, fontWeight: '800', color: TEXT_PRIMARY, marginBottom: 2 },
   statLabel: { fontSize: 12, color: TEXT_SECONDARY, marginBottom: 10 },
   progressBarBg: { height: 4, backgroundColor: '#F1F5F9', borderRadius: 2, overflow: 'hidden' },
   progressBarFill: { height: '100%', borderRadius: 2 },
 
-  // Section Cards
+  // ── Section Cards ──
   sectionCard: { backgroundColor: WHITE, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: BORDER, marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 6, elevation: 1 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: TEXT_PRIMARY },
   viewAllTxt: { fontSize: 13, color: BLUE, fontWeight: '600' },
   plusBtn: { width: 28, height: 28, borderRadius: 6, backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center' },
 
-  // Depts
+  // ── Depts ──
   deptMainRow: { flexDirection: 'row', gap: 16, marginBottom: 16 },
   deptMainBox: { flex: 1, borderWidth: 1, borderColor: BORDER, borderRadius: 12, padding: 16 },
   deptIcon: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
@@ -2509,11 +2736,11 @@ const gSt = StyleSheet.create({
   deptMiniHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   deptMiniTitle: { fontSize: 13, fontWeight: '600', color: TEXT_PRIMARY },
 
-  // Table
+  // ── Table ──
   tableHeader: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: BORDER, paddingBottom: 12, marginBottom: 8 },
   thText: { fontSize: 11, fontWeight: '700', color: TEXT_SECONDARY, letterSpacing: 0.5 },
 
-  // Edit Modal
+  // ── Edit Modal ──
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', padding: 20 },
   keyboardView: { flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%' },
   modalBox: { width: 500, maxHeight: '90%', backgroundColor: WHITE, borderRadius: 16, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 10 },
@@ -2531,11 +2758,11 @@ const gSt = StyleSheet.create({
   modalSave: { flex: 2, paddingVertical: 12, borderRadius: 8, backgroundColor: BLUE, alignItems: 'center' },
   modalSaveTxt: { color: WHITE, fontSize: 14, fontWeight: '700' },
 
-  // Toast
+  // ── Toast ──
   toast: { position: "absolute", bottom: 36, left: 20, right: 20, backgroundColor: GREEN, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, flexDirection: "row", alignItems: "center", gap: 10, elevation: 10 },
   toastTxt: { fontSize: 14, color: WHITE, fontWeight: "600" },
 
-  // Photo Menu Modal
+  // ── Photo Menu ──
   photoMenuOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   photoMenuBox: { backgroundColor: WHITE, borderRadius: 16, padding: 24, width: '100%', maxWidth: 400 },
   photoMenuHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
