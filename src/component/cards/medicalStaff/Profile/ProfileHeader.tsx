@@ -1106,6 +1106,16 @@ const INDIAN_STATES = [
   'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry',
 ];
 
+const EXPERIENCE_OPTIONS = [
+  '0-1 year',
+  '1-3 years',
+  '3-5 years',
+  '5-10 years',
+  '10-15 years',
+  '15-20 years',
+  '20+ years',
+];
+
 interface EducationEntry {
   universityName: string;
   speciality: string;
@@ -1144,6 +1154,7 @@ interface Props {
   profileSummary?: string | null;
   education?: any[];
   skills?: string[];
+  experience?: string | null;
   onProfileUpdated?: (updatedProfile: any) => void;
   onOpenEditModal?: (open: () => void) => void;
 }
@@ -1153,7 +1164,7 @@ export default function ProfileHeader({
   phone, email, isVerified = false, isComplete = false,
   profileCompletion, verificationStatus, jobRoleValue, city, area,
   currentAddress, state, pincode,
-  profilePicture, profileSummary, education = [], skills = [],
+  profilePicture, profileSummary, education = [], skills = [], experience,
   onProfileUpdated, onOpenEditModal,
 }: Props) {
   const { width } = useWindowDimensions();
@@ -1192,6 +1203,9 @@ export default function ProfileHeader({
   const [editSummary, setEditSummary] = useState(profileSummary ?? "");
   const [showStateDropdown, setShowStateDropdown] = useState(false);
   const [stateSearch, setStateSearch] = useState("");
+
+  const [editExperience, setEditExperience] = useState<string>(experience ?? "");
+  const [showExpDropdown, setShowExpDropdown] = useState(false);
 
   const buildEduList = (raw: any[]): EducationEntry[] => {
     if (!raw || raw.length === 0) return [{ ...EMPTY_EDU }];
@@ -1232,6 +1246,8 @@ export default function ProfileHeader({
     setShowDropdown(false);
     setShowStateDropdown(false);
     setStateSearch("");
+    setEditExperience(experience ?? "");
+    setShowExpDropdown(false);
   }, [showEditModal]);
 
   const addSkill = () => {
@@ -1267,6 +1283,7 @@ export default function ProfileHeader({
       profileSummary: editSummary.trim() || undefined,
       education: educationArray.length > 0 ? educationArray : undefined,
       skills: editSkills.length > 0 ? editSkills : undefined,
+      experience: editExperience || undefined,
     };
 
     setSaving(true);
@@ -1371,72 +1388,237 @@ export default function ProfileHeader({
     </View>
   );
 
+  // return (
+  //   <View style={styles.card}>
+
+  //     {/* ══════════════════════════════════════════════════════
+  //         ROW 1 — Avatar + Name/Role  |  Edit Profile button
+  //         Web  : flex-row, space-between
+  //         Mobile: flex-column (edit btn drops below, full width)
+  //     ══════════════════════════════════════════════════════ */}
+  //     <View style={[
+  //       styles.headerRow,
+  //       // isMobile && { flexDirection: "column", alignItems: "flex-start" },
+  //     ]}>
+
+  //       {/* Left: Avatar + Name + Role */}
+  //       <View style={styles.headerLeft}>
+  //         {/* ── Avatar ── */}
+  //         <View style={styles.avatarWrap}>
+  //           {uploadingImage ? (
+  //             <View style={[styles.avatar, { alignItems: "center", justifyContent: "center" }]}>
+  //               <ActivityIndicator size="small" color={COLORS.primary} />
+  //             </View>
+  //           ) : imageUri ? (
+  //             <Image source={{ uri: imageUri }} style={styles.avatarImage} />
+  //           ) : (
+  //             <View style={styles.avatar}>
+  //               <Ionicons name="person" size={40} color="#94A3B8" />
+  //             </View>
+  //           )}
+  //           <View style={styles.onlineDot} />
+  //           <TouchableOpacity
+  //             style={styles.cameraBtn}
+  //             onPress={() => setShowImageMenu(true)}
+  //             activeOpacity={0.85}
+  //           >
+  //             <Ionicons name="camera" size={13} color="#fff" />
+  //           </TouchableOpacity>
+  //         </View>
+
+  //         {/* Name + Role */}
+  //         <View style={styles.nameBlock}>
+  //           <Text style={[styles.name, isMobile && styles.nameMobile]}>{name}</Text>
+  //           <Text style={styles.role}>{role}</Text>
+  //         </View>
+  //       </View>
+
+  //       {/* Edit Profile button — right end on web, full width below on mobile */}
+  //       <TouchableOpacity
+  //         style={[
+  //           styles.editBtn,
+  //           // isMobile && { alignSelf: "stretch", justifyContent: "center", marginTop: 12 },
+  //         ]}
+  //         onPress={() => setShowEditModal(true)}
+  //         activeOpacity={0.85}
+  //       >
+  //         <Ionicons name="pencil" size={isMobile ? 15 : 14} color="#fff" />
+  //         {!isMobile && <Text style={styles.editBtnText}>Edit Profile</Text>}
+  //       </TouchableOpacity>
+  //     </View>
+
+  //     {/* ══════════════════════════════════════════════════════
+  //         ROW 2 — All badges / pills / chips
+  //         Always sits below Row 1 on both web and mobile
+  //     ══════════════════════════════════════════════════════ */}
+  //     <View style={styles.badgeCol}>
+
+  //       {/* Row 2a: Speciality + Verification status */}
+  //       <View style={styles.badgeRow}>
+  //         {speciality && (
+  //           <View style={styles.badge}>
+  //             <Text style={styles.badgeText}>{speciality}</Text>
+  //           </View>
+  //         )}
+  //         {verificationStatus === "verified" ? (
+  //           <View style={[styles.pill, styles.pillGreen]}>
+  //             <Ionicons name="checkmark-circle" size={12} color="#059669" />
+  //             <Text style={[styles.pillText, { color: "#059669" }]}>Verified Profile</Text>
+  //           </View>
+  //         ) : verificationStatus === "rejected" ? (
+  //           <View style={[styles.pill, styles.pillRed]}>
+  //             <Ionicons name="close-circle" size={12} color="#DC2626" />
+  //             <Text style={[styles.pillText, { color: "#DC2626" }]}>Rejected</Text>
+  //           </View>
+  //         ) : (
+  //           <View style={[styles.pill, styles.pillAmber]}>
+  //             <Ionicons name="time-outline" size={12} color="#A16207" />
+  //             <Text style={[styles.pillText, { color: "#A16207" }]}>Verification Pending</Text>
+  //           </View>
+  //         )}
+  //       </View>
+
+  //       {/* Row 2b: Profile completion + Phone */}
+  //       <View style={styles.badgeRow}>
+  //         {isProfileComplete ? (
+  //           <View style={[styles.pill, styles.pillGreen]}>
+  //             <Ionicons name="checkmark-done-circle" size={12} color="#059669" />
+  //             <Text style={[styles.pillText, { color: "#059669" }]}>Profile Complete</Text>
+  //           </View>
+  //         ) : (
+  //           <View style={[styles.pill, styles.pillAmber]}>
+  //             <Ionicons name="alert-circle-outline" size={12} color="#A16207" />
+  //             <Text style={[styles.pillText, { color: "#A16207" }]}>
+  //               {profileCompletion != null ? `${profileCompletion}% Complete` : "Profile Incomplete"}
+  //             </Text>
+  //           </View>
+  //         )}
+  //         {phone && (
+  //           <View style={styles.chip}>
+  //             <Ionicons name="call-outline" size={11} color="#64748b" />
+  //             <Text style={styles.chipText}>{phone}</Text>
+  //           </View>
+  //         )}
+  //       </View>
+
+  //       {/* Row 2c: Email */}
+  //       {email && (
+  //         <View style={styles.badgeRow}>
+  //           <View style={styles.chip}>
+  //             <Ionicons name="mail-outline" size={11} color="#64748b" />
+  //             <Text style={styles.chipText}>{email}</Text>
+  //             {isVerified && <Ionicons name="checkmark-circle" size={11} color="#22c55e" />}
+  //           </View>
+  //         </View>
+  //       )}
+
+  //     </View>
   return (
-    <View style={styles.card}>
+  <View style={styles.card}>
 
-      {/* ══════════════════════════════════════════════════════
-          ROW 1 — Avatar + Name/Role  |  Edit Profile button
-          Web  : flex-row, space-between
-          Mobile: flex-column (edit btn drops below, full width)
-      ══════════════════════════════════════════════════════ */}
-      <View style={[
-        styles.headerRow,
-        // isMobile && { flexDirection: "column", alignItems: "flex-start" },
-      ]}>
+    <View style={styles.headerRow}>
 
-        {/* Left: Avatar + Name + Role */}
-        <View style={styles.headerLeft}>
-          {/* ── Avatar ── */}
-          <View style={styles.avatarWrap}>
-            {uploadingImage ? (
-              <View style={[styles.avatar, { alignItems: "center", justifyContent: "center" }]}>
-                <ActivityIndicator size="small" color={COLORS.primary} />
-              </View>
-            ) : imageUri ? (
-              <Image source={{ uri: imageUri }} style={styles.avatarImage} />
-            ) : (
-              <View style={styles.avatar}>
-                <Ionicons name="person" size={40} color="#94A3B8" />
-              </View>
-            )}
-            <View style={styles.onlineDot} />
-            <TouchableOpacity
-              style={styles.cameraBtn}
-              onPress={() => setShowImageMenu(true)}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="camera" size={13} color="#fff" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Name + Role */}
-          <View style={styles.nameBlock}>
-            <Text style={[styles.name, isMobile && styles.nameMobile]}>{name}</Text>
-            <Text style={styles.role}>{role}</Text>
-          </View>
+      {/* Left: Avatar + Name + Role + badges (web only) */}
+      <View style={styles.headerLeft}>
+        {/* ── Avatar ── */}
+        <View style={styles.avatarWrap}>
+          {uploadingImage ? (
+            <View style={[styles.avatar, { alignItems: "center", justifyContent: "center" }]}>
+              <ActivityIndicator size="small" color={COLORS.primary} />
+            </View>
+          ) : imageUri ? (
+            <Image source={{ uri: imageUri }} style={styles.avatarImage} />
+          ) : (
+            <View style={styles.avatar}>
+              <Ionicons name="person" size={40} color="#94A3B8" />
+            </View>
+          )}
+          <View style={styles.onlineDot} />
+          <TouchableOpacity
+            style={styles.cameraBtn}
+            onPress={() => setShowImageMenu(true)}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="camera" size={13} color="#fff" />
+          </TouchableOpacity>
         </View>
 
-        {/* Edit Profile button — right end on web, full width below on mobile */}
-        <TouchableOpacity
-          style={[
-            styles.editBtn,
-            // isMobile && { alignSelf: "stretch", justifyContent: "center", marginTop: 12 },
-          ]}
-          onPress={() => setShowEditModal(true)}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="pencil" size={isMobile ? 15 : 14} color="#fff" />
-          {!isMobile && <Text style={styles.editBtnText}>Edit Profile</Text>}
-        </TouchableOpacity>
+        {/* Name + Role + badges inline on web */}
+        <View style={styles.nameBlock}>
+          <Text style={[styles.name, isMobile && styles.nameMobile]}>{name}</Text>
+          <Text style={styles.role}>{role}</Text>
+
+          {/* ── Badges inline — web only ── */}
+          {!isMobile && (
+            <View style={[styles.badgeCol, { marginTop: 8 }]}>
+              <View style={styles.badgeRow}>
+                {speciality && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{speciality}</Text>
+                  </View>
+                )}
+                {verificationStatus === "verified" ? (
+                  <View style={[styles.pill, styles.pillGreen]}>
+                    <Ionicons name="checkmark-circle" size={12} color="#059669" />
+                    <Text style={[styles.pillText, { color: "#059669" }]}>Verified Profile</Text>
+                  </View>
+                ) : verificationStatus === "rejected" ? (
+                  <View style={[styles.pill, styles.pillRed]}>
+                    <Ionicons name="close-circle" size={12} color="#DC2626" />
+                    <Text style={[styles.pillText, { color: "#DC2626" }]}>Rejected</Text>
+                  </View>
+                ) : (
+                  <View style={[styles.pill, styles.pillAmber]}>
+                    <Ionicons name="time-outline" size={12} color="#A16207" />
+                    <Text style={[styles.pillText, { color: "#A16207" }]}>Verification Pending</Text>
+                  </View>
+                )}
+                {isProfileComplete ? (
+                  <View style={[styles.pill, styles.pillGreen]}>
+                    <Ionicons name="checkmark-done-circle" size={12} color="#059669" />
+                    <Text style={[styles.pillText, { color: "#059669" }]}>Profile Complete</Text>
+                  </View>
+                ) : (
+                  <View style={[styles.pill, styles.pillAmber]}>
+                    <Ionicons name="alert-circle-outline" size={12} color="#A16207" />
+                    <Text style={[styles.pillText, { color: "#A16207" }]}>
+                      {profileCompletion != null ? `${profileCompletion}% Complete` : "Profile Incomplete"}
+                    </Text>
+                  </View>
+                )}
+                {phone && (
+                  <View style={styles.chip}>
+                    <Ionicons name="call-outline" size={11} color="#64748b" />
+                    <Text style={styles.chipText}>{phone}</Text>
+                  </View>
+                )}
+                {email && (
+                  <View style={styles.chip}>
+                    <Ionicons name="mail-outline" size={11} color="#64748b" />
+                    <Text style={styles.chipText}>{email}</Text>
+                    {isVerified && <Ionicons name="checkmark-circle" size={11} color="#22c55e" />}
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
+        </View>
       </View>
 
-      {/* ══════════════════════════════════════════════════════
-          ROW 2 — All badges / pills / chips
-          Always sits below Row 1 on both web and mobile
-      ══════════════════════════════════════════════════════ */}
-      <View style={styles.badgeCol}>
+      {/* Edit Profile button */}
+      <TouchableOpacity
+        style={styles.editBtn}
+        onPress={() => setShowEditModal(true)}
+        activeOpacity={0.85}
+      >
+        <Ionicons name="pencil" size={isMobile ? 15 : 14} color="#fff" />
+        {!isMobile && <Text style={styles.editBtnText}>Edit Profile</Text>}
+      </TouchableOpacity>
+    </View>
 
-        {/* Row 2a: Speciality + Verification status */}
+    {/* ── Badges below — mobile only ── */}
+    {isMobile && (
+      <View style={styles.badgeCol}>
         <View style={styles.badgeRow}>
           {speciality && (
             <View style={styles.badge}>
@@ -1460,8 +1642,6 @@ export default function ProfileHeader({
             </View>
           )}
         </View>
-
-        {/* Row 2b: Profile completion + Phone */}
         <View style={styles.badgeRow}>
           {isProfileComplete ? (
             <View style={[styles.pill, styles.pillGreen]}>
@@ -1483,8 +1663,6 @@ export default function ProfileHeader({
             </View>
           )}
         </View>
-
-        {/* Row 2c: Email */}
         {email && (
           <View style={styles.badgeRow}>
             <View style={styles.chip}>
@@ -1494,8 +1672,10 @@ export default function ProfileHeader({
             </View>
           </View>
         )}
-
       </View>
+    )}
+
+    {/* ... rest of modals unchanged ... */}
 
       {/* ════════════════════════════════════════
           PHOTO MENU MODAL
@@ -1784,6 +1964,54 @@ export default function ProfileHeader({
                     </View>
                   ))}
 
+                  {/* ── Experience ── */}
+                  <View style={[styles.editDivider, { marginTop: 16, marginBottom: 0 }]} />
+
+                  <Text style={[styles.colSectionTitle, { marginTop: 14 }]}>
+                    <Ionicons name="briefcase-outline" size={13} color={COLORS.primary} /> Experience
+                  </Text>
+                  <Text style={styles.editLabel}>Years of Experience</Text>
+                  <TouchableOpacity
+                    style={styles.editInputRow}
+                    onPress={() => setShowExpDropdown((v) => !v)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="time-outline" size={16} color="#94a3b8" style={{ marginRight: 8 }} />
+                    <Text style={[styles.editInput, { color: editExperience ? COLORS.text : "#adb8c9" }]}>
+                      {editExperience || "Select experience"}
+                    </Text>
+                    {editExperience ? (
+                      <TouchableOpacity
+                        onPress={(e) => { e.stopPropagation(); setEditExperience(""); setShowExpDropdown(false); }}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Ionicons name="close-circle" size={15} color="#94a3b8" />
+                      </TouchableOpacity>
+                    ) : (
+                      <Ionicons name={showExpDropdown ? "chevron-up" : "chevron-down"} size={15} color="#94a3b8" />
+                    )}
+                  </TouchableOpacity>
+                  {showExpDropdown && (
+                    <View style={styles.dropdownList}>
+                      <ScrollView nestedScrollEnabled style={{ maxHeight: 220 }} showsVerticalScrollIndicator={false}>
+                        {EXPERIENCE_OPTIONS.map((option) => (
+                          <TouchableOpacity
+                            key={option}
+                            style={[styles.dropdownItem, editExperience === option && styles.dropdownItemActive]}
+                            onPress={() => { setEditExperience(option); setShowExpDropdown(false); }}
+                          >
+                            <Text style={[styles.dropdownItemText, editExperience === option && styles.dropdownItemTextActive]}>
+                              {option}
+                            </Text>
+                            {editExperience === option && (
+                              <Ionicons name="checkmark" size={13} color={COLORS.primary} />
+                            )}
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+
                   <View style={[styles.editDivider, { marginTop: 16, marginBottom: 0 }]} />
 
                   <Text style={[styles.colSectionTitle, { marginTop: 14 }]}>
@@ -1906,16 +2134,16 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: COLORS.white, zIndex: 10,
   },
   // 3. Add editBtnMobile to StyleSheet
-editBtnMobile: {
-  width: 36,
-  height: 36,
-  borderRadius: 18,
-  paddingHorizontal: 0,
-  paddingVertical: 0,
-  alignItems: "center",
-  justifyContent: "center",
-  flexShrink: 0,
-},
+  editBtnMobile: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
 
   // ── Name / Role ──
   name: { fontSize: 22, fontWeight: "700", color: COLORS.text, letterSpacing: -0.4 },
