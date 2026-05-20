@@ -1300,6 +1300,7 @@ const STATUS_OPTIONS = [
   { label: 'Available', value: 'available' },
   { label: 'Assigned', value: 'assigned' },
   { label: 'Cancelled', value: 'cancelled' },
+
 ];
 
 const ROLE_OPTIONS: { label: string; value: string }[] = [
@@ -1423,12 +1424,12 @@ export default function DutyHistoryScreen() {
   // draft filters (not yet applied)
   const [draftDate, setDraftDate] = useState<DateFilter>(DEFAULT_DATE_FILTER);
   const [draftRole, setDraftRole] = useState('');
-  const [draftStatus, setDraftStatus] = useState('completed');
+  const [draftStatus, setDraftStatus] = useState('');
 
   // applied filters (drives API)
   const [appliedDate, setAppliedDate] = useState<DateFilter>(DEFAULT_DATE_FILTER);
   const [appliedRole, setAppliedRole] = useState('');
-  const [appliedStatus, setAppliedStatus] = useState('completed');
+  const [appliedStatus, setAppliedStatus] = useState('');
 
   // date modal
   const [dateModalVisible, setDateModalVisible] = useState(false);
@@ -1466,11 +1467,11 @@ export default function DutyHistoryScreen() {
   const handleClear = () => {
     setDraftDate(DEFAULT_DATE_FILTER);
     setDraftRole('');
-    setDraftStatus('completed');
+    setDraftStatus('');
     setPage(1);
     setAppliedDate(DEFAULT_DATE_FILTER);
     setAppliedRole('');
-    setAppliedStatus('completed');
+    setAppliedStatus('');
   };
 
   const openModal = () => { setModalDraft({ ...draftDate }); setDateModalVisible(true); };

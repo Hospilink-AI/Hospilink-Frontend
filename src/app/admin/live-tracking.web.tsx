@@ -188,14 +188,14 @@ export default function StaffTrackingDashboard() {
     adminAPI.getNearbyStaff(hospitalId, selectedDistance.value, selectedRole.value)
       .then((res: any) => {
         if (res.success) {
-          const data = res.data.data; // ✅ unwrap the extra .data level
+          const data = res.data; 
 
           setHospitalCoords({
             latitude:  data.hospital.location.latitude,
             longitude: data.hospital.location.longitude,
           });
 
-          // ✅ jitter overlapping markers using the shared utility
+          // jitter overlapping markers using the shared utility
           setStaff(jitterDuplicates(data.staff || []));
         }
       })
