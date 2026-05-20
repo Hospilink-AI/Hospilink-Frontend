@@ -42,7 +42,7 @@ const GROUPS = ["Identity", "Education", "Licensing", "Experience", "Registratio
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type DocStatus = "Verified" | "Pending" | "Expired" | "Auto Verified" | "Manual Review";
+type DocStatus = "Verified" | "Pending" | "Expired" | "Auto Verified" | "Manual Review" | "Rejected";
 
 interface CredentialDoc {
   id: string;
@@ -92,6 +92,7 @@ const STATUS_META: Record<DocStatus, { bg: string; text: string; dot: string }> 
   "Pending":       { bg: "#FEF9C3", text: "#CA8A04", dot: "#CA8A04" },
   "Manual Review": { bg: "#DBEAFE", text: "#2563EB", dot: "#2563EB" },
   "Expired":       { bg: "#FEE2E2", text: "#DC2626", dot: "#DC2626" },
+  "Rejected":      { bg: "#FEE2E2", text: "#DC2626", dot: "#DC2626" },
 };
 
 // ─── API Mappers ──────────────────────────────────────────────────────────────
@@ -102,8 +103,9 @@ function mapVerificationStatus(status: string): DocStatus {
     case "auto-verified":               return "Auto Verified";
     case "manual-pending-verification": return "Manual Review";
     case "expired":                     return "Expired";
-    case "pending":
-    default:                            return "Pending";
+    case "pending":                     return "Pending";
+    case "rejected":                    return "Rejected";
+    default:                           return "Pending";
   }
 }
 
@@ -769,7 +771,7 @@ const styles = StyleSheet.create({
   colName:    { flex: 3 },
   colStatus:  { flex: 1.7 },
   colDate:    { flex: 2.2 },
-  colActions: { flex: 1, paddingRight: 0 },
+  colActions: { flex: 0.6, paddingRight: 0 },
   list:       { maxHeight: 340 },
   row: {
     flexDirection: "row",
@@ -788,7 +790,7 @@ const styles = StyleSheet.create({
     borderRadius: 20, alignSelf: "flex-start",
   },
   dot:        { width: 6, height: 6, borderRadius: 3 },
-  pillText:   { fontSize: 10, fontWeight: "700" },
+  pillText:   { fontSize: 10, fontWeight: "500" },
   dateText:   { fontSize: 11, color: COLORS.subText },
   actionsRow: { flexDirection: "row", gap: 5, justifyContent: "flex-end" },
   actionBtn: {

@@ -1383,7 +1383,7 @@ export default function ProfileHeader({
       <Text style={styles.readOnlyText}>{value || fallback}</Text>
       <View style={styles.readOnlyBadge}>
         <Ionicons name="lock-closed-outline" size={10} color="#94a3b8" />
-        <Text style={styles.readOnlyBadgeText}>Not editable</Text>
+        {/* <Text style={styles.readOnlyBadgeText}>Not editable</Text> */}
       </View>
     </View>
   );
@@ -1596,7 +1596,7 @@ export default function ProfileHeader({
                   <View style={styles.chip}>
                     <Ionicons name="mail-outline" size={11} color="#64748b" />
                     <Text style={styles.chipText}>{email}</Text>
-                    {isVerified && <Ionicons name="checkmark-circle" size={11} color="#22c55e" />}
+                    {/* {isVerified && <Ionicons name="checkmark-circle" size={11} color="#22c55e" />} */}
                   </View>
                 )}
               </View>
@@ -1668,7 +1668,7 @@ export default function ProfileHeader({
             <View style={styles.chip}>
               <Ionicons name="mail-outline" size={11} color="#64748b" />
               <Text style={styles.chipText}>{email}</Text>
-              {isVerified && <Ionicons name="checkmark-circle" size={11} color="#22c55e" />}
+              {/* {isVerified && <Ionicons name="checkmark-circle" size={11} color="#22c55e" />} */}
             </View>
           </View>
         )}
@@ -1910,7 +1910,7 @@ export default function ProfileHeader({
                     Profile Summary <Text style={styles.optionalTag}>(optional)</Text>
                   </Text>
                   <View style={[styles.editInputRow, styles.textAreaRow]}>
-                    <Ionicons name="document-text-outline" size={16} color="#94a3b8" style={{ marginRight: 8, alignSelf: "flex-start", marginTop: 2 }} />
+                    {/* <Ionicons name="document-text-outline" size={16} color="#94a3b8" style={{ marginRight: 8, alignSelf: "flex-start", marginTop: 2 }} /> */}
                     <TextInput
                       value={editSummary}
                       onChangeText={setEditSummary}
@@ -1976,7 +1976,7 @@ export default function ProfileHeader({
                     onPress={() => setShowExpDropdown((v) => !v)}
                     activeOpacity={0.8}
                   >
-                    <Ionicons name="time-outline" size={16} color="#94a3b8" style={{ marginRight: 8 }} />
+                    {/* <Ionicons name="time-outline" size={16} color="#94a3b8" style={{ marginRight: 8 }} /> */}
                     <Text style={[styles.editInput, { color: editExperience ? COLORS.text : "#adb8c9" }]}>
                       {editExperience || "Select experience"}
                     </Text>
@@ -2021,7 +2021,7 @@ export default function ProfileHeader({
                   <Text style={styles.editLabel}>Add Skills</Text>
                   <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
                     <View style={[styles.editInputRow, { flex: 1, marginBottom: 0 }]}>
-                      <Ionicons name="add-circle-outline" size={16} color="#94a3b8" style={{ marginRight: 8 }} />
+                      {/* <Ionicons name="add-circle-outline" size={16} color="#94a3b8" style={{ marginRight: 8 }} /> */}
                       <TextInput
                         value={skillInput}
                         onChangeText={setSkillInput}

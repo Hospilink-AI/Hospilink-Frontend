@@ -4,13 +4,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    useWindowDimensions,
-    View,
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import { dutyAPI } from "../../service/api";
 
@@ -110,7 +110,7 @@ export default function HistoryDetail() {
     });
   };
 
-  
+
 
   return (
     <ScrollView
@@ -155,8 +155,18 @@ export default function HistoryDetail() {
             <View style={[styles.card, styles.infoCard]}>
               <SectionLabel icon="location-outline" title="LOCATION" />
               <View style={styles.divider} />
-              <Text style={styles.locationWard}>{duty.hospital?.location || "—"}</Text>
-              <Text style={styles.locationAddr}>{duty.hospital?.currentAddress || "—"}</Text>
+              {/* <Text style={styles.locationWard}>{duty.hospital?.location || "—"}</Text>
+              <Text style={styles.locationAddr}>{duty.hospital?.currentAddress || "—"}</Text> */}
+              <Text style={styles.locationWard}>{duty.hospital?.hospitalLegalName || "—"}</Text>
+              <Text style={styles.locationAddr}>
+                {[
+                  duty.hospital?.currentAddress,
+                  duty.hospital?.city,
+                  duty.hospital?.pincode,
+                ]
+                  .filter(Boolean)
+                  .join(', ') || "—"}
+              </Text>
             </View>
 
             {/* Time Breakdown */}
@@ -286,8 +296,8 @@ const styles = StyleSheet.create({
 
   // Layout
   mainLayout: { flexDirection: "row", gap: 20, alignItems: "flex-start" },
-  mainLayoutMobile: { flexDirection: "column",width: "100%", },
-  leftCol: { flex: 1, gap: 16 ,width: "100%",},
+  mainLayoutMobile: { flexDirection: "column", width: "100%", },
+  leftCol: { flex: 1, gap: 16, width: "100%", },
   rightCol: { width: 260, gap: 16 },
 
   // Card
@@ -347,7 +357,7 @@ const styles = StyleSheet.create({
   },
 
   // Location
-  locationWard: { fontSize: 15, fontWeight: "700", color: COLORS.text, marginBottom: 6 },
+  locationWard: { fontSize: 14, fontWeight: "600", color: COLORS.text, marginBottom: 6 },
   locationAddr: { fontSize: 13, color: COLORS.subText, lineHeight: 20 },
 
   // Time

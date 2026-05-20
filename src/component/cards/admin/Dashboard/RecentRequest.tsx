@@ -42,10 +42,10 @@ interface StaffMember {
   phoneNumber: string;
   isAvailable: boolean;
   staffId: string;
-  currentAddress: string;  
-  city: string;            
-  state: string;           
-  pincode: string;         
+  currentAddress: string;
+  city: string;
+  state: string;
+  pincode: string;
   location: string;
   email?: string;
   completedDuties: number;
@@ -80,10 +80,10 @@ const getPriority = (urgency: string, status: string): Priority => {
 const getPriorityStyle = (urgency: string) => {
   switch (urgency?.toLowerCase()) {
     case 'emergency': return { bg: '#FEE2E2', text: '#DC2626' };
-    case 'urgent':    return { bg: '#FEF3C7', text: '#D97706' };
+    case 'urgent': return { bg: '#FEF3C7', text: '#D97706' };
     case 'normal':
-    case 'routine':   return { bg: '#DBEAFE', text: '#2563EB' };
-    default:          return { bg: '#F3F4F6', text: '#6B7280' };
+    case 'routine': return { bg: '#DBEAFE', text: '#2563EB' };
+    default: return { bg: '#F3F4F6', text: '#6B7280' };
   }
 };
 
@@ -92,15 +92,27 @@ const getStatusColor = (status: string) => {
     case 'in-progress': return '#F59E0B';
     case 'available': return '#3B82F6';
     case 'completed': return '#10B981';
+    case 'assigned': return '#2563EB';
+    case 'enroute': return '#8B5CF6';
+    case 'cancelled': return '#EF4444';
+    case 'expired': return '#9CA3AF';
+    case 'incomplete': return '#F59E0B';
+
     default: return '#9CA3AF';
   }
 };
 
+
 const getStatusLabel = (status: string) => {
   switch (status) {
-    case 'in-progress': return 'Dispatching';
-    case 'available': return 'Matching';
+    case 'in-progress': return 'In Progress';
+    case 'available': return 'Available';
     case 'completed': return 'Completed';
+    case 'assigned': return 'Assigned';
+    case 'enroute': return 'Enroute';
+    case 'cancelled': return 'Cancelled';
+    case 'expired': return 'Expired';
+    case 'incomplete': return 'Incomplete';
     default: return 'Pending';
   }
 };
@@ -262,7 +274,7 @@ export default function RecentRequests() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Active Emergency Requests</Text>
-          <TouchableOpacity onPress={()=>router.push('/admin/emergency-request-all')}>
+          <TouchableOpacity onPress={() => router.push('/admin/emergency-request-all')}>
             <Text style={styles.viewAll}>View All</Text>
           </TouchableOpacity>
         </View>
@@ -463,12 +475,29 @@ export default function RecentRequests() {
           <View style={styles.popupContainer}>
 
             {/* Popup Header */}
-            <View style={styles.popupHeader}>
+            {/* <View style={styles.popupHeader}>
               <Text style={styles.popupTitle}>Assign Staff</Text>
               <TouchableOpacity style={styles.selectBadge}>
                 <Ionicons name="navigate" size={13} color="#2563EB" />
                 <Text style={styles.selectText}>Select</Text>
               </TouchableOpacity>
+            </View> */}
+            {/* Popup Header */}
+            <View style={styles.popupHeader}>
+              <Text style={styles.popupTitle}>Assign Staff</Text>
+              <View style={styles.popupHeaderRight}>
+                <TouchableOpacity style={styles.selectBadge}>
+                  <Ionicons name="navigate" size={13} color="#2563EB" />
+                  <Text style={styles.selectText}>Select</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.closeBtn}
+                  onPress={() => setActivePopupIndex(null)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="close" size={20} color="#6B7280" />
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Request info banner */}
@@ -636,43 +665,56 @@ const styles = StyleSheet.create({
     color: '#2563EB',
   },
   assignedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    maxWidth: 180,
+  },
+  popupHeaderRight: {
   flexDirection: 'row',
   alignItems: 'center',
   gap: 8,
-  backgroundColor: '#F0FDF4',
-  borderWidth: 1,
-  borderColor: '#BBF7D0',
-  borderRadius: 10,
-  paddingHorizontal: 10,
-  paddingVertical: 7,
-  maxWidth: 180,
 },
-assignedAvatarCircle: {
-  width: 28,
-  height: 28,
-  borderRadius: 14,
-  backgroundColor: '#10B981',
+closeBtn: {
+  width: 30,
+  height: 30,
+  borderRadius: 8,
+  backgroundColor: '#F3F4F6',
   alignItems: 'center',
   justifyContent: 'center',
 },
-assignedAvatarInitial: {
-  fontSize: 13,
-  fontWeight: '800',
-  color: '#FFFFFF',
-},
-assignedLabel: {
-  fontSize: 10,
-  fontWeight: '600',
-  color: '#10B981',
-  textTransform: 'uppercase',
-  letterSpacing: 0.4,
-},
-assignedName: {
-  fontSize: 12,
-  fontWeight: '700',
-  color: '#065F46',
-  maxWidth: 80,
-},
+  assignedAvatarCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#10B981',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  assignedAvatarInitial: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  assignedLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#10B981',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  assignedName: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#065F46',
+    maxWidth: 80,
+  },
   centerBox: {
     padding: 32,
     alignItems: 'center',
@@ -772,7 +814,7 @@ assignedName: {
   // ✅ Popup — positioned relative to outerWrapper
   popupContainer: {
     position: 'absolute',
-    bottom: 80,
+    bottom: '7%',
     right: 20,
     width: 330,
     backgroundColor: '#FFFFFF',

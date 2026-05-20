@@ -37,7 +37,7 @@ interface DutyDetail {
     latitude: number;
     longitude: number;
     // address: string;
-     address: string | {       // ✅ updated here
+     address: string | {       
       currentAddress: string;
       city: string;
       state: string;

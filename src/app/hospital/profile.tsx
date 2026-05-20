@@ -1054,7 +1054,7 @@
 //     </View>
 //   </ScrollView>
 // </View>
-        
+
 //       </ScrollView>
 
 //       {/* ── Edit Profile Modal ── */}
@@ -2231,7 +2231,7 @@ const Profile = () => {
               activeOpacity={0.8}
             >
               <Ionicons name="pencil" size={14} color={WHITE} />
-               {!isMobile && <Text style={gSt.editBtnTxt}>Edit Profile</Text>}
+              {!isMobile && <Text style={gSt.editBtnTxt}>Edit Profile</Text>}
             </TouchableOpacity>
           </View>
 
@@ -2380,39 +2380,49 @@ const Profile = () => {
             </TouchableOpacity>
           </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={{ minWidth: 480 }}>
-              <View style={gSt.tableHeader}>
-                <Text style={[gSt.thText, { flex: 2.5 }]}>DOCUMENT NAME</Text>
-                <Text style={[gSt.thText, { flex: 1.5 }]}>STATUS</Text>
-                <Text style={[gSt.thText, { flex: 1.5 }]}>LAST UPDATED</Text>
-                <Text style={[gSt.thText, { flex: 1, textAlign: "right" }]}>ACTIONS</Text>
+          {/* <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={{ minWidth: '100%' }}> */}
+          <View style={{ width: '100%' }}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              scrollEnabled={isMobile}          // only scrolls on mobile
+              contentContainerStyle={{ flexGrow: 1 }}
+            >
+              <View style={{ minWidth: isMobile ? 480 : '100%', width: isMobile ? undefined : '100%' }}>
+                <View style={gSt.tableHeader}>
+                  <Text style={[gSt.thText, { flex: 2.5 }]}>DOCUMENT NAME</Text>
+                  <Text style={[gSt.thText, { flex: 1.5 }]}>STATUS</Text>
+                  <Text style={[gSt.thText, { flex: 1.5 }]}>LAST UPDATED</Text>
+                  <Text style={[gSt.thText, { flex: 1, textAlign: "right" }]}>ACTIONS</Text>
+                </View>
+                {credsLoading ? (
+                  <View style={gSt.centerContainer}>
+                    <ActivityIndicator size="small" color={BLUE} />
+                  </View>
+                ) : credentials.length === 0 ? (
+                  <View style={gSt.centerContainer}>
+                    <Text style={{ color: TEXT_SECONDARY, marginBottom: 12 }}>No documents uploaded.</Text>
+                    <TouchableOpacity style={gSt.outlineBtn} onPress={() => setUploadModal(true)}>
+                      <Text style={{ color: BLUE, fontWeight: '600' }}>Upload Document</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  credentials.map((cred, idx) => (
+                    <CredentialRow
+                      key={cred.id}
+                      cred={cred}
+                      last={idx === credentials.length - 1}
+                      onView={() => { setSelectedDoc(cred); setViewModal(true); }}
+                      onRemove={() => handleDeleteDocument(cred.id)}
+                    />
+                  ))
+                )}
               </View>
-              {credsLoading ? (
-                <View style={gSt.centerContainer}>
-                  <ActivityIndicator size="small" color={BLUE} />
-                </View>
-              ) : credentials.length === 0 ? (
-                <View style={gSt.centerContainer}>
-                  <Text style={{ color: TEXT_SECONDARY, marginBottom: 12 }}>No documents uploaded.</Text>
-                  <TouchableOpacity style={gSt.outlineBtn} onPress={() => setUploadModal(true)}>
-                    <Text style={{ color: BLUE, fontWeight: '600' }}>Upload Document</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                credentials.map((cred, idx) => (
-                  <CredentialRow
-                    key={cred.id}
-                    cred={cred}
-                    last={idx === credentials.length - 1}
-                    onView={() => { setSelectedDoc(cred); setViewModal(true); }}
-                    onRemove={() => handleDeleteDocument(cred.id)}
-                  />
-                ))
-              )}
+              
+            </ScrollView>
             </View>
-          </ScrollView>
-        </View>
+          </View>
 
       </ScrollView>
 
@@ -2552,7 +2562,7 @@ const Profile = () => {
       {/* ── Photo Menu Modal ── */}
       <Modal visible={showImageMenu} transparent animationType="fade" onRequestClose={() => setShowImageMenu(false)}>
         <TouchableOpacity style={gSt.photoMenuOverlay} activeOpacity={1} onPress={() => setShowImageMenu(false)}>
-          <TouchableOpacity activeOpacity={1} style={gSt.photoMenuBox} onPress={() => {}}>
+          <TouchableOpacity activeOpacity={1} style={gSt.photoMenuBox} onPress={() => { }}>
             <View style={gSt.photoMenuHeader}>
               <Text style={gSt.photoMenuTitle}>Profile Photo</Text>
               <TouchableOpacity onPress={() => setShowImageMenu(false)}>
