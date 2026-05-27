@@ -227,8 +227,6 @@ const STATUS_TABS: TabConfig[] = [
   { key: 'PENDING', label: 'Pending Verification' },
   { key: 'VERIFIED', label: 'Approved' },
   { key: 'REJECTED', label: 'Rejected' },
-  { key: 'AUTO_VERIFIED', label: 'Auto Verified' },
-  { key: 'MANUAL_PENDING', label: 'Manual Pending' },
 ];
 
 // ─── Status Tab Bar ────────────────────────────────────────────────────────────

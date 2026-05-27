@@ -157,7 +157,7 @@ export default function HistoryDetail() {
               <View style={styles.divider} />
               {/* <Text style={styles.locationWard}>{duty.hospital?.location || "—"}</Text>
               <Text style={styles.locationAddr}>{duty.hospital?.currentAddress || "—"}</Text> */}
-              <Text style={styles.locationWard}>{duty.hospital?.hospitalLegalName || "—"}</Text>
+              {/* <Text style={styles.locationWard}>{duty.hospital?.hospitalLegalName || "—"}</Text> */}
               <Text style={styles.locationAddr}>
                 {[
                   duty.hospital?.currentAddress,
@@ -193,7 +193,7 @@ export default function HistoryDetail() {
             <SectionLabel icon="document-text-outline" title="DUTY SUMMARY" color="#2563EB" />
             <View style={styles.divider} />
             <Text style={styles.summaryText}>{duty.description || "No description available"}</Text>
-            <View style={styles.bulletList}>
+            {/* <View style={styles.bulletList}>
               <View style={styles.bulletRow}>
                 <View style={styles.bullet} />
                 <Text style={styles.bulletText}>Role: {duty.formattedRole || formatRole(duty.staffRole) || "—"}</Text>
@@ -210,7 +210,7 @@ export default function HistoryDetail() {
                 <View style={styles.bullet} />
                 <Text style={styles.bulletText}>Payment: ₹{duty.totalPayment || 0}</Text>
               </View>
-            </View>
+            </View> */}
           </View>
 
           {/* Earnings + Receipt (mobile only — shows in right col on desktop) */}

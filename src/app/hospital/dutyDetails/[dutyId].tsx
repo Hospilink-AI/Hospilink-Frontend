@@ -328,7 +328,6 @@ function MobileLayout({ duty, dutyId, router }: { duty: DutyDetail; dutyId: stri
           <View style={mobileS.locationBar}>
             <View style={{ flex: 1 }}>
               <Text style={mobileS.locationTitle}>Location Details</Text>
-              <Text style={mobileS.locationName}>{duty.hospital?.hospitalLegalName}</Text>
               <Text style={mobileS.locationAddr} numberOfLines={2}>
                 {[duty.hospital?.currentAddress, duty.hospital?.city, duty.hospital?.state, duty.hospital?.pincode].filter(Boolean).join(', ')}
               </Text>
@@ -524,7 +523,6 @@ function DesktopLayout({ duty, dutyId, router }: { duty: DutyDetail; dutyId: str
               <View style={desktopS.locationBar}>
                 <View style={{ flex: 1 }}>
                   <Text style={desktopS.locationTitle}>Location Details</Text>
-                  <Text style={desktopS.locationName}>{duty.hospital?.hospitalLegalName}</Text>
                   <Text style={desktopS.locationAddr} numberOfLines={2}>
                     {[duty.hospital?.currentAddress, duty.hospital?.city, duty.hospital?.state, duty.hospital?.pincode].filter(Boolean).join(', ')}
                   </Text>

@@ -2,10 +2,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from 'axios';
 import { Platform } from "react-native";
 
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
+const AGENT_URL = process.env.EXPO_PUBLIC_AGENT_URL;
+
 // Creating an instance of axios with the base URL from env variables
 
 const api = axios.create({
-  baseURL: 'https://hospilink-backend.vercel.app',
+  // baseURL: 'https://api.hospilink.in',
+  baseURL: API_URL,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -131,13 +135,31 @@ export const authAPI = {
   },
 
   // Sign in
+  // signin: async (email, password) => {
+  //   const response = await api.post('/api/auth/signin', {
+  //     email,
+  //     password,
+  //   });
+  //   return response.data;
+  // },
   signin: async (email, password) => {
+  try {
     const response = await api.post('/api/auth/signin', {
       email,
       password,
     });
     return response.data;
-  },
+  } catch (error) {
+    console.log('Signin Error Details:', {
+      message: error.message,
+      code: error.code,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    throw error;
+  }
+},
+
 
   // Logout
   logout: async () => {
@@ -200,7 +222,6 @@ export const profileAPI = {
       area: profileData.area,
       phoneNumber: profileData.phoneNumber,
       preCapturedLocation: profileData.preCapturedLocation,
-      // ✅ ADD THESE THREE:
       profileSummary: profileData.profileSummary,
       education: profileData.education,
       skills: profileData.skills,
@@ -329,7 +350,7 @@ export const profileAPI = {
     }
 
     try {
-      const res = await fetch(`https://hospilink-backend.vercel.app/api/profile/profile-picture`, {
+      const res = await fetch(`${API_URL}/api/profile/profile-picture`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -369,7 +390,7 @@ export const profileAPI = {
       : await AsyncStorage.getItem("hospilink_token");
 
     try {
-      const res = await fetch(`https://hospilink-backend.vercel.app/api/profile/delete-picture`, {
+      const res = await fetch(`${API_URL}/api/profile/delete-picture`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -492,7 +513,7 @@ export const dutyAPI = {
 
   getPublishedDutiesH: async (filters = {}) => {
     // filters could be { status: 'completed', staffRole: 'staff_nurse', page: 1, limit: 10 }
-    const response = await api.get('/api/duties-published', { params: filters });
+    const response = await api.get('/api/duties/history', { params: filters });
     return response.data;
   },
 
@@ -764,7 +785,7 @@ export const documentAPI = {
     try {
       console.log("Uploading:", { fileUri, documentType });
 
-      const res = await fetch("https://hospilink-backend.vercel.app/api/documents/upload", {
+      const res = await fetch(`${API_URL}/api/documents/upload`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -938,11 +959,18 @@ export const adminAPI = {
   },
 
   // Get all medical staff (supports pagination/queries based on your screenshots)
-  getMedicalStaff: async (params = {}) => {
-    // You can pass { page, limit, status, etc. } as params if your API supports it
-    const response = await api.get('/api/admin/medical-staff', { params });
-    return response.data;
-  },
+
+  // service/api.js
+
+getMedicalStaffForAssign: async ({ search, page = 1, city, jobRole } = {}) => {
+  const params = { page };
+  if (search)  params.search  = search;
+  if (city)    params.city    = city;
+  if (jobRole) params.jobRole = jobRole;
+  const response = await api.get('/api/admin/medical-staff-list', { params });
+  return response.data;
+},
+
 
   // Get a single medical staff member by their ID
   getMedicalStaffById: async (id) => {
@@ -1143,6 +1171,12 @@ export const adminAPI = {
   // Get Medical Staff List
   // getMedicalStaff: async (search = '', page = 1) => {
   //   const response = await api.get(`/api/admin/medical-staff?search=${search}&page=${page}`);
+  //   return response.data;
+  // },
+
+  //   getMedicalStaff: async (params = {}) => {
+  //   // You can pass { page, limit, status, etc. } as params if your API supports it
+  //   const response = await api.get('/api/admin/medical-staff', { params });
   //   return response.data;
   // },
 
