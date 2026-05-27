@@ -170,9 +170,7 @@ const ALL_STATUSES: Array<'All Statuses' | AvailabilityStatus> = [
 const VERIFICATION_TABS = [
   { label: 'All Staff', key: 'all', match: [] as string[] },
   { label: 'Pending Verification', key: 'pending', match: ['pending'] },
-  { label: 'Manual Review', key: 'manual', match: ['manual-pending-verification'] },
-  { label: 'Approved', key: 'approved', match: ['verified', 'auto-verified'] },
-  { label: 'Auto Verified', key: 'auto', match: ['auto-verified'] },
+  { label: 'Verified', key: 'approved', match: ['verified', 'auto-verified'] },
   { label: 'Rejected', key: 'rejected', match: ['rejected'] },
 ];
 
@@ -1368,7 +1366,7 @@ export default function MedicalStaffListSection() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const fetchStaff = async (page = 1, currentSearch = search, currentRole = role) => {
+  const fetchStaff = async (page = 1, currentSearch = search, currentRole = role, tabKey = activeTabKey) => {
     try {
       setLoading(true);
       const roleParam = currentRole !== 'All Roles'

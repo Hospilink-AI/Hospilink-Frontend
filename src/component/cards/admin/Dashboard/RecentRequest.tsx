@@ -13,6 +13,7 @@ interface Hospital {
   id: string;
   name: string;
   address: string;
+  city?: string; // ✅ added (comes from emergency duty response)
 }
 
 interface AssignedTo {
@@ -36,21 +37,22 @@ interface EmergencyRequest {
 }
 
 interface StaffMember {
-  _id: string;
   fullName: string;
   jobRole: string;
-  phoneNumber: string;
+  phoneNumber?: string;
   isAvailable: boolean;
   staffId: string;
+  userId: string;
   currentAddress: string;
   city: string;
   state: string;
   pincode: string;
-  location: string;
   email?: string;
-  completedDuties: number;
   verificationStatus: string;
-  userId: string;
+  profilePicture: string | null; // ✅ real picture URL or null
+  completedDuties?: number;
+  location?: string;
+  _id?: string;
 }
 
 interface Pagination {
@@ -97,11 +99,9 @@ const getStatusColor = (status: string) => {
     case 'cancelled': return '#EF4444';
     case 'expired': return '#9CA3AF';
     case 'incomplete': return '#F59E0B';
-
     default: return '#9CA3AF';
   }
 };
-
 
 const getStatusLabel = (status: string) => {
   switch (status) {
@@ -124,8 +124,13 @@ const getEtaColor = (eta: string) => {
   return '#6B7280';
 };
 
-const getAvatarUrl = (index: number) =>
-  `https://i.pravatar.cc/150?img=${10 + (index % 10)}`;
+// Deterministic colour from a name (for the initials avatar fallback)
+const getInitialsColor = (name: string) => {
+  const palette = ['#2563EB', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#0EA5E9', '#EF4444', '#14B8A6'];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return palette[Math.abs(hash) % palette.length];
+};
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -143,6 +148,11 @@ export default function RecentRequests() {
   const [staffSearch, setStaffSearch] = useState('');
   const [loadingStaff, setLoadingStaff] = useState(false);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+
+  // ✅ store active filters for the currently-opened popup
+  const [activeCity, setActiveCity] = useState<string | undefined>(undefined);
+  const [activeJobRole, setActiveJobRole] = useState<string | undefined>(undefined);
+  const [filtersApplied, setFiltersApplied] = useState<boolean>(true);
 
   const [assigning, setAssigning] = useState(false);
   const [assignError, setAssignError] = useState<string | null>(null);
@@ -166,11 +176,16 @@ export default function RecentRequests() {
     fetchEmergencyList(currentPage);
   }, [currentPage]);
 
-  // ── Fetch staff list ──────────────────────────────────────────────────────
-  const fetchStaff = useCallback(async (search: string, page: number) => {
+  // ── Fetch staff list (now accepts city + jobRole filters) ────────────────
+  const fetchStaff = useCallback(async (
+    search: string,
+    page: number,
+    city?: string,
+    jobRole?: string,
+  ) => {
     setLoadingStaff(true);
     try {
-      const result = await adminAPI.getMedicalStaff(search, page);
+      const result = await (adminAPI as any).getMedicalStaffForAssign({ search, page, city, jobRole });
       if (page === 1) {
         setStaffList(result?.staff ?? []);
       } else {
@@ -185,12 +200,20 @@ export default function RecentRequests() {
   }, []);
 
   const openPopup = (index: number) => {
+    const req = requests[index];
+    // ✅ derive city & jobRole from the row the user clicked Assign on
+    const city = req?.hospital?.city;
+    const jobRole = req?.staffRole;
+
     setActivePopupIndex(index);
     setStaffSearch('');
     setStaffPage(1);
     setSelectedStaffId(null);
     setAssignError(null);
-    fetchStaff('', 1);
+    setActiveCity(city);
+    setActiveJobRole(jobRole);
+    setFiltersApplied(true);
+    fetchStaff('', 1, city, jobRole);
   };
 
   const togglePopup = (index: number) => {
@@ -201,11 +224,17 @@ export default function RecentRequests() {
     }
   };
 
+  // Debounced search — keeps current filters in scope
   useEffect(() => {
     if (activePopupIndex === null) return;
     const t = setTimeout(() => {
       setStaffPage(1);
-      fetchStaff(staffSearch, 1);
+      fetchStaff(
+        staffSearch,
+        1,
+        filtersApplied ? activeCity : undefined,
+        filtersApplied ? activeJobRole : undefined,
+      );
     }, 400);
     return () => clearTimeout(t);
   }, [staffSearch]);
@@ -214,16 +243,32 @@ export default function RecentRequests() {
     if (!staffPagination?.hasNextPage || loadingStaff) return;
     const next = staffPage + 1;
     setStaffPage(next);
-    fetchStaff(staffSearch, next);
+    fetchStaff(
+      staffSearch,
+      next,
+      filtersApplied ? activeCity : undefined,
+      filtersApplied ? activeJobRole : undefined,
+    );
+  };
+
+  // Toggle: search inside filtered set vs across all staff
+  const clearFilters = () => {
+    setFiltersApplied(false);
+    setStaffPage(1);
+    fetchStaff(staffSearch, 1, undefined, undefined);
+  };
+
+  const reapplyFilters = () => {
+    setFiltersApplied(true);
+    setStaffPage(1);
+    fetchStaff(staffSearch, 1, activeCity, activeJobRole);
   };
 
   // ── Assign duty ───────────────────────────────────────────────────────────
-  // ✅ FIX: backend expects hospital_id, duty_id, staff_id (snake_case)
   const handleAssign = async () => {
     if (!selectedStaffId || activePopupIndex === null) return;
     const req = requests[activePopupIndex];
 
-    // Guard: ensure all required IDs are present before calling API
     if (!req.hospital.id || !req.id || !selectedStaffId) {
       setAssignError('Missing required IDs. Please try again.');
       return;
@@ -236,7 +281,6 @@ export default function RecentRequests() {
       setActivePopupIndex(null);
       fetchEmergencyList(currentPage);
     } catch (e: any) {
-      // Show backend error message if available
       const msg = e?.response?.data?.message ?? 'Assignment failed. Please try again.';
       setAssignError(msg);
     } finally {
@@ -326,8 +370,6 @@ export default function RecentRequests() {
 
               {/* Rows */}
               {requests.map((req, index) => {
-                const priority = getPriority(req.urgency, req.status);
-                // const priorityStyle = getPriorityStyle(priority);
                 const priorityStyle = getPriorityStyle(req.urgency);
                 const statusColor = getStatusColor(req.status);
                 const statusLabel = getStatusLabel(req.status);
@@ -341,7 +383,6 @@ export default function RecentRequests() {
                       <View style={[styles.priorityBadge, { backgroundColor: priorityStyle.bg }]}>
                         <View style={[styles.priorityDot, { backgroundColor: priorityStyle.text }]} />
                         <Text style={[styles.priorityText, { color: priorityStyle.text }]}>
-                          {/* {priority} */}
                           {req.urgency.toUpperCase()}
                         </Text>
                       </View>
@@ -376,20 +417,9 @@ export default function RecentRequests() {
                       </View>
                     </View>
 
-                    {/* Action — button only, popup is outside ScrollView */}
-                    {/* <View style={styles.colAction}>
-                      <TouchableOpacity
-                        style={styles.assignBtn}
-                        onPress={() => togglePopup(index)}
-                      >
-                        <Text style={styles.assignText}>Assign</Text>
-                      </TouchableOpacity>
-                    </View> */}
-
                     {/* Action */}
                     <View style={styles.colAction}>
                       {req.assignedTo ? (
-                        // ✅ Already assigned — show who is assigned
                         <View style={styles.assignedBadge}>
                           <View style={styles.assignedAvatarCircle}>
                             <Text style={styles.assignedAvatarInitial}>
@@ -405,7 +435,6 @@ export default function RecentRequests() {
                           <Ionicons name="checkmark-circle" size={18} color="#10B981" />
                         </View>
                       ) : (
-                        // ✅ Not assigned — show Assign button
                         <TouchableOpacity
                           style={styles.assignBtn}
                           onPress={() => togglePopup(index)}
@@ -467,21 +496,13 @@ export default function RecentRequests() {
 
       </View>
 
-      {/* ✅ Popup — outside container & ScrollView to avoid clipping */}
+      {/* Popup */}
       {activePopupIndex !== null && (
         <>
           <Pressable style={styles.backdrop} onPress={() => setActivePopupIndex(null)} />
 
           <View style={styles.popupContainer}>
 
-            {/* Popup Header */}
-            {/* <View style={styles.popupHeader}>
-              <Text style={styles.popupTitle}>Assign Staff</Text>
-              <TouchableOpacity style={styles.selectBadge}>
-                <Ionicons name="navigate" size={13} color="#2563EB" />
-                <Text style={styles.selectText}>Select</Text>
-              </TouchableOpacity>
-            </View> */}
             {/* Popup Header */}
             <View style={styles.popupHeader}>
               <Text style={styles.popupTitle}>Assign Staff</Text>
@@ -512,6 +533,39 @@ export default function RecentRequests() {
               </View>
             )}
 
+            {/* ✅ Active filter chips */}
+            {(activeCity || activeJobRole) && (
+              <View style={styles.filterChipsRow}>
+                <Text style={styles.filterChipsLabel}>
+                  {filtersApplied ? 'Filtering by:' : 'Filters off:'}
+                </Text>
+                {activeCity && (
+                  <View style={[styles.filterChip, !filtersApplied && styles.filterChipMuted]}>
+                    <Ionicons name="location-outline" size={11} color={filtersApplied ? '#2563EB' : '#9CA3AF'} />
+                    <Text style={[styles.filterChipText, !filtersApplied && styles.filterChipTextMuted]}>
+                      {activeCity}
+                    </Text>
+                  </View>
+                )}
+                {activeJobRole && (
+                  <View style={[styles.filterChip, !filtersApplied && styles.filterChipMuted]}>
+                    <Ionicons name="briefcase-outline" size={11} color={filtersApplied ? '#2563EB' : '#9CA3AF'} />
+                    <Text style={[styles.filterChipText, !filtersApplied && styles.filterChipTextMuted]}>
+                      {formatRole(activeJobRole)}
+                    </Text>
+                  </View>
+                )}
+                <TouchableOpacity
+                  onPress={filtersApplied ? clearFilters : reapplyFilters}
+                  style={styles.filterToggleBtn}
+                >
+                  <Text style={styles.filterToggleText}>
+                    {filtersApplied ? 'Show all' : 'Refilter'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             {/* Search */}
             <Text style={styles.popupSectionLabel}>Search Medical Staff</Text>
             <View style={styles.searchContainer}>
@@ -535,8 +589,15 @@ export default function RecentRequests() {
                 <ActivityIndicator color="#2563EB" />
               </View>
             ) : staffList.length === 0 ? (
-              <View style={{ padding: 16, alignItems: 'center' }}>
-                <Text style={{ color: '#9CA3AF', fontSize: 13 }}>No staff found.</Text>
+              <View style={{ padding: 16, alignItems: 'center', gap: 8 }}>
+                <Text style={{ color: '#9CA3AF', fontSize: 13 }}>
+                  No staff found{filtersApplied && (activeCity || activeJobRole) ? ' for these filters.' : '.'}
+                </Text>
+                {filtersApplied && (activeCity || activeJobRole) && (
+                  <TouchableOpacity onPress={clearFilters} style={styles.retryBtn}>
+                    <Text style={styles.retryText}>Show all staff</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             ) : (
               <ScrollView
@@ -550,19 +611,30 @@ export default function RecentRequests() {
                 }}
                 scrollEventThrottle={16}
               >
-                {staffList.map((staff, si) => {
+                {staffList.map((staff) => {
                   const isSelected = selectedStaffId === staff.staffId;
+                  const initial = staff.fullName?.charAt(0)?.toUpperCase() || '?';
+                  const initialBg = getInitialsColor(staff.fullName || 'X');
+
                   return (
                     <TouchableOpacity
-                      key={staff._id}
+                      key={staff.staffId}
                       style={[styles.doctorCard, isSelected && styles.doctorCardSelected]}
                       onPress={() => setSelectedStaffId(staff.staffId)}
                       activeOpacity={0.7}
                     >
-                      <Image
-                        source={{ uri: getAvatarUrl(si) }}
-                        style={styles.doctorAvatar}
-                      />
+                      {/* ✅ Real profile picture, with initials fallback */}
+                      {staff.profilePicture ? (
+                        <Image
+                          source={{ uri: staff.profilePicture }}
+                          style={styles.doctorAvatar}
+                        />
+                      ) : (
+                        <View style={[styles.doctorAvatar, styles.doctorAvatarFallback, { backgroundColor: initialBg }]}>
+                          <Text style={styles.doctorAvatarInitial}>{initial}</Text>
+                        </View>
+                      )}
+
                       <View style={styles.doctorInfo}>
                         <Text style={styles.doctorName} numberOfLines={1}>
                           {staff.fullName}
@@ -573,9 +645,7 @@ export default function RecentRequests() {
                       </View>
                       <View style={styles.distanceBadge}>
                         <Text style={styles.distanceText} numberOfLines={1}>
-                          {/* {staff.location.split(',')[0]} */}
                           {staff.city ?? staff.currentAddress?.split(',')[0] ?? '—'}
-
                         </Text>
                       </View>
                       {isSelected
@@ -624,7 +694,6 @@ export default function RecentRequests() {
 const styles = StyleSheet.create({
   outerWrapper: {
     flex: 1,
-    // padding: 10,
     backgroundColor: '#F3F4F6',
     position: 'relative',
   },
@@ -635,7 +704,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
     width: '100%',
-    // ✅ overflow: 'hidden' removed
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowRadius: 10,
@@ -677,18 +745,18 @@ const styles = StyleSheet.create({
     maxWidth: 180,
   },
   popupHeaderRight: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 8,
-},
-closeBtn: {
-  width: 30,
-  height: 30,
-  borderRadius: 8,
-  backgroundColor: '#F3F4F6',
-  alignItems: 'center',
-  justifyContent: 'center',
-},
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  closeBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   assignedAvatarCircle: {
     width: 28,
     height: 28,
@@ -811,7 +879,7 @@ closeBtn: {
   },
   assignText: { fontSize: 14, fontWeight: '700', color: '#1F2937' },
 
-  // ✅ Popup — positioned relative to outerWrapper
+  // Popup
   popupContainer: {
     position: 'absolute',
     bottom: '7%',
@@ -862,7 +930,7 @@ closeBtn: {
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 7,
-    marginBottom: 14,
+    marginBottom: 10,
   },
   requestInfoText: {
     fontSize: 12,
@@ -870,6 +938,56 @@ closeBtn: {
     color: '#1D4ED8',
     flex: 1,
   },
+
+  // ✅ Filter chips
+  filterChipsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 12,
+  },
+  filterChipsLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginRight: 2,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EFF6FF',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  filterChipMuted: {
+    backgroundColor: '#F3F4F6',
+    borderColor: '#E5E7EB',
+  },
+  filterChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1D4ED8',
+  },
+  filterChipTextMuted: {
+    color: '#6B7280',
+    textDecorationLine: 'line-through',
+  },
+  filterToggleBtn: {
+    marginLeft: 'auto',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  filterToggleText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#2563EB',
+  },
+
   popupSectionLabel: {
     fontSize: 11,
     fontWeight: '700',
@@ -911,6 +1029,15 @@ closeBtn: {
     backgroundColor: '#EFF6FF',
   },
   doctorAvatar: { width: 38, height: 38, borderRadius: 19 },
+  doctorAvatarFallback: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doctorAvatarInitial: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
   doctorInfo: { flex: 1 },
   doctorName: { fontSize: 13, fontWeight: '700', color: '#1F2937', marginBottom: 2 },
   doctorRole: { fontSize: 11, fontWeight: '500', color: '#6B7280' },

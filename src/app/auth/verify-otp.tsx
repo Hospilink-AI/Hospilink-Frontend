@@ -129,18 +129,24 @@ export default function VerifyOtp() {
         setSession(response.token, response.user);
       }
 
-      // ── CHANGE: pass signupName so profile can pre-fill fullName ──
-      if (accountType === "medical") {
-        router.replace({
-          pathname: "/profile/medical-staff",
-          params: {email, signupName },
-        });
-      } else {
-        router.replace({
-          pathname: "/profile/hospital",
-          params: {email, signupName },
-        });
-      }
+      router.replace({
+        pathname: "/auth/welcome-choice",
+        params: { email, signupName, accountType },
+      });
+
+
+      // // ── CHANGE: pass signupName so profile can pre-fill fullName ──
+      // if (accountType === "medical") {
+      //   router.replace({
+      //     pathname: "/profile/medical-staff",
+      //     params: {email, signupName },
+      //   });
+      // } else {
+      //   router.replace({
+      //     pathname: "/profile/hospital",
+      //     params: {email, signupName },
+      //   });
+      // }
 
     } catch (error: any) {
       const message = error.response?.data?.message || "";

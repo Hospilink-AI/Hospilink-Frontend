@@ -39,6 +39,7 @@ interface Hospital {
   id: string;
   name: string;
   location: string;
+  verificationStatus: 'verified' | 'pending' | 'rejected';
 }
 
 // ─── Dropdown Options ─────────────────────────────────────
@@ -91,6 +92,12 @@ const URGENCY: { label: string; value: string }[] = [
   { label: 'High Priority', value: 'high' },
   { label: 'Emergency', value: 'emergency' },
 ];
+
+const HOSPITAL_VERIFICATION_BADGE = {
+  verified: { label: 'Verified', bg: '#DCFCE7', text: '#16A34A' },
+  pending: { label: 'Pending', bg: '#FEF9C3', text: '#CA8A04' },
+  rejected: { label: 'Rejected', bg: '#FEE2E2', text: '#DC2626' },
+};
 
 // ─── Validation ───────────────────────────────────────────
 function validate(form: FormState): string | null {
@@ -256,16 +263,37 @@ function SearchableHospitalDropdown({ selectedValue, selectedLabel, onSelect, pl
               keyboardShouldPersistTaps="handled"
               renderItem={({ item }) => {
                 const isSelected = item.id === selectedValue;
+                const badge = HOSPITAL_VERIFICATION_BADGE[item.verificationStatus]
+                  ?? HOSPITAL_VERIFICATION_BADGE.pending;
                 return (
                   <TouchableOpacity
-                    style={[styles.dropdownItem, isSelected && styles.dropdownItemActive, { height: ITEM_H, flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center' }]}
+                    style={[
+                      styles.dropdownItem,
+                      isSelected && styles.dropdownItemActive,
+                      { height: ITEM_H, flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center' }
+                    ]}
                     onPress={() => { onSelect(item.id, item.name); setOpen(false); }}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextActive]} numberOfLines={1}>
-                      {item.name}
+                    {/* ✅ Name row with inline badge */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                      <Text
+                        style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextActive, { flex: 1 }]}
+                        numberOfLines={1}
+                      >
+                        {item.name}
+                      </Text>
+                      <View style={{ backgroundColor: badge.bg, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
+                        <Text style={{ fontSize: 9, fontWeight: '600', color: badge.text, letterSpacing: 0.3 }}>
+                          {badge.label.toUpperCase()}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* ✅ Location — tight spacing, no extra gap */}
+                    <Text style={{ fontSize: 8, color: '#9CA3AF', lineHeight: 14 }} numberOfLines={1}>
+                      {item.location}
                     </Text>
-                    <Text style={{ fontSize: 11, color: '#6B7280' }} numberOfLines={1}>{item.location}</Text>
                   </TouchableOpacity>
                 );
               }}
@@ -873,7 +901,7 @@ export default function CreateDutyScreen() {
                   value={form.staffCount}
                   onChangeText={set('staffCount')}
                   keyboardType="number-pad"
-                  // error={errors.staffCount}
+                // error={errors.staffCount}
                 />
               </View>
             </View>

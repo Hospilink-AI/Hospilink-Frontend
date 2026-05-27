@@ -175,38 +175,7 @@ export default function MedicalStaffProfile() {
   // ────────────────────────────────────────────────────────────
   // STEP 1 — Request GPS silently on mount
   // ────────────────────────────────────────────────────────────
-  useEffect(() => {
-    (async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status === "granted") {
-          const loc = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced,
-          });
-          const { latitude, longitude } = loc.coords;
-          // @ts-ignore
-          const res = await profileAPI.checkLocationPermission(true, latitude, longitude);
-          if (res?.locationInfo?.latitude && res?.locationInfo?.longitude) {
-            setCapturedLocation({
-              latitude: res.locationInfo.latitude,
-              longitude: res.locationInfo.longitude,
-            });
-          } else {
-            setCapturedLocation({ latitude, longitude });
-          }
-        } else {
-          await profileAPI.checkLocationPermission(false);
-          setCapturedLocation(null);
-        }
-      } catch (err) {
-        console.warn("⚠️ Location request failed silently:", err);
-        try { await profileAPI.checkLocationPermission(false); } catch (_) { }
-        setCapturedLocation(null);
-      } finally {
-        setLocationChecked(true);
-      }
-    })();
-  }, []);
+
 
   // ── Format phone → +91XXXXXXXXXX
   const formatPhone = (raw: string) => {
