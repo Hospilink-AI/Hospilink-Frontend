@@ -34,7 +34,7 @@ interface HospitalDocument {
   description?: string;
   pages?: number;
   fileSize?: string;
-  url?: string;  
+  url?: string;
 
 }
 
@@ -225,8 +225,17 @@ interface TabConfig {
 const STATUS_TABS: TabConfig[] = [
   { key: 'ALL', label: 'All Hospitals' },
   { key: 'PENDING', label: 'Pending Verification' },
-  { key: 'VERIFIED', label: 'Approved' },
+  { key: 'VERIFIED', label: 'Verified' },
   { key: 'REJECTED', label: 'Rejected' },
+];
+
+const MAHARASHTRA_CITIES = [
+  'All Cities',
+  'Mumbai', 'Pune', 'Nagpur', 'Nashik', 'Aurangabad',
+  'Solapur', 'Kolhapur', 'Amravati', 'Nanded', 'Sangli',
+  'Malegaon', 'Jalgaon', 'Akola', 'Latur', 'Dhule',
+  'Ahmednagar', 'Chandrapur', 'Parbhani', 'Ichalkaranji', 'Karad',
+  'Satara', 'Ratnagiri', 'Osmanabad', 'Bhiwandi', 'Thane',
 ];
 
 // ─── Status Tab Bar ────────────────────────────────────────────────────────────
@@ -234,19 +243,286 @@ interface StatusTabBarProps {
   activeTab: TabKey;
   counts: Partial<Record<TabKey, number>>;
   onSelect: (tab: TabKey) => void;
+  locationFilter: string;
+  onLocationChange: (val: string) => void;
+  onApplyFilter: () => void;
 }
 
-function StatusTabBar({ activeTab, counts, onSelect }: StatusTabBarProps) {
+interface LocationDropdownProps {
+  value: string;
+  onChange: (val: string) => void;
+}
+
+function LocationDropdown({ value, onChange }: LocationDropdownProps) {
+  const [open, setOpen] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [anchorLayout, setAnchorLayout] = useState<{
+    y: number; rightOffset: number; width: number;
+  } | null>(null);
+  const triggerRef = useRef<any>(null);
+
+  const handleOpen = () => {
+    triggerRef.current?.measure(
+      (_fx: number, _fy: number, width: number, height: number, px: number, py: number) => {
+        const screenWidth = Dimensions.get('window').width;
+        setAnchorLayout({
+          y: py + height + 4,
+          rightOffset: screenWidth - (px + width), // ✅ right-edge aligned
+          width,
+        });
+        setOpen(true);
+      }
+    );
+  };
+
+  const handleSelect = (city: string) => {
+    onChange(city);
+    setOpen(false);
+    setSearchText('');
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    setSearchText('');
+  };
+
+  const filtered = MAHARASHTRA_CITIES.filter(city =>
+    city.toLowerCase().includes(searchText.toLowerCase())
+  );
+
+  return (
+    <View>
+      {/* ── Trigger ── */}
+      <TouchableOpacity
+        ref={triggerRef}
+        style={ld.trigger}
+        onPress={handleOpen}
+        activeOpacity={0.8}
+      >
+        <Text style={ld.triggerIcon}>📍</Text>
+        <Text
+          style={[ld.triggerTxt, value === 'All Cities' && ld.placeholder]}
+          numberOfLines={1}
+        >
+          {value === 'All Cities' ? 'Location' : value}
+        </Text>
+        {value !== 'All Cities' ? (
+          <TouchableOpacity
+            onPress={() => onChange('All Cities')}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={ld.clearX}>✕</Text>
+          </TouchableOpacity>
+        ) : (
+          <Text style={ld.chevron}>{open ? '▴' : '▾'}</Text>
+        )}
+      </TouchableOpacity>
+
+      {/* ── Anchored Popover ── */}
+      <Modal
+        visible={open}
+        transparent
+        animationType="none"
+        onRequestClose={handleClose}
+        statusBarTranslucent
+      >
+        {/* Full-screen backdrop */}
+        <TouchableOpacity
+          style={ld.backdrop}
+          activeOpacity={1}
+          onPress={handleClose}
+        />
+
+        {anchorLayout && (
+          <View
+            style={[
+              ld.sheet,
+              {
+                position: 'absolute',
+                top: anchorLayout.y,
+                right: anchorLayout.rightOffset, // ✅ drops right below trigger
+                width: 210,
+              },
+            ]}
+          >
+            {/* Search */}
+            <View style={ld.searchBox}>
+              <Text style={ld.searchIcon}>🔍</Text>
+              <TextInput
+                style={ld.searchInput}
+                placeholder="Search cities..."
+                placeholderTextColor="#9CA3AF"
+                value={searchText}
+                onChangeText={setSearchText}
+                autoFocus={open}
+                underlineColorAndroid="transparent"
+              />
+              {searchText.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setSearchText('')}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={ld.searchClear}>✕</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* City list */}
+            <ScrollView
+              style={ld.list}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              bounces={false}
+            >
+              {filtered.length === 0 ? (
+                <View style={ld.emptyWrap}>
+                  <Text style={ld.emptyTxt}>No cities found</Text>
+                </View>
+              ) : (
+                filtered.map(city => {
+                  const isSelected = city === value;
+                  return (
+                    <TouchableOpacity
+                      key={city}
+                      style={[ld.option, isSelected && ld.optionActive]}
+                      onPress={() => handleSelect(city)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={ld.optionLeft}>
+                        <Text style={ld.optionPin}>
+                          {city === 'All Cities' ? '🗺️' : '📍'}
+                        </Text>
+                        <Text
+                          style={[
+                            ld.optionTxt,
+                            isSelected && ld.optionTxtActive,
+                            city === 'All Cities' && ld.allCitiesTxt,
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {city}
+                        </Text>
+                      </View>
+                      {isSelected && <Text style={ld.checkMark}>✓</Text>}
+                    </TouchableOpacity>
+                  );
+                })
+              )}
+            </ScrollView>
+          </View>
+        )}
+      </Modal>
+    </View>
+  );
+}
+
+const ld = StyleSheet.create({
+  trigger: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0',
+    borderRadius: 10, paddingHorizontal: 10, height: 36, minWidth: 150,
+  },
+  triggerIcon: { fontSize: 12 },
+  triggerTxt: { flex: 1, fontSize: 13, color: '#334155', fontWeight: '600' },
+  placeholder: { color: '#94A3B8', fontWeight: '500' },
+  clearX: { fontSize: 9, color: '#94A3B8', fontWeight: '800', paddingHorizontal: 2 },
+  chevron: { fontSize: 10, color: '#94A3B8' },
+
+  // Full-screen invisible backdrop
+  backdrop: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+  },
+
+  // Popover card — anchored via top + right
+  sheet: {
+    backgroundColor: '#fff', borderRadius: 12,
+    borderWidth: 1, borderColor: '#E2E8F0',
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000', shadowOpacity: 0.12,
+        shadowRadius: 16, shadowOffset: { width: 0, height: 6 },
+      },
+      android: { elevation: 10 },
+      default: { boxShadow: '0 6px 20px rgba(0,0,0,0.10)' } as any,
+    }),
+  },
+
+  searchBox: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    margin: 8, backgroundColor: '#F8FAFC',
+    borderWidth: 1, borderColor: '#E2E8F0',
+    borderRadius: 8, paddingHorizontal: 8, height: 36,
+  },
+  searchIcon: { fontSize: 12 },
+  searchInput: {
+    flex: 1, fontSize: 13, color: '#334155', fontWeight: '500',
+    outlineWidth: 0, outlineStyle: 'none', borderWidth: 0,
+  } as any,
+  searchClear: { fontSize: 9, color: '#94A3B8', fontWeight: '800' },
+
+  list: { maxHeight: 260 },
+  option: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 10, paddingVertical: 11,
+    borderBottomWidth: 1, borderBottomColor: '#F8FAFC',
+  },
+  optionActive: { backgroundColor: '#EFF6FF' },
+  optionLeft: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
+  optionPin: { fontSize: 11 },
+  optionTxt: { fontSize: 13, color: '#334155', fontWeight: '500', flex: 1 },
+  optionTxtActive: { color: '#2563EB', fontWeight: '700' },
+  allCitiesTxt: { fontWeight: '700', color: '#0F172A' },
+  checkMark: { fontSize: 13, color: '#2563EB', fontWeight: '800', marginLeft: 6 },
+
+  emptyWrap: { alignItems: 'center', paddingVertical: 20 },
+  emptyTxt: { fontSize: 12, color: '#94A3B8' },
+});
+
+
+
+// function StatusTabBar({ activeTab, counts, onSelect }: StatusTabBarProps) {
+//   return (
+//     <View style={stb.wrap}>
+//       <ScrollView
+//         horizontal
+//         showsHorizontalScrollIndicator={false}
+//         contentContainerStyle={stb.scrollContent}
+//       >
+//         {STATUS_TABS.map(tab => {
+//           const isActive = activeTab === tab.key;
+//           const count = counts[tab.key];
+//           return (
+//             <TouchableOpacity
+//               key={tab.key}
+//               style={[stb.tab, isActive && stb.tabActive]}
+//               onPress={() => onSelect(tab.key)}
+//               activeOpacity={0.75}
+//             >
+//               <Text style={[stb.tabTxt, isActive && stb.tabTxtActive]}>
+//                 {tab.label}
+//               </Text>
+
+//             </TouchableOpacity>
+//           );
+//         })}
+//       </ScrollView>
+//     </View>
+//   );
+// }
+
+function StatusTabBar({ activeTab, counts, onSelect, locationFilter, onLocationChange, onApplyFilter }: StatusTabBarProps) {
   return (
     <View style={stb.wrap}>
+      {/* LEFT: Tabs */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={stb.scrollContent}
+        style={{ flex: 1 }}
       >
         {STATUS_TABS.map(tab => {
           const isActive = activeTab === tab.key;
-          const count = counts[tab.key];
           return (
             <TouchableOpacity
               key={tab.key}
@@ -257,14 +533,26 @@ function StatusTabBar({ activeTab, counts, onSelect }: StatusTabBarProps) {
               <Text style={[stb.tabTxt, isActive && stb.tabTxtActive]}>
                 {tab.label}
               </Text>
-
             </TouchableOpacity>
           );
         })}
       </ScrollView>
+
+      {/* RIGHT: Location dropdown + Apply Filter */}
+      <View style={stb.rightRow}>
+        <LocationDropdown
+          value={locationFilter}
+          onChange={onLocationChange}
+        />
+        <TouchableOpacity style={stb.applyBtn} onPress={onApplyFilter} activeOpacity={0.85}>
+          <Text style={stb.applyTxt}>Apply Filter</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
+
+
 
 const stb = StyleSheet.create({
   wrap: {
@@ -272,6 +560,9 @@ const stb = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E9ECF0',
     paddingHorizontal: 16,
+    flexDirection: 'row',        // ← change to row
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   scrollContent: {
     flexDirection: 'row',
@@ -279,6 +570,45 @@ const stb = StyleSheet.create({
     gap: 2,
     paddingVertical: 10,
   },
+  
+  rightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    flexShrink: 0,
+  },
+  locationTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    height: 36,
+    gap: 6,
+    minWidth: 140,
+  },
+  locationIcon: { fontSize: 12 },
+  locationInput: {
+    flex: 1,
+    fontSize: 13,
+    color: '#334155',
+    fontWeight: '500',
+    outlineWidth: 0,
+  } as any,
+  clearX: { fontSize: 9, color: '#94A3B8', fontWeight: '800' },
+  chevron: { fontSize: 10, color: '#94A3B8' },
+  applyBtn: {
+    backgroundColor: '#2563EB',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    height: 36,
+    justifyContent: 'center',
+  },
+  applyTxt: { fontSize: 12, color: '#fff', fontWeight: '700' },
+
   tab: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1347,6 +1677,7 @@ export default function HospitalListSection() {
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [activeHospital, setActiveHospital] = useState<Hospital | null>(null);
+  const [tabLocationFilter, setTabLocationFilter] = useState('All Cities');
 
   // ── Modal / menu ──────────────────────────────────────────────────────────
   const [menuVisible, setMenuVisible] = useState(false);
@@ -1630,6 +1961,17 @@ export default function HospitalListSection() {
         activeTab={activeTab}
         counts={counts}
         onSelect={handleTabSelect}
+        locationFilter={tabLocationFilter}
+        onLocationChange={setTabLocationFilter}
+        onApplyFilter={() => {
+          fetchHospitals({
+            search,
+            status,
+            city: tabLocationFilter,  
+            page: 1,
+            tabStatus: activeTab,
+          });
+        }}
       />
 
       {/* ── Table ── */}
