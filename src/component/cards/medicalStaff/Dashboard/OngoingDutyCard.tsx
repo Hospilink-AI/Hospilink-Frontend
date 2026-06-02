@@ -50,7 +50,7 @@ export default function OngoingDutyCard({ duty, isMobile, onStatusChange, onPres
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>{duty.title}</Text>
-          <Text style={styles.hospital}>{duty.hospital}</Text>
+          <Text style={styles.hospital}>{duty.hospitalName}</Text>
         </View>
 
         <View style={styles.assignedTag}>
@@ -77,7 +77,7 @@ export default function OngoingDutyCard({ duty, isMobile, onStatusChange, onPres
             e.stopPropagation(); // Prevents details page from opening
             router.push({
               pathname: "/medicalStaff/duties/[id]/map" as any,
-              params: { id: duty._id, hospitalName: duty.hospital },
+              params: { id: duty._id, hospitalName:duty.hospitalName},
             });
           }}
         >
@@ -109,7 +109,7 @@ export default function OngoingDutyCard({ duty, isMobile, onStatusChange, onPres
           <TouchableOpacity 
             style={[styles.startBtn, { backgroundColor: '#10B981' }]}
             onPress={(e) => {
-              e.stopPropagation(); // Prevents details page from opening
+              e.stopPropagation(); 
               handleMarkCompleted();
             }}
             disabled={markingCompleted}
