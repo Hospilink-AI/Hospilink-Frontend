@@ -451,7 +451,25 @@ function DateFilterModal({
   const [startDate, setStart] = useState('');
   const [endDate, setEnd] = useState('');
 
+  const [validationError, setValidationError] = useState('');
+
+  const isValidDate = (val: string) =>
+    /^\d{2}-\d{2}-\d{4}$/.test(val);
+
   const confirm = () => {
+    setValidationError('');
+
+    if (mode === 'single') {
+      if (!singleDate) return setValidationError('Please enter a date.');
+      if (!isValidDate(singleDate)) return setValidationError('Use format DD-MM-YYYY (e.g. 15-04-2026).');
+    }
+
+    if (mode === 'range') {
+      if (!startDate || !endDate) return setValidationError('Both start and end dates are required.');
+      if (!isValidDate(startDate) || !isValidDate(endDate)) return setValidationError('Use format DD-MM-YYYY for both dates.');
+      if (startDate > endDate) return setValidationError('Start date must be before end date.');
+    }
+
     onConfirm(mode, preset, singleDate, startDate, endDate);
     onClose();
   };
@@ -464,6 +482,8 @@ function DateFilterModal({
     styles.dateTabText,
     mode === t && styles.dateTabTextActive,
   ];
+
+
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -541,7 +561,12 @@ function DateFilterModal({
                 </View>
               </View>
             )}
-
+            {validationError !== '' && (
+              <View style={styles.inlineError}>
+                <Ionicons name="alert-circle" size={14} color="#dc2626" />
+                <Text style={styles.inlineErrorText}>{validationError}</Text>
+              </View>
+            )}
             <TouchableOpacity style={styles.confirmBtn} onPress={confirm} activeOpacity={0.85}>
               <Text style={styles.confirmBtnText}>Confirm Format</Text>
             </TouchableOpacity>
@@ -572,6 +597,8 @@ export default function ActivityLogs() {
   const [pendingDept, setPendingDept] = useState('All Departments');
   const [pendingStatus, setPendingStatus] = useState('All Statuses');
   const [searchText, setSearchText] = useState('');
+
+  const [exportError, setExportError] = useState<string | null>(null);
 
   // Applied filter dropdowns
   const [appliedAction, setAppliedAction] = useState('All Actions');
@@ -753,7 +780,12 @@ export default function ActivityLogs() {
       }
     } catch (err) {
       console.error("Export error:", err);
-      Alert.alert('Export Failed', 'There was an error generating the export file.');
+      const msg = 'Export failed. Please try again.';
+      if (Platform.OS === 'web') {
+        setExportError(msg);          // shown inline
+      } else {
+        Alert.alert('Export Failed', msg);
+      }
     } finally {
       setExporting(false);
     }
@@ -770,6 +802,15 @@ export default function ActivityLogs() {
           <Text style={styles.pageTitle}>Activity Logs</Text>
           <Text style={styles.pageSubtitle}>Comprehensive audit trail of all system-wide actions and clinical updates.</Text>
         </View>
+        {exportError && (
+          <View style={styles.exportErrorBanner}>
+            <Ionicons name="alert-circle-outline" size={15} color="#dc2626" />
+            <Text style={styles.exportErrorText}>{exportError}</Text>
+            <TouchableOpacity onPress={() => setExportError(null)}>
+              <Ionicons name="close" size={15} color="#dc2626" />
+            </TouchableOpacity>
+          </View>
+        )}
         <TouchableOpacity
           style={[styles.exportBtn, exporting && { opacity: 0.7 }]}
           activeOpacity={0.85}
@@ -1163,4 +1204,38 @@ const styles = StyleSheet.create({
   dateRangeRow: { flexDirection: 'row', gap: 12 },
   confirmBtn: { backgroundColor: '#2563eb', borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
   confirmBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  inlineError: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 6,
+  backgroundColor: '#fef2f2',
+  borderWidth: 1,
+  borderColor: '#fecaca',
+  borderRadius: 8,
+  padding: 10,
+  marginBottom: 12,
+},
+inlineErrorText: {
+  fontSize: 12,
+  color: '#dc2626',
+  fontWeight: '500',
+  flex: 1,
+},
+exportErrorBanner: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 8,
+  backgroundColor: '#fef2f2',
+  borderWidth: 1,
+  borderColor: '#fecaca',
+  borderRadius: 10,
+  padding: 14,
+  marginBottom: 16,
+},
+exportErrorText: {
+  flex: 1,
+  fontSize: 13,
+  color: '#dc2626',
+  fontWeight: '500',
+},
 });

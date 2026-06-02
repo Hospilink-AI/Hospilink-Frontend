@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { adminAPI } from '@/service/api'; 
+import { adminAPI } from '@/service/api';
 
 interface CircularProgressProps {
   percentage: number;
@@ -93,7 +93,7 @@ const VERIFICATION_DATA: VerificationItem[] = [
 export default function VerificationStatus() {
   const [staffData, setStaffData] = useState<StaffItem[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  const [error, setError] = useState('');
   // New state to toggle expanding the staff list
   const [showAllStaff, setShowAllStaff] = useState(false);
 
@@ -101,6 +101,7 @@ export default function VerificationStatus() {
 
   useEffect(() => {
     const fetchStaffStats = async () => {
+      setError('');
       try {
         const json = await adminAPI.getStaffStatsDashboard();
 
@@ -113,9 +114,15 @@ export default function VerificationStatus() {
           }));
 
           setStaffData(mappedStaff);
+        } else {
+          setError(json.message ?? 'Failed to load staff stats.');
         }
-      } catch (error) {
-        console.error('Error fetching staff stats:', error);
+      } catch (err: any) {
+        const msg =
+          err?.response?.data?.message ??
+          err?.message ??
+          'Failed to load staff availability.';
+        setError(msg);
       } finally {
         setLoading(false);
       }
@@ -169,7 +176,7 @@ export default function VerificationStatus() {
 
         {/* View More / View Less Toggle Button (Only shows if there are more than 3 items) */}
         {!loading && staffData.length > 3 && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.reportButton}
             onPress={() => setShowAllStaff(!showAllStaff)}
           >

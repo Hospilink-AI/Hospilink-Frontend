@@ -268,15 +268,22 @@ export default function LiveRequestMonitoring() {
   const fetchDutyRoute = async () => {
     try {
       if (!data) setLoading(true);
+      setError(null); 
       const response = await adminAPI.getTrackStaffLocation(dutyId as string);
       if (response.success) {
         setData(response.data);
       } else {
-        setError('Failed to load duty information');
+        setError(
+        response.message ??                  
+        'Failed to load duty information.'
+      );
       }
-    } catch (err) {
-      console.error('❌ [API Error]:', err);
-      setError('Error loading duty information');
+    }  catch (err: any) {
+    const msg =
+      err?.response?.data?.message ??            
+      err?.message ??
+      'Failed to load duty information. Please try again.';
+    setError(msg);
     } finally {
       setLoading(false);
     }
@@ -312,16 +319,34 @@ export default function LiveRequestMonitoring() {
     );
   }
 
-  if (error || !data) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>{error || 'No data available'}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={fetchDutyRoute}>
-          <Text style={styles.retryButtonText}>Retry</Text>
+if (error || !data) {
+  return (
+    <View style={styles.centerContainer}>
+      <Ionicons name="cloud-offline-outline" size={48} color="#CBD5E1" />
+      <Text style={styles.errorTitle}>Unable to Load Tracking</Text>
+      <Text style={styles.errorText}>
+        {error || 'No data available'}
+      </Text>
+      <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={() => { setLoading(true); fetchDutyRoute(); }}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="refresh-outline" size={16} color="#fff" />
+          <Text style={styles.retryButtonText}>Try Again</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.backButtonText}>Go Back</Text>
         </TouchableOpacity>
       </View>
-    );
-  }
+    </View>
+  );
+}
 
   // Additional safety check for required data
   if (!data.duty || !data.hospital) {
@@ -778,9 +803,50 @@ const styles = StyleSheet.create({
   contentContainer: { padding: 24, paddingBottom: 60, maxWidth: 1600, marginHorizontal: 'auto', width: '100%' },
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' },
   loadingText: { marginTop: 12, color: '#64748B' },
-  errorText: { color: '#EF4444', marginBottom: 16 },
-  retryButton: { backgroundColor: '#3B82F6', paddingHorizontal: 24, paddingVertical: 10, borderRadius: 8 },
-  retryButtonText: { color: '#FFF', fontWeight: '600' },
+
+  // Add to StyleSheet.create({})
+errorTitle: {
+  fontSize: 16,
+  fontWeight: '700',
+  color: '#1E293B',
+  marginTop: 16,
+  marginBottom: 6,
+},
+errorText: {
+  color: '#94A3B8',              // ← softer than red for general errors
+  fontSize: 13,
+  textAlign: 'center',
+  paddingHorizontal: 32,
+  lineHeight: 20,
+  marginBottom: 8,
+},
+retryButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 6,
+  backgroundColor: '#3B82F6',
+  paddingHorizontal: 20,
+  paddingVertical: 10,
+  borderRadius: 8,
+},
+retryButtonText: {
+  color: '#FFF',
+  fontWeight: '600',
+  fontSize: 13,
+},
+backButton: {
+  paddingHorizontal: 20,
+  paddingVertical: 10,
+  borderRadius: 8,
+  borderWidth: 1,
+  borderColor: '#E2E8F0',
+  backgroundColor: '#fff',
+},
+backButtonText: {
+  color: '#475569',
+  fontWeight: '600',
+  fontSize: 13,
+},
 
   headerArea: { marginBottom: 24 },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },

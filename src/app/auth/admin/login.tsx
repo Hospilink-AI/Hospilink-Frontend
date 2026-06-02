@@ -16,20 +16,29 @@ import {
 import { adminAPI } from '../../../service/api';
 
 export default function AdminLoginScreen() {
-  const [email, setEmail]       = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [loading, setLoading]   = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const router = useRouter();
 
   const handleSignin = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Missing Fields', 'Please enter both email and password.');
+    setError('');
+
+    if (!email.trim()) {
+      setError('Please enter your email address.');
       return;
     }
+    if (!password.trim()) {
+      setError('Please enter your password.');
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await adminAPI.signin(email.trim(), password);
+
       if (response.success) {
         router.push({
           pathname: '/auth/verify-otp',
@@ -38,12 +47,16 @@ export default function AdminLoginScreen() {
             userType: 'admin',
           },
         });
+      } else {
+        // backend returned success: false
+        setError(response.message ?? 'Sign in failed. Please try again.');
       }
-    } catch (error: any) {
-      Alert.alert(
-        'Sign In Failed',
-        error.response?.data?.message || 'Invalid credentials. Please try again.'
-      );
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ??
+        err?.message ??
+        'Invalid credentials. Please try again.';
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -97,7 +110,7 @@ export default function AdminLoginScreen() {
               autoCapitalize="none"
               autoCorrect={false}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(v) => { setEmail(v); setError(''); }}
             />
           </View>
 
@@ -110,7 +123,7 @@ export default function AdminLoginScreen() {
               placeholderTextColor="#aab0bb"
               secureTextEntry={!showPass}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(v) => { setPassword(v); setError(''); }}
             />
             <TouchableOpacity onPress={() => setShowPass(!showPass)} style={styles.eyeBtn}>
               <Ionicons
@@ -120,6 +133,13 @@ export default function AdminLoginScreen() {
               />
             </TouchableOpacity>
           </View>
+
+          {error ? (
+            <View style={styles.errorBox}>
+              <Ionicons name="alert-circle-outline" size={14} color="#DC2626" />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          ) : null}
 
           <TouchableOpacity
             style={[styles.loginBtn, loading && { opacity: 0.7 }]}
@@ -187,6 +207,25 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 48 : 0,
     height: Platform.OS === 'ios' ? 88 : 56,
   },
+  errorBox: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 8,
+  backgroundColor: '#FEF2F2',
+  borderWidth: 1,
+  borderColor: '#FECACA',
+  borderRadius: 8,
+  paddingHorizontal: 12,
+  paddingVertical: 10,
+  marginTop: 16,
+},
+errorText: {
+  flex: 1,
+  fontSize: 13,
+  color: '#DC2626',
+  fontWeight: '500',
+  lineHeight: 18,
+},
   navBrand: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -298,7 +337,7 @@ const styles = StyleSheet.create({
     color: '#1a1f2e',
     paddingVertical: 0,
     backgroundColor: 'transparent',
-     ...Platform.select({ web: { outlineWidth: 0 } as any }),
+    ...Platform.select({ web: { outlineWidth: 0 } as any }),
   },
   eyeBtn: { paddingLeft: 8 },
 

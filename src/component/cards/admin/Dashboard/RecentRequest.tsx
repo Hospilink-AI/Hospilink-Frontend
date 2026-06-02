@@ -147,6 +147,7 @@ export default function RecentRequests() {
   const [staffPage, setStaffPage] = useState(1);
   const [staffSearch, setStaffSearch] = useState('');
   const [loadingStaff, setLoadingStaff] = useState(false);
+  const [staffError, setStaffError] = useState('');
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
 
   // ✅ store active filters for the currently-opened popup
@@ -166,7 +167,11 @@ export default function RecentRequests() {
       setRequests(result?.data ?? []);
       setPagination(result?.pagination ?? null);
     } catch (e: any) {
-      setListError('Failed to load emergency requests.');
+      const msg =
+        e?.response?.data?.message ??
+        e?.message ??
+        'Failed to load emergency requests. Please try again.';
+      setListError(msg);
     } finally {
       setLoadingList(false);
     }
@@ -184,6 +189,7 @@ export default function RecentRequests() {
     jobRole?: string,
   ) => {
     setLoadingStaff(true);
+    setStaffError('');
     try {
       const result = await (adminAPI as any).getMedicalStaffForAssign({ search, page, city, jobRole });
       if (page === 1) {
@@ -192,8 +198,12 @@ export default function RecentRequests() {
         setStaffList((prev) => [...prev, ...(result?.staff ?? [])]);
       }
       setStaffPagination(result?.pagination ?? null);
-    } catch {
-      // silently fail
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ??
+        err?.message ??
+        'Failed to load staff. Please try again.';
+      setStaffError(msg);
     } finally {
       setLoadingStaff(false);
     }
@@ -587,6 +597,20 @@ export default function RecentRequests() {
             {loadingStaff && staffPage === 1 ? (
               <View style={{ padding: 20, alignItems: 'center' }}>
                 <ActivityIndicator color="#2563EB" />
+              </View>
+            ) : staffError ? (
+              <View style={{ padding: 16, alignItems: 'center', gap: 8 }}>
+                <Text style={styles.errorText}>⚠️ {staffError}</Text>
+                <TouchableOpacity
+                  style={styles.retryBtn}
+                  onPress={() => fetchStaff(
+                    staffSearch, 1,
+                    filtersApplied ? activeCity : undefined,
+                    filtersApplied ? activeJobRole : undefined,
+                  )}
+                >
+                  <Text style={styles.retryText}>Retry</Text>
+                </TouchableOpacity>
               </View>
             ) : staffList.length === 0 ? (
               <View style={{ padding: 16, alignItems: 'center', gap: 8 }}>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Platform, ActivityIndicator ,TouchableOpacity} from 'react-native';
  
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface StatItem {
@@ -12,6 +12,8 @@ interface VerificationStatsProps {
   stats: StatItem[];
   total: number;
   loading?: boolean;
+  error?: string;        
+  onRetry?: () => void;    
 }
  
 // ─── Donut Chart ──────────────────────────────────────────────────────────────
@@ -89,23 +91,40 @@ const lg = StyleSheet.create({
 });
  
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function VerificationStats({ stats, total, loading }: VerificationStatsProps) {
+export default function VerificationStats({ stats, total, loading, error, onRetry }: VerificationStatsProps) {
+
   // Calculate percentage for each stat
   const statsWithPct = stats.map(stat => ({
     ...stat,
     pct: total > 0 ? Math.round((stat.count / total) * 100) : 0,
   }));
  
-  if (loading || total === 0) {
-    return (
-      <View style={s.card}>
-        <Text style={s.title}>Verification Stats</Text>
-        <View style={s.donutWrap}>
-          <ActivityIndicator color="#2563EB" size="large" />
-        </View>
+ if (loading || total == 0) {
+  return (
+    <View style={s.card}>
+      <Text style={s.title}>Verification Stats</Text>
+      <View style={s.donutWrap}>
+        <ActivityIndicator color="#2563EB" size="large" />
       </View>
-    );
-  }
+    </View>
+  );
+}
+
+if (error) {
+  return (
+    <View style={s.card}>
+      <Text style={s.title}>Verification Stats</Text>
+      <View style={s.errorBox}>
+        <Text style={s.errorText}>⚠️ {error}</Text>
+        {onRetry && (
+          <TouchableOpacity style={s.retryBtn} onPress={onRetry}>
+            <Text style={s.retryBtnText}>Retry</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+}
  
   return (
     <View style={s.card}>
@@ -124,4 +143,30 @@ const s = StyleSheet.create({
   card: { backgroundColor: '#fff', borderRadius: 16, padding: 18, ...Platform.select({ ios: { shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: 3 } }, android: { elevation: 3 } }) },
   title: { fontSize: 16, fontWeight: '700', color: '#0F172A', marginBottom: 16 },
   donutWrap: { alignItems: 'center', marginBottom: 20 },
+  errorBox: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    padding: 16,
+    alignItems: 'center',
+    gap: 10,
+  },
+  errorText: {
+    fontSize: 13,
+    color: '#DC2626',
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  retryBtn: {
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  retryBtnText: {
+    fontSize: 13,
+    color: '#fff',
+    fontWeight: '700',
+  },
 });
