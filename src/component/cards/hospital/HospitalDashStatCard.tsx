@@ -8,7 +8,8 @@ import { dutyAPI } from '../../../service/api';
 interface DutyCounts {
   available:   number;
   completed:   number;
-  enroute: number;  // Use quotes for hyphen
+  enroute: number;  
+  'in-progress':number;
   assigned:    number;
 }
 
@@ -37,7 +38,7 @@ function getCards(counts: DutyCounts, newAvailable: number) {
     },
     {
       label:      'In-Progress Duties',
-      value:      String(counts.enroute),  // Use bracket notation
+      value:      String(counts['in-progress']),  
       tag:        'Active',
       tagColor:   '#F97316',
       tagBg:      '#FFF4ED',
@@ -61,7 +62,7 @@ function getCards(counts: DutyCounts, newAvailable: number) {
 // ─── Component ────────────────────────────────────────────
 export function HospitalDashStatCards({ isTablet }: { isTablet: boolean }) {
   const [counts, setCounts] = useState<DutyCounts>({
-    available: 0, completed: 0, enroute: 0, assigned: 0,
+    available: 0, completed: 0, enroute: 0, assigned: 0,'in-progress':0
   });
   const [loading, setLoading] = useState(true);
 
@@ -71,16 +72,18 @@ export function HospitalDashStatCards({ isTablet }: { isTablet: boolean }) {
       (async () => {
         try {
           setLoading(true);
-          const res = await dutyAPI.getPublishedDuties();   // GET api/duties-published
+          const res = await dutyAPI.getPublishedDuties(); 
           if (!active) return;
    
           const list: { status: string }[] = res.data ?? [];
           console.log(res.data)
-          const next: DutyCounts = { available: 0, completed: 0, enroute: 0, assigned: 0 };
+          const next: DutyCounts = { available: 0, completed: 0, enroute: 0, assigned: 0,'in-progress':0 };
           list.forEach((d) => {
             const status = d.status;
             if (status === 'enroute') {
               next['enroute']++;
+            } else if (status === 'in-progress') {
+              next['in-progress']++;
             } else if (status in next) {
               next[status as keyof DutyCounts]++;
             }
