@@ -143,22 +143,22 @@ export const authAPI = {
   //   return response.data;
   // },
   signin: async (email, password) => {
-  try {
-    const response = await api.post('/api/auth/signin', {
-      email,
-      password,
-    });
-    return response.data;
-  } catch (error) {
-    console.log('Signin Error Details:', {
-      message: error.message,
-      code: error.code,
-      response: error.response?.data,
-      status: error.response?.status
-    });
-    throw error;
-  }
-},
+    try {
+      const response = await api.post('/api/auth/signin', {
+        email,
+        password,
+      });
+      return response.data;
+    } catch (error) {
+      console.log('Signin Error Details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      throw error;
+    }
+  },
 
 
   // Logout
@@ -627,14 +627,14 @@ export const dutyAPI = {
   //   return response.data;
   // },
 
- getNearbyStaff: async (radius = 5, role = '') => {
-  let url = `/api/profile/nearby-staff?radius=${radius}`;
-  if (role && role !== '') {
-    url += `&role=${role}`;
-  }
-  const response = await api.get(url);
-  return response.data; // returns { success, cached, data: { hospital, staff } }
-},
+  getNearbyStaff: async (radius = 5, role = '') => {
+    let url = `/api/profile/nearby-staff?radius=${radius}`;
+    if (role && role !== '') {
+      url += `&role=${role}`;
+    }
+    const response = await api.get(url);
+    return response.data; // returns { success, cached, data: { hospital, staff } }
+  },
 
   // Live location monitoring APIs
   updateLiveLocation: async (latitude, longitude) => {
@@ -962,14 +962,14 @@ export const adminAPI = {
 
   // service/api.js
 
-getMedicalStaffForAssign: async ({ search, page = 1, city, jobRole } = {}) => {
-  const params = { page };
-  if (search)  params.search  = search;
-  if (city)    params.city    = city;
-  if (jobRole) params.jobRole = jobRole;
-  const response = await api.get('/api/admin/medical-staff-list', { params });
-  return response.data;
-},
+  getMedicalStaffForAssign: async ({ search, page = 1, city, jobRole } = {}) => {
+    const params = { page };
+    if (search) params.search = search;
+    if (city) params.city = city;
+    if (jobRole) params.jobRole = jobRole;
+    const response = await api.get('/api/admin/medical-staff-list', { params });
+    return response.data;
+  },
 
 
   // Get a single medical staff member by their ID
@@ -1030,7 +1030,7 @@ getMedicalStaffForAssign: async ({ search, page = 1, city, jobRole } = {}) => {
     const params = { hospital_id: hospitalId, radius };
     if (role && role !== '') params.role = role;
 
-    console.log('Sending params:', params); 
+    console.log('Sending params:', params);
     const response = await api.get('/api/admin/nearby-staff', { params });
     return response.data;
   },
@@ -1180,9 +1180,35 @@ getMedicalStaffForAssign: async ({ search, page = 1, city, jobRole } = {}) => {
   //   return response.data;
   // },
 
-  getMedicalStaff: async (search = '', page = 1, role = '') => {
+  // getMedicalStaff: async (search = '', page = 1, role = '') => {
+  //   const roleQuery = role ? `&role=${role}` : '';
+  //   const response = await api.get(`/api/admin/medical-staff?search=${search}&page=${page}${roleQuery}`);
+  //   return response.data;
+  // },
+  // getMedicalStaff: async (search = '', page = 1, role = '', status = '', location = '') => {
+  // const roleQuery = role ? `&role=${role}` : '';
+  // const statusQuery = status ? `&status=${status}` : '';
+  // const locationQuery = location && location !== 'All Cities' ? `&location=${encodeURIComponent(location)}` : '';
+  // const response = await api.get(
+  //   `/api/admin/medical-staff?search=${search}&page=${page}${roleQuery}${statusQuery}${locationQuery}`
+  // );
+  // return response.data;
+  // },
+
+  getMedicalStaff: async (search = '', page = 1, role = '', status = '', location = '') => {
     const roleQuery = role ? `&role=${role}` : '';
-    const response = await api.get(`/api/admin/medical-staff?search=${search}&page=${page}${roleQuery}`);
+
+    // Only send status if it's a valid verification value
+    const validStatuses = ['verified', 'pending', 'rejected', 'auto-verified'];
+    const statusQuery = status && validStatuses.includes(status) ? `&status=${status}` : '';
+
+    const locationQuery = location && location !== 'All Cities'
+      ? `&location=${encodeURIComponent(location)}`
+      : '';
+
+    const response = await api.get(
+      `/api/admin/medical-staff?search=${search}&page=${page}${roleQuery}${statusQuery}${locationQuery}`
+    );
     return response.data;
   },
 
@@ -1215,26 +1241,26 @@ getMedicalStaffForAssign: async ({ search, page = 1, city, jobRole } = {}) => {
 
 export const notificationAPI = {
   // POST /api/auth/fcm-token
-// Body: { fcmToken, deviceId, platform }
-// Returns: { success: true, message: "FCM token registered" } (assumed)
-registerFCMToken: async (fcmToken, deviceId, platform) => {
-  const response = await api.post('/api/auth/fcm-token', {
-    fcmToken,
-    deviceId,
-    platform,
-  });
-  return response.data;
-},
+  // Body: { fcmToken, deviceId, platform }
+  // Returns: { success: true, message: "FCM token registered" } (assumed)
+  registerFCMToken: async (fcmToken, deviceId, platform) => {
+    const response = await api.post('/api/auth/fcm-token', {
+      fcmToken,
+      deviceId,
+      platform,
+    });
+    return response.data;
+  },
 
-// DELETE /api/auth/fcm-token
-// Body: { fcmToken }
-// Returns: { success: true, message: "FCM token removed" } (assumed)
-deleteFCMToken: async (fcmToken) => {
-  const response = await api.delete('/api/auth/fcm-token', {
-    data: { fcmToken },
-  });
-  return response.data;
-},
+  // DELETE /api/auth/fcm-token
+  // Body: { fcmToken }
+  // Returns: { success: true, message: "FCM token removed" } (assumed)
+  deleteFCMToken: async (fcmToken) => {
+    const response = await api.delete('/api/auth/fcm-token', {
+      data: { fcmToken },
+    });
+    return response.data;
+  },
 }
 
 

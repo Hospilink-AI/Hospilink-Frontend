@@ -115,11 +115,11 @@ export default function AuthScreen() {
         params: { email: email.trim(), accountType, signupName: name.trim() },
       });
     } catch (error: any) {
-      console.error("❌ Signup error:", error);
       const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Something went wrong. Please try again.";
+        error?.response?.data?.message ??
+        error?.response?.data?.error ??
+        error?.message ??
+        'Something went wrong. Please try again.';
       setSignUpErrors({ general: message });
     } finally {
       setLoading(false);
@@ -145,6 +145,13 @@ export default function AuthScreen() {
     try {
       const response = await authAPI.signin(signInEmail, signInPassword);
       console.log("✅ Signin response:", response);
+
+      if (!response.success && !response.token) {
+        setSignInErrors({
+          general: response.message ?? 'Invalid email or password.',
+        });
+        return;                                        // ← stays on this screen
+      }
 
       if (Platform.OS === "web") {
         localStorage.setItem("hospilink_token", response.token);
@@ -255,7 +262,11 @@ export default function AuthScreen() {
       const res = await authAPI.forgotPassword(signInEmail);
       setForgotMessage(res.message);
     } catch (error: any) {
-      const message = error?.response?.data?.message || "Something went wrong.";
+      const message =
+        error?.response?.data?.message ??
+        error?.response?.data?.error ??
+        error?.message ??
+        'Something went wrong. Please try again.';
       setSignInErrors({ general: message });
     } finally {
       setForgotLoading(false);

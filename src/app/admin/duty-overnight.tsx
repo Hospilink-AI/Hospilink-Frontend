@@ -42,8 +42,8 @@ interface DutyRecord {
   hospitalName: string;
   role: string;
   dept: string;
-  shiftDuration: string; 
-  hoursCompleted: string; 
+  shiftDuration: string;
+  hoursCompleted: string;
   status: DutyStatus;
 }
 
@@ -138,7 +138,7 @@ const StatusBadge = ({ status }: { status: string }) => {
     'IN-PROGRESS': { bg: '#eff6ff', color: '#2563eb' },
   };
   const { bg, color } = cfg[normalizedStatus] || cfg.ONGOING;
-  
+
   return (
     <View style={[styles.statusBadge, { backgroundColor: bg }]}>
       <View style={[styles.statusDot, { backgroundColor: color }]} />
@@ -149,21 +149,21 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 function Dropdown({ value, options, onChange, flex }: { value: string; options: string[]; onChange: (v: string) => void; flex?: number; }) {
   const [open, setOpen] = useState(false);
-  
+
   return (
     <View style={[styles.dropdownWrap, flex ? { flex } : {}, { zIndex: open ? 1000 : 1 }]}>
       <TouchableOpacity style={styles.dropdownBtn} onPress={() => setOpen(!open)} activeOpacity={0.8}>
         <Text style={styles.dropdownBtnText} numberOfLines={1}>{value}</Text>
         <Ionicons name={open ? "chevron-up" : "chevron-down"} size={14} color="#64748b" />
       </TouchableOpacity>
-      
+
       {open && (
         <View style={styles.dropdownMenuAbsolute}>
           <ScrollView nestedScrollEnabled style={{ maxHeight: 250 }}>
             {options.map((opt) => (
-              <TouchableOpacity 
-                key={opt} 
-                style={[styles.dropdownItem, opt === value && styles.dropdownItemActive]} 
+              <TouchableOpacity
+                key={opt}
+                style={[styles.dropdownItem, opt === value && styles.dropdownItemActive]}
                 onPress={() => { onChange(opt); setOpen(false); }}
               >
                 <Text style={[styles.dropdownItemText, opt === value && styles.dropdownItemTextActive]}>{opt}</Text>
@@ -172,6 +172,29 @@ function Dropdown({ value, options, onChange, flex }: { value: string; options: 
             ))}
           </ScrollView>
         </View>
+      )}
+    </View>
+  );
+}
+
+function ErrorBox({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  return (
+    <View style={{
+      backgroundColor: '#FEF2F2', borderRadius: 10,
+      borderWidth: 1, borderColor: '#FECACA',
+      padding: 16, alignItems: 'center', gap: 10,
+      marginBottom: 24,
+    }}>
+      <Text style={{ fontSize: 13, color: '#DC2626', textAlign: 'center' }}>
+        ⚠️ {message}
+      </Text>
+      {onRetry && (
+        <TouchableOpacity
+          onPress={onRetry}
+          style={{ backgroundColor: '#DC2626', paddingHorizontal: 20, paddingVertical: 8, borderRadius: 8 }}
+        >
+          <Text style={{ fontSize: 13, color: '#fff', fontWeight: '700' }}>Retry</Text>
+        </TouchableOpacity>
       )}
     </View>
   );
@@ -190,21 +213,25 @@ export default function DutyOvernight() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  
+
   const [hospitalOptions, setHospitalOptions] = useState<string[]>(['All Hospital']);
 
   const [loadingActive, setLoadingActive] = useState(true);
   const [loadingOvernight, setLoadingOvernight] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(true);
 
+  const [errorActive, setErrorActive] = useState('');
+  const [errorOvernight, setErrorOvernight] = useState('');
+  const [errorHistory, setErrorHistory] = useState('');
+
   const [showAllActive, setShowAllActive] = useState(false);
   const [showAllOvernight, setShowAllOvernight] = useState(false);
 
   const initialDateState: DateFilterState = { type: 'Last 7 Days', singleDate: '', startDate: '', endDate: '' };
   const [pendingDate, setPendingDate] = useState<DateFilterState>(initialDateState);
-  const [pendingLoc, setPendingLoc] = useState('All Hospital'); 
+  const [pendingLoc, setPendingLoc] = useState('All Hospital');
   const [appliedDate, setAppliedDate] = useState<DateFilterState>(initialDateState);
-  const [appliedLoc, setAppliedLoc] = useState('All Hospital'); 
+  const [appliedLoc, setAppliedLoc] = useState('All Hospital');
 
   const [showDateModal, setShowDateModal] = useState(false);
 
@@ -217,16 +244,28 @@ export default function DutyOvernight() {
           adminAPI.getHospitalsList()
         ]);
 
-        if (activeRes?.success && activeRes.data) setActiveDuties(activeRes.data.map(mapBackendToLiveDuty));
-        if (overnightRes?.success && overnightRes.data) setOvernightDuties(overnightRes.data.map(mapBackendToLiveDuty));
-        
+        if (activeRes?.success && activeRes.data)
+          setActiveDuties(activeRes.data.map(mapBackendToLiveDuty));
+        else
+          setErrorActive(activeRes?.message ?? 'Failed to load active duties.');
+
+        if (overnightRes?.success && overnightRes.data)
+          setOvernightDuties(overnightRes.data.map(mapBackendToLiveDuty));
+        else
+          setErrorOvernight(overnightRes?.message ?? 'Failed to load overnight duties.');
+
         if (hospitalsRes?.data) {
-           const names = hospitalsRes.data.map((h: any) => h.name || h.hospitalName || 'Unknown');
-           setHospitalOptions(['All Hospital', ...new Set<string>(names)]);
+          const names = hospitalsRes.data.map((h: any) => h.name || h.hospitalName || 'Unknown');
+          setHospitalOptions(['All Hospital', ...new Set<string>(names)]);
         }
 
-      } catch (error) {
-        console.error("Failed to fetch initial data:", error);
+      } catch (err: any) {
+        const msg =
+          err?.response?.data?.message ??
+          err?.message ??
+          'Failed to load duties.';
+        setErrorActive(msg);
+        setErrorOvernight(msg);
       } finally {
         setLoadingActive(false);
         setLoadingOvernight(false);
@@ -238,6 +277,7 @@ export default function DutyOvernight() {
   useEffect(() => {
     const fetchHistory = async () => {
       setLoadingHistory(true);
+      setErrorHistory('');
       try {
         let params: any = {
           page: currentPage,
@@ -262,10 +302,9 @@ export default function DutyOvernight() {
         }
 
         const res = await adminAPI.getDutyHistory(params);
-        
+
         if (res?.success && res.data) {
           setHistoryRecords(res.data.map(mapBackendToHistoryDuty));
-          
           if (res.pagination) {
             setHistoryTotalItems(res.pagination.totalItems);
             setTotalPages(res.pagination.totalPages);
@@ -274,9 +313,15 @@ export default function DutyOvernight() {
             setHistoryTotalItems(res.data.length);
             setTotalPages(1);
           }
+        } else {
+          setErrorHistory(res?.message ?? 'Failed to load duty history.');
         }
-      } catch (error) {
-        console.error("Failed to fetch duty history:", error);
+      } catch (err: any) {
+        const msg =
+          err?.response?.data?.message ??
+          err?.message ??
+          'Failed to load duty history. Please try again.';
+        setErrorHistory(msg);
       } finally {
         setLoadingHistory(false);
       }
@@ -287,22 +332,34 @@ export default function DutyOvernight() {
   const applyFilters = () => {
     setAppliedDate(pendingDate);
     setAppliedLoc(pendingLoc);
-    setCurrentPage(1); 
+    setCurrentPage(1);
   };
 
   const resetFilters = () => {
     setPendingDate(initialDateState);
     setPendingLoc('All Hospital');
     setAppliedDate(initialDateState);
-    setAppliedLoc('All Hospital'); 
-    setCurrentPage(1); 
+    setAppliedLoc('All Hospital');
+    setCurrentPage(1);
+  };
+
+  const retryActive = () => {
+    setLoadingActive(true);
+    setLoadingOvernight(true);
+    setErrorActive('');
+    setErrorOvernight('');
+  };
+
+  const retryHistory = () => {
+    setErrorHistory('');
+    setCurrentPage(1);
   };
 
   const handleExport = () => {
     console.log('Exporting data with filters:', { appliedDate, appliedLoc });
   };
 
-  const isFiltered = appliedDate.type !== 'Last 7 Days' || appliedLoc !== 'All Hospital'; 
+  const isFiltered = appliedDate.type !== 'Last 7 Days' || appliedLoc !== 'All Hospital';
   const displayedActive = showAllActive ? activeDuties : activeDuties.slice(0, ITEMS_PER_ROW);
   const displayedOvernight = showAllOvernight ? overnightDuties : overnightDuties.slice(0, ITEMS_PER_ROW);
 
@@ -332,11 +389,13 @@ export default function DutyOvernight() {
           </TouchableOpacity>
         )}
       </View>
-      
+
       {loadingActive ? (
         <ActivityIndicator size="large" color="#2563eb" style={{ marginVertical: 20 }} />
+      ) : errorActive ? (
+        <ErrorBox message={errorActive} onRetry={retryActive} />
       ) : activeDuties.length === 0 ? (
-         <Text style={styles.emptyText}>No active duties found.</Text>
+        <Text style={styles.emptyText}>No active duties found.</Text>
       ) : (
         <View style={[styles.liveGrid, isWide && styles.liveGridWide]}>
           {displayedActive.map((duty) => (
@@ -381,8 +440,10 @@ export default function DutyOvernight() {
 
       {loadingOvernight ? (
         <ActivityIndicator size="large" color="#2563eb" style={{ marginVertical: 20 }} />
+      ) : errorOvernight ? (
+        <ErrorBox message={errorOvernight} onRetry={retryActive} />
       ) : overnightDuties.length === 0 ? (
-         <Text style={styles.emptyText}>No overnight duties found.</Text>
+        <Text style={styles.emptyText}>No overnight duties found.</Text>
       ) : (
         <View style={[styles.liveGrid, isWide && styles.liveGridWide]}>
           {displayedOvernight.map((duty) => (
@@ -435,12 +496,12 @@ export default function DutyOvernight() {
               <Ionicons name="calendar-outline" size={14} color="#64748b" />
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.filterLabel}>
             <Text style={styles.filterLabelText}>HOSPITAL / LOCATION</Text>
             <Dropdown value={pendingLoc} options={hospitalOptions} onChange={setPendingLoc} flex={1} />
           </View>
-          
+
           {isFiltered && (
             <TouchableOpacity style={styles.resetBtn} onPress={resetFilters} activeOpacity={0.85}>
               <Ionicons name="refresh-outline" size={13} color="#64748b" />
@@ -463,7 +524,11 @@ export default function DutyOvernight() {
         </View>
 
         {loadingHistory ? (
-           <ActivityIndicator size="large" color="#2563eb" style={{ padding: 40 }} />
+          <ActivityIndicator size="large" color="#2563eb" style={{ padding: 40 }} />
+        ) : errorHistory ? (
+          <View style={{ padding: 20 }}>
+            <ErrorBox message={errorHistory} onRetry={retryHistory} />
+          </View>
         ) : historyRecords.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="search-outline" size={32} color="#cbd5e1" />
@@ -472,7 +537,7 @@ export default function DutyOvernight() {
         ) : (
           historyRecords.map((record, idx) => (
             <View key={record.id} style={[styles.tableRow, idx % 2 === 1 && styles.tableRowAlt]}>
-              
+
               {/* STAFF NAME */}
               <View style={[styles.tableCell, { flex: 2.5 }]}>
                 <Avatar initials={record.initials} size={34} />
@@ -523,7 +588,7 @@ export default function DutyOvernight() {
             Showing {historyTotalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}–
             {Math.min(currentPage * itemsPerPage, historyTotalItems)} of {historyTotalItems} duties
           </Text>
-          
+
           <View style={styles.paginationControls}>
             <TouchableOpacity
               style={[styles.pageBtn, currentPage === 1 && styles.pageBtnDisabled]}
@@ -572,11 +637,11 @@ export default function DutyOvernight() {
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowDateModal(false)}>
           <TouchableOpacity style={styles.datePickerCard} activeOpacity={1}>
             <Text style={styles.datePickerTitle}>Select Date Filter</Text>
-            
+
             <View style={styles.dateTypeWrapper}>
               {(['Last 7 Days', 'Single Date', 'Date Range'] as DateFilterType[]).map((type) => (
-                <TouchableOpacity 
-                  key={type} 
+                <TouchableOpacity
+                  key={type}
                   style={[styles.dateTypeBtn, pendingDate.type === type && styles.dateTypeBtnActive]}
                   onPress={() => setPendingDate({ ...pendingDate, type })}
                 >
@@ -589,9 +654,9 @@ export default function DutyOvernight() {
               {pendingDate.type === 'Single Date' && (
                 <View>
                   <Text style={styles.inputLabel}>Date (DD-MM-YYYY)</Text>
-                  <TextInput 
-                    style={styles.dateInput} 
-                    placeholder="DD-MM-YYYY" 
+                  <TextInput
+                    style={styles.dateInput}
+                    placeholder="DD-MM-YYYY"
                     keyboardType="numeric"
                     maxLength={10}
                     value={pendingDate.singleDate}
@@ -604,9 +669,9 @@ export default function DutyOvernight() {
                 <View style={{ flexDirection: 'row', gap: 10 }}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.inputLabel}>Start Date</Text>
-                    <TextInput 
-                      style={styles.dateInput} 
-                      placeholder="DD-MM-YYYY" 
+                    <TextInput
+                      style={styles.dateInput}
+                      placeholder="DD-MM-YYYY"
                       keyboardType="numeric"
                       maxLength={10}
                       value={pendingDate.startDate}
@@ -615,9 +680,9 @@ export default function DutyOvernight() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.inputLabel}>End Date</Text>
-                    <TextInput 
-                      style={styles.dateInput} 
-                      placeholder="DD-MM-YYYY" 
+                    <TextInput
+                      style={styles.dateInput}
+                      placeholder="DD-MM-YYYY"
                       keyboardType="numeric"
                       maxLength={10}
                       value={pendingDate.endDate}
@@ -632,8 +697,8 @@ export default function DutyOvernight() {
               )}
             </View>
 
-            <TouchableOpacity 
-              style={styles.dateModalApplyBtn} 
+            <TouchableOpacity
+              style={styles.dateModalApplyBtn}
               onPress={() => setShowDateModal(false)}
             >
               <Text style={styles.dateModalApplyBtnText}>Confirm Format</Text>
@@ -659,7 +724,7 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: '#0f172a' },
   linkText: { fontSize: 13, fontWeight: '600', color: '#2563eb' },
-  
+
   liveGrid: { gap: 12, marginBottom: 24, flexWrap: 'wrap' },
   liveGridWide: { flexDirection: 'row' },
   liveCard: {
@@ -702,7 +767,7 @@ const styles = StyleSheet.create({
   dropdownWrap: { position: 'relative' },
   dropdownBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: '#f8fafc', gap: 6 },
   dropdownBtnText: { fontSize: 13, color: '#374151', fontWeight: '500', flex: 1 },
-  
+
   dropdownMenuAbsolute: {
     position: 'absolute',
     top: '100%',
@@ -717,7 +782,7 @@ const styles = StyleSheet.create({
     ...Platform.select({ web: { boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }, default: { elevation: 8 } })
   },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  
+
   dropdownItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   dropdownItemActive: { backgroundColor: '#eff6ff' },
   dropdownItemText: { fontSize: 14, color: '#374151' },
@@ -739,12 +804,12 @@ const styles = StyleSheet.create({
 
   // Updated / New Styles for Table Data mapping to design
   hospitalText: { fontSize: 13, fontWeight: '600', color: '#64748b' },
-  
+
   roleText: { fontSize: 13, fontWeight: '700', color: '#374151' },
   deptText: { fontSize: 11, color: '#94a3b8', marginTop: 1 },
 
   shiftDurationText: { fontSize: 13, color: '#94a3b8' },
-  
+
   hoursCompletedText: { fontSize: 13, fontWeight: '700', color: '#374151' },
 
   // Updated Status Badge to match Pill shape in Image
@@ -754,7 +819,7 @@ const styles = StyleSheet.create({
 
   paginationRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 14, flexWrap: 'wrap', gap: 8 },
   paginationInfo: { fontSize: 12, color: '#64748b' },
-  
+
   paginationControls: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   pageBtn: { width: 30, height: 30, borderRadius: 6, borderWidth: 1, borderColor: '#e2e8f0', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc' },
   pageBtnActive: { backgroundColor: '#2563eb', borderColor: '#2563eb' },

@@ -167,11 +167,32 @@ const ALL_STATUSES: Array<'All Statuses' | AvailabilityStatus> = [
 //   { label: 'Approved',             key: 'approved',match: ['verified', 'auto-verified'] },
 //   { label: 'Rejected',             key: 'rejected',match: ['rejected'] },
 // ];
+
+const TAB_TO_API_STATUS: Record<string, string> = {
+  all: '',
+  pending: 'pending',
+  approved: 'verified',
+  rejected: 'rejected',
+};
+
 const VERIFICATION_TABS = [
   { label: 'All Staff', key: 'all', match: [] as string[] },
   { label: 'Pending Verification', key: 'pending', match: ['pending'] },
   { label: 'Verified', key: 'approved', match: ['verified', 'auto-verified'] },
   { label: 'Rejected', key: 'rejected', match: ['rejected'] },
+];
+
+const MAHARASHTRA_CITIES = [
+  'All Cities',
+  'Mumbai', 'Pune', 'Nagpur', 'Thane', 'Nashik', 'Aurangabad',
+  'Solapur', 'Kolhapur', 'Amravati', 'Nanded', 'Sangli', 'Jalgaon',
+  'Akola', 'Latur', 'Dhule', 'Ahmednagar', 'Chandrapur', 'Parbhani',
+  'Ichalkaranji', 'Jalna', 'Ambarnath', 'Bhiwandi', 'Shirdi', 'Satara',
+  'Ratnagiri', 'Panvel', 'Malegaon', 'Navi Mumbai', 'Vasai-Virar',
+  'Ulhasnagar', 'Mira-Bhayandar', 'Kalyan', 'Dombivli', 'Badlapur',
+  'Karjat', 'Khopoli', 'Wai', 'Karad', 'Baramati', 'Osmanabad',
+  'Hingoli', 'Beed', 'Washim', 'Buldhana', 'Wardha', 'Yavatmal',
+  'Gondia', 'Bhandara', 'Gadchiroli', 'Sindhudurg', 'Raigad',
 ];
 
 const BADGE: Record<AvailabilityStatus, { bg: string; text: string; dot: string }> = {
@@ -381,42 +402,226 @@ const dd = StyleSheet.create({
   check: { fontSize: 14, color: '#2563EB', fontWeight: '700' },
 });
 
-// ─── Verification Tab Row ─────────────────────────────────────────────────────
-// ✅ NEW: replaces the verification dropdown — renders All Staff / Pending / Approved / Rejected tabs
-interface VerificationTabsProps {
-  activeKey: string;
-  onChange: (key: string) => void;
+interface LocationInputProps {
+  value: string;
+  onChange: (val: string) => void;
 }
-function VerificationTabs({ activeKey, onChange }: VerificationTabsProps) {
+function LocationInput({ value, onChange }: LocationInputProps) {
   return (
-    <View style={vt.wrap}>
-      {VERIFICATION_TABS.map(tab => {
-        const isActive = activeKey === tab.key;
-        return (
-          <TouchableOpacity
-            key={tab.key}
-            style={[vt.tab, isActive && vt.tabActive]}
-            onPress={() => onChange(tab.key)}
-            activeOpacity={0.75}
-          >
-            <Text style={[vt.tabTxt, isActive && vt.tabTxtActive]}>
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
+    <View style={li.wrap}>
+      <Text style={li.pin}>📍</Text>
+      <TextInput
+        style={li.input}
+        placeholder="Type city..."
+        placeholderTextColor="#9CA3AF"
+        value={value}
+        onChangeText={onChange}
+        underlineColorAndroid="transparent"
+        returnKeyType="done"
+      />
+      {value.length > 0 && (
+        <TouchableOpacity
+          onPress={() => onChange('')}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Text style={li.clear}>✕</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
+
+const li = StyleSheet.create({
+  wrap: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: '#fff', borderWidth: 1, borderColor: '#E2E8F0',
+    borderRadius: 10, paddingHorizontal: 12, height: 38, minWidth: 140,
+  },
+  pin: { fontSize: 12 },
+  input: {
+    flex: 1, fontSize: 13, color: '#334155', fontWeight: '500',
+    outlineWidth: 0,
+  } as any,
+  clear: { fontSize: 9, color: '#94A3B8', fontWeight: '800' },
+});
+
+const ld = StyleSheet.create({
+  trigger: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: '#fff', borderWidth: 1, borderColor: '#E2E8F0',
+    borderRadius: 10, paddingHorizontal: 12, height: 38, minWidth: 130,
+  },
+  pin: { fontSize: 12 },
+  value: { flex: 1, fontSize: 13, color: '#334155', fontWeight: '600' },
+  placeholder: { color: '#94A3B8', fontWeight: '500' },
+  chevron: { fontSize: 10, color: '#94A3B8' },
+
+  // Full-screen transparent backdrop to catch outside taps
+  backdrop: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+  },
+
+  // The popover card anchored below trigger
+  popover: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000', shadowOpacity: 0.14,
+        shadowRadius: 18, shadowOffset: { width: 0, height: 6 },
+      },
+      android: { elevation: 12 },
+    }),
+  },
+
+  searchBox: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    margin: 10, backgroundColor: '#F8FAFC',
+    borderWidth: 1, borderColor: '#E2E8F0',
+    borderRadius: 10, paddingHorizontal: 10, height: 38,
+  },
+  searchIcon: { fontSize: 12 },
+  searchInput: {
+    flex: 1, fontSize: 13, color: '#334155', fontWeight: '500', outlineWidth: 0, outlineStyle: 'none',
+  } as any,
+  searchClear: { fontSize: 9, color: '#94A3B8', fontWeight: '800' },
+
+  noResults: { alignItems: 'center', paddingVertical: 20 },
+  noResultsTxt: { fontSize: 13, color: '#94A3B8', fontWeight: '500' },
+
+  option: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: 14, paddingVertical: 11,
+  },
+  optionActive: { backgroundColor: '#EFF6FF' },
+  optionPin: { fontSize: 12 },
+  optionTxt: { flex: 1, fontSize: 13, color: '#334155', fontWeight: '500' },
+  optionTxtActive: { color: '#2563EB', fontWeight: '700' },
+  allCitiesTxt: { fontWeight: '700', color: '#0F172A' },
+  check: { fontSize: 13, color: '#2563EB', fontWeight: '800' },
+});
+
+
+
+// ─── Verification Tab Row ─────────────────────────────────────────────────────
+// ✅ NEW: replaces the verification dropdown — renders All Staff / Pending / Approved / Rejected tabs
+// interface VerificationTabsProps {
+//   activeKey: string;
+//   onChange: (key: string) => void;
+// }
+// function VerificationTabs({ activeKey, onChange }: VerificationTabsProps) {
+//   return (
+//     <View style={vt.wrap}>
+//       {VERIFICATION_TABS.map(tab => {
+//         const isActive = activeKey === tab.key;
+//         return (
+//           <TouchableOpacity
+//             key={tab.key}
+//             style={[vt.tab, isActive && vt.tabActive]}
+//             onPress={() => onChange(tab.key)}
+//             activeOpacity={0.75}
+//           >
+//             <Text style={[vt.tabTxt, isActive && vt.tabTxtActive]}>
+//               {tab.label}
+//             </Text>
+//           </TouchableOpacity>
+//         );
+//       })}
+//     </View>
+//   );
+// }
+// const vt = StyleSheet.create({
+//   wrap: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     gap: 4,
+//     paddingHorizontal: 16,
+//     paddingVertical: 12,
+//     borderBottomWidth: 1,
+//     borderBottomColor: '#F1F5F9',
+//   },
+//   tab: {
+//     paddingHorizontal: 16,
+//     paddingVertical: 8,
+//     borderRadius: 8,
+//     backgroundColor: 'transparent',
+//   },
+//   tabActive: {
+//     backgroundColor: '#2563EB',
+//   },
+//   tabTxt: {
+//     fontSize: 13,
+//     fontWeight: '600',
+//     color: '#64748B',
+//   },
+//   tabTxtActive: {
+//     color: '#FFFFFF',
+//   },
+// });
+
+// ─── Verification Tab Row ─────────────────────────────────────────────────────
+interface VerificationTabsProps {
+  activeKey: string;
+  onChange: (key: string) => void;
+  // ✅ NEW props for location filter
+  location: string;
+  onLocationChange: (city: string) => void;
+  onApplyLocation: () => void;
+}
+
+function VerificationTabs({ activeKey, onChange, location, onLocationChange, onApplyLocation }: VerificationTabsProps) {
+  return (
+    <View style={vt.wrap}>
+      <View style={vt.tabs}>
+        {VERIFICATION_TABS.map(tab => {
+          const isActive = activeKey === tab.key;
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              style={[vt.tab, isActive && vt.tabActive]}
+              onPress={() => onChange(tab.key)}
+              activeOpacity={0.75}
+            >
+              <Text style={[vt.tabTxt, isActive && vt.tabTxtActive]}>
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <View style={vt.right}>
+        {/* ✅ Simple text input instead of dropdown */}
+        <LocationInput value={location} onChange={onLocationChange} />
+        <TouchableOpacity style={vt.applyBtn} onPress={onApplyLocation} activeOpacity={0.85}>
+          <Text style={vt.applyTxt}>Apply Filter</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
 const vt = StyleSheet.create({
   wrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
+    gap: 12,
+    flexWrap: 'wrap',
+  },
+  tabs: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 1,
+    flexWrap: 'wrap',
   },
   tab: {
     paddingHorizontal: 16,
@@ -424,17 +629,23 @@ const vt = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: 'transparent',
   },
-  tabActive: {
+  tabActive: { backgroundColor: '#2563EB' },
+  tabTxt: { fontSize: 13, fontWeight: '600', color: '#64748B' },
+  tabTxtActive: { color: '#FFFFFF' },
+  right: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 0,
+  },
+  applyBtn: {
     backgroundColor: '#2563EB',
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    height: 38,
+    justifyContent: 'center',
   },
-  tabTxt: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#64748B',
-  },
-  tabTxtActive: {
-    color: '#FFFFFF',
-  },
+  applyTxt: { fontSize: 12, color: '#fff', fontWeight: '700', letterSpacing: 0.2 },
 });
 
 // ─── Filter Bar ───────────────────────────────────────────────────────────────
@@ -770,6 +981,8 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
   const [docViewerVisible, setDocViewerVisible] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<StaffDocument | null>(null);
   const [rejectionModalVisible, setRejectionModalVisible] = useState(false);
+  const [detailError, setDetailError] = useState('');
+  const [actionError, setActionError] = useState('');
 
   useEffect(() => {
     if (visible && staffId) {
@@ -782,15 +995,21 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
 
   const fetchStaffDetails = async () => {
     if (!staffId) return;
+    setDetailError('');
     try {
       setLoading(true);
       const data = await adminAPI.getMedicalStaffById(staffId);
       if (data.success) {
         setStaffDetails(data.data);
+      } else {
+        setDetailError(data.message ?? 'Failed to load staff details.');
       }
-    } catch (error) {
-      console.error('Failed to fetch staff details:', error);
-      Alert.alert('Error', 'Failed to load staff details');
+    } catch (error: any) {
+      const msg =
+        error?.response?.data?.message ??
+        error?.message ??
+        'Failed to load staff details.';
+      setDetailError(msg);
     } finally {
       setLoading(false);
     }
@@ -806,14 +1025,18 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
       } else {
         Alert.alert('Error', data.message || 'Failed to verify staff');
       }
-    } catch (error) {
-      console.error('Failed to verify staff:', error);
-      Alert.alert('Error', 'Failed to verify staff member');
+    } catch (error: any) {
+      const msg =
+        error?.response?.data?.message ??
+        error?.message ??
+        'Failed to verify staff member.';
+      setActionError(msg);
     }
   };
 
   const handleReject = async (reason: string) => {
     if (!staffId) return;
+    setActionError('');
     try {
       const data = await adminAPI.rejectMedicalStaff(staffId, reason);
       if (data.success) {
@@ -821,11 +1044,14 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
         setRejectionModalVisible(false);
         onRefresh();
       } else {
-        Alert.alert('Error', data.message || 'Failed to reject staff');
+        setActionError(data.message ?? 'Failed to reject staff.');
       }
-    } catch (error) {
-      console.error('Failed to reject staff:', error);
-      Alert.alert('Error', 'Failed to reject staff member');
+    } catch (error: any) {
+      const msg =
+        error?.response?.data?.message ??
+        error?.message ??
+        'Failed to reject staff member.';
+      setActionError(msg);
     }
   };
 
@@ -834,7 +1060,33 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
     onClose();
   };
 
-  if (!staffDetails && !loading) return null;
+  if (!staffDetails && !loading) {
+    if (!detailError) return null;
+    return (
+      <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
+        <View style={pm.overlay}>
+          <View style={[pm.sheet, { padding: 32, alignItems: 'center', gap: 12 }]}>
+            <Text style={{ fontSize: 32 }}>⚠️</Text>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: '#0F172A' }}>
+              Failed to load profile
+            </Text>
+            <Text style={{ fontSize: 13, color: '#94A3B8', textAlign: 'center' }}>
+              {detailError}
+            </Text>
+            <TouchableOpacity
+              onPress={fetchStaffDetails}
+              style={{ backgroundColor: '#2563EB', paddingHorizontal: 24, paddingVertical: 10, borderRadius: 8 }}
+            >
+              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>Retry</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleClose}>
+              <Text style={{ fontSize: 13, color: '#94A3B8', marginTop: 4 }}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    );
+  }
 
   if (loading) {
     return (
@@ -1010,6 +1262,18 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
 
             {!decision && (
               <View style={pm.footer}>
+
+                {actionError ? (
+                  <View style={{
+                    width: '100%', marginBottom: 10,
+                    backgroundColor: '#FEF2F2', borderRadius: 8,
+                    borderWidth: 1, borderColor: '#FECACA', padding: 10,
+                  }}>
+                    <Text style={{ fontSize: 12, color: '#DC2626', textAlign: 'center' }}>
+                      ⚠️ {actionError}
+                    </Text>
+                  </View>
+                ) : null}
                 {showRejectButton && (
                   <TouchableOpacity
                     style={pm.rejectBtn}
@@ -1353,6 +1617,9 @@ export default function MedicalStaffListSection() {
   const [loading, setLoading] = useState(false);
   const [activeStaff, setActiveStaff] = useState<MedicalStaff | null>(null);
 
+  const [location, setLocation] = useState('All Cities');
+  const [locationDraft, setLocationDraft] = useState('All Cities');
+
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuAnchorY, setMenuAnchorY] = useState(0);
   const [menuAnchorX, setMenuAnchorX] = useState(0);
@@ -1366,27 +1633,69 @@ export default function MedicalStaffListSection() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const fetchStaff = async (page = 1, currentSearch = search, currentRole = role, tabKey = activeTabKey) => {
+  // const fetchStaff = async (page = 1, currentSearch = search, currentRole = role, tabKey = activeTabKey) => {
+  //   try {
+  //     setLoading(true);
+  //     const roleParam = currentRole !== 'All Roles'
+  //       ? currentRole.toLowerCase().replace(/ /g, '_')
+  //       : '';
+  //     const data = await adminAPI.getMedicalStaff(currentSearch, page, roleParam);
+  //     if (data.success) {
+  //       const mapped: MedicalStaff[] = (data.staff ?? []).map(mapStaff);
+  //       setStaffList(mapped);
+  //       setPagination(data.pagination ?? null);
+  //     }
+  //   } catch (error) {
+  //     console.error('Failed to fetch staff:', error);
+  //     showToast('Failed to load medical staff', 'error');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const fetchStaff = async (
+    page = 1,
+    currentSearch = search,
+    currentRole = role,
+    tabKey = activeTabKey,
+    currentLocation = location
+  ) => {
     try {
       setLoading(true);
       const roleParam = currentRole !== 'All Roles'
         ? currentRole.toLowerCase().replace(/ /g, '_')
         : '';
-      const data = await adminAPI.getMedicalStaff(currentSearch, page, roleParam);
+      const verificationParam = TAB_TO_API_STATUS[tabKey] ?? '';
+      const locationParam = currentLocation !== 'All Cities' ? currentLocation : '';
+
+      const data = await adminAPI.getMedicalStaff(
+        currentSearch,
+        page,
+        roleParam,
+        verificationParam,
+        locationParam   // ✅ pass it
+      );
+
       if (data.success) {
         const mapped: MedicalStaff[] = (data.staff ?? []).map(mapStaff);
         setStaffList(mapped);
         setPagination(data.pagination ?? null);
       }
-    } catch (error) {
-      console.error('Failed to fetch staff:', error);
-      showToast('Failed to load medical staff', 'error');
+    } catch (error: any) {
+      const msg =
+        error?.response?.data?.message ??
+        error?.message ??
+        'Failed to load medical staff. Please try again.';
+      showToast(msg, 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchStaff(); }, []);
+  // useEffect(() => { fetchStaff(); }, []);
+  useEffect(() => {
+    fetchStaff(1, search, role, activeTabKey);
+  }, [activeTabKey]);
 
   const handleDotsPress = (s: MedicalStaff, pageY: number, pageX: number) => {
     setActiveStaff(s);
@@ -1405,9 +1714,12 @@ export default function MedicalStaffListSection() {
       } else {
         showToast(data.message || 'Failed to verify staff', 'error');
       }
-    } catch (error) {
-      console.error('Failed to verify staff:', error);
-      showToast('Failed to verify staff member', 'error');
+    } catch (error: any) {
+      const msg =
+        error?.response?.data?.message ??
+        error?.message ??
+        'Failed to verify staff member.';
+      showToast(msg, 'error');
     }
   };
 
@@ -1426,29 +1738,38 @@ export default function MedicalStaffListSection() {
       } else {
         showToast(data.message || 'Failed to reject staff', 'error');
       }
-    } catch (error) {
-      console.error('Failed to reject staff:', error);
-      showToast('Failed to reject staff member', 'error');
+    } catch (error: any) {
+      const msg =
+        error?.response?.data?.message ??
+        error?.message ??
+        'Failed to reject staff member.';
+      showToast(msg, 'error');
     }
   };
 
   const hasActiveFilters = search !== '' || status !== 'All Statuses' || role !== 'All Roles';
 
   // ✅ Filter by availability + active tab verification
+  // const filtered = useMemo(() => {
+  //   const tabCfg = VERIFICATION_TABS.find(t => t.key === activeTabKey);
+  //   return staffList.filter(s => {
+  //     const matchStatus = status === 'All Statuses' || s.status === status;
+  //     const matchTab = !tabCfg || tabCfg.match.length === 0 || tabCfg.match.includes(s.verificationStatus);
+  //     return matchStatus && matchTab;
+  //   });
+  // }, [staffList, status, activeTabKey]);
+
   const filtered = useMemo(() => {
-    const tabCfg = VERIFICATION_TABS.find(t => t.key === activeTabKey);
     return staffList.filter(s => {
-      const matchStatus = status === 'All Statuses' || s.status === status;
-      const matchTab = !tabCfg || tabCfg.match.length === 0 || tabCfg.match.includes(s.verificationStatus);
-      return matchStatus && matchTab;
+      return status === 'All Statuses' || s.status === status;
     });
-  }, [staffList, status, activeTabKey]);
+  }, [staffList, status]);
 
   const handleApply = () => {
     setSearch(searchDraft);
     setStatus(statusDraft);
     setRole(roleDraft);
-    fetchStaff(1, searchDraft, roleDraft);
+    fetchStaff(1, searchDraft, roleDraft, activeTabKey);
   };
 
   const handleClear = () => {
@@ -1457,9 +1778,11 @@ export default function MedicalStaffListSection() {
     setRoleDraft('All Roles');
     setSearch('');
     setStatus('All Statuses');
+    setLocation('All Cities');
+    setLocationDraft('All Cities');   // ✅ clears the text input too
     setRole('All Roles');
     setActiveTabKey('all');
-    fetchStaff(1, '', 'All Roles');
+    fetchStaff(1, '', 'All Roles', 'all', ''); // ✅ pass empty location
   };
 
   const handleNextPage = () => {
@@ -1509,7 +1832,11 @@ export default function MedicalStaffListSection() {
       </View>
 
       {/* ✅ Verification Tab Row — replaces stat cards + verification dropdown */}
-      <VerificationTabs activeKey={activeTabKey} onChange={setActiveTabKey} />
+      <VerificationTabs activeKey={activeTabKey} onChange={setActiveTabKey} location={locationDraft}
+        onLocationChange={setLocationDraft} onApplyLocation={() => {
+          setLocation(locationDraft);
+          fetchStaff(1, search, role, activeTabKey, locationDraft);
+        }} />
 
       {/* ── Active Filter Chips ── */}
       {hasActiveFilters && (
