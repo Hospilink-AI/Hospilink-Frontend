@@ -296,6 +296,7 @@ export default function Dashboard() {
           id: job._id,
           title: job.formattedRole || "Medical Duty",
           hospital: job.hospital?.hospitalLegalName || "Hospital",
+          hospitalName: job.hospital?.hospitalLegalName || "Hospital",
           hospitalId: job.hospital?.user?._id,
           time: `${job.startTime || "N/A"} - ${job.endTime || "N/A"}`,
           assignedTo: job.assignedTo,

@@ -21,6 +21,7 @@ export default function OngoingDutyCard({ duty, isMobile, onStatusChange, onPres
     setMarkingInProgress(true);
     try {
       await dutyAPI.updateDutyStatus(duty._id, 'in-progress');
+      console.log("Duty marked as enroute:", duty._id);
       onStatusChange?.();
     } catch (err: any) {
       alert(err?.response?.data?.message || "Failed to mark as in-progress.");
@@ -89,7 +90,7 @@ export default function OngoingDutyCard({ duty, isMobile, onStatusChange, onPres
           <TouchableOpacity 
             style={styles.startBtn}
             onPress={(e) => {
-              e.stopPropagation(); // Prevents details page from opening
+              e.stopPropagation(); 
               handleMarkInProgress();
             }}
             disabled={markingInProgress}

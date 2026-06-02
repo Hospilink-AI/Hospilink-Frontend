@@ -9,7 +9,7 @@ interface Props {
   duty: any;
   isMobile?: boolean;
   onStatusChange?: () => void;
-  onPress: (id: string) => void; // ✅ Added to interface
+  onPress: (id: string) => void; 
 }
 
 export default function UpcomingDutyCard({ duty, isMobile, onStatusChange, onPress }: Props) {
