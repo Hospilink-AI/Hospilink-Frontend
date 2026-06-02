@@ -34,6 +34,7 @@ type FormState = {
   dutyDescription: string;
   staffCount: string;
 };
+type FormErrors = Partial<Record<keyof FormState, string>>;
 
 interface Hospital {
   id: string;
@@ -100,17 +101,108 @@ const HOSPITAL_VERIFICATION_BADGE = {
 };
 
 // ─── Validation ───────────────────────────────────────────
-function validate(form: FormState): string | null {
-  if (!form.hospitalId) return 'Please select a hospital.';
-  if (!form.staffRole) return 'Please select a staff role.';
-  if (!form.startingDate) return 'Please enter a starting date.';
-  if (!form.startTime) return 'Please enter a start time.';
-  if (!form.endTime) return 'Please enter an end time.';
-  if (!form.offerRate) return 'Please enter an offer rate.';
-  if (isNaN(Number(form.offerRate)) || Number(form.offerRate) <= 0)
-    return 'Offer rate must be a valid positive number.';
-  if (!form.dutyDescription) return 'Please add a duty description.';
-  return null;
+function validate(form: FormState): FormErrors {
+  const errs: FormErrors = {};
+
+  if (!form.hospitalId)
+    errs.hospitalId = 'Please select a hospital.';
+
+  if (!form.staffRole)
+    errs.staffRole = 'Please select a staff role.';
+
+  if (!form.startingDate)
+    errs.startingDate = 'Starting date is required.';
+
+  if (!form.endingDate)
+    errs.endingDate = 'Ending date is required.';
+
+  if (form.startingDate && form.endingDate) {
+    const s = parseDateString(form.startingDate);
+    const e = parseDateString(form.endingDate);
+    s.setHours(0, 0, 0, 0);
+    e.setHours(0, 0, 0, 0);
+    if (e < s)
+      errs.endingDate = 'Ending date cannot be before starting date.';
+  }
+
+  if (!form.startTime)
+    errs.startTime = 'Start time is required.';
+
+  if (!form.endTime)
+    errs.endTime = 'End time is required.';
+
+  if (
+    form.startTime && form.endTime &&
+    form.startingDate === form.endingDate &&
+    !form.overtimeDuty
+  ) {
+    if (form.endTime <= form.startTime)
+      errs.endTime = 'End time must be after start time on the same day.';
+  }
+
+  if (!form.offerRate) {
+    errs.offerRate = 'Offer rate is required.';
+  } else if (isNaN(Number(form.offerRate)) || Number(form.offerRate) <= 0) {
+    errs.offerRate = 'Enter a valid positive amount.';
+  }
+
+  if (!form.dutyDescription || form.dutyDescription.trim().length < 10)
+    errs.dutyDescription = 'Description must be at least 10 characters.';
+
+  if (form.staffCount && (isNaN(Number(form.staffCount)) || Number(form.staffCount) < 1))
+    errs.staffCount = 'Staff count must be a positive number.';
+
+  return errs;
+}
+
+const FIELD_MAP: Record<string, keyof FormState> = {
+  hospital_id: 'hospitalId',
+  hospital_name: 'hospitalName',
+  staff_role: 'staffRole',
+  urgency: 'urgencyLevel',
+  date: 'startingDate',
+  end_date: 'endingDate',
+  start_time: 'startTime',
+  end_time: 'endTime',
+  is_overnight_duty: 'overtimeDuty',
+  offered_rate: 'offerRate',
+  description: 'dutyDescription',
+  staff_count: 'staffCount',
+};
+
+function parseBackendErrors(err: any): { fieldErrors: FormErrors; generalError: string } {
+  const fieldErrors: FormErrors = {};
+  let generalError = '';
+  const data = err?.response?.data;
+
+  if (!data) {
+    generalError = err?.message ?? 'Something went wrong. Please try again.';
+    return { fieldErrors, generalError };
+  }
+
+  if (data.errors && typeof data.errors === 'object') {
+    Object.entries(data.errors).forEach(([key, msg]) => {
+      const formKey = FIELD_MAP[key];
+      if (formKey) fieldErrors[formKey] = msg as string;
+      else generalError = msg as string;
+    });
+    return { fieldErrors, generalError };
+  }
+
+  if (data.field && data.message) {
+    const formKey = FIELD_MAP[data.field];
+    if (formKey) fieldErrors[formKey] = data.message;
+    else generalError = data.message;
+    return { fieldErrors, generalError };
+  }
+
+  if (data.message) {
+    generalError = data.message;
+    return { fieldErrors, generalError };
+  }
+
+  generalError = 'Something went wrong. Please try again.';
+  return { fieldErrors, generalError };
 }
 
 // ─── Date Format Helpers ──────────────────────────────────
@@ -159,6 +251,17 @@ function Toast({ visible, message }: { visible: boolean; message: string }) {
   );
 }
 
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 }}>
+      <Ionicons name="alert-circle-outline" size={12} color="#DC2626" />
+      <Text style={{ fontSize: 11, color: '#DC2626', flex: 1 }}>{message}</Text>
+    </View>
+  );
+}
+
 // ─── Searchable Hospital Dropdown ─────────────────────────
 type SearchableDropdownProps = {
   selectedValue: string;
@@ -179,15 +282,24 @@ function SearchableHospitalDropdown({ selectedValue, selectedLabel, onSelect, pl
   const MAX_ITEMS = 5;
   const listH = Math.max(Math.min(hospitals.length, MAX_ITEMS) * ITEM_H, 100);
 
+  const [hospitalFetchError, setHospitalFetchError] = useState('');
+
   const fetchHospitals = async (query: string) => {
     setLoading(true);
+    setHospitalFetchError('');                           // ← clear previous
     try {
       const res = await adminAPI.getHospitalsList(query ? { name: query } : {});
       if (res.success) {
         setHospitals(res.data);
+      } else {
+        setHospitalFetchError(res.message ?? 'Failed to load hospitals.');
       }
-    } catch (err) {
-      console.error('Failed to fetch hospitals', err);
+    } catch (err: any) {
+      setHospitalFetchError(
+        err?.response?.data?.message ??
+        err?.message ??
+        'Failed to load hospitals.'
+      );
     } finally {
       setLoading(false);
     }
@@ -254,8 +366,22 @@ function SearchableHospitalDropdown({ selectedValue, selectedLabel, onSelect, pl
             <View style={{ padding: 20, alignItems: 'center' }}>
               <ActivityIndicator size="small" color="#DC2626" />
             </View>
+          ) : hospitalFetchError ? (
+            <View style={{ padding: 16, alignItems: 'center', gap: 8 }}>
+              <Text style={{ fontSize: 12, color: '#DC2626', textAlign: 'center' }}>
+                ⚠️ {hospitalFetchError}
+              </Text>
+              <TouchableOpacity
+                onPress={() => fetchHospitals(searchQuery)}
+                style={{ backgroundColor: '#FEF2F2', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 6 }}
+              >
+                <Text style={{ fontSize: 12, color: '#DC2626', fontWeight: '700' }}>Retry</Text>
+              </TouchableOpacity>
+            </View>
           ) : hospitals.length === 0 ? (
-            <Text style={{ padding: 16, color: '#6B7280', textAlign: 'center', fontSize: 13 }}>No hospitals found</Text>
+            <Text style={{ padding: 16, color: '#6B7280', textAlign: 'center', fontSize: 13 }}>
+              No hospitals found
+            </Text>
           ) : (
             <FlatList
               data={hospitals}
@@ -669,13 +795,18 @@ export default function CreateDutyScreen() {
     overtimeDuty: false, offerRate: '', dutyDescription: '', staffCount: '',
   });
 
+
   const [publishing, setPublishing] = useState(false);
   const [loadingDuty, setLoadingDuty] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [generalError, setGeneralError] = useState('');
 
-  const set = (key: keyof FormState) => (val: any) =>
+  const set = (key: keyof FormState) => (val: any) => {
     setForm(prev => ({ ...prev, [key]: val }));
+    setErrors(prev => ({ ...prev, [key]: undefined }));  // ← clear on edit
+  };
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -723,9 +854,12 @@ export default function CreateDutyScreen() {
   }, [dutyId, isEditMode]);
 
   const handleSubmit = async () => {
-    const error = validate(form);
-    if (error) {
-      Alert.alert('Missing Info', error);
+    setErrors({});
+    setGeneralError('');
+
+    const errs = validate(form);
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
       return;
     }
 
@@ -733,10 +867,11 @@ export default function CreateDutyScreen() {
       hospital_id: form.hospitalId,
       staff_role: form.staffRole,
       date: toAPIDate(form.startingDate),
+      end_date: toAPIDate(form.endingDate),
       start_time: form.startTime,
       end_time: form.endTime,
       urgency: form.urgencyLevel,
-      description: form.dutyDescription,
+      description: form.dutyDescription.trim(),
       offered_rate: Number(form.offerRate),
       is_overnight_duty: form.overtimeDuty,
       staff_count: form.staffCount ? Number(form.staffCount) : undefined,
@@ -744,7 +879,6 @@ export default function CreateDutyScreen() {
 
     try {
       setPublishing(true);
-
       if (isEditMode && dutyId) {
         await adminAPI.updatePublishedDuty(dutyId, payload);
         showToast('Duty updated successfully!');
@@ -755,7 +889,9 @@ export default function CreateDutyScreen() {
         setTimeout(() => router.push('/admin/dashboard'), 1800);
       }
     } catch (err: any) {
-      Alert.alert('Error', err?.response?.data?.message ?? 'Failed. Please try again.');
+      const { fieldErrors, generalError: gErr } = parseBackendErrors(err);
+      if (Object.keys(fieldErrors).length > 0) setErrors(fieldErrors);
+      if (gErr) setGeneralError(gErr);
     } finally {
       setPublishing(false);
     }
@@ -850,6 +986,22 @@ export default function CreateDutyScreen() {
           </Text>
         </View>
 
+        {generalError ? (
+          <View style={{
+            flexDirection: 'row', alignItems: 'flex-start', gap: 10,
+            backgroundColor: '#FEF2F2', borderRadius: 10, padding: 14,
+            borderWidth: 1, borderColor: '#FECACA', marginBottom: 16,
+          }}>
+            <Ionicons name="close-circle-outline" size={18} color="#DC2626" />
+            <Text style={{ flex: 1, fontSize: 13, color: '#DC2626', lineHeight: 18 }}>
+              {generalError}
+            </Text>
+            <TouchableOpacity onPress={() => setGeneralError('')}>
+              <Ionicons name="close" size={16} color="#DC2626" />
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
         {/* ── Two-column layout ── */}
         <View style={styles.twoColRow}>
 
@@ -864,12 +1016,14 @@ export default function CreateDutyScreen() {
               <View style={styles.fieldBlock}>
                 <FieldLabel label="Hospital Name" required />
                 <SearchableHospitalDropdown
-                  selectedValue={form.hospitalId}
-                  selectedLabel={form.hospitalName}
-                  onSelect={(id, name) => {
-                    setForm(prev => ({ ...prev, hospitalId: id, hospitalName: name }));
-                  }}
-                />
+  selectedValue={form.hospitalId}
+  selectedLabel={form.hospitalName}
+  onSelect={(id, name) => {
+    setForm(prev => ({ ...prev, hospitalId: id, hospitalName: name }));
+    setErrors(prev => ({ ...prev, hospitalId: undefined }));
+  }}
+/>
+<FieldError message={errors.hospitalId} />
               </View>
 
               {/* Staff Role + Urgency Level — two columns */}
@@ -882,6 +1036,7 @@ export default function CreateDutyScreen() {
                     onSelect={set('staffRole')}
                     placeholder="Select Role"
                   />
+                  <FieldError message={errors.staffRole} />
                 </View>
                 <View style={styles.col}>
                   <FieldLabel label="Urgency Level" required />
@@ -903,6 +1058,7 @@ export default function CreateDutyScreen() {
                   keyboardType="number-pad"
                 // error={errors.staffCount}
                 />
+                <FieldError message={errors.staffCount} />
               </View>
             </View>
 
@@ -918,6 +1074,7 @@ export default function CreateDutyScreen() {
                 prefix="₹"
                 keyboardType="decimal-pad"
               />
+              <FieldError message={errors.offerRate} />
 
               <View style={{ height: 14 }} />
 
@@ -928,6 +1085,7 @@ export default function CreateDutyScreen() {
                 onChangeText={set('dutyDescription')}
                 multiline
               />
+              <FieldError message={errors.dutyDescription} />
             </View>
 
           </View>
@@ -942,10 +1100,12 @@ export default function CreateDutyScreen() {
                 <View style={styles.col}>
                   <FieldLabel label="Starting Date" required />
                   <DatePickerField value={form.startingDate} onChange={set('startingDate')} placeholder="dd-mm-yyyy" />
+                  <FieldError message={errors.startingDate} />
                 </View>
                 <View style={styles.col}>
                   <FieldLabel label="Ending Date" required />
                   <DatePickerField value={form.endingDate} onChange={set('endingDate')} placeholder="dd-mm-yyyy" />
+                  <FieldError message={errors.endingDate} />
                 </View>
               </View>
 
@@ -958,6 +1118,7 @@ export default function CreateDutyScreen() {
                     onChange={set('startTime')}
                     placeholder="-- : --"
                   />
+                  <FieldError message={errors.startTime} />
                 </View>
                 <View style={styles.col}>
                   <FieldLabel label="End Time" required />
@@ -966,6 +1127,7 @@ export default function CreateDutyScreen() {
                     onChange={set('endTime')}
                     placeholder="-- : --"
                   />
+                  <FieldError message={errors.endTime} />
                 </View>
               </View>
 

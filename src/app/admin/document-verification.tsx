@@ -75,9 +75,12 @@ export default function DocumentVerification() {
       setDocuments(data.documents ?? []);
       setPagination(data.pagination ?? null);
       setCurrentPage(page);
-    } catch (err) {
-      setError('Failed to load documents. Please try again.');
-      console.error('Fetch error:', err);
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ??
+        err?.message ??
+        'Failed to load documents. Please try again.';
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -95,10 +98,12 @@ export default function DocumentVerification() {
     total: number;
   }>({ stats: [], total: 0 });
   const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState('');
 
 
   const fetchStats = useCallback(async () => {
     setStatsLoading(true);
+    setStatsError('');
     try {
       console.log('Fetching stats...');
       const data = await adminAPI.getDocumentStats();
@@ -111,8 +116,13 @@ export default function DocumentVerification() {
           { label: 'Rejected', count: data.rejected, color: '#EF4444' },
         ],
       });
-    } catch (err) {
-      console.error('Stats fetch error:', err);
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ??
+        err?.message ??
+        'Failed to load verification stats.';
+      setStatsError(msg);
+
     } finally {
       setStatsLoading(false);
     }
@@ -210,6 +220,9 @@ export default function DocumentVerification() {
               stats={statsData.stats}
               total={statsData.total}
               loading={statsLoading}
+              error={statsError}
+              onRetry={fetchStats}
+
             />
             <RecentActions />
           </View>
@@ -237,6 +250,8 @@ export default function DocumentVerification() {
             stats={statsData.stats}
             total={statsData.total}
             loading={statsLoading}
+            error={statsError}
+            onRetry={fetchStats}
           />
           <RecentActions />
         </View>

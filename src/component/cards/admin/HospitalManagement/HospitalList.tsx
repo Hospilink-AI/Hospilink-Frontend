@@ -570,7 +570,7 @@ const stb = StyleSheet.create({
     gap: 2,
     paddingVertical: 10,
   },
-  
+
   rightRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1028,10 +1028,12 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject }
   const [detailData, setDetailData] = useState<Partial<Hospital> | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [actionDecision, setActionDecision] = useState<'approved' | 'rejected' | null>(null);
+  const [detailError, setDetailError] = useState('');
 
   useEffect(() => {
     if (visible && hospital?.id) {
       setDetailData(null);
+      setDetailError('');
       setDetailLoading(true);
       setActionDecision(null);
       adminAPI
@@ -1040,7 +1042,13 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject }
           const data = res?.data ?? res;
           setDetailData(mapHospitalDetail(data));
         })
-        .catch(() => { })
+        .catch((err: any) => {
+          const msg =
+            err?.response?.data?.message ??
+            err?.message ??
+            'Failed to load hospital details.';
+          setDetailError(msg);
+        })
         .finally(() => setDetailLoading(false));
     }
   }, [visible, hospital?.id]);
@@ -1156,6 +1164,29 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject }
                     <View style={rm.loadingWrap}>
                       <ActivityIndicator size="small" color="#2563EB" />
                       <Text style={rm.loadingTxt}>Loading documents…</Text>
+                    </View>
+                  ) : detailError ? (
+                    <View style={{
+                      backgroundColor: '#FEF2F2', borderRadius: 10,
+                      borderWidth: 1, borderColor: '#FECACA',
+                      padding: 14, alignItems: 'center', gap: 8,
+                    }}>
+                      <Text style={{ fontSize: 13, color: '#DC2626', textAlign: 'center' }}>
+                        ⚠️ {detailError}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setDetailError('');
+                          setDetailLoading(true);
+                          adminAPI.getHospitalById(hospital!.id)
+                            .then((res: any) => setDetailData(mapHospitalDetail(res?.data ?? res)))
+                            .catch((err: any) => setDetailError(err?.response?.data?.message ?? 'Failed to load.'))
+                            .finally(() => setDetailLoading(false));
+                        }}
+                        style={{ backgroundColor: '#DC2626', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 }}
+                      >
+                        <Text style={{ fontSize: 12, color: '#fff', fontWeight: '700' }}>Retry</Text>
+                      </TouchableOpacity>
                     </View>
                   ) : docs.length === 0 ? (
                     <View style={rm.noDocsWrap}>
@@ -1701,6 +1732,7 @@ export default function HospitalListSection() {
 
   // ── Toast ──────────────────────────────────────────────────────────────────
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const [statsError, setStatsError] = useState('');
 
   const showToast = (msg: string, type: 'success' | 'error') => {
     setToast({ msg, type });
@@ -1752,8 +1784,12 @@ export default function HospitalListSection() {
       }
       setHospitals(mapped);
       setPagination(res?.data?.pagination ?? res?.pagination ?? null);
-    } catch {
-      showToast('Failed to load hospitals', 'error');
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ??
+        err?.message ??
+        'Failed to load hospitals. Please try again.';
+      showToast(msg, 'error');
     } finally {
       setLoading(false);
     }
@@ -1768,8 +1804,12 @@ export default function HospitalListSection() {
         pendingVerification: Number(data?.pendingVerification) || 0,
         verifiedHospitals: Number(data?.verifiedHospitals) || 0,
       });
-    } catch {
-      // silently fail — stats are non-critical
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ??
+        err?.message ??
+        'Failed to load stats.';
+      setStatsError(msg);
     }
   }, []);
 
@@ -1833,8 +1873,13 @@ export default function HospitalListSection() {
       await adminAPI.verifyHospital(h.id);
       showToast(`${h.name} has been verified`, 'success');
       fetchHospitals({ search, status, city, page: currentPage, tabStatus: activeTab });
-    } catch {
-      showToast('Verification failed', 'error');
+      fetchStats();
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ??
+        err?.message ??
+        'Verification failed. Please try again.';
+      showToast(msg, 'error');
     }
   };
 
@@ -1852,8 +1897,12 @@ export default function HospitalListSection() {
       await adminAPI.rejectHospital(pendingRejectTarget.id, reason);
       showToast(`${pendingRejectTarget.name} has been rejected`, 'error');
       fetchHospitals({ search, status, city, page: currentPage, tabStatus: activeTab });
-    } catch {
-      showToast('Rejection failed', 'error');
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ??
+        err?.message ??
+        'Rejection failed. Please try again.';
+      showToast(msg, 'error');
     } finally {
       setPendingRejectTarget(null);
     }
@@ -1934,24 +1983,45 @@ export default function HospitalListSection() {
       )}
 
       {/* ── Stat Cards ── */}
-      <View style={s.statsRow}>
-        <StatCard
-          icon="🏥" iconBg="#EEF2FF" iconColor="#4F46E5"
-          badge="+12%" badgeColor="#16A34A"
-          value={stats.totalHospitals.toLocaleString()} label="Total Hospitals"
-        />
-        <StatCard
-          icon="⚠️" iconBg="#FEF3C7" iconColor="#D97706"
-          badge="Action Req." badgeColor="#D97706"
-          value={String(stats.pendingVerification)} label="Pending Verification"
-        />
-        <StatCard
-          icon="✅" iconBg="#ECFDF5" iconColor="#16A34A"
-          badge={`${stats.totalHospitals > 0 ? Math.round((stats.verifiedHospitals / stats.totalHospitals) * 100) : 0}% Verified`}
-          badgeColor="#16A34A"
-          value={stats.verifiedHospitals.toLocaleString()} label="Approved Hospitals"
-        />
-      </View>
+      {/* ── Stat Cards ── */}
+      {statsError ? (
+        <View style={{
+          marginHorizontal: 16, marginBottom: 14,
+          backgroundColor: '#FEF2F2', borderRadius: 10,
+          borderWidth: 1, borderColor: '#FECACA',
+          padding: 14, flexDirection: 'row',
+          alignItems: 'center', gap: 10,
+        }}>
+          <Text style={{ flex: 1, fontSize: 13, color: '#DC2626' }}>
+            ⚠️ {statsError}
+          </Text>
+          <TouchableOpacity
+            onPress={fetchStats}
+            style={{ backgroundColor: '#DC2626', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8 }}
+          >
+            <Text style={{ fontSize: 12, color: '#fff', fontWeight: '700' }}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={s.statsRow}>
+          <StatCard
+            icon="🏥" iconBg="#EEF2FF" iconColor="#4F46E5"
+            badge="+12%" badgeColor="#16A34A"
+            value={stats.totalHospitals.toLocaleString()} label="Total Hospitals"
+          />
+          <StatCard
+            icon="⚠️" iconBg="#FEF3C7" iconColor="#D97706"
+            badge="Action Req." badgeColor="#D97706"
+            value={String(stats.pendingVerification)} label="Pending Verification"
+          />
+          <StatCard
+            icon="✅" iconBg="#ECFDF5" iconColor="#16A34A"
+            badge={`${stats.totalHospitals > 0 ? Math.round((stats.verifiedHospitals / stats.totalHospitals) * 100) : 0}% Verified`}
+            badgeColor="#16A34A"
+            value={stats.verifiedHospitals.toLocaleString()} label="Approved Hospitals"
+          />
+        </View>
+      )}
 
       {/* ── Toast ── */}
       {toast && <Toast message={toast.msg} type={toast.type} />}
@@ -1967,7 +2037,7 @@ export default function HospitalListSection() {
           fetchHospitals({
             search,
             status,
-            city: tabLocationFilter,  
+            city: tabLocationFilter,
             page: 1,
             tabStatus: activeTab,
           });

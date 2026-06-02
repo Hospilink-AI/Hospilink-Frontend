@@ -18,6 +18,7 @@ interface StatData {
   badgeType: 'percent' | 'number' | 'tag';
 }
 
+
 export default function Dashboard() {
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
@@ -25,65 +26,73 @@ export default function Dashboard() {
   // 2. Tell TypeScript that this state holds an array of StatData objects
   const [stats, setStats] = useState<StatData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statsError, setStatsError] = useState('');
 
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchDashboardStats = async () => {
-      try {
-        const response = await adminAPI.getStatsAdminDashboard();
-        const json = await response;
+// AFTER — define outside, call inside useEffect
+const fetchDashboardStats = React.useCallback(async () => {
+  setLoading(true);
+  setStatsError('');
+  try {
+    const response = await adminAPI.getStatsAdminDashboard();
+    const json = await response;
 
-        if (json.success) {
-          const data = json.data;
+    if (json.success) {
+      const data = json.data;
+      const mappedStats: StatData[] = [
+        {
+          icon: '🏥',
+          label: 'Total Hospitals',
+          value: data.totalHospitals.count.toString(),
+          badge: data.totalHospitals.changeLabel,
+          badgeColor: data.totalHospitals.trend === 'up' ? '#22C55E' : '#EF4444',
+          badgeType: 'percent'
+        },
+        {
+          icon: '👨‍⚕️',
+          label: 'Medical Staff',
+          value: data.medicalStaff.count.toString(),
+          badge: data.medicalStaff.changeLabel,
+          badgeColor: data.medicalStaff.trend === 'up' ? '#22C55E' : '#EF4444',
+          badgeType: 'percent'
+        },
+        {
+          icon: '📋',
+          label: 'Pending Verifications',
+          value: data.pendingVerifications.count.toString(),
+          badge: data.pendingVerifications.status.charAt(0).toUpperCase() + data.pendingVerifications.status.slice(1),
+          badgeColor: '#EF4444',
+          badgeType: 'tag'
+        },
+        {
+          icon: '📌',
+          label: 'Active Duties',
+          value: data.activeDuties.count.toString(),
+          badge: data.activeDuties.status.charAt(0).toUpperCase() + data.activeDuties.status.slice(1),
+          badgeColor: '#3B82F6',
+          badgeType: 'tag'
+        },
+      ];
+      setStats(mappedStats);
+    } else {
+      setStatsError(json.message ?? 'Failed to load dashboard stats.');
+    }
+  } catch (error: any) {
+    const msg =
+      error?.response?.data?.message ??
+      error?.message ??
+      'Failed to load dashboard stats. Please try again.';
+    setStatsError(msg);
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
-          // 3. Map the API response to the StatCard prop structure
-          const mappedStats: StatData[] = [
-            {
-              icon: '🏥',
-              label: 'Total Hospitals',
-              value: data.totalHospitals.count.toString(),
-              badge: data.totalHospitals.changeLabel,
-              badgeColor: data.totalHospitals.trend === 'up' ? '#22C55E' : '#EF4444',
-              badgeType: 'percent'
-            },
-            {
-              icon: '👨‍⚕️',
-              label: 'Medical Staff',
-              value: data.medicalStaff.count.toString(),
-              badge: data.medicalStaff.changeLabel,
-              badgeColor: data.medicalStaff.trend === 'up' ? '#22C55E' : '#EF4444',
-              badgeType: 'percent'
-            },
-            {
-              icon: '📋',
-              label: 'Pending Verifications',
-              value: data.pendingVerifications.count.toString(),
-              badge: data.pendingVerifications.status.charAt(0).toUpperCase() + data.pendingVerifications.status.slice(1),
-              badgeColor: '#EF4444',
-              badgeType: 'tag'
-            },
-            {
-              icon: '📌',
-              label: 'Active Duties',
-              value: data.activeDuties.count.toString(),
-              badge: data.activeDuties.status.charAt(0).toUpperCase() + data.activeDuties.status.slice(1),
-              badgeColor: '#3B82F6',
-              badgeType: 'tag'
-            },
-          ];
-
-          setStats(mappedStats);
-        }
-      } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardStats();
-  }, []);
+// Now useEffect just calls it
+useEffect(() => {
+  fetchDashboardStats();
+}, [fetchDashboardStats]);
 
   // Visual replica of the Alerts section from the image
   const renderAlertsSection = () => (
@@ -131,7 +140,7 @@ export default function Dashboard() {
       {isTablet ? (
         // Desktop: side by side layout
         <View style={styles.mainRowDesktop}>
-          
+
           {/* LEFT COLUMN */}
           <View style={styles.leftColumn}>
             {/* Quick Actions Header */}
@@ -147,17 +156,17 @@ export default function Dashboard() {
                   <Text style={styles.createDutyText}>Create Duty</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity 
-                style={styles.viewMapButton}
-                onPress={() => router.push('/admin/live-tracking')}
+                <TouchableOpacity
+                  style={styles.viewMapButton}
+                  onPress={() => router.push('/admin/live-tracking')}
                 >
                   <Text style={styles.viewMapIcon}>🗺️</Text>
                   <Text style={styles.viewMapText}>View Map</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity 
-                style={styles.emergencyButton}
-                onPress={() => router.push("/admin/emergency")}
+                <TouchableOpacity
+                  style={styles.emergencyButton}
+                  onPress={() => router.push("/admin/emergency")}
                 >
                   <Text style={styles.emergencyIcon}>🚨</Text>
                   <Text style={styles.emergencyText}>Emergency</Text>
@@ -167,9 +176,21 @@ export default function Dashboard() {
 
             {/* Stat Cards */}
             <View style={styles.statsRowDesktop}>
+              {/* Stats — loading / error / data */}
               {loading ? (
                 <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center', minHeight: 120 }}>
                   <ActivityIndicator size="large" color="#3B82F6" />
+                </View>
+              ) : statsError ? (
+                <View style={styles.errorBox}>
+                  <Text style={styles.errorBoxText}>⚠️ {statsError}</Text>
+                  <TouchableOpacity style={styles.retryBtn} onPress={fetchDashboardStats}>
+                    <Text style={styles.retryBtnText}>Retry</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : stats.length === 0 ? (
+                <View style={styles.errorBox}>
+                  <Text style={styles.errorBoxText}>No stats available right now.</Text>
                 </View>
               ) : (
                 stats.map((s, i) => (
@@ -220,6 +241,17 @@ export default function Dashboard() {
               <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center', minHeight: 120 }}>
                 <ActivityIndicator size="large" color="#3B82F6" />
               </View>
+            ) : statsError ? (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorBoxText}>⚠️ {statsError}</Text>
+                <TouchableOpacity style={styles.retryBtn} onPress={fetchDashboardStats}>
+                  <Text style={styles.retryBtnText}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            ) : stats.length === 0 ? (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorBoxText}>No stats available right now.</Text>
+              </View>
             ) : (
               stats.map((s, i) => (
                 <View key={i} style={{ width: '48%' }}>
@@ -267,6 +299,35 @@ const styles = StyleSheet.create({
   mainColMobile: {
     gap: 16
   },
+
+  // Add to your StyleSheet.create({})
+errorBox: {
+  width: '100%',
+  backgroundColor: '#FEF2F2',
+  borderRadius: 10,
+  borderWidth: 1,
+  borderColor: '#FECACA',
+  padding: 16,
+  alignItems: 'center',
+  gap: 10,
+},
+errorBoxText: {
+  fontSize: 13,
+  color: '#DC2626',
+  textAlign: 'center',
+  lineHeight: 18,
+},
+retryBtn: {
+  backgroundColor: '#DC2626',
+  paddingHorizontal: 20,
+  paddingVertical: 8,
+  borderRadius: 8,
+},
+retryBtnText: {
+  fontSize: 13,
+  color: '#fff',
+  fontWeight: '700',
+},
 
   // Quick Actions Container (Added white background, border radius, and padding)
   quickActionsContainer: {

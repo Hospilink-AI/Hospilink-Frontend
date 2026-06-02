@@ -73,21 +73,29 @@ export default function LiveMonitoring() {
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [summary, setSummary] = useState<SummaryData | null>(null);
+  const [error, setError]         = useState('');  
 
   const fetchActiveDuties = async () => {
-    try {
-      const response = await adminAPI.getActiveDuties();
-      if (response.success) {
-        setDuties(response.data);
-        setSummary(response.summary);
-      }
-    } catch (error) {
-      console.error('Error fetching active duties:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+  setError('');                                     // ← clear previous
+  try {
+    const response = await adminAPI.getActiveDuties();
+    if (response.success) {
+      setDuties(response.data);
+      setSummary(response.summary);
+    } else {
+      setError(response.message ?? 'Failed to load active duties.');
     }
-  };
+  } catch (err: any) {
+    const msg =
+      err?.response?.data?.message ??
+      err?.message ??
+      'Failed to load active duties. Please try again.';
+    setError(msg);
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+};
 
   useEffect(() => {
     fetchActiveDuties();
@@ -189,6 +197,24 @@ export default function LiveMonitoring() {
     );
   }
 
+  if (error) {
+  return (
+    <View style={styles.centerContainer}>
+      <Ionicons name="cloud-offline-outline" size={48} color="#CBD5E1" />
+      <Text style={styles.errorTitle}>Something went wrong</Text>
+      <Text style={styles.errorMessage}>{error}</Text>
+      <TouchableOpacity
+        style={styles.retryBtn}
+        onPress={() => { setLoading(true); fetchActiveDuties(); }}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="refresh-outline" size={16} color="#fff" />
+        <Text style={styles.retryBtnText}>Try Again</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
   return (
     <View style={styles.container}>
       
@@ -270,6 +296,36 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontWeight: '500',
   },
+  // Add to StyleSheet.create({})
+errorTitle: {
+  fontSize: 16,
+  fontWeight: '700',
+  color: '#1E293B',
+  marginTop: 16,
+  marginBottom: 6,
+},
+errorMessage: {
+  fontSize: 13,
+  color: '#94A3B8',
+  textAlign: 'center',
+  marginBottom: 20,
+  paddingHorizontal: 32,
+  lineHeight: 20,
+},
+retryBtn: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 8,
+  backgroundColor: '#2563EB',
+  paddingHorizontal: 24,
+  paddingVertical: 12,
+  borderRadius: 10,
+},
+retryBtnText: {
+  color: '#fff',
+  fontSize: 14,
+  fontWeight: '700',
+},
 
   // Header
   mainHeader: {

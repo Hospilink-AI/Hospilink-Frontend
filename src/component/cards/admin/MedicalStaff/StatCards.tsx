@@ -72,11 +72,14 @@ export default function StatCards({ onExport }: StatCardsProps) {
       if (data.success) {
         setStats(data.data);
       } else {
-        setError('Failed to load stats');
+         setError(data.message ?? 'Failed to load stats.');
       }
-    } catch (err) {
-      console.error('Error fetching stats:', err);
-      setError('Failed to load stats');
+    } catch (err : any) {
+      const msg =
+      err?.response?.data?.message ??
+      err?.message ??
+      'Failed to load stats. Please try again.';
+    setError(msg);
     } finally {
       setLoading(false);
     }

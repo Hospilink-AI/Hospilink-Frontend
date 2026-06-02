@@ -82,9 +82,11 @@ export default function ResetPasswordScreen() {
       }, 2000);
     } catch (error: any) {
       const message =
-        error?.response?.data?.message ||
-        "Something went wrong. The reset link may have expired.";
-      setErrors({ general: message });
+      error?.response?.data?.message ??
+      error?.response?.data?.error ??
+      error?.message ??
+      'Something went wrong. The reset link may have expired.';
+    setErrors({ general: message });
     } finally {
       setLoading(false);
     }
