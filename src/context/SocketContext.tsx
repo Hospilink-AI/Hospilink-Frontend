@@ -3,8 +3,9 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { io, Socket } from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
-const SOCKET_URL = 'https://hospilink-backend-production.up.railway.app';
+const SOCKET_URL = API_URL
 
 interface SocketContextType {
   socket: Socket | null;
