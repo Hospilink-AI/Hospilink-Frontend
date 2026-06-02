@@ -2,8 +2,11 @@ import { io, Socket } from 'socket.io-client';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
+
 // ─── Configuration ──────────────────────────────────────────────────────
-const SOCKET_URL = 'https://hospilinkv1backend.vercel.app';
+// const SOCKET_URL = 'https://hospilinkv1backend.vercel.app';
+const SOCKET_URL = API_URL
 const RECONNECTION_ATTEMPTS = 5;
 const RECONNECTION_DELAY = 3000;
 
