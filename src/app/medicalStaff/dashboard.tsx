@@ -68,6 +68,8 @@ export default function Dashboard() {
     percent: 0, trend: "neutral", label: "+0%"
   });
 
+  const [profileComplete, setProfileComplete] = useState<boolean>(true);
+
 
   const router = useRouter();
   const scrollViewRef = useRef<ScrollView>(null);
@@ -278,6 +280,7 @@ export default function Dashboard() {
     try {
       const response = await profileAPI.getMyProfile();
       setAvailable(response.profile?.isAvailable ?? false);
+      setProfileComplete(response.profile?.isProfileComplete ?? false);
     } catch (err) {
       setAvailable(false);
     } finally {
@@ -403,6 +406,18 @@ export default function Dashboard() {
           : <ToggleSwitch enabled={available ?? false} onToggle={handleToggleAvailability} />
         }
       </View>
+
+      {!profileComplete && (
+        <TouchableOpacity
+          style={styles.completeProfileBanner}
+          activeOpacity={0.85}
+          onPress={() => router.push("/profile/medical-staff")}
+        >
+          <Ionicons name="person-circle-outline" size={18} color={COLORS.white} />
+          <Text style={styles.completeProfileText}>Complete your Profile</Text>
+          <Ionicons name="chevron-forward" size={18} color={COLORS.white} />
+        </TouchableOpacity>
+      )}
 
       <View style={[styles.statsRow, isMobile && styles.statsRowMobile]}>
         <StatsCard
@@ -598,6 +613,21 @@ const styles = StyleSheet.create({
   activeDutyTime: { fontSize: 12, color: COLORS.subText, fontWeight: "500" },
   progressTrack: { height: 8, backgroundColor: "#EEF2FF", borderRadius: 4, overflow: "hidden" },
   progressFill: { height: "100%", backgroundColor: COLORS.primary, borderRadius: 4 },
+  completeProfileBanner: {
+    backgroundColor: "#059669",   // green
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  completeProfileText: {
+    color: COLORS.white,          // white text
+    fontSize: 15,
+    fontWeight: "700",
+  },
   noActiveDutyCard: {
     backgroundColor: COLORS.white,
     borderRadius: 14,
