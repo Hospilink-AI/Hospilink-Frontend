@@ -1,10 +1,8 @@
-import React from 'react';
-import 'leaflet/dist/leaflet.css';
-import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import L from 'leaflet';
-import { useEffect } from 'react';
+import 'leaflet/dist/leaflet.css';
+import React, { useEffect } from 'react';
+import { Circle, MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 import { DoctorWithDistance, Hospital, RangeKm } from '../../../../types/duty';
-import { useMap } from 'react-leaflet'; // this
 
 // Fix Leaflet default icon
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -120,6 +118,16 @@ const RefreshControl: React.FC<RefreshControlProps> = ({ onRefresh }) => {
 
 
 const LiveMap: React.FC<LiveMapProps> = ({ hospital, doctors, rangeKm, onRefresh, isSatellite, onToggleSatellite }) => {
+
+    console.log({
+    MapContainer,
+    TileLayer,
+    Marker,
+    Popup,
+    Circle,
+  });
+
+  
   const center: [number, number] = [
     hospital.location.latitude,
     hospital.location.longitude,
