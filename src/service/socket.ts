@@ -86,7 +86,7 @@ class SocketService {
 
     try {
       const token = await this.getToken();
-      
+
       if (!token) {
         console.error('🔴 [Socket] No authentication token found');
         this.isConnecting = false;
@@ -107,7 +107,7 @@ class SocketService {
       });
 
       this.setupEventHandlers();
-      
+
     } catch (error) {
       console.error('🔴 [Socket] Connection error:', error);
       this.isConnecting = false;
@@ -133,7 +133,7 @@ class SocketService {
       console.error('🔴 [Socket] Connection error:', error.message);
       this.reconnectAttempts++;
       this.isConnecting = false;
-      
+
       if (this.reconnectAttempts >= RECONNECTION_ATTEMPTS) {
         console.error('🔴 [Socket] Max reconnection attempts reached');
         this.emit('connection_status', { connected: false, error: 'Max reconnection attempts reached' });
@@ -192,6 +192,12 @@ class SocketService {
     this.socket.on('tracking_error', (error) => {
       console.error('🔴 [Socket] Tracking error:', error);
       this.emit('tracking_error', error);
+    });
+
+    // Dashboard location confirmed
+    this.socket.on('dashboard:location:confirmed', (data) => {
+      console.log('✅ [Socket] Dashboard location confirmed:', data);
+      this.emit('dashboard:location:confirmed', data);
     });
   }
 
@@ -269,6 +275,20 @@ class SocketService {
   }
 
   /**
+ * Send dashboard location grant
+ */
+sendDashboardLocation(latitude: number, longitude: number): void {
+  if (!this.socket?.connected) {
+    console.error('🔴 [Socket] Cannot send dashboard location - not connected');
+    return;
+  }
+
+  console.log('📍 [Socket] Sending dashboard location:', { latitude, longitude });
+  this.socket.emit('dashboard:location:grant', { latitude, longitude });
+}
+
+
+  /**
    * Register event listener
    */
   on(event: string, callback: Function): void {
@@ -298,6 +318,8 @@ class SocketService {
     }
   }
 
+
+
   /**
    * Disconnect from server
    */
@@ -325,6 +347,8 @@ class SocketService {
     return this.socket?.id;
   }
 }
+
+
 
 // ─── Export Singleton Instance ──────────────────────────────────────────
 export const socketService = new SocketService();
