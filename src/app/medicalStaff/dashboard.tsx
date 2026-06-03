@@ -3,6 +3,7 @@ import DutyCard from "@/component/cards/medicalStaff/Dashboard/DutyCard";
 import OngoingDutyCard from "@/component/cards/medicalStaff/Dashboard/OngoingDutyCard";
 import StatsCard from "@/component/cards/medicalStaff/Dashboard/StatsCard";
 import UpcomingDutyCard from "@/component/cards/medicalStaff/Dashboard/UpcomingDutyCard";
+import { useDashboardLocationTracking } from '@/hooks/useDashboardLocationTracking';
 import Toast from "@/component/common/Toast";
 import ToggleSwitch from "@/component/common/ToggleSwitch";
 import { COLORS } from "@/constant/colors";
@@ -80,6 +81,10 @@ export default function Dashboard() {
   // Get active duty (first ongoing duty)
   const activeDuty = ongoingDuties.length > 0 ? ongoingDuties[0] : null;
 
+  // Inside the Dashboard component, after other hooks
+  const { permissionGranted } = useDashboardLocationTracking();
+
+
   // Calculate progress based on status
   const getProgress = (status: string | undefined) => {
     switch (status) {
@@ -107,53 +112,53 @@ export default function Dashboard() {
 
 
 
-  const checkLocationPermission = async () => {
-    try {
-      if (Platform.OS === 'web') {
-        const permissionStatus = await navigator.permissions?.query({ name: 'geolocation' as PermissionName });
+  // const checkLocationPermission = async () => {
+  //   try {
+  //     if (Platform.OS === 'web') {
+  //       const permissionStatus = await navigator.permissions?.query({ name: 'geolocation' as PermissionName });
 
-        if (permissionStatus?.state === 'granted') {
-          navigator.geolocation.getCurrentPosition(
-            async (position) => {
-              await profileAPI.sendDashboardLocationPermission(
-                true,
-                position.coords.latitude as unknown as null,
-                position.coords.longitude as unknown as null
-              );
-            },
-            async () => {
-              await profileAPI.sendDashboardLocationPermission(false);
-            },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-          );
-          return;
-        }
+  //       if (permissionStatus?.state === 'granted') {
+  //         navigator.geolocation.getCurrentPosition(
+  //           async (position) => {
+  //             await profileAPI.sendDashboardLocationPermission(
+  //               true,
+  //               position.coords.latitude as unknown as null,
+  //               position.coords.longitude as unknown as null
+  //             );
+  //           },
+  //           async () => {
+  //             await profileAPI.sendDashboardLocationPermission(false);
+  //           },
+  //           { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  //         );
+  //         return;
+  //       }
 
-        if (permissionStatus?.state === 'denied') {
-          await profileAPI.sendDashboardLocationPermission(false);
-          return;
-        }
+  //       if (permissionStatus?.state === 'denied') {
+  //         await profileAPI.sendDashboardLocationPermission(false);
+  //         return;
+  //       }
 
-        if (permissionStatus?.state === 'prompt') {
-          navigator.geolocation.getCurrentPosition(
-            async (position) => {
-              await profileAPI.sendDashboardLocationPermission(
-                true,
-                position.coords.latitude as unknown as null,
-                position.coords.longitude as unknown as null
-              );
-            },
-            async () => {
-              await profileAPI.sendDashboardLocationPermission(false);
-            },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-          );
-        }
-      }
-    } catch (error) {
-      await profileAPI.sendDashboardLocationPermission(false);
-    }
-  };
+  //       if (permissionStatus?.state === 'prompt') {
+  //         navigator.geolocation.getCurrentPosition(
+  //           async (position) => {
+  //             await profileAPI.sendDashboardLocationPermission(
+  //               true,
+  //               position.coords.latitude as unknown as null,
+  //               position.coords.longitude as unknown as null
+  //             );
+  //           },
+  //           async () => {
+  //             await profileAPI.sendDashboardLocationPermission(false);
+  //           },
+  //           { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  //         );
+  //       }
+  //     }
+  //   } catch (error) {
+  //     await profileAPI.sendDashboardLocationPermission(false);
+  //   }
+  // };
 
   const handleAccept = useCallback(async () => {
     setToast(true);
@@ -314,9 +319,9 @@ export default function Dashboard() {
     }
   };
 
-  useEffect(() => {
-    checkLocationPermission();
-  }, []);
+  // useEffect(() => {
+  //   checkLocationPermission();
+  // }, []);
 
   useEffect(() => {
     if (available) {
