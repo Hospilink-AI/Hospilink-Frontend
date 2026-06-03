@@ -21,7 +21,7 @@
       "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/Images/foreground.png",
+        "foregroundImage": "./assets/Images/Hospilink_icon.png",
         "monochromeImage": "./assets/Images/loginbg.png"
       },
       "package": "com.hospilinkfrontend",
