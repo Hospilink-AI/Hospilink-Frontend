@@ -5,10 +5,12 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface Props {
-  profileCompletion?: number | null; // optional — pass it to show a progress bar
+  profileCompletion?: number | null; 
+  name?: string | null; 
+  email?: string | null;
 }
 
-export default function CompleteProfileCard({ profileCompletion }: Props) {
+export default function CompleteProfileCard({ profileCompletion, name, email }: Props) {
   const completion = profileCompletion ?? null;
   const isComplete = completion === 100;
 
@@ -48,7 +50,12 @@ export default function CompleteProfileCard({ profileCompletion }: Props) {
       <TouchableOpacity
         style={styles.button}
         activeOpacity={0.85}
-        onPress={() => router.push("/profile/medical-staff")}
+        onPress={() =>
+          router.push({
+            pathname: "/profile/medical-staff",
+            params: { prefillName: name ?? "", prefillEmail: email ?? "" },
+          })
+        }
       >
         <Text style={styles.buttonText}>
           {isComplete ? "View Profile" : "Complete Profile"}

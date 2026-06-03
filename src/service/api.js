@@ -715,7 +715,7 @@ export const vacancyAPI = {
   // GET /api/agent/v1/jobs — paginated, optional role/location filters
   getJobs: async (params = {}) => {
     const { role = '', location = '', page = 1 } = params;
-    const response = await apiAgent.get('/api/agent/v1/jobs', {
+    const response = await apiAgent.get('/v1/jobs', {
       params: {
         page,
         ...(role.trim() && { role: role.trim() }),
@@ -729,7 +729,7 @@ export const vacancyAPI = {
 
   // GET /api/agent/v1/jobs?role=X
   getJobsByRole: async (role, page = 1) => {
-    const response = await apiAgent.get('/api/agent/v1/jobs', {
+    const response = await apiAgent.get('/v1/jobs', {
       params: { role, page },
     });
     return response.data;

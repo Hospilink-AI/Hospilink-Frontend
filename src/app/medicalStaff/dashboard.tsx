@@ -69,6 +69,8 @@ export default function Dashboard() {
   });
 
   const [profileComplete, setProfileComplete] = useState<boolean>(true);
+  const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
 
 
   const router = useRouter();
@@ -281,6 +283,8 @@ export default function Dashboard() {
       const response = await profileAPI.getMyProfile();
       setAvailable(response.profile?.isAvailable ?? false);
       setProfileComplete(response.profile?.isProfileComplete ?? false);
+        setUserName(response.user?.name ?? "");   
+      setUserEmail(response.user?.email ?? ""); 
     } catch (err) {
       setAvailable(false);
     } finally {
@@ -411,7 +415,12 @@ export default function Dashboard() {
         <TouchableOpacity
           style={styles.completeProfileBanner}
           activeOpacity={0.85}
-          onPress={() => router.push("/profile/medical-staff")}
+          onPress={() =>
+            router.push({
+              pathname: "/profile/medical-staff",
+              params: { prefillName: userName, prefillEmail: userEmail },
+            })
+          }
         >
           <Ionicons name="person-circle-outline" size={18} color={COLORS.white} />
           <Text style={styles.completeProfileText}>Complete your Profile</Text>
@@ -606,7 +615,7 @@ const styles = StyleSheet.create({
   activeDutyLeft: { flexDirection: "row", alignItems: "flex-start", gap: 11, flex: 1, minWidth: 0 },
   activeDutyIconWrap: { width: 36, height: 36, borderRadius: 10, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
   activeDutyLabel: { fontSize: 11, color: COLORS.subText, fontWeight: "600", letterSpacing: 0.5, marginBottom: 4 },
-  activeDutyTitle: { fontSize: 12, fontWeight: "600", color: COLORS.text, flexShrink: 0.9,lineHeight: 18,  },
+  activeDutyTitle: { fontSize: 12, fontWeight: "600", color: COLORS.text, flexShrink: 0.9, lineHeight: 18, },
   activeDutyRight: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 4 },
   activeDutyPercent: { fontSize: 12, fontWeight: "700", color: COLORS.primary },
   activeDutySep: { color: COLORS.border, fontSize: 12 },
