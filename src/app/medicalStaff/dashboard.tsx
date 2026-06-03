@@ -69,6 +69,10 @@ export default function Dashboard() {
     percent: 0, trend: "neutral", label: "+0%"
   });
 
+  const [profileComplete, setProfileComplete] = useState<boolean>(true);
+  const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+
 
   const router = useRouter();
   const scrollViewRef = useRef<ScrollView>(null);
@@ -283,6 +287,9 @@ export default function Dashboard() {
     try {
       const response = await profileAPI.getMyProfile();
       setAvailable(response.profile?.isAvailable ?? false);
+      setProfileComplete(response.profile?.isProfileComplete ?? false);
+        setUserName(response.user?.name ?? "");   
+      setUserEmail(response.user?.email ?? ""); 
     } catch (err) {
       setAvailable(false);
     } finally {
@@ -301,6 +308,7 @@ export default function Dashboard() {
           id: job._id,
           title: job.formattedRole || "Medical Duty",
           hospital: job.hospital?.hospitalLegalName || "Hospital",
+          hospitalName: job.hospital?.hospitalLegalName || "Hospital",
           hospitalId: job.hospital?.user?._id,
           time: `${job.startTime || "N/A"} - ${job.endTime || "N/A"}`,
           assignedTo: job.assignedTo,
@@ -407,6 +415,23 @@ export default function Dashboard() {
           : <ToggleSwitch enabled={available ?? false} onToggle={handleToggleAvailability} />
         }
       </View>
+
+      {!profileComplete && (
+        <TouchableOpacity
+          style={styles.completeProfileBanner}
+          activeOpacity={0.85}
+          onPress={() =>
+            router.push({
+              pathname: "/profile/medical-staff",
+              params: { prefillName: userName, prefillEmail: userEmail },
+            })
+          }
+        >
+          <Ionicons name="person-circle-outline" size={18} color={COLORS.white} />
+          <Text style={styles.completeProfileText}>Complete your Profile</Text>
+          <Ionicons name="chevron-forward" size={18} color={COLORS.white} />
+        </TouchableOpacity>
+      )}
 
       <View style={[styles.statsRow, isMobile && styles.statsRowMobile]}>
         <StatsCard
@@ -595,13 +620,28 @@ const styles = StyleSheet.create({
   activeDutyLeft: { flexDirection: "row", alignItems: "flex-start", gap: 11, flex: 1, minWidth: 0 },
   activeDutyIconWrap: { width: 36, height: 36, borderRadius: 10, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
   activeDutyLabel: { fontSize: 11, color: COLORS.subText, fontWeight: "600", letterSpacing: 0.5, marginBottom: 4 },
-  activeDutyTitle: { fontSize: 12, fontWeight: "600", color: COLORS.text, flexShrink: 0.9,lineHeight: 18,  },
+  activeDutyTitle: { fontSize: 12, fontWeight: "600", color: COLORS.text, flexShrink: 0.9, lineHeight: 18, },
   activeDutyRight: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 4 },
   activeDutyPercent: { fontSize: 12, fontWeight: "700", color: COLORS.primary },
   activeDutySep: { color: COLORS.border, fontSize: 12 },
   activeDutyTime: { fontSize: 12, color: COLORS.subText, fontWeight: "500" },
   progressTrack: { height: 8, backgroundColor: "#EEF2FF", borderRadius: 4, overflow: "hidden" },
   progressFill: { height: "100%", backgroundColor: COLORS.primary, borderRadius: 4 },
+  completeProfileBanner: {
+    backgroundColor: "#059669",   // green
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  completeProfileText: {
+    color: COLORS.white,          // white text
+    fontSize: 15,
+    fontWeight: "700",
+  },
   noActiveDutyCard: {
     backgroundColor: COLORS.white,
     borderRadius: 14,

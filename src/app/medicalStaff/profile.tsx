@@ -5,6 +5,7 @@ import ProfessionalSummary from "@/component/cards/medicalStaff/Profile/Professi
 import ProfileHeader from "@/component/cards/medicalStaff/Profile/ProfileHeader";
 import ProfileStatCard from "@/component/cards/medicalStaff/Profile/ProfileStatCard";
 import SkillsCard from "@/component/cards/medicalStaff/Profile/SkillsCard";
+import CompleteProfileCard from "@/component/cards/medicalStaff/Profile/CompleteProfileCard";
 import { COLORS } from "@/constant/colors";
 import { profileData } from "@/data/profile";
 import { Ionicons } from "@expo/vector-icons";
@@ -266,6 +267,11 @@ export default function Profile() {
           />
           {/* FIX: pass live skills array */}
           <SkillsCard skills={displaySkills} />
+          <CompleteProfileCard
+            profileCompletion={apiProfile?.profileCompletion ?? null}
+            name={apiUser?.name ?? ""}
+            email={apiUser?.email ?? ""}
+          />
         </View>
       </View>
 

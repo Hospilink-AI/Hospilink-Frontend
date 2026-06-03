@@ -16,6 +16,14 @@ const api = axios.create({
   },
 })
 
+const apiAgent = axios.create({
+  // baseURL: 'https://api.hospilink.in',
+  baseURL: AGENT_URL,
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
 
 // ─── Helper functions ─────────────────────────────
 const getToken = async () => {
@@ -50,6 +58,24 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+apiAgent.interceptors.request.use(
+  async (config) => {
+    const token = await getToken(); // ✅ async safe
+
+    console.log("API AGENT TOKEN:", token);
+    console.log("API AGENT URL:", config.url);
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+
+
 // ─── RESPONSE INTERCEPTOR ─────────────────────────
 api.interceptors.response.use(
   (response) => response,
@@ -61,7 +87,8 @@ api.interceptors.response.use(
       //  Skip redirect for OTP routes — let the screen handle the error
       const isOtpRoute =
         requestUrl.includes("verify-otp") ||
-        requestUrl.includes("resend-otp");
+        requestUrl.includes("resend-otp") ||
+        requestUrl.includes("forgot-password");
 
       if (isOtpRoute) {
         return Promise.reject(error); // pass error back to the screen's catch block
@@ -73,7 +100,7 @@ api.interceptors.response.use(
       if (Platform.OS === "web") {
         //  Redirect admin vs regular users to the correct login page
         const isAdmin = requestUrl.includes("/admin/");
-        window.location.href = isAdmin ? "/auth/admin/login" : "/";
+        window.location.href = isAdmin ? "/auth/admin/login" : "/auth/login";
       } else {
         console.log("Session expired. Redirect to login manually.");
       }
@@ -82,25 +109,23 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-// api.interceptors.response.use(
-//   (response) => response,
-//   async (error) => {
-//     if (error.response?.status === 401) {
-//       // ❌ Token invalid / expired
-//       await clearStorage();
 
-//       if (Platform.OS === "web") {
-//         window.location.href = "/";
-//       } else {
-//         // ⚠️ React Native doesn't support window.location
-//         console.log("🔒 Session expired. Redirect to login manually.");
-//         // You must handle navigation from your screen (recommended)
-//       }
-//     }
 
-//     return Promise.reject(error);
-//   }
-// );
+apiAgent.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      console.log(
+        "Agent API Unauthorized:",
+        error.config?.url
+      );
+
+      return Promise.reject(error);
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 
 
@@ -690,7 +715,7 @@ export const vacancyAPI = {
   // GET /api/agent/v1/jobs — paginated, optional role/location filters
   getJobs: async (params = {}) => {
     const { role = '', location = '', page = 1 } = params;
-    const response = await api.get('/api/agent/v1/jobs', {
+    const response = await apiAgent.get('/v1/jobs', {
       params: {
         page,
         ...(role.trim() && { role: role.trim() }),
@@ -704,7 +729,7 @@ export const vacancyAPI = {
 
   // GET /api/agent/v1/jobs?role=X
   getJobsByRole: async (role, page = 1) => {
-    const response = await api.get('/api/agent/v1/jobs', {
+    const response = await apiAgent.get('/v1/jobs', {
       params: { role, page },
     });
     return response.data;
@@ -712,7 +737,7 @@ export const vacancyAPI = {
 
   // GET /api/agent/v1/jobs?location=X
   getJobsByLocation: async (location, page = 1) => {
-    const response = await api.get('/api/agent/v1/jobs', {
+    const response = await apiAgent.get('/api/agent/v1/jobs', {
       params: { location, page },
     });
     return response.data;
@@ -720,7 +745,7 @@ export const vacancyAPI = {
 
   // GET /api/agent/v1/jobs?role=X&location=Y
   getJobsByRoleAndLocation: async (role, location, page = 1) => {
-    const response = await api.get('/api/agent/v1/jobs', {
+    const response = await apiAgent.get('/api/agent/v1/jobs', {
       params: { role, location, page },
     });
     return response.data;

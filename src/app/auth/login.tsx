@@ -150,7 +150,7 @@ export default function AuthScreen() {
         setSignInErrors({
           general: response.message ?? 'Invalid email or password.',
         });
-        return;                                        // ← stays on this screen
+        return;
       }
 
       if (Platform.OS === "web") {
