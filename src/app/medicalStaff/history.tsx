@@ -4,17 +4,17 @@ import PastDutyCard from "@/component/cards/medicalStaff/History/PastDutyCard";
 import { COLORS } from "@/constant/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
-    ActivityIndicator,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    useWindowDimensions,
-    View,
-    Alert,
-    Platform
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+  Alert,
+  Platform
 } from "react-native";
 import { dutyAPI, profileAPI } from "../../service/api";
 // import jsPDF from 'jspdf';
@@ -46,126 +46,154 @@ const formatRole = (role: string) => {
 };
 
 export default function History() {
-  const router   = useRouter();
+  const router = useRouter();
   const { width } = useWindowDimensions();
-  const isMobile  = width < 768;
+  const isMobile = width < 768;
 
   // ── API state
-  const [summary,  setSummary]  = useState<any>(null);
-  const [duties,   setDuties]   = useState<any[]>([]);
-  const [loading,  setLoading]  = useState(true);
-  const [showAll,  setShowAll]  = useState(false);
-  const [review , setReview] = useState(0);
+  const [summary, setSummary] = useState<any>(null);
+  const [duties, setDuties] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAll, setShowAll] = useState(false);
+  const [review, setReview] = useState(0);
   const [profileData, setProfileData] = useState<any>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('');
 
   // ────────────────────────────────────────────────────────────
   // GET /api/completed-duties
   // res = { success, summary: { totalDutiesCompleted, totalHours,
   //         totalEarnings, lastDutyDate }, duties: [] }
   // ────────────────────────────────────────────────────────────
+  // useEffect(() => {
+  //   (async () => {
+  //     try {
+  //       const res = await dutyAPI.getCompletedDuties();
+  //       setSummary(res.summary);
+  //       setDuties(res.duties ?? []);
+
+  //       const profileRes = await profileAPI.getMyProfile();
+  //       setProfileData(profileRes);
+  //     } catch (err) {
+  //       console.error("❌ Failed to load history:", err);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   })();
+  // }, []);
+
+  // Replace your existing useEffect fetch with this:
+  // Replace the single useCallback+useEffect block with these two:
+
+  const fetchDuties = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, any> = {};
+      if (statusFilter) params.status = statusFilter;
+      const res = await dutyAPI.getCompletedDuties(params);
+      setSummary(res.summary);
+      setDuties(res.duties ?? []);
+    } catch (err) {
+      console.error("❌ Failed to load duties:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [statusFilter]);
+
+  useEffect(() => { fetchDuties(); }, [fetchDuties]);
+
+  // Profile fetched once only — never re-runs on filter change
   useEffect(() => {
     (async () => {
       try {
-        const res = await dutyAPI.getCompletedDuties();
-        setSummary(res.summary);
-        setDuties(res.duties ?? []);
-        
         const profileRes = await profileAPI.getMyProfile();
         setProfileData(profileRes);
       } catch (err) {
-        console.error("❌ Failed to load history:", err);
-      } finally {
-        setLoading(false);
+        console.error("❌ Failed to load profile:", err);
       }
     })();
   }, []);
 
   // ── Derived stat values — API if loaded, else "—"
-  const totalDuties   = summary?.totalDutiesCompleted ?? "—";
-  const totalHours    = summary ? formatHours(summary.totalHours)       : "—";
+  const totalDuties = summary?.totalDutiesCompleted ?? "—";
+  const totalHours = summary ? formatHours(summary.totalHours) : "—";
   const totalEarnings = summary ? formatEarnings(summary.totalEarnings) : "—";
-  const lastDutyDate  = summary ? formatDate(summary.lastDutyDate)      : "—";
+  const lastDutyDate = summary ? formatDate(summary.lastDutyDate) : "—";
 
   // ── Show 4 cards by default, all on "See All"
-  const visibleDuties = showAll ? duties : duties.slice(0, 4);
+  // const visibleDuties = showAll ? duties : duties.slice(0, 4);
+  const filteredDuties = duties;  // API already filtered
+  const visibleDuties = showAll ? filteredDuties : filteredDuties.slice(0, 4);
 
   // ── Map duties to earnings table format
-const earningsData = duties.map((duty) => ({
-  date: formatDate(duty.date),
-  hospital: duty.hospital?.hospitalLegalName || "—",
-  role: duty.formattedRole || formatRole(duty.staffRole) || "—",
-  amount: formatEarnings(duty.totalPayment),
-}));
+  const earningsData = duties.map((duty) => ({
+    date: formatDate(duty.date),
+    hospital: duty.hospital?.hospitalLegalName || "—",
+    role: duty.formattedRole || formatRole(duty.staffRole) || "—",
+    amount: formatEarnings(duty.totalPayment),
+  }));
 
-const downloadStatement = async () => {
-  if (Platform.OS !== "web") {
-    Alert.alert("Not supported", "PDF download is only available on the web version.");
-    return;
-  }
+  const downloadStatement = async () => {
+    if (Platform.OS !== "web") {
+      Alert.alert("Not supported", "PDF download is only available on the web version.");
+      return;
+    }
 
-  // Dynamically import — only runs on web, never on Android/iOS
-  const jsPDF = (await import('jspdf')).default;
-  const { default: autoTable } = await import('jspdf-autotable');
+    // Dynamically import — only runs on web, never on Android/iOS
+    const jsPDF = (await import('jspdf')).default;
+    const { default: autoTable } = await import('jspdf-autotable');
 
-  const doc = new jsPDF();
-  const pageWidth = doc.internal.pageSize.getWidth();
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
 
-  doc.setFillColor(37, 99, 235);
-  doc.rect(0, 0, pageWidth, 35, 'F');
+    doc.setFillColor(37, 99, 235);
+    doc.rect(0, 0, pageWidth, 35, 'F');
 
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(20);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Hospilink', 35, 20);
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Hospilink', 35, 20);
 
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Healthcare Staffing Solutions', 35, 27);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Healthcare Staffing Solutions', 35, 27);
 
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Earnings Statement', 15, 50);
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Earnings Statement', 15, 50);
 
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  const staffName = profileData?.profile?.fullName || profileData?.user?.name || 'Medical Staff';
-  const generatedDate = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    const staffName = profileData?.profile?.fullName || profileData?.user?.name || 'Medical Staff';
+    const generatedDate = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
 
-  doc.text(`Staff Name: ${staffName}`, 15, 60);
-  doc.text(`Generated: ${generatedDate}`, 15, 67);
-  doc.text(`Total Duties: ${totalDuties}`, 15, 74);
-  doc.text(`Total Earnings: ${totalEarnings}`, 15, 81);
+    doc.text(`Staff Name: ${staffName}`, 15, 60);
+    doc.text(`Generated: ${generatedDate}`, 15, 67);
+    doc.text(`Total Duties: ${totalDuties}`, 15, 74);
+    doc.text(`Total Earnings: ${totalEarnings}`, 15, 81);
 
-  autoTable(doc, {
-    startY: 90,
-    head: [['Date', 'Hospital', 'Role', 'Amount']],
-    body: earningsData.map(item => [item.date, item.hospital, item.role, item.amount]),
-    theme: 'grid',
-    headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 10 },
-    bodyStyles: { fontSize: 9 },
-    alternateRowStyles: { fillColor: [245, 247, 250] },
-    margin: { left: 15, right: 15 },
-  });
+    autoTable(doc, {
+      startY: 90,
+      head: [['Date', 'Hospital', 'Role', 'Amount']],
+      body: earningsData.map(item => [item.date, item.hospital, item.role, item.amount]),
+      theme: 'grid',
+      headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 10 },
+      bodyStyles: { fontSize: 9 },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      margin: { left: 15, right: 15 },
+    });
 
-  const finalY = (doc as any).lastAutoTable.finalY || 90;
-  doc.setFontSize(8);
-  doc.setTextColor(100, 100, 100);
-  doc.text('This is a computer-generated document. No signature required.', pageWidth / 2, finalY + 15, { align: 'center' });
-  doc.text('\u00a9 2026 Hospilink. All rights reserved.', pageWidth / 2, finalY + 20, { align: 'center' });
+    const finalY = (doc as any).lastAutoTable.finalY || 90;
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text('This is a computer-generated document. No signature required.', pageWidth / 2, finalY + 15, { align: 'center' });
+    doc.text('\u00a9 2026 Hospilink. All rights reserved.', pageWidth / 2, finalY + 20, { align: 'center' });
 
-  doc.save(`Hospilink_Earnings_Statement_${new Date().getTime()}.pdf`);
-};
+    doc.save(`Hospilink_Earnings_Statement_${new Date().getTime()}.pdf`);
+  };
 
 
-  // ── Loading screen
-  if (loading) {
-    return (
-      <View style={styles.loaderScreen}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
-    );
-  }
+
 
   return (
     <ScrollView
@@ -177,32 +205,58 @@ const downloadStatement = async () => {
       {isMobile ? (
         <View style={styles.statsMobileGrid}>
           <View style={styles.statsMobileRow}>
-            <HistoryStatCard icon="checkmark-circle-outline" iconBg="#EEF2FF" iconColor={COLORS.primary} value={String(totalDuties)}   label="Total Duties"      isMobile />
-            <HistoryStatCard icon="time-outline"             iconBg="#F3E8FF" iconColor="#7C3AED"         value={totalHours}            label="Total Hours"       isMobile />
+            <HistoryStatCard icon="checkmark-circle-outline" iconBg="#EEF2FF" iconColor={COLORS.primary} value={String(totalDuties)} label="Total Duties" isMobile />
+            <HistoryStatCard icon="time-outline" iconBg="#F3E8FF" iconColor="#7C3AED" value={totalHours} label="Total Hours" isMobile />
           </View>
           <View style={styles.statsMobileRow}>
-            <HistoryStatCard icon="cash-outline"     iconBg="#D1FAE5" iconColor="#059669" value={totalEarnings} label="Lifetime Earnings" isMobile />
-            <HistoryStatCard icon="calendar-outline" iconBg="#FEF3C7" iconColor="#D97706" value={lastDutyDate}  label="Last Duty Date"    isMobile />
+            <HistoryStatCard icon="cash-outline" iconBg="#D1FAE5" iconColor="#059669" value={totalEarnings} label="Lifetime Earnings" isMobile />
+            <HistoryStatCard icon="calendar-outline" iconBg="#FEF3C7" iconColor="#D97706" value={lastDutyDate} label="Last Duty Date" isMobile />
           </View>
         </View>
       ) : (
         <View style={styles.statsRow}>
-          <HistoryStatCard icon="checkmark-circle-outline" iconBg="#EEF2FF" iconColor={COLORS.primary} value={String(totalDuties)}   label="Total Duties"      />
-          <HistoryStatCard icon="time-outline"             iconBg="#F3E8FF" iconColor="#7C3AED"         value={totalHours}            label="Total Hours"       />
-          <HistoryStatCard icon="cash-outline"             iconBg="#D1FAE5" iconColor="#059669"         value={totalEarnings}         label="Lifetime Earnings" />
-          <HistoryStatCard icon="calendar-outline"         iconBg="#FEF3C7" iconColor="#D97706"         value={lastDutyDate}          label="Last Duty Date"    />
+          <HistoryStatCard icon="checkmark-circle-outline" iconBg="#EEF2FF" iconColor={COLORS.primary} value={String(totalDuties)} label="Total Duties" />
+          <HistoryStatCard icon="time-outline" iconBg="#F3E8FF" iconColor="#7C3AED" value={totalHours} label="Total Hours" />
+          <HistoryStatCard icon="cash-outline" iconBg="#D1FAE5" iconColor="#059669" value={totalEarnings} label="Lifetime Earnings" />
+          <HistoryStatCard icon="calendar-outline" iconBg="#FEF3C7" iconColor="#D97706" value={lastDutyDate} label="Last Duty Date" />
         </View>
       )}
 
       {/* ── Past Duties ── */}
-      <View style={styles.sectionHeader}>
+      {/* <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Past Duties</Text>
         <TouchableOpacity style={styles.filterBtn}>
           <Ionicons name="filter-outline" size={18} color={COLORS.text} />
         </TouchableOpacity>
+      </View> */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Past Duties</Text>
       </View>
 
-      {duties.length === 0 ? (
+      <View style={styles.statusFilterRow}>
+        {[
+          { label: 'All', value: '' },
+          { label: 'Completed', value: 'completed' },
+          { label: 'Incomplete', value: 'incomplete' },
+          { label: 'Rejected', value: 'rejected' },
+        ].map((opt) => (
+          <TouchableOpacity
+            key={opt.value}
+            style={[styles.statusChip, statusFilter === opt.value && styles.statusChipActive]}
+            onPress={() => { setStatusFilter(opt.value); setShowAll(false); }}
+          >
+            <Text style={[styles.statusChipTxt, statusFilter === opt.value && styles.statusChipTxtActive]}>
+              {opt.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {loading ? (
+        <View style={styles.inlineLoader}>
+          <ActivityIndicator size="small" color={COLORS.primary} />
+        </View>
+      ) : duties.length === 0 ? (
         // ── Empty state — no past duties
         <View style={styles.emptyState}>
           <Ionicons name="calendar-outline" size={40} color="#94a3b8" />
@@ -216,14 +270,14 @@ const downloadStatement = async () => {
               <PastDutyCard
                 key={duty._id}
                 duty={{
-                  id:       duty._id,
-                  title:    duty.formattedRole || formatRole(duty.staffRole) || "Duty",
+                  id: duty._id,
+                  title: duty.formattedRole || formatRole(duty.staffRole) || "Duty",
                   hospital: duty.hospital?.hospitalLegalName || "—",
-                  date:     formatDate(duty.date),
-                  hours:    duty.duration ? `${duty.duration}` : "—",
-                  price:    duty.totalPayment ? formatEarnings(duty.totalPayment) : "—",
-                  rating:   duty.rating?.rating ?? 0,
-                  status:   duty.status ?? "Completed",
+                  date: formatDate(duty.date),
+                  hours: duty.duration ? `${duty.duration}` : "—",
+                  price: duty.totalPayment ? formatEarnings(duty.totalPayment) : "—",
+                  rating: duty.rating?.rating ?? 0,
+                  status: duty.status ?? "Completed",
                 }}
                 isMobile={isMobile}
                 onPress={() => router.push(`/medicalStaff/historyDetails?id=${duty._id}`)}
@@ -232,7 +286,8 @@ const downloadStatement = async () => {
           </View>
 
           {/* See All / Show Less */}
-          {duties.length > 4 && (
+          {/* {duties.length > 4 && ( */}
+          {filteredDuties.length > 4 && (
             <TouchableOpacity
               style={styles.seeAllRow}
               onPress={() => setShowAll(!showAll)}
@@ -264,30 +319,57 @@ const downloadStatement = async () => {
 }
 
 const styles = StyleSheet.create({
-  loaderScreen:  { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: COLORS.background },
-  container:     { flex: 1, backgroundColor: COLORS.background },
-  content:       { padding: 24, paddingBottom: 40, gap: 20 },
+  loaderScreen: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: COLORS.background },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  content: { padding: 24, paddingBottom: 40, gap: 20 },
   contentMobile: { padding: 16, gap: 16 },
 
-  statsRow:        { flexDirection: "row", gap: 14 },
+  statusFilterRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  statusChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#fff',
+  },
+  inlineLoader: { paddingVertical: 40, alignItems: 'center' },
+  statusChipActive: {
+    backgroundColor: '#2563EB',
+    borderColor: '#2563EB',
+  },
+  statusChipTxt: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  statusChipTxtActive: {
+    color: '#fff',
+  },
+
+  statsRow: { flexDirection: "row", gap: 14 },
   statsMobileGrid: { gap: 12 },
-  statsMobileRow:  { flexDirection: "row", gap: 12 },
+  statsMobileRow: { flexDirection: "row", gap: 12 },
 
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  sectionTitle:  { fontSize: 18, fontWeight: "700", color: COLORS.text },
-  filterBtn:     { width: 36, height: 36, borderRadius: 8, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.white, alignItems: "center", justifyContent: "center" },
+  sectionTitle: { fontSize: 18, fontWeight: "700", color: COLORS.text },
+  filterBtn: { width: 36, height: 36, borderRadius: 8, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.white, alignItems: "center", justifyContent: "center" },
 
-  dutiesGrid:       { flexDirection: "row", flexWrap: "wrap", gap: 16 },
+  dutiesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 16 },
   dutiesGridMobile: { flexDirection: "column", gap: 12 },
 
-  seeAllRow:  { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 4 },
+  seeAllRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 4 },
   seeAllText: { color: COLORS.primary, fontWeight: "600", fontSize: 15 },
 
   earningsHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
-  downloadText:   { color: COLORS.primary, fontWeight: "600", fontSize: 13 },
+  downloadText: { color: COLORS.primary, fontWeight: "600", fontSize: 13 },
 
   // ── Empty state
   emptyState: { alignItems: "center", paddingVertical: 48, backgroundColor: COLORS.white, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, gap: 10 },
   emptyTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text },
-  emptySub:   { fontSize: 13, color: COLORS.subText, textAlign: "center", paddingHorizontal: 24 },
+  emptySub: { fontSize: 13, color: COLORS.subText, textAlign: "center", paddingHorizontal: 24 },
 });

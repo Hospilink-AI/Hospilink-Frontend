@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   RefreshControl,
   useWindowDimensions,
+  Platform,
+  Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -66,6 +68,8 @@ interface ActiveDutiesResponse {
     inProgressCount: number;
   };
 }
+
+
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const getStatusDisplay = (status: string): { label: string; bg: string; color: string } => {
@@ -143,7 +147,7 @@ const TrackingCard = ({
 }) => {
   const statusInfo = getStatusDisplay(duty.status.status);
   const staffName = duty.staff?.name ?? 'Unassigned';
-const staffId   = duty.staff?.id   ?? '000000';
+  const staffId = duty.staff?.id ?? '000000';
 
   return (
     <View style={[styles.card, { width: cardWidth as any }]}>
@@ -170,7 +174,7 @@ const staffId   = duty.staff?.id   ?? '000000';
         <View style={{ flex: 1 }}>
           <Text style={styles.nameText} numberOfLines={1}>
             {/* {duty.staff.name} */}
-            {staffName} 
+            {staffName}
           </Text>
           <Text style={styles.idText}>
             ID: {staffId.slice(-6).toUpperCase()}
@@ -233,6 +237,95 @@ export default function LiveTrackingScreen() {
   const cardWidth =
     columns === 1 ? '100%' : (activeWidth - gap * (columns - 1)) / columns;
 
+  const exportActiveDuties = async () => {
+    if (Platform.OS !== 'web') {
+      Alert.alert('Not supported', 'PDF download is only available on the web version.');
+      return;
+    }
+
+    const jsPDF = (await import('jspdf')).default;
+    const { default: autoTable } = await import('jspdf-autotable');
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    // ── Header ──────────────────────────────────────────────────────────────
+    doc.setFillColor(37, 99, 235);
+    doc.rect(0, 0, pageWidth, 35, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Hospilink', 35, 20);
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Healthcare Staffing Solutions', 35, 27);
+
+    // ── Report Title & Meta ──────────────────────────────────────────────────
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Active Duty Report', 15, 50);
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    const generatedDate = new Date().toLocaleDateString('en-IN', {
+      day: 'numeric', month: 'long', year: 'numeric',
+    });
+
+    doc.text(`Generated: ${generatedDate}`, 15, 60);
+    doc.text(`Total Active Duties: ${summary?.totalActiveDuties ?? duties.length}`, 15, 67);
+    doc.text(
+      `Assigned: ${summary?.assignedCount ?? 0}   En Route: ${summary?.enrouteCount ?? 0}   In Progress: ${summary?.inProgressCount ?? 0}`,
+      15, 74
+    );
+
+    // ── Table ────────────────────────────────────────────────────────────────
+    autoTable(doc, {
+      startY: 85,
+      head: [['Date', 'Staff Name', 'Role', 'Hospital', 'Shift', 'Distance', 'ETA', 'Status', 'Payment']],
+      body: duties.map((duty) => [
+        duty.timing?.date
+          ? new Date(duty.timing.date).toLocaleDateString('en-IN')
+          : '—',
+        duty.staff?.name ?? 'Unassigned',
+        duty.formattedRole?.split(' ')[0] ?? duty.role.toUpperCase(),
+        duty.hospital?.name ?? '—',
+        `${duty.timing?.startTime ?? '—'} - ${duty.timing?.endTime ?? '—'}`,
+        duty.distance?.distanceText ?? '—',
+        duty.distance?.estimatedTimeText ?? '—',
+        duty.status?.status?.toUpperCase() ?? '—',
+        `Rs. ${duty.totalPayment}`,
+      ]),
+      theme: 'grid',
+      headStyles: {
+        fillColor: [37, 99, 235],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 9,
+      },
+      bodyStyles: { fontSize: 8 },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      margin: { left: 15, right: 15 },
+    });
+
+    // ── Footer ────────────────────────────────────────────────────────────────
+    const finalY = (doc as any).lastAutoTable.finalY || 85;
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text(
+      'This is a computer-generated document. No signature required.',
+      pageWidth / 2, finalY + 15, { align: 'center' }
+    );
+    doc.text(
+      '\u00a9 2026 Hospilink. All rights reserved.',
+      pageWidth / 2, finalY + 21, { align: 'center' }
+    );
+
+    doc.save(`Hospilink_Active_Duties_${new Date().getTime()}.pdf`);
+  };
+
   // ── Fetch ──
   const fetchActiveDuties = useCallback(async () => {
     try {
@@ -248,7 +341,7 @@ export default function LiveTrackingScreen() {
     } catch (err: any) {
       // setError(err?.message ?? 'Something went wrong.');
       const backendMessage = err?.response?.data?.message;
-    setError(backendMessage ?? err?.message ?? 'Something went wrong.');
+      setError(backendMessage ?? err?.message ?? 'Something went wrong.');
     }
   }, []);
 
@@ -284,19 +377,19 @@ export default function LiveTrackingScreen() {
     );
   }
 
- if (error) {
-  return (
-    <View style={styles.centeredState}>
-      <Ionicons name="information-circle-outline" size={48} color="#F59E0B" />
-      <Text style={[styles.errorText, { textAlign: 'center', color: '#92400E' }]}>
-        {error}
-      </Text>
-      <TouchableOpacity style={styles.retryBtn} onPress={() => fetchActiveDuties()}>
-        <Text style={styles.retryBtnText}>Retry</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
+  if (error) {
+    return (
+      <View style={styles.centeredState}>
+        <Ionicons name="information-circle-outline" size={48} color="#F59E0B" />
+        <Text style={[styles.errorText, { textAlign: 'center', color: '#92400E' }]}>
+          {error}
+        </Text>
+        <TouchableOpacity style={styles.retryBtn} onPress={() => fetchActiveDuties()}>
+          <Text style={styles.retryBtnText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screen}>
@@ -315,7 +408,11 @@ export default function LiveTrackingScreen() {
               Real-time oversight of ongoing clinical shifts and logistics.
             </Text>
           </View>
-          <TouchableOpacity style={styles.exportBtn} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.exportBtn}
+            activeOpacity={0.8}
+            onPress={exportActiveDuties}
+          >
             <Ionicons name="download-outline" size={16} color="#fff" />
             <Text style={styles.exportBtnText}>Export Report</Text>
           </TouchableOpacity>

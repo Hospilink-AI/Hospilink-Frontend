@@ -9,10 +9,12 @@ import {
   RefreshControl,
   useWindowDimensions,
   Platform,
+  Alert
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { adminAPI } from '@/service/api';
+import { exportDutyReport } from '@/component/cards/admin/LiveMonitoring/DutyReportExport';
 
 // ─── TypeScript Interfaces ──────────────────────────────────────────────
 interface SummaryData {
@@ -68,38 +70,56 @@ export default function LiveMonitoring() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isWide = width >= 900;
-  
+
   const [duties, setDuties] = useState<Duty[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [summary, setSummary] = useState<SummaryData | null>(null);
-  const [error, setError]         = useState('');  
+  const [error, setError] = useState('');
+
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    if (exporting) return;
+    if (!duties || duties.length === 0) {
+      Alert.alert('Nothing to export', 'There are no active duties to include in the report.');
+      return;
+    }
+    try {
+      setExporting(true);
+      await exportDutyReport(duties, summary ?? undefined);
+    } catch (err: any) {
+      Alert.alert('Export failed', err?.message ?? 'Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const fetchActiveDuties = async () => {
-  setError('');                                     // ← clear previous
-  try {
-    const response = await adminAPI.getActiveDuties();
-    if (response.success) {
-      setDuties(response.data);
-      setSummary(response.summary);
-    } else {
-      setError(response.message ?? 'Failed to load active duties.');
+    setError('');                                     // ← clear previous
+    try {
+      const response = await adminAPI.getActiveDuties();
+      if (response.success) {
+        setDuties(response.data);
+        setSummary(response.summary);
+      } else {
+        setError(response.message ?? 'Failed to load active duties.');
+      }
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ??
+        err?.message ??
+        'Failed to load active duties. Please try again.';
+      setError(msg);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-  } catch (err: any) {
-    const msg =
-      err?.response?.data?.message ??
-      err?.message ??
-      'Failed to load active duties. Please try again.';
-    setError(msg);
-  } finally {
-    setLoading(false);
-    setRefreshing(false);
-  }
-};
+  };
 
   useEffect(() => {
     fetchActiveDuties();
-    
+
     // Auto-refresh every 30 seconds
     const interval = setInterval(fetchActiveDuties, 30000);
     return () => clearInterval(interval);
@@ -124,19 +144,19 @@ export default function LiveMonitoring() {
 
   const renderDutyCard = (duty: Duty) => {
     const { dutyId, formattedRole, hospital, staff, status, distance } = duty;
-    
+
     const visuals = getStatusVisuals(status.status);
-    
+
     // Handle case where staff might be null (unassigned duty)
     const staffName = staff?.name || 'Unassigned';
     const staffInitials = staff ? getInitials(staff.name) : '??';
-    const mockId = staff?.id 
-      ? staff.id.substring(staff.id.length - 4).toUpperCase() 
+    const mockId = staff?.id
+      ? staff.id.substring(staff.id.length - 4).toUpperCase()
       : dutyId.substring(dutyId.length - 4).toUpperCase();
 
     return (
       <View key={dutyId} style={[styles.card, isWide ? styles.cardWide : styles.cardMobile]}>
-        
+
         {/* Top Header: Role & Badge */}
         <View style={styles.cardTopRow}>
           <Text style={styles.roleText} numberOfLines={1}>{formattedRole}</Text>
@@ -172,8 +192,8 @@ export default function LiveMonitoring() {
 
         {/* Action Buttons */}
         <View style={styles.actionRow}>
-          <TouchableOpacity 
-            style={[styles.mapBtn, !staff && styles.disabledBtn]} 
+          <TouchableOpacity
+            style={[styles.mapBtn, !staff && styles.disabledBtn]}
             activeOpacity={0.8}
             onPress={() => staff && handleShowOnMap(dutyId)}
             disabled={!staff}
@@ -198,35 +218,46 @@ export default function LiveMonitoring() {
   }
 
   if (error) {
-  return (
-    <View style={styles.centerContainer}>
-      <Ionicons name="cloud-offline-outline" size={48} color="#CBD5E1" />
-      <Text style={styles.errorTitle}>Something went wrong</Text>
-      <Text style={styles.errorMessage}>{error}</Text>
-      <TouchableOpacity
-        style={styles.retryBtn}
-        onPress={() => { setLoading(true); fetchActiveDuties(); }}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="refresh-outline" size={16} color="#fff" />
-        <Text style={styles.retryBtnText}>Try Again</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
+    return (
+      <View style={styles.centerContainer}>
+        <Ionicons name="cloud-offline-outline" size={48} color="#CBD5E1" />
+        <Text style={styles.errorTitle}>Something went wrong</Text>
+        <Text style={styles.errorMessage}>{error}</Text>
+        <TouchableOpacity
+          style={styles.retryBtn}
+          onPress={() => { setLoading(true); fetchActiveDuties(); }}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="refresh-outline" size={16} color="#fff" />
+          <Text style={styles.retryBtnText}>Try Again</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      
+
       {/* ─── Top Header Section ─── */}
       <View style={styles.mainHeader}>
         <View style={styles.headerTitles}>
           <Text style={styles.pageTitle}>Live Tracking & Monitoring</Text>
           <Text style={styles.pageSubtitle}>Real-time oversight of ongoing clinical shifts and logistics.</Text>
         </View>
-        <TouchableOpacity style={styles.exportBtn} activeOpacity={0.8}>
-          <Ionicons name="download-outline" size={16} color="#fff" />
-          <Text style={styles.exportBtnText}>Export Report</Text>
+        <TouchableOpacity
+          style={[styles.exportBtn, exporting && { opacity: 0.7 }]}
+          activeOpacity={0.8}
+          onPress={handleExport}
+          disabled={exporting}
+        >
+          {exporting ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <>
+              <Ionicons name="download-outline" size={16} color="#fff" />
+              <Text style={styles.exportBtnText}>Export Report</Text>
+            </>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -297,35 +328,35 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   // Add to StyleSheet.create({})
-errorTitle: {
-  fontSize: 16,
-  fontWeight: '700',
-  color: '#1E293B',
-  marginTop: 16,
-  marginBottom: 6,
-},
-errorMessage: {
-  fontSize: 13,
-  color: '#94A3B8',
-  textAlign: 'center',
-  marginBottom: 20,
-  paddingHorizontal: 32,
-  lineHeight: 20,
-},
-retryBtn: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 8,
-  backgroundColor: '#2563EB',
-  paddingHorizontal: 24,
-  paddingVertical: 12,
-  borderRadius: 10,
-},
-retryBtnText: {
-  color: '#fff',
-  fontSize: 14,
-  fontWeight: '700',
-},
+  errorTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginTop: 16,
+    marginBottom: 6,
+  },
+  errorMessage: {
+    fontSize: 13,
+    color: '#94A3B8',
+    textAlign: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 32,
+    lineHeight: 20,
+  },
+  retryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  retryBtnText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
 
   // Header
   mainHeader: {
@@ -368,7 +399,7 @@ retryBtnText: {
     fontWeight: '600',
   },
 
-  disabledBtn:{
+  disabledBtn: {
     // color:'#FFFFFF'
   },
 
@@ -411,7 +442,7 @@ retryBtnText: {
     flexWrap: 'wrap',
     gap: 16,
   },
-  
+
   // Card
   card: {
     backgroundColor: '#FFFFFF',

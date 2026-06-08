@@ -14,6 +14,8 @@ import {
   Image
 } from 'react-native';
 import { adminAPI } from '@/service/api';
+// import { exportHospitalReport } from '@/path/to/hospitalReportExport';
+import { exportHospitalReport } from './exportHospitalReport';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type LicenseStatus = 'VERIFIED' | 'PENDING' | 'REJECTED' | 'AUTO_VERIFIED' | 'MANUAL_PENDING';
@@ -1739,6 +1741,55 @@ export default function HospitalListSection() {
     setTimeout(() => setToast(null), 3000);
   };
 
+  const [exporting, setExporting] = useState(false);
+
+  // Pulls EVERY page so the PDF isn't just the 10 rows currently visible,
+  // while respecting the active search/tab/city filters.
+  const fetchAllHospitalsForExport = useCallback(async (): Promise<Hospital[]> => {
+    const all: Hospital[] = [];
+    let page = 1;
+    let hasNext = true;
+
+    while (hasNext && page <= 100) {
+      const params: Record<string, any> = { page };
+      if (search) params.search = search;
+      if (activeTab && activeTab !== 'ALL') {
+        params.status = activeTab.toLowerCase().replace('_', '-');
+      } else if (status && status !== 'All Statuses') {
+        params.status = toApiStatus(status);
+      }
+      if (city && city !== 'All Cities') params.city = city;
+
+      const res = await adminAPI.getHospitals(params);
+      const list = res?.data?.hospitals ?? res?.hospitals ?? res?.data ?? [];
+      const mapped: Hospital[] = Array.isArray(list) ? list.map(mapHospital) : [];
+      all.push(...mapped);
+
+      const pg = res?.data?.pagination ?? res?.pagination ?? null;
+      hasNext = !!pg?.hasNextPage;
+      page += 1;
+    }
+    return all;
+  }, [search, status, city, activeTab]);
+
+  const handleExport = async () => {
+    if (exporting) return;
+    try {
+      setExporting(true);
+      const data = await fetchAllHospitalsForExport();
+      if (data.length === 0) {
+        showToast('No hospitals to export', 'error');
+        return;
+      }
+      await exportHospitalReport(data);
+      showToast('Report exported successfully', 'success');
+    } catch (err: any) {
+      showToast(err?.message ?? 'Export failed. Please try again.', 'error');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   // ── Tab counts derived from allHospitals ──────────────────────────────────
   const tabCounts = useCallback((): Partial<Record<TabKey, number>> => {
     const counts: Partial<Record<TabKey, number>> = {};
@@ -1925,9 +1976,20 @@ export default function HospitalListSection() {
             Monitor verification status, staff density, and operational logs.
           </Text>
         </View>
-        <TouchableOpacity style={s.exportBtn}>
-          <Text style={s.exportIcon}>↑</Text>
-          <Text style={s.exportTxt}>Export Hospital Data</Text>
+        <TouchableOpacity
+          style={[s.exportBtn, exporting && { opacity: 0.7 }]}
+          onPress={handleExport}
+          disabled={exporting}
+          activeOpacity={0.85}
+        >
+          {exporting ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <>
+              <Text style={s.exportIcon}>↑</Text>
+              <Text style={s.exportTxt}>Export Hospital Data</Text>
+            </>
+          )}
         </TouchableOpacity>
       </View>
 
