@@ -326,14 +326,20 @@ export const profileAPI = {
   },
 
   // Send dashboard location permission status
-  sendDashboardLocationPermission: async (permissionGranted, latitude = null, longitude = null) => {
-    const payload = permissionGranted
-      ? { permissionGranted: true, latitude, longitude }
-      : { permissionGranted: false };
+  // sendDashboardLocationPermission: async (permissionGranted, latitude = null, longitude = null) => {
+  //   const payload = permissionGranted
+  //     ? { permissionGranted: true, latitude, longitude }
+  //     : { permissionGranted: false };
 
-    const response = await api.post('/api/profile/dashboard/location-permission', payload);
-    return response.data;
-  },
+  //   const response = await api.post('/api/profile/dashboard/location-permission', payload);
+  //   return response.data;
+  // },
+   
+  sendDashboardLocationPermission: async (permissionGranted) => {
+  const payload = { permissionGranted };
+  const response = await api.post('/api/profile/dashboard/location-permission', payload);
+  return response.data;
+   },
 
   // Get earnings data for dashboard
   getEarnings: async () => {
@@ -592,7 +598,10 @@ export const dutyAPI = {
     return response.data;
   },
 
-
+ submitReview : async (payload) => {
+  const response = await api.post('/api/reviews/submit', payload);
+  return response.data;
+},
 
 
   // Get Ongoing duties
@@ -627,10 +636,10 @@ export const dutyAPI = {
   },
 
   // Get all completed duty history for staff
-  getCompletedDuties: async () => {
-    const response = await api.get('/api/completed-duties');
-    return response.data;
-  },
+ getCompletedDuties: async (params = {}) => {
+  const response = await api.get('/api/completed-duties', { params });
+  return response.data;
+},
 
   // Get route for a duty (map navigation)
   // POST /api/duties/:id/route

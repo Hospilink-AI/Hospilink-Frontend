@@ -17,7 +17,7 @@ import { adminAPI } from '@/service/api';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { File, Directory, Paths } from 'expo-file-system';
-
+import { exportActivityLogReport } from '@/component/cards/admin/ActivityLogs/activityReportExport';
 // ─── Types ────────────────────────────────────────────────────────────────────
 type LogStatus = 'CRITICAL' | 'SUCCESS' | 'WARNING' | 'FAILED' | 'INFO';
 
@@ -616,6 +616,59 @@ export default function ActivityLogs() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Pulls every page of logs (respecting current filters) for a full report.
+  const fetchAllLogsForExport = async (): Promise<ActivityLog[]> => {
+    const all: ActivityLog[] = [];
+    const LIMIT = 200;
+    let currentPage = 1;
+    let hasNext = true;
+
+    while (hasNext && currentPage <= 100) {
+      const params = buildParams({
+        dateMode: appliedDateMode,
+        presetLabel: appliedPreset,
+        singleDate: appliedSingleDate,
+        startDate: appliedStartDate,
+        endDate: appliedEndDate,
+        action: appliedAction,
+        dept: appliedDept,
+        status: appliedStatus,
+        search: appliedSearch,
+        page: currentPage,
+        pageSize: LIMIT,
+      });
+
+      const result = appliedSearch.trim()
+        ? await adminAPI.searchActivityLogs(params)
+        : await adminAPI.getActivityLogs(params);
+
+      all.push(...result.data.map(transformLog));
+      hasNext = !!result.pagination?.hasNextPage;
+      currentPage += 1;
+    }
+    return all;
+  };
+
+  const handleExportPdf = async () => {
+    setExportModalVisible(false);
+    setExporting(true);
+    setExportError(null);
+    try {
+      const data = await fetchAllLogsForExport();
+      if (data.length === 0) {
+        const msg = 'No logs to export for the current filters.';
+        Platform.OS === 'web' ? setExportError(msg) : Alert.alert('Nothing to export', msg);
+        return;
+      }
+      await exportActivityLogReport(data);
+    } catch (err: any) {
+      const msg = err?.message ?? 'Export failed. Please try again.';
+      Platform.OS === 'web' ? setExportError(msg) : Alert.alert('Export Failed', msg);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   // ── Derived label for the date button ──
   const dateLabel = (() => {
     if (appliedDateMode === 'last7') return appliedPreset;
@@ -1073,8 +1126,8 @@ export default function ActivityLogs() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.confirmBtn, { opacity: 0.5 }]}
-              onPress={() => handleExport('pdf')}
+              style={styles.confirmBtn}
+              onPress={handleExportPdf}
               activeOpacity={0.7}
             >
               <Text style={styles.confirmBtnText}>Download as PDF</Text>
@@ -1205,37 +1258,37 @@ const styles = StyleSheet.create({
   confirmBtn: { backgroundColor: '#2563eb', borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
   confirmBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   inlineError: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 6,
-  backgroundColor: '#fef2f2',
-  borderWidth: 1,
-  borderColor: '#fecaca',
-  borderRadius: 8,
-  padding: 10,
-  marginBottom: 12,
-},
-inlineErrorText: {
-  fontSize: 12,
-  color: '#dc2626',
-  fontWeight: '500',
-  flex: 1,
-},
-exportErrorBanner: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 8,
-  backgroundColor: '#fef2f2',
-  borderWidth: 1,
-  borderColor: '#fecaca',
-  borderRadius: 10,
-  padding: 14,
-  marginBottom: 16,
-},
-exportErrorText: {
-  flex: 1,
-  fontSize: 13,
-  color: '#dc2626',
-  fontWeight: '500',
-},
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 12,
+  },
+  inlineErrorText: {
+    fontSize: 12,
+    color: '#dc2626',
+    fontWeight: '500',
+    flex: 1,
+  },
+  exportErrorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 16,
+  },
+  exportErrorText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#dc2626',
+    fontWeight: '500',
+  },
 });

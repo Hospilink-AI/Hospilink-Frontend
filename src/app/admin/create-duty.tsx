@@ -33,6 +33,7 @@ type FormState = {
   offerRate: string;
   dutyDescription: string;
   staffCount: string;
+  dutySubType: string
 };
 
 type FormErrors = Partial<Record<keyof FormState, string>>;
@@ -43,6 +44,12 @@ interface Hospital {
   location: string;
   verificationStatus: 'verified' | 'pending' | 'rejected';
 }
+
+const RMO_SUB_TYPES = [
+  { label: 'Ward Duty', value: 'ward' },
+  { label: 'ICU Duty', value: 'icu' },
+  { label: 'Casualty', value: 'casualty' },
+];
 
 // ─── Dropdown Options ─────────────────────────────────────
 const ROLES: { label: string; value: string }[] = [
@@ -108,6 +115,10 @@ function validate(form: FormState): FormErrors {
   if (!form.hospitalId)
     errs.hospitalId = 'Please select a hospital.';
 
+  if (form.staffRole === 'rmo' && !form.dutySubType) {
+    errs.dutySubType = 'Please select a duty sub-type.';
+  }
+
   if (!form.staffRole)
     errs.staffRole = 'Please select a staff role.';
 
@@ -170,6 +181,7 @@ const FIELD_MAP: Record<string, keyof FormState> = {
   offered_rate: 'offerRate',
   description: 'dutyDescription',
   staff_count: 'staffCount',
+  duty_sub_type: 'dutySubType',
 };
 
 function parseBackendErrors(err: any): { fieldErrors: FormErrors; generalError: string } {
@@ -597,14 +609,15 @@ function DatePickerField({ value, onChange, placeholder }: {
 
 /// ─── Time Picker Field ────────────────────────────────────
 // ─── Time Picker Field ────────────────────────────────────
-function TimePickerField({ value, onChange, placeholder, error }: {
-  value: string; onChange: (v: string) => void; placeholder: string; error?: string;
+function TimePickerField({ value, onChange, placeholder, error, onEmptyPress }: {
+  value: string; onChange: (v: string) => void; placeholder: string; error?: string; onEmptyPress?: () => void;
 }) {
   const [showPicker, setShowPicker] = useState(false);
   const [tempTime, setTempTime] = useState<Date>(new Date());
   const inputRef = useRef<any>(null); // Added ref for web interaction
 
   const handlePress = () => {
+    if (!value) onEmptyPress?.();
     if (value) {
       const [h, m] = value.split(':');
       const d = new Date();
@@ -624,7 +637,10 @@ function TimePickerField({ value, onChange, placeholder, error }: {
       return (
         <TouchableOpacity
           activeOpacity={1}
-          onPress={() => inputRef.current?.showPicker?.()} // Triggers the browser's native picker
+          onPress={() => {
+            if (!value) onEmptyPress?.();
+            inputRef.current?.showPicker?.();
+          }}
         >
           <View style={[styles.inputWrap]}>
             <Ionicons name="time-outline" size={15} color="#9CA3AF" style={{ marginRight: 6 }} />
@@ -773,7 +789,7 @@ export default function CreateDutyScreen() {
   const [form, setForm] = useState<FormState>({
     hospitalId: '', hospitalName: '', staffRole: '', urgencyLevel: 'medium',
     startingDate: '', endingDate: '', startTime: '', endTime: '',
-    overtimeDuty: false, offerRate: '', dutyDescription: '', staffCount: '',
+    overtimeDuty: false, offerRate: '', dutyDescription: '', staffCount: '', dutySubType: ''
   });
 
   const [publishing, setPublishing] = useState(false);
@@ -795,6 +811,48 @@ export default function CreateDutyScreen() {
     setToastMsg(msg);
     setToastVisible(true);
     setTimeout(() => setToastVisible(false), 3000);
+  };
+
+  const startTimeClearedRef = useRef(false);
+
+  const handleStartTimeChange = (val: string) => {
+    if (val === '' && form.startTime !== '') {
+      startTimeClearedRef.current = true;
+    }
+    set('startTime')(val);
+  };
+
+  const handleStartTimeEmptyFocus = () => {
+    if (form.urgencyLevel === 'emergency') return;
+    if (startTimeClearedRef.current) return;
+
+    const nowIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+    const originalDate = nowIST.getDate();
+    const originalMonth = nowIST.getMonth();
+
+    nowIST.setMinutes(nowIST.getMinutes() + 15);
+    const remainder = nowIST.getMinutes() % 5;
+    if (remainder !== 0) nowIST.setMinutes(nowIST.getMinutes() + (5 - remainder));
+
+    const timeStr = `${String(nowIST.getHours()).padStart(2, '0')}:${String(nowIST.getMinutes()).padStart(2, '0')}`;
+    set('startTime')(timeStr);
+
+    const crossedMidnight = nowIST.getDate() !== originalDate || nowIST.getMonth() !== originalMonth;
+
+    if (!form.startingDate) {
+      set('startingDate')(formatDateDisplay(nowIST));
+    } else if (crossedMidnight) {
+      set('startingDate')(formatDateDisplay(nowIST));
+    }
+  };
+
+  const handleRoleChange = (val: string) => {
+    setForm(prev => ({
+      ...prev,
+      staffRole: val,
+      dutySubType: val === 'rmo' ? prev.dutySubType : '',
+    }));
+    setErrors(prev => ({ ...prev, staffRole: undefined, dutySubType: undefined }));
   };
 
   useEffect(() => {
@@ -824,6 +882,7 @@ export default function CreateDutyScreen() {
           offerRate: String(d.offered_rate ?? d.offeredRate ?? ''),
           dutyDescription: d.description ?? '',
           staffCount: String(d.staff_count ?? d.staffCount ?? ''),
+          dutySubType: d.duty_sub_type ?? d.dutySubType ?? '',
         });
       } catch (err: any) {
         Alert.alert(
@@ -859,6 +918,9 @@ export default function CreateDutyScreen() {
       offered_rate: Number(form.offerRate),
       is_overnight_duty: form.overtimeDuty,
       staff_count: form.staffCount ? Number(form.staffCount) : undefined,
+      ...(form.staffRole === 'rmo' && form.dutySubType
+        ? { duty_sub_type: form.dutySubType }
+        : {}),
     };
 
     try {
@@ -1016,12 +1078,13 @@ export default function CreateDutyScreen() {
                 <View style={styles.col}>
                   <FieldLabel label="Staff Role" required />
                   <InlineDropdown
-  selectedValue={form.staffRole}
-  options={ROLES}
-  onSelect={set('staffRole')}
-  placeholder="Select Role"
-/>
-<FieldError message={errors.staffRole} />
+                    selectedValue={form.staffRole}
+                    options={ROLES}
+                    // onSelect={set('staffRole')}
+                    onSelect={handleRoleChange}
+                    placeholder="Select Role"
+                  />
+                  <FieldError message={errors.staffRole} />
                 </View>
                 <View style={styles.col}>
                   <FieldLabel label="Urgency Level" required />
@@ -1032,16 +1095,43 @@ export default function CreateDutyScreen() {
                   />
                 </View>
               </View>
+              {form.staffRole === 'rmo' && (
+                <View style={{ marginBottom: 14 }}>
+                  <FieldLabel label="Duty Sub-Type" required />
+                  <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+                    {RMO_SUB_TYPES.map(opt => {
+                      const active = form.dutySubType === opt.value;
+                      return (
+                        <TouchableOpacity
+                          key={opt.value}
+                          onPress={() => set('dutySubType')(opt.value)}
+                          style={{
+                            paddingHorizontal: 16, paddingVertical: 8,
+                            borderRadius: 20, borderWidth: 1,
+                            borderColor: active ? '#2563EB' : '#E5E7EB',
+                            backgroundColor: active ? '#EFF6FF' : '#fff',
+                          }}
+                        >
+                          <Text style={{ fontSize: 13, fontWeight: '600', color: active ? '#2563EB' : '#6B7280' }}>
+                            {opt.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                  <FieldError message={errors.dutySubType} />
+                </View>
+              )}
               {/* Staff Count */}
               <View style={{ marginTop: 4 }}>
                 <FieldLabel label="Number of Staff Required" />
                 <InputField
-  placeholder="e.g. 2"
-  value={form.staffCount}
-  onChangeText={set('staffCount')}
-  keyboardType="number-pad"
-/>
-<FieldError message={errors.staffCount} />
+                  placeholder="e.g. 2"
+                  value={form.staffCount}
+                  onChangeText={set('staffCount')}
+                  keyboardType="number-pad"
+                />
+                <FieldError message={errors.staffCount} />
               </View>
             </View>
 
@@ -1051,24 +1141,24 @@ export default function CreateDutyScreen() {
 
               <FieldLabel label="Offer Rate per Hour (₹)" required />
               <InputField
-  placeholder="0.00"
-  value={form.offerRate}
-  onChangeText={set('offerRate')}
-  prefix="₹"
-  keyboardType="decimal-pad"
-/>
-<FieldError message={errors.offerRate} />
+                placeholder="0.00"
+                value={form.offerRate}
+                onChangeText={set('offerRate')}
+                prefix="₹"
+                keyboardType="decimal-pad"
+              />
+              <FieldError message={errors.offerRate} />
 
               <View style={{ height: 14 }} />
 
               <FieldLabel label="Duty Description" required />
               <InputField
-  placeholder="Briefly describe..."
-  value={form.dutyDescription}
-  onChangeText={set('dutyDescription')}
-  multiline
-/>
-<FieldError message={errors.dutyDescription} />
+                placeholder="Briefly describe..."
+                value={form.dutyDescription}
+                onChangeText={set('dutyDescription')}
+                multiline
+              />
+              <FieldError message={errors.dutyDescription} />
 
             </View>
 
@@ -1083,20 +1173,20 @@ export default function CreateDutyScreen() {
               <View style={styles.row2}>
                 <View style={styles.col}>
                   <FieldLabel label="Starting Date" required />
-<DatePickerField
-  value={form.startingDate}
-  onChange={set('startingDate')}
-  placeholder="dd-mm-yyyy"
-/>
-<FieldError message={errors.startingDate} />                </View>
+                  <DatePickerField
+                    value={form.startingDate}
+                    onChange={set('startingDate')}
+                    placeholder="dd-mm-yyyy"
+                  />
+                  <FieldError message={errors.startingDate} />                </View>
                 <View style={styles.col}>
                   <FieldLabel label="Ending Date" required />
-<DatePickerField
-  value={form.endingDate}
-  onChange={set('endingDate')}
-  placeholder="dd-mm-yyyy"
-/>
-<FieldError message={errors.endingDate} />                </View>
+                  <DatePickerField
+                    value={form.endingDate}
+                    onChange={set('endingDate')}
+                    placeholder="dd-mm-yyyy"
+                  />
+                  <FieldError message={errors.endingDate} />                </View>
               </View>
 
               {/* Start Time + End Time */}
@@ -1104,20 +1194,21 @@ export default function CreateDutyScreen() {
                 <View style={styles.col}>
                   <FieldLabel label="Start Time" required />
                   <TimePickerField
-  value={form.startTime}
-  onChange={set('startTime')}
-  placeholder="-- : --"
-/>
-<FieldError message={errors.startTime} />
+                    value={form.startTime}
+                    onChange={handleStartTimeChange}   // ← was set('startTime')
+                    placeholder="-- : --"
+                    onEmptyPress={handleStartTimeEmptyFocus}
+                  />
+                  <FieldError message={errors.startTime} />
                 </View>
                 <View style={styles.col}>
                   <FieldLabel label="End Time" required />
                   <TimePickerField
-  value={form.endTime}
-  onChange={set('endTime')}
-  placeholder="-- : --"
-/>
-<FieldError message={errors.endTime} />
+                    value={form.endTime}
+                    onChange={set('endTime')}
+                    placeholder="-- : --"
+                  />
+                  <FieldError message={errors.endTime} />
                 </View>
               </View>
 

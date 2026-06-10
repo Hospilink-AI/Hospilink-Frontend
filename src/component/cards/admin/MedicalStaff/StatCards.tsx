@@ -104,9 +104,7 @@ export default function StatCards({ onExport }: StatCardsProps) {
           <Text style={styles.title}>Medical Staff</Text>
           <Text style={styles.subtitle}>Oversee credentials, duty logs & verification</Text>
         </View>
-        <TouchableOpacity style={styles.exportBtn} onPress={onExport} activeOpacity={0.8}>
-          <Text style={styles.exportText}>↓ Export</Text>
-        </TouchableOpacity>
+       
       </View>
 
       

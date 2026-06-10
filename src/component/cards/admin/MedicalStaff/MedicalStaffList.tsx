@@ -12,9 +12,11 @@ import {
   Animated,
   Dimensions,
   Alert,
-  Image
+  Image,
+  ActivityIndicator,
 } from 'react-native';
 import { adminAPI } from '@/service/api';
+import { exportStaffReport } from './staffreportExport';
 
 // ─── Types & Config ───────────────────────────────────────────────────────────
 type AvailabilityStatus = 'AVAILABLE' | 'UNAVAILABLE';
@@ -1633,6 +1635,50 @@ export default function MedicalStaffListSection() {
     setTimeout(() => setToast(null), 3000);
   };
 
+
+  const [exporting, setExporting] = useState(false);
+
+  // Pulls every page so the PDF isn't just the 10 visible rows,
+  // using the same filters/tab/location currently applied.
+  const fetchAllStaffForExport = async (): Promise<MedicalStaff[]> => {
+    const all: MedicalStaff[] = [];
+    const roleParam = role !== 'All Roles' ? role.toLowerCase().replace(/ /g, '_') : '';
+    const verificationParam = TAB_TO_API_STATUS[activeTabKey] ?? '';
+    const locationParam = location !== 'All Cities' ? location : '';
+
+    let page = 1;
+    let hasNext = true;
+    while (hasNext && page <= 100) {
+      const data = await adminAPI.getMedicalStaff(search, page, roleParam, verificationParam, locationParam);
+      const mapped: MedicalStaff[] = (data?.staff ?? []).map(mapStaff);
+      all.push(...mapped);
+      hasNext = !!data?.pagination?.hasNextPage;
+      page += 1;
+    }
+    return all;
+  };
+
+  const handleExport = async () => {
+    if (exporting) return;
+    try {
+      setExporting(true);
+      let data = await fetchAllStaffForExport();
+      // mirror the client-side availability filter so the export matches the view
+      if (status !== 'All Statuses') {
+        data = data.filter(st => st.status === status);
+      }
+      if (data.length === 0) {
+        showToast('No staff to export', 'error');
+        return;
+      }
+      await exportStaffReport(data);
+      showToast('Report exported successfully', 'success');
+    } catch (err: any) {
+      showToast(err?.message ?? 'Export failed. Please try again.', 'error');
+    } finally {
+      setExporting(false);
+    }
+  };
   // const fetchStaff = async (page = 1, currentSearch = search, currentRole = role, tabKey = activeTabKey) => {
   //   try {
   //     setLoading(true);
@@ -1808,9 +1854,20 @@ export default function MedicalStaffListSection() {
             Monitor availability, completed duties, and role distribution.
           </Text>
         </View>
-        <TouchableOpacity style={s.exportBtn}>
-          <Text style={s.exportIcon}>↑</Text>
-          <Text style={s.exportTxt}>Export Staff Data</Text>
+        <TouchableOpacity
+          style={[s.exportBtn, exporting && { opacity: 0.7 }]}
+          onPress={handleExport}
+          disabled={exporting}
+          activeOpacity={0.85}
+        >
+          {exporting ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <>
+              <Text style={s.exportIcon}>↑</Text>
+              <Text style={s.exportTxt}>Export Staff Data</Text>
+            </>
+          )}
         </TouchableOpacity>
       </View>
 

@@ -30,6 +30,7 @@ type FormState = {
   offerRate: string;
   dutyDescription: string;
   staffCount: string;
+  dutySubType: string
 };
 
 type FormErrors = Partial<Record<keyof FormState, string>>;
@@ -78,6 +79,12 @@ const ROLES: { label: string; value: string }[] = [
   { label: 'HR & Accounts', value: 'hr_accounts' },
 ];
 
+const RMO_SUB_TYPES = [
+  { label: 'Ward Duty', value: 'ward' },
+  { label: 'ICU Duty', value: 'icu' },
+  { label: 'Casualty', value: 'casualty' },
+];
+
 // ─── Validation ───────────────────────────────────────────
 function validateForm(form: FormState): FormErrors {
   const errors: FormErrors = {};
@@ -120,6 +127,8 @@ function parseDateString(str: string): Date {
 function formatDateDisplay(d: Date): string {
   return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${d.getFullYear()}`;
 }
+
+
 
 // ─── Toast ────────────────────────────────────────────────
 function Toast({ visible, message }: { visible: boolean; message: string }) {
@@ -476,7 +485,7 @@ export default function CreateDutyScreen() {
 
   const [form, setForm] = useState<FormState>({
     staffRole: '', urgencyLevel: 'emergency', startingDate: '', endingDate: '',
-    startTime: '', endTime: '', overtimeDuty: false, offerRate: '', dutyDescription: '', staffCount: '',
+    startTime: '', endTime: '', overtimeDuty: false, offerRate: '', dutyDescription: '', staffCount: '', dutySubType: ''
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -526,6 +535,7 @@ export default function CreateDutyScreen() {
           offerRate: String(d.offered_rate ?? d.offeredRate ?? ''),
           dutyDescription: d.description ?? '',
           staffCount: String(d.staff_count ?? d.staffCount ?? ''),
+          dutySubType: d.duty_sub_type ?? d.dutySubType ?? '',
         });
       } catch (err: any) {
         setApiError(err?.response?.data?.message ?? err?.message ?? 'Failed to load duty details.');
@@ -534,6 +544,16 @@ export default function CreateDutyScreen() {
       }
     })();
   }, [dutyId, isEditMode]);
+
+  const handleRoleChange = (val: string) => {
+    if (val === 'urgencyLevel') return; // respect the lock
+    setForm(prev => ({
+      ...prev,
+      staffRole: val,
+      dutySubType: val === 'rmo' ? prev.dutySubType : '',
+    }));
+    setErrors(prev => ({ ...prev, staffRole: undefined, dutySubType: undefined }));
+  };
 
   const handleSubmit = async () => {
     setApiError('');
@@ -554,6 +574,9 @@ export default function CreateDutyScreen() {
       offered_rate: Number(form.offerRate),
       is_overnight_duty: form.overtimeDuty,
       staff_count: form.staffCount ? Number(form.staffCount) : undefined,
+      ...(form.staffRole === 'rmo' && form.dutySubType
+  ? { duty_sub_type: form.dutySubType }
+  : {}),
     };
 
     try {
@@ -669,7 +692,8 @@ export default function CreateDutyScreen() {
                   <InlineDropdown
                     selectedValue={form.staffRole}
                     options={ROLES}
-                    onSelect={set('staffRole')}
+                    // onSelect={set('staffRole')}
+                    onSelect={handleRoleChange}
                     placeholder="Select Role"
                     error={errors.staffRole}
                   />
@@ -685,6 +709,34 @@ export default function CreateDutyScreen() {
                 </View>
 
               </View>
+
+              {form.staffRole === 'rmo' && (
+                <View style={{ marginBottom: 4 }}>
+                  <FieldLabel label="Duty Sub-Type" required />
+                  <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+                    {RMO_SUB_TYPES.map(opt => {
+                      const active = form.dutySubType === opt.value;
+                      return (
+                        <TouchableOpacity
+                          key={opt.value}
+                          onPress={() => set('dutySubType')(opt.value)}
+                          style={{
+                            paddingHorizontal: 16, paddingVertical: 8,
+                            borderRadius: 20, borderWidth: 1,
+                            borderColor: active ? '#EF4444' : '#E5E7EB',
+                            backgroundColor: active ? '#FEF2F2' : '#fff',
+                          }}
+                        >
+                          <Text style={{ fontSize: 13, fontWeight: '600', color: active ? '#EF4444' : '#6B7280' }}>
+                            {opt.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                  {errors.dutySubType && <Text style={styles.errorText}>{errors.dutySubType}</Text>}
+                </View>
+              )}
               {/* Staff Count */}
               <View style={{ marginTop: 4 }}>
                 <FieldLabel label="Staff Count" />

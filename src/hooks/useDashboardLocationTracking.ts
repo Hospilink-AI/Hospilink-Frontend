@@ -3,10 +3,9 @@
 // import * as Location from 'expo-location';
 // import { useSocket } from '@/context/SocketContext';
 // import { profileAPI } from '@/service/api';
-// import { socketService } from '@/service/socket';
 
 // export function useDashboardLocationTracking() {
-//   const { isConnected } = useSocket();
+//   const { socket, isConnected } = useSocket(); // ✅ Use socket from context
 //   const [permissionGranted, setPermissionGranted] = useState(false);
 //   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -22,16 +21,21 @@
 //             async (position) => {
 //               const { latitude, longitude } = position.coords;
               
+//               console.log('✅ Dashboard location sent:', { latitude, longitude });
+              
 //               // Step 1: Send HTTP request
 //               await profileAPI.sendDashboardLocationPermission(true, latitude as any, longitude as any);
+//               console.log('✅ HTTP API call completed');
               
-//               // Step 2: Send WebSocket event using socketService
-//               if (socketService.isConnected()) {
-//                 socketService.sendDashboardLocation(latitude, longitude);
+//               // Step 2: Send WebSocket event using socket from context
+//               if (socket && isConnected) {
+//                 console.log('📍 [Socket] Sending dashboard location:', { latitude, longitude });
+//                 socket.emit('dashboard:location:grant', { latitude, longitude });
+//               } else {
+//                 console.warn('⚠️ Socket not connected, skipping WebSocket emit');
 //               }
               
 //               setPermissionGranted(true);
-//               console.log('✅ Dashboard location sent:', { latitude, longitude });
 //             },
 //             async (error) => {
 //               console.log('❌ Location permission denied:', error);
@@ -55,16 +59,21 @@
           
 //           const { latitude, longitude } = location.coords;
           
+//           console.log('✅ Dashboard location sent:', { latitude, longitude });
+          
 //           // Step 1: Send HTTP request
 //           await profileAPI.sendDashboardLocationPermission(true, latitude as any, longitude as any);
+//           console.log('✅ HTTP API call completed');
           
-//           // Step 2: Send WebSocket event using socketService
-//           if (socketService.isConnected()) {
-//             socketService.sendDashboardLocation(latitude as any, longitude as any);
+//           // Step 2: Send WebSocket event using socket from context
+//           if (socket && isConnected) {
+//             console.log('📍 [Socket] Sending dashboard location:', { latitude, longitude });
+//             socket.emit('dashboard:location:grant', { latitude, longitude });
+//           } else {
+//             console.warn('⚠️ Socket not connected, skipping WebSocket emit');
 //           }
           
 //           setPermissionGranted(true);
-//           console.log('✅ Dashboard location sent:', { latitude, longitude });
 //         } else {
 //           await profileAPI.sendDashboardLocationPermission(false);
 //           setPermissionGranted(false);
@@ -75,40 +84,49 @@
 //       await profileAPI.sendDashboardLocationPermission(false);
 //       setPermissionGranted(false);
 //     }
-//   }, []);
+//   }, [socket, isConnected]); // ✅ Add dependencies
 
-//   // Listen for confirmation
+//   // Listen for confirmation from server
 //   useEffect(() => {
+//     if (!socket) return;
+
 //     const handleConfirmation = (data: any) => {
 //       console.log('✅ [Dashboard] Location confirmed by server:', data);
 //     };
 
-//     socketService.on('dashboard:location:confirmed', handleConfirmation);
+//     socket.on('dashboard:location:confirmed', handleConfirmation);
 
 //     return () => {
-//       socketService.off('dashboard:location:confirmed', handleConfirmation);
+//       socket.off('dashboard:location:confirmed', handleConfirmation);
 //     };
-//   }, []);
+//   }, [socket]);
 
 //   // Initial request on mount
 //   useEffect(() => {
-//     requestAndSendLocation();
-//   }, [requestAndSendLocation]);
+//     if (isConnected) {
+//       console.log('🔄 Initial location request...');
+//       requestAndSendLocation();
+//     }
+//   }, [isConnected, requestAndSendLocation]);
 
-//   // Periodic updates every 30 seconds (optional - remove if not needed)
+//   // Periodic updates every 30 seconds
 //   useEffect(() => {
-//     if (permissionGranted && socketService.isConnected()) {
+//     if (permissionGranted && isConnected) {
+//       console.log('⏰ Starting 30-second interval for location updates');
 //       intervalRef.current = setInterval(() => {
+//         console.log('🔄 30-second update triggered');
 //         requestAndSendLocation();
 //       }, 30000);
 //     }
 
 //     return () => {
 //       if (intervalRef.current) {
+//         console.log('🛑 Clearing location update interval');
 //         clearInterval(intervalRef.current);
+//         intervalRef.current = null;
 //       }
 //     };
-//   }, [permissionGranted, requestAndSendLocation]);
+//   }, [permissionGranted, isConnected, requestAndSendLocation]);
 
 //   return { permissionGranted, requestAndSendLocation };
 // }
@@ -121,7 +139,7 @@ import { useSocket } from '@/context/SocketContext';
 import { profileAPI } from '@/service/api';
 
 export function useDashboardLocationTracking() {
-  const { socket, isConnected } = useSocket(); // ✅ Use socket from context
+  const { socket, isConnected } = useSocket();
   const [permissionGranted, setPermissionGranted] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -137,13 +155,13 @@ export function useDashboardLocationTracking() {
             async (position) => {
               const { latitude, longitude } = position.coords;
               
-              console.log('✅ Dashboard location sent:', { latitude, longitude });
+              console.log('✅ Dashboard location obtained:', { latitude, longitude });
               
-              // Step 1: Send HTTP request
-              await profileAPI.sendDashboardLocationPermission(true, latitude as any, longitude as any);
+              // Step 1: Send HTTP request (only permission status)
+              await profileAPI.sendDashboardLocationPermission(true);
               console.log('✅ HTTP API call completed');
               
-              // Step 2: Send WebSocket event using socket from context
+              // Step 2: Send WebSocket event with coordinates
               if (socket && isConnected) {
                 console.log('📍 [Socket] Sending dashboard location:', { latitude, longitude });
                 socket.emit('dashboard:location:grant', { latitude, longitude });
@@ -161,6 +179,7 @@ export function useDashboardLocationTracking() {
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
           );
         } else {
+          console.log('❌ Location permission not granted');
           await profileAPI.sendDashboardLocationPermission(false);
           setPermissionGranted(false);
         }
@@ -175,13 +194,13 @@ export function useDashboardLocationTracking() {
           
           const { latitude, longitude } = location.coords;
           
-          console.log('✅ Dashboard location sent:', { latitude, longitude });
+          console.log('✅ Dashboard location obtained:', { latitude, longitude });
           
-          // Step 1: Send HTTP request
-          await profileAPI.sendDashboardLocationPermission(true, latitude as any, longitude as any);
+          // Step 1: Send HTTP request (only permission status)
+          await profileAPI.sendDashboardLocationPermission(true);
           console.log('✅ HTTP API call completed');
           
-          // Step 2: Send WebSocket event using socket from context
+          // Step 2: Send WebSocket event with coordinates
           if (socket && isConnected) {
             console.log('📍 [Socket] Sending dashboard location:', { latitude, longitude });
             socket.emit('dashboard:location:grant', { latitude, longitude });
@@ -191,6 +210,7 @@ export function useDashboardLocationTracking() {
           
           setPermissionGranted(true);
         } else {
+          console.log('❌ Location permission denied');
           await profileAPI.sendDashboardLocationPermission(false);
           setPermissionGranted(false);
         }
@@ -200,7 +220,7 @@ export function useDashboardLocationTracking() {
       await profileAPI.sendDashboardLocationPermission(false);
       setPermissionGranted(false);
     }
-  }, [socket, isConnected]); // ✅ Add dependencies
+  }, [socket, isConnected]);
 
   // Listen for confirmation from server
   useEffect(() => {

@@ -369,7 +369,7 @@ export default function AuthScreen() {
                   {accountType === "hospital" && (
                     <Input
                       label="Hospital Name"
-                      placeholder="Government Hospital"
+                      placeholder="Hospital Name"
                       iconName="person-outline"
                       value={name}
                       onChangeText={(v) => { setName(v); if (signUpErrors.name) setSignUpErrors(p => ({ ...p, name: undefined })); }}
