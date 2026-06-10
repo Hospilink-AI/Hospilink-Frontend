@@ -887,7 +887,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between',
     alignItems: 'flex-start', flexWrap: 'wrap', gap: 16,
   },
-  pageTitle: { fontSize: 24, fontWeight: '800', color: '#1E293B', letterSpacing: -0.5 },
+  pageTitle: { fontSize: 24, fontWeight: '700', color: '#1E293B', letterSpacing: -0.5 },
   pageSubtitle: { fontSize: 14, color: '#94A3B8', marginTop: 4 },
   headerActions: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12 },
   badgeHighPriority: {

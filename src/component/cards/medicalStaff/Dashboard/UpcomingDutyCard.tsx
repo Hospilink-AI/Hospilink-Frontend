@@ -124,8 +124,7 @@ const styles = StyleSheet.create({
   infoBold: { fontWeight: "700", color: COLORS.text },
   divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 14 },
   buttons: { flexDirection: "row", gap: 10 },
-  mapBtn: { flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 1.5, borderColor: COLORS.border, padding: 10, borderRadius: 10 },
-  mapText: { fontWeight: "600" },
+mapBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderWidth: 1.5, borderColor: COLORS.border, padding: 12, borderRadius: 10 },  mapText: { fontWeight: "600" },
   startBtn: { flex: 1, flexDirection: "row", justifyContent: "center", gap: 6, backgroundColor: COLORS.primary, padding: 12, borderRadius: 10 },
   startBtnText: { color: "#fff", fontWeight: "700" },
 });

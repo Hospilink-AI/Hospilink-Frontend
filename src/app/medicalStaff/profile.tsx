@@ -267,11 +267,15 @@ export default function Profile() {
           />
           {/* FIX: pass live skills array */}
           <SkillsCard skills={displaySkills} />
-          <CompleteProfileCard
+          
+          { apiProfile?.profileCompletion < 100 && (
+              <CompleteProfileCard
             profileCompletion={apiProfile?.profileCompletion ?? null}
             name={apiUser?.name ?? ""}
             email={apiUser?.email ?? ""}
           />
+          )}
+         
         </View>
       </View>
 

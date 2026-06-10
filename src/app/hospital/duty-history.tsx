@@ -2192,7 +2192,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 16,
   },
-  pageTitle: { fontSize: 24, fontWeight: '800', color: '#0F172A', letterSpacing: -0.4 },
+  pageTitle: { fontSize: 24, fontWeight: '700', color: '#0F172A', letterSpacing: -0.4 },
   pageSubtitle: { fontSize: 12, color: '#94A3B8', marginTop: 2 },
   exportBtn: {
     flexDirection: 'row',

@@ -64,6 +64,7 @@ const styles = StyleSheet.create({
   wrapper: {
     position: 'relative',
     zIndex: 999,
+    alignSelf: 'flex-start',
   },
   trigger: {
     flexDirection: 'row',

@@ -274,7 +274,7 @@ function InfoItem({ icon, text, bold }: { icon: string; text: string; bold?: boo
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: COLORS.white, padding: 18, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, flex: 1, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 6, elevation: 3 },
+  card: { backgroundColor: COLORS.white, padding: 18, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border,  shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 6, elevation: 3 },
   cardMobile: { width: "100%" },
   cardDesktop: { width: "48%" },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 },
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   infoBold: { fontWeight: "700", color: COLORS.text },
   divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 14 },
   buttons: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 10 },
-  declineBtn: { paddingVertical: 10, paddingHorizontal: 16 },
+  declineBtn: { flex: 1, alignItems: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 10, borderWidth: 1.5, borderColor: COLORS.border },
   declineText: { color: COLORS.subText, fontSize: 14, fontWeight: "500" },
   acceptBtn: { flex: 1, backgroundColor: COLORS.primary, paddingVertical: 12, borderRadius: 10, alignItems: "center" },
   acceptBtnText: { color: "#fff", fontSize: 14, fontWeight: "700" },

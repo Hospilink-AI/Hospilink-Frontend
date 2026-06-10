@@ -14,11 +14,10 @@ import {
     useWindowDimensions,
     View,
     Alert,
-    Platform
+    Platform,
+    Modal   
 } from "react-native";
 import { dutyAPI, profileAPI } from "../../service/api";
-// import jsPDF from 'jspdf';
-// import autoTable from 'jspdf-autotable';
 
 const formatDate = (iso: string | null) => {
   if (!iso) return "—";
@@ -87,7 +86,9 @@ export default function History() {
   const lastDutyDate  = summary ? formatDate(summary.lastDutyDate)      : "—";
 
   // ── Show 4 cards by default, all on "See All"
-  const visibleDuties = showAll ? duties : duties.slice(0, 4);
+  // const visibleDuties = showAll ? duties : duties.slice(0, 4);
+  const [modalVisible, setModalVisible] = useState(false);
+  const visibleDuties = duties.slice(0, 4);
 
   // ── Map duties to earnings table format
 const earningsData = duties.map((duty) => ({
@@ -238,7 +239,7 @@ const downloadStatement = async () => {
               onPress={() => setShowAll(!showAll)}
             >
               <Text style={styles.seeAllText}>
-                {showAll ? "Show Less" : "See All History"}
+                {showAll ? "Show Less" : "View All History"}
               </Text>
               <Ionicons
                 name={showAll ? "arrow-up" : "arrow-forward"}

@@ -143,7 +143,7 @@ const TrackingCard = ({
 }) => {
   const statusInfo = getStatusDisplay(duty.status.status);
   const staffName = duty.staff?.name ?? 'Unassigned';
-const staffId   = duty.staff?.id   ?? '000000';
+  const staffId = duty.staff?.id ?? '000000';
 
   return (
     <View style={[styles.card, { width: cardWidth as any }]}>
@@ -170,7 +170,7 @@ const staffId   = duty.staff?.id   ?? '000000';
         <View style={{ flex: 1 }}>
           <Text style={styles.nameText} numberOfLines={1}>
             {/* {duty.staff.name} */}
-            {staffName} 
+            {staffName}
           </Text>
           <Text style={styles.idText}>
             ID: {staffId.slice(-6).toUpperCase()}
@@ -224,6 +224,9 @@ export default function LiveTrackingScreen() {
   const [error, setError] = useState<string | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [selectedFilter, setSelectedFilter] = useState<string>('all');
+
   // ── Column layout ──
   const isDesktop = screenWidth >= 1024;
   const isTablet = screenWidth >= 768 && screenWidth < 1024;
@@ -248,7 +251,7 @@ export default function LiveTrackingScreen() {
     } catch (err: any) {
       // setError(err?.message ?? 'Something went wrong.');
       const backendMessage = err?.response?.data?.message;
-    setError(backendMessage ?? err?.message ?? 'Something went wrong.');
+      setError(backendMessage ?? err?.message ?? 'Something went wrong.');
     }
   }, []);
 
@@ -284,19 +287,23 @@ export default function LiveTrackingScreen() {
     );
   }
 
- if (error) {
-  return (
-    <View style={styles.centeredState}>
-      <Ionicons name="information-circle-outline" size={48} color="#F59E0B" />
-      <Text style={[styles.errorText, { textAlign: 'center', color: '#92400E' }]}>
-        {error}
-      </Text>
-      <TouchableOpacity style={styles.retryBtn} onPress={() => fetchActiveDuties()}>
-        <Text style={styles.retryBtnText}>Retry</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
+  if (error) {
+    return (
+      <View style={styles.centeredState}>
+        <Ionicons name="information-circle-outline" size={48} color="#F59E0B" />
+        <Text style={[styles.errorText, { textAlign: 'center', color: '#92400E' }]}>
+          {error}
+        </Text>
+        <TouchableOpacity style={styles.retryBtn} onPress={() => fetchActiveDuties()}>
+          <Text style={styles.retryBtnText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const filteredDuties = selectedFilter === 'all'
+  ? duties
+  : duties.filter((d) => d.status.status === selectedFilter);
 
   return (
     <View style={styles.screen}>
@@ -308,7 +315,7 @@ export default function LiveTrackingScreen() {
         }
       >
         {/* Header */}
-        <View style={styles.headerContainer}>
+        {/* <View style={styles.headerContainer}>
           <View>
             <Text style={styles.pageTitle}>Live Tracking & Monitoring</Text>
             <Text style={styles.pageSubtitle}>
@@ -319,7 +326,67 @@ export default function LiveTrackingScreen() {
             <Ionicons name="download-outline" size={16} color="#fff" />
             <Text style={styles.exportBtnText}>Export Report</Text>
           </TouchableOpacity>
+        </View> */}
+        <View style={styles.headerContainer}>
+  <View>
+    <Text style={styles.pageTitle}>Live Tracking & Monitoring</Text>
+    <Text style={styles.pageSubtitle}>
+      Real-time oversight of ongoing clinical shifts and logistics.
+    </Text>
+  </View>
+
+  <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+    {/* ── Filter Button + Dropdown ── */}
+    <View style={{ position: 'relative', zIndex: 999 }}>
+      <TouchableOpacity
+        style={styles.filterBtn}
+        activeOpacity={0.8}
+        onPress={() => setFilterOpen((p) => !p)}
+      >
+        <Ionicons name="menu-outline" size={16} color="#2d71d8" />
+        <Text style={styles.filterBtnText}>Filters</Text>
+      </TouchableOpacity>
+
+      {filterOpen && (
+        <View style={styles.filterDropdown}>
+          {[
+            { label: 'All', value: 'all' },
+            { label: 'Assigned', value: 'assigned' },
+            { label: 'En Route', value: 'enroute' },
+            { label: 'In Progress', value: 'in-progress' },
+          ].map((opt) => (
+            <TouchableOpacity
+              key={opt.value}
+              style={[
+                styles.filterOption,
+                selectedFilter === opt.value && styles.filterOptionActive,
+              ]}
+              onPress={() => {
+                setSelectedFilter(opt.value);
+                setFilterOpen(false);
+              }}
+            >
+              <Text
+                style={[
+                  styles.filterOptionText,
+                  selectedFilter === opt.value && styles.filterOptionTextActive,
+                ]}
+              >
+                {opt.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
+      )}
+    </View>
+
+    {/* ── Export Button ── */}
+    <TouchableOpacity style={styles.exportBtn} activeOpacity={0.8}>
+      <Ionicons name="download-outline" size={16} color="#fff" />
+      <Text style={styles.exportBtnText}>Export Report</Text>
+    </TouchableOpacity>
+  </View>
+</View>
 
         {/* Sub-header */}
         <View style={styles.subHeaderContainer}>
@@ -421,7 +488,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     flexWrap: 'wrap', gap: 16, marginBottom: 24,
   },
-  pageTitle: { fontSize: 26, fontWeight: '800', color: '#111827', marginBottom: 4 },
+  pageTitle: { fontSize: 26, fontWeight: '700', color: '#111827', marginBottom: 4 },
   pageSubtitle: { fontSize: 14, color: '#9CA3AF' },
   exportBtn: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#2563EB',
@@ -439,6 +506,52 @@ const styles = StyleSheet.create({
   summaryRow: { flexDirection: 'row', gap: 8 },
   summaryChip: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4 },
   summaryChipText: { fontSize: 10, fontWeight: '700' },
+
+  filterBtn: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 8,
+  backgroundColor:  '#9cb6efa1',
+  paddingHorizontal: 16,
+  paddingVertical: 10,
+  borderRadius: 8,
+},
+filterBtnText: {
+  color: '#337cea',
+  fontWeight: '600',
+  fontSize: 14,
+},
+filterDropdown: {
+  position: 'absolute',
+  top: 44,
+  right: 0,
+  backgroundColor: '#fff',
+  borderRadius: 8,
+  minWidth: 140,
+  borderWidth: 1,
+  borderColor: '#E5E7EB',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.1,
+  shadowRadius: 8,
+  elevation: 8,
+  overflow: 'hidden',
+},
+filterOption: {
+  paddingVertical: 11,
+  paddingHorizontal: 16,
+},
+filterOptionActive: {
+  backgroundColor: '#EFF6FF',
+},
+filterOptionText: {
+  fontSize: 14,
+  color: '#374151',
+},
+filterOptionTextActive: {
+  color: '#2563EB',
+  fontWeight: '700',
+},
 
   // Grid
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
