@@ -78,12 +78,12 @@ export default function Profile() {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
 
-  const openEditModalRef = useRef<() => void>(() => {});
+  const openEditModalRef = useRef<() => void>(() => { });
 
   // ── API state
-  const [apiUser,    setApiUser]    = useState<any>(null);
+  const [apiUser, setApiUser] = useState<any>(null);
   const [apiProfile, setApiProfile] = useState<any>(null);
-  const [loading,    setLoading]    = useState(true);
+  const [loading, setLoading] = useState(true);
 
   // ── Static fallbacks (only for licenses and stat card icons/labels/colors)
   const { stats: staticStats, licenses } = profileData;
@@ -128,21 +128,21 @@ export default function Profile() {
   const statsRow2 = stats.slice(2, 4);
 
   // ── Derived display values — always from API when available
-  const displayName          = apiProfile?.fullName          ?? profileData.name;
-  const displayRole          = apiProfile?.jobRole           ? getRoleLabel(apiProfile.jobRole) : profileData.role;
-  const displayAvail         = apiProfile?.isAvailable       ?? profileData.availability;
-  const displaySince         = apiProfile?.createdAt         ? formatDate(apiProfile.createdAt) : profileData.memberSince;
-  const displayLocation      = apiProfile               ? `${apiProfile.currentAddress}, ${apiProfile.city}` : profileData.location;
-  const displayPhone         = apiProfile?.phoneNumber       ?? null;
-  const displayEmail         = apiUser?.email                ?? null;
-  const isVerified           = apiUser?.isEmailVerified      ?? false;
-  const isComplete           = apiProfile?.isProfileComplete ?? false;
-  const displayCity          = apiProfile?.city              ?? "";
+  const displayName = apiProfile?.fullName ?? profileData.name;
+  const displayRole = apiProfile?.jobRole ? getRoleLabel(apiProfile.jobRole) : profileData.role;
+  const displayAvail = apiProfile?.isAvailable ?? profileData.availability;
+  const displaySince = apiProfile?.createdAt ? formatDate(apiProfile.createdAt) : profileData.memberSince;
+  const displayLocation = apiProfile ? `${apiProfile.currentAddress}, ${apiProfile.city}` : profileData.location;
+  const displayPhone = apiProfile?.phoneNumber ?? null;
+  const displayEmail = apiUser?.email ?? null;
+  const isVerified = apiUser?.isEmailVerified ?? false;
+  const isComplete = apiProfile?.isProfileComplete ?? false;
+  const displayCity = apiProfile?.city ?? "";
   const displayState = apiProfile?.state ?? "";
   const diaplayPincode = apiProfile?.pincode ?? "";
-  const displaycurrentAddress          = apiProfile?.currentAddress    ?? "";
-  const displayJobRoleValue  = apiProfile?.jobRole           ?? null;
-  const displayProfilePicture = apiProfile?.profilePicture   ?? null;
+  const displaycurrentAddress = apiProfile?.currentAddress ?? "";
+  const displayJobRoleValue = apiProfile?.jobRole ?? null;
+  const displayProfilePicture = apiProfile?.profilePicture ?? null;
 
   // ── FIX: profileSummary is a STRING not an array
   const displaySummary = apiProfile?.profileSummary ?? "";
@@ -150,7 +150,7 @@ export default function Profile() {
   // ── FIX: education and skills - use API arrays, fall back to empty
   const displayEducation = Array.isArray(apiProfile?.education) ? apiProfile.education : [];
   const displaySpeciality = apiProfile?.education?.[0]?.speciality ?? "";
-  const displaySkills    = Array.isArray(apiProfile?.skills)    ? apiProfile.skills    : [];
+  const displaySkills = Array.isArray(apiProfile?.skills) ? apiProfile.skills : [];
 
   // ── FIX: verificationStatus — derive from documents OR profile field
   // The API response has verificationStatus at profile level in some calls
@@ -177,7 +177,7 @@ export default function Profile() {
         role={displayRole}
         speciality={displaySpeciality}
         badges={profileData.badges}
-        onEdit={() => {}}
+        onEdit={() => { }}
         isMobile={isMobile}
         phone={displayPhone}
         email={displayEmail}
@@ -187,9 +187,9 @@ export default function Profile() {
         verificationStatus={verificationStatus}
         jobRoleValue={displayJobRoleValue}
         city={displayCity}
-        currentAddress={displaycurrentAddress} 
+        currentAddress={displaycurrentAddress}
         state={displayState}
-        pincode={diaplayPincode}                 
+        pincode={diaplayPincode}
         profilePicture={displayProfilePicture}
         // ── Pass live data to edit modal
         profileSummary={displaySummary}
@@ -254,10 +254,10 @@ export default function Profile() {
       <View style={[styles.mainRow, isMobile && styles.mainRowMobile]}>
         <View style={styles.leftCol}>
           {/* FIX: pass string not array to ProfessionalSummary */}
-          <ProfessionalSummary summary={displaySummary} onEdit={() => {}} />
+          <ProfessionalSummary summary={displaySummary} onEdit={() => { }} />
           {/* FIX: pass live education array */}
-          <EducationCard items={displayEducation} onAdd={() => {}} />
-          <LicensesCard items={licenses} onManage={() => {}} />
+          <EducationCard items={displayEducation} onAdd={() => { }} />
+          <LicensesCard items={licenses} onManage={() => { }} />
         </View>
         <View style={[styles.rightCol, isMobile && styles.rightColMobile]}>
           <AvailabilityCard
@@ -267,11 +267,14 @@ export default function Profile() {
           />
           {/* FIX: pass live skills array */}
           <SkillsCard skills={displaySkills} />
-          <CompleteProfileCard
-            profileCompletion={apiProfile?.profileCompletion ?? null}
-            name={apiUser?.name ?? ""}
-            email={apiUser?.email ?? ""}
-          />
+          {(apiProfile?.profileCompletion ?? 0) < 100 &&  (
+            <CompleteProfileCard
+              profileCompletion={apiProfile?.profileCompletion ?? null}
+              name={apiUser?.name ?? ""}
+              email={apiUser?.email ?? ""}
+            />
+          )}
+
         </View>
       </View>
 
@@ -314,21 +317,21 @@ function ProfileActionCard({ icon, iconBg, iconColor, label, onPress }: any) {
 }
 
 const styles = StyleSheet.create({
-  loaderScreen:    { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: COLORS.background },
-  container:       { flex: 1, backgroundColor: COLORS.background },
-  content:         { padding: 24, paddingBottom: 40, gap: 20 },
-  contentMobile:   { padding: 16, gap: 14 },
-  statsRow:        { flexDirection: "row", gap: 14 },
+  loaderScreen: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: COLORS.background },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  content: { padding: 24, paddingBottom: 40, gap: 20 },
+  contentMobile: { padding: 16, gap: 14 },
+  statsRow: { flexDirection: "row", gap: 14 },
   statsMobileGrid: { gap: 12 },
-  statsMobileRow:  { flexDirection: "row", gap: 12 },
-  mainRow:         { flexDirection: "row", gap: 20, alignItems: "flex-start" },
-  mainRowMobile:   { flexDirection: "column" },
-  leftCol:         { flex: 1, gap: 16 },
-  rightCol:        { width: 260, gap: 16, flexShrink: 0 },
-  rightColMobile:  { width: "100%" },
-  actionsRow:      { flexDirection: "row", gap: 14 },
-  actionsRowMobile:{ flexWrap: "wrap" },
-  actionCard:      {
+  statsMobileRow: { flexDirection: "row", gap: 12 },
+  mainRow: { flexDirection: "row", gap: 20, alignItems: "flex-start" },
+  mainRowMobile: { flexDirection: "column" },
+  leftCol: { flex: 1, gap: 16 },
+  rightCol: { width: 260, gap: 16, flexShrink: 0 },
+  rightColMobile: { width: "100%" },
+  actionsRow: { flexDirection: "row", gap: 14 },
+  actionsRowMobile: { flexWrap: "wrap" },
+  actionCard: {
     flex: 1,
     backgroundColor: COLORS.white,
     borderRadius: 14,
@@ -343,6 +346,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  actionIconWrap:  { width: 56, height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center", marginBottom: 12 },
-  actionLabel:     { fontSize: 14, fontWeight: "700", color: COLORS.text, textAlign: "center" },
+  actionIconWrap: { width: 56, height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center", marginBottom: 12 },
+  actionLabel: { fontSize: 14, fontWeight: "700", color: COLORS.text, textAlign: "center" },
 });

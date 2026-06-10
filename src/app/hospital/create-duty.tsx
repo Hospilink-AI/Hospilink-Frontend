@@ -30,6 +30,7 @@ type FormState = {
   offerRate: string;
   dutyDescription: string;
   staffCount: string;
+  dutySubType: string;
 };
 
 type FormErrors = Partial<Record<keyof FormState, string>>;
@@ -85,10 +86,19 @@ const URGENCY: { label: string; value: string }[] = [
   { label: 'Emergency', value: 'emergency' },
 ];
 
+const RMO_SUB_TYPES = [
+  { label: 'Ward Duty', value: 'ward' },
+  { label: 'ICU Duty', value: 'icu' },
+  { label: 'Casualty', value: 'casualty' },
+];
+
 // ─── Validation ───────────────────────────────────────────
 function validateForm(form: FormState): FormErrors {
   const errors: FormErrors = {};
   if (!form.staffRole) errors.staffRole = 'Please select a staff role.';
+  if (form.staffRole === 'rmo' && !form.dutySubType) {
+    errors.dutySubType = 'Please select a duty sub-type.';
+  }
   if (!form.startingDate) errors.startingDate = 'Please enter a starting date.';
   if (!form.startTime) errors.startTime = 'Please enter a start time.';
   if (!form.endTime) errors.endTime = 'Please enter an end time.';
@@ -325,14 +335,15 @@ function DatePickerField({ value, onChange, placeholder, error }: {
 }
 
 // ─── Time Picker Field ────────────────────────────────────
-function TimePickerField({ value, onChange, placeholder, error }: {
-  value: string; onChange: (v: string) => void; placeholder: string; error?: string;
+function TimePickerField({ value, onChange, placeholder, error, onEmptyPress }: {
+  value: string; onChange: (v: string) => void; placeholder: string; error?: string; onEmptyPress?: () => void;
 }) {
   const [showPicker, setShowPicker] = useState(false);
   const [tempTime, setTempTime] = useState<Date>(new Date());
   const inputRef = useRef<any>(null);
 
   const handlePress = () => {
+    if (!value) onEmptyPress?.();
     if (value) {
       const [h, m] = value.split(':');
       const d = new Date();
@@ -352,7 +363,10 @@ function TimePickerField({ value, onChange, placeholder, error }: {
       return (
         <TouchableOpacity
           activeOpacity={1}
-          onPress={() => inputRef.current?.showPicker?.()}
+          onPress={() => {
+            if (!value) onEmptyPress?.();  // ← add this line
+            inputRef.current?.showPicker?.();
+          }}
         >
           <View style={[styles.inputWrap, error && styles.inputErrorBorder]}> {/* ← View was missing */}
             <Ionicons name="time-outline" size={15} color="#9CA3AF" style={{ marginRight: 6 }} />
@@ -491,7 +505,7 @@ export default function CreateDutyScreen() {
 
   const [form, setForm] = useState<FormState>({
     staffRole: '', urgencyLevel: 'medium', startingDate: '', endingDate: '',
-    startTime: '', endTime: '', overtimeDuty: false, offerRate: '', dutyDescription: '', staffCount: '',
+    startTime: '', endTime: '', overtimeDuty: false, offerRate: '', dutyDescription: '', staffCount: '', dutySubType: '',
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -512,6 +526,36 @@ export default function CreateDutyScreen() {
     setToastMsg(msg);
     setToastVisible(true);
     setTimeout(() => setToastVisible(false), 3000);
+  };
+
+  const startTimeClearedRef = useRef(false);
+
+  const handleStartTimeChange = (val: string) => {
+    if (val === '' && form.startTime !== '') {
+      startTimeClearedRef.current = true;
+    }
+    set('startTime')(val);
+  };
+
+  const handleStartTimeEmptyFocus = () => {
+    if (form.urgencyLevel === 'emergency') return;
+    if (startTimeClearedRef.current) return;
+
+    const nowIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+    const originalHour = nowIST.getHours();
+
+    nowIST.setMinutes(nowIST.getMinutes() + 15);
+    const remainder = nowIST.getMinutes() % 5;
+    if (remainder !== 0) nowIST.setMinutes(nowIST.getMinutes() + (5 - remainder));
+
+    const timeStr = `${String(nowIST.getHours()).padStart(2, '0')}:${String(nowIST.getMinutes()).padStart(2, '0')}`;
+    set('startTime')(timeStr);
+
+    const crossedMidnight = nowIST.getHours() < originalHour;
+
+    if (!form.startingDate || crossedMidnight) {
+      set('startingDate')(formatDateDisplay(nowIST));
+    }
   };
 
   useEffect(() => {
@@ -540,6 +584,7 @@ export default function CreateDutyScreen() {
           offerRate: String(d.offered_rate ?? d.offeredRate ?? ''),
           dutyDescription: d.description ?? '',
           staffCount: String(d.staff_count ?? d.staffCount ?? ''),
+          dutySubType: d.duty_sub_type ?? d.dutySubType ?? '',
         });
       } catch (err: any) {
         setApiError(err?.response?.data?.message ?? err?.message ?? 'Failed to load duty details.');
@@ -570,6 +615,9 @@ export default function CreateDutyScreen() {
       offered_rate: Number(form.offerRate),
       is_overnight_duty: form.overtimeDuty,
       staff_count: form.staffCount ? Number(form.staffCount) : undefined,
+      ...(form.staffRole === 'rmo' && form.dutySubType
+        ? { duty_sub_type: form.dutySubType }
+        : {}),
     };
 
     try {
@@ -589,6 +637,15 @@ export default function CreateDutyScreen() {
     } finally {
       setPublishing(false);
     }
+  };
+
+  const handleRoleChange = (val: string) => {
+    setForm(prev => ({
+      ...prev,
+      staffRole: val,
+      dutySubType: val === 'rmo' ? prev.dutySubType : '',
+    }));
+    setErrors(prev => ({ ...prev, staffRole: undefined, dutySubType: undefined }));
   };
 
   useEffect(() => {
@@ -691,7 +748,8 @@ export default function CreateDutyScreen() {
                   <InlineDropdown
                     selectedValue={form.staffRole}
                     options={ROLES}
-                    onSelect={set('staffRole')}
+                    // onSelect={set('staffRole')}
+                    onSelect={handleRoleChange}
                     placeholder="Select Role"
                     error={errors.staffRole}
                   />
@@ -706,6 +764,33 @@ export default function CreateDutyScreen() {
                   />
                 </View>
               </View>
+              {form.staffRole === 'rmo' && (
+                <View style={{ marginBottom: 4 }}>
+                  <FieldLabel label="Duty Sub-Type" required />
+                  <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+                    {RMO_SUB_TYPES.map(opt => {
+                      const active = form.dutySubType === opt.value;
+                      return (
+                        <TouchableOpacity
+                          key={opt.value}
+                          onPress={() => { set('dutySubType')(opt.value); }}
+                          style={{
+                            paddingHorizontal: 16, paddingVertical: 8,
+                            borderRadius: 20, borderWidth: 1,
+                            borderColor: active ? '#2563EB' : '#E5E7EB',
+                            backgroundColor: active ? '#EFF6FF' : '#fff',
+                          }}
+                        >
+                          <Text style={{ fontSize: 13, fontWeight: '600', color: active ? '#2563EB' : '#6B7280' }}>
+                            {opt.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                  {errors.dutySubType && <Text style={styles.errorText}>{errors.dutySubType}</Text>}
+                </View>
+              )}
               {/* Staff Count */}
               <View style={{ marginTop: 4 }}>
                 <FieldLabel label="Staff Count" />
@@ -764,9 +849,10 @@ export default function CreateDutyScreen() {
                   <FieldLabel label="Start Time" required />
                   <TimePickerField
                     value={form.startTime}
-                    onChange={set('startTime')}
+                    onChange={handleStartTimeChange}
                     placeholder="--:--"
                     error={errors.startTime}
+                    onEmptyPress={handleStartTimeEmptyFocus}
                   />
                 </View>
                 <View style={styles.col}>
