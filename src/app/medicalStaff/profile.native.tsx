@@ -1,6 +1,7 @@
 import ProfileHeader from "@/component/cards/medicalStaff/Profile/ProfileHeader";
 import ToggleSwitch from "@/component/common/ToggleSwitch";
 import { COLORS } from "@/constant/colors";
+import { useAuth } from "@/context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -263,6 +264,8 @@ export default function Profile() {
   };
 
   // ── Logout ──
+  const { logout } = useAuth();
+
   const handleLogout = () => {
     Alert.alert("Log Out", "Are you sure you want to log out?", [
       { text: "Cancel", style: "cancel" },
@@ -270,7 +273,7 @@ export default function Profile() {
         text: "Log Out",
         style: "destructive",
         onPress: async () => {
-          // TODO: clear your auth token / async storage here, then redirect.
+          await logout();
           router.replace("/auth/login");
         },
       },

@@ -239,7 +239,7 @@ export default function DutyOvernight() {
     const fetchInitialData = async () => {
       try {
         const [activeRes, overnightRes, hospitalsRes] = await Promise.all([
-          adminAPI.getActiveDuties(),
+          adminAPI.getActiveDutiesDT(),
           adminAPI.getOvernightDuties(),
           adminAPI.getHospitalsList()
         ]);
@@ -718,7 +718,7 @@ const styles = StyleSheet.create({
   content: { padding: 20, paddingBottom: 40 },
 
   pageHeader: { marginBottom: 24 },
-  pageTitle: { fontSize: 24, fontWeight: '800', color: '#0f172a', letterSpacing: 0.2 },
+  pageTitle: { fontSize: 24, fontWeight: '700', color: '#0f172a', letterSpacing: 0.2 },
   pageSubtitle: { fontSize: 13, color: '#64748b', marginTop: 4 },
 
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
@@ -726,13 +726,14 @@ const styles = StyleSheet.create({
   linkText: { fontSize: 13, fontWeight: '600', color: '#2563eb' },
 
   liveGrid: { gap: 12, marginBottom: 24, flexWrap: 'wrap' },
-  liveGridWide: { flexDirection: 'row' },
+  liveGridWide: { flexDirection: 'row', alignItems: 'flex-start' },
   liveCard: {
     backgroundColor: '#ffffff', borderRadius: 12, padding: 16,
     borderWidth: 1, borderColor: '#e2e8f0', minWidth: '30%',
     ...Platform.select({ web: { boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }, default: { elevation: 2 } }),
   },
-  liveCardWide: { flex: 1 },
+  // liveCardWide: { flex: 1 },
+  liveCardWide: { flexBasis: '32%', flexGrow: 0, flexShrink: 0 },
   liveCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
   liveCardLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, paddingRight: 10 },
   liveCardInfo: { flex: 1 },

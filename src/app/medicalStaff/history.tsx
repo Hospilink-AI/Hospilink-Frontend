@@ -121,7 +121,7 @@ export default function History() {
   // ── Show 4 cards by default, all on "See All"
   // // const visibleDuties = showAll ? duties : duties.slice(0, 4);
   const [modalVisible, setModalVisible] = useState(false);
-  const visibleDuties = duties.slice(0, 4);
+  // const visibleDuties = duties.slice(0, 4);
   const filteredDuties = duties;  // API already filtered
   const visibleDuties = showAll ? filteredDuties : filteredDuties.slice(0, 4);
 

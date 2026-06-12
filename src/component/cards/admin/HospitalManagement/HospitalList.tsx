@@ -823,7 +823,7 @@ const fb = StyleSheet.create({
   btnWrap: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingLeft: 10 },
   clearBtn: { height: 42, paddingHorizontal: 14, justifyContent: 'center', borderRadius: 10, borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' },
   clearBtnTxt: { fontSize: 12, color: '#64748B', fontWeight: '600' },
-  applyBtn: { backgroundColor: '#0F172A', borderRadius: 10, paddingHorizontal: 18, height: 42, justifyContent: 'center' },
+  applyBtn: { backgroundColor: '#2b52ae', borderRadius: 10, paddingHorizontal: 18, height: 42, justifyContent: 'center' },
   applyTxt: { fontSize: 12, color: '#fff', fontWeight: '700', letterSpacing: 0.2 },
 });
 
@@ -1684,7 +1684,7 @@ const sc = StyleSheet.create({
   iconBox: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   iconTxt: { fontSize: 18 },
   badge: { fontSize: 11, fontWeight: '700' },
-  value: { fontSize: 26, fontWeight: '800', color: '#0F172A', lineHeight: 30 },
+  value: { fontSize: 26, fontWeight: '700', color: '#0F172A', lineHeight: 30 },
   label: { fontSize: 11, fontWeight: '600', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5 },
 });
 
@@ -2192,7 +2192,7 @@ const s = StyleSheet.create({
   card: { backgroundColor: '#fff', borderRadius: 16, overflow: 'hidden', width: '100%', ...Platform.select({ ios: { shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 14, shadowOffset: { width: 0, height: 4 } }, android: { elevation: 4 } }) },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: 16, paddingBottom: 12 },
   headerLeft: { gap: 4, flex: 1 },
-  title: { fontSize: 22, fontWeight: '800', color: '#0F172A', letterSpacing: -0.5 },
+  title: { fontSize: 22, fontWeight: '700', color: '#0F172A', letterSpacing: -0.5 },
   subtitle: { fontSize: 11, color: '#64748B', lineHeight: 17 },
   exportBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#1D4ED8', paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10 },
   exportIcon: { fontSize: 12, color: '#fff', fontWeight: '700' },

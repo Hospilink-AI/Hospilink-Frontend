@@ -50,7 +50,15 @@ export default function OngoingDutyCard({ duty, isMobile, onStatusChange, onPres
     >
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>{duty.title}</Text>
+          {/* <Text style={styles.title}>{duty.title}</Text> */}
+          <View style={styles.titleRow}>
+    <Text style={styles.title}>{duty.title}</Text>
+    {duty.dutySubType && (
+      <View style={styles.subTypeBadge}>
+        <Text style={styles.subTypeText}>{duty.dutySubType.toUpperCase()}</Text>
+      </View>
+    )}
+  </View>
           <Text style={styles.hospital}>{duty.hospitalName}</Text>
         </View>
 
@@ -165,4 +173,7 @@ const styles = StyleSheet.create({
 mapBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: COLORS.border, padding: 12, borderRadius: 10 },  mapText: { fontWeight: "600", marginLeft: 6 },
   startBtn: { flex: 1, flexDirection: "row", justifyContent: "center", backgroundColor: COLORS.primary, padding: 12, borderRadius: 10 },
   startBtnText: { color: "#fff", fontWeight: "700", marginLeft: 6 },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+subTypeBadge: { backgroundColor: "#EEF2FF", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12 },
+subTypeText: { fontSize: 10, fontWeight: "700", color: COLORS.primary },
 });

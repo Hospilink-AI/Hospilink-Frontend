@@ -20,6 +20,7 @@ interface Props {
     status?: string;
     startTime?: string;
     endTime?: string;
+    dutySubType?: string;
   };
   onAccept: () => void;
   onPress: (id: string) => void; // ✅ Prop properly received
@@ -128,7 +129,7 @@ export default function DutyCard({ duty, onAccept, onPress, isMobile }: Props) {
   };
 
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
       activeOpacity={0.9}
       // ✅ Navigates to duty details page
       onPress={() => onPress((duty._id || duty.id) as string)}
@@ -137,7 +138,15 @@ export default function DutyCard({ duty, onAccept, onPress, isMobile }: Props) {
       {/* Header */}
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>{duty.title || 'Medical Duty'}</Text>
+          {/* <Text style={styles.title}>{duty.title || 'Medical Duty'}</Text> */}
+          <View style={styles.titleRow}>
+            <Text style={styles.title}>{duty.title || 'Medical Duty'}</Text>
+            {duty.dutySubType && (
+              <View style={styles.subTypeBadge}>
+                <Text style={styles.subTypeText}>{duty.dutySubType.toUpperCase()}</Text>
+              </View>
+            )}
+          </View>
           <Text style={styles.hospital}>{duty.hospital || 'Hospital'}</Text>
         </View>
         <View style={styles.tags}>
@@ -170,10 +179,10 @@ export default function DutyCard({ duty, onAccept, onPress, isMobile }: Props) {
       {/* Buttons */}
       {!accepted ? (
         <View style={styles.buttons}>
-          <TouchableOpacity 
-             style={styles.declineBtn} 
-             disabled={accepting}
-             onPress={(e) => e.stopPropagation()} // ✅ Prevent card press
+          <TouchableOpacity
+            style={styles.declineBtn}
+            disabled={accepting}
+            onPress={(e) => e.stopPropagation()} // ✅ Prevent card press
           >
             <Text style={styles.declineText}>Decline</Text>
           </TouchableOpacity>
@@ -181,8 +190,8 @@ export default function DutyCard({ duty, onAccept, onPress, isMobile }: Props) {
             style={[styles.acceptBtn, accepting && { opacity: 0.7 }]}
             activeOpacity={0.85}
             onPress={(e) => {
-               e.stopPropagation(); // ✅ Prevent card press
-               handleAccept();
+              e.stopPropagation(); // ✅ Prevent card press
+              handleAccept();
             }}
             disabled={accepting}
           >
@@ -215,8 +224,8 @@ export default function DutyCard({ duty, onAccept, onPress, isMobile }: Props) {
             <TouchableOpacity
               style={[styles.startBtn, statusLoading && { opacity: 0.7 }]}
               onPress={(e) => {
-                 e.stopPropagation(); // ✅ Prevent card press
-                 handleMarkEnroute();
+                e.stopPropagation(); // ✅ Prevent card press
+                handleMarkEnroute();
               }}
               disabled={statusLoading}
             >
@@ -229,8 +238,8 @@ export default function DutyCard({ duty, onAccept, onPress, isMobile }: Props) {
             <TouchableOpacity
               style={[styles.startBtn, statusLoading && { opacity: 0.7 }]}
               onPress={(e) => {
-                 e.stopPropagation();
-                 handleMarkInProgress();
+                e.stopPropagation();
+                handleMarkInProgress();
               }}
               disabled={statusLoading}
             >
@@ -242,8 +251,8 @@ export default function DutyCard({ duty, onAccept, onPress, isMobile }: Props) {
             <TouchableOpacity
               style={[styles.startBtn, statusLoading && { opacity: 0.7 }]}
               onPress={(e) => {
-                 e.stopPropagation();
-                 handleMarkCompleted();
+                e.stopPropagation();
+                handleMarkCompleted();
               }}
               disabled={statusLoading}
             >
@@ -274,7 +283,7 @@ function InfoItem({ icon, text, bold }: { icon: string; text: string; bold?: boo
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: COLORS.white, padding: 18, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border,  shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 6, elevation: 3 },
+  card: { backgroundColor: COLORS.white, padding: 18, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 6, elevation: 3 },
   cardMobile: { width: "100%" },
   cardDesktop: { width: "48%" },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 },
@@ -303,4 +312,7 @@ const styles = StyleSheet.create({
   mapText: { fontSize: 14, color: COLORS.text, fontWeight: "600" },
   startBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: COLORS.primary, paddingVertical: 12, borderRadius: 10 },
   startBtnText: { color: "#fff", fontSize: 14, fontWeight: "700" },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+  subTypeBadge: { backgroundColor: "#EEF2FF", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12 },
+  subTypeText: { fontSize: 10, fontWeight: "700", color: COLORS.primary },
 });

@@ -691,8 +691,8 @@ export const dutyAPI = {
     return response.data;
   },
 
-  getHospitalActiveDuties: async () => {
-    const response = await api.get('api/duties/active-duties')
+  getHospitalActiveDuties: async ({params}) => {
+    const response = await api.get('api/duties/active-duties',{params})
     return response.data;
   },
 
@@ -1091,8 +1091,12 @@ export const adminAPI = {
     return response.data;
   },
 
-  getActiveDuties: async () => {
-    const response = await api.get('/api/admin/active-duties')
+  getActiveDuties: async ({params}) => {
+    const response = await api.get('/api/admin/active-duties', { params });
+    return response.data;
+  },
+  getActiveDutiesDT: async () => {
+    const response = await api.get('/api/admin/active-duties');
     return response.data;
   },
 
