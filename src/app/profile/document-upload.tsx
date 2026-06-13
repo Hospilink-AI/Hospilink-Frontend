@@ -10,6 +10,8 @@ import {
   Image,
   Linking,
   Modal,
+  SafeAreaView,
+  StatusBar,
   Platform,
   ScrollView,
   StyleSheet,
@@ -307,19 +309,25 @@ export default function DocumentUpload() {
     }
   };
 
-  return (
-    <ScrollView
-      style={styles.scrollWrapper}
-      contentContainerStyle={[styles.scrollContent, isMobile && styles.scrollContentMobile]}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* ── Logo Row ── */}
-      <View style={styles.logoRow}>
-        <View style={styles.logoBox}>
-          <Ionicons name="pulse" size={18} color="#fff" />
+return (
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
+      {/* ── Fixed Top Header ── */}
+      <View style={styles.appBar}>
+        <View style={styles.appBarLeft}>
+          <View style={styles.appBarLogo}>
+            <Ionicons name="pulse" size={20} color="#fff" />
+          </View>
+          <Text style={styles.appBarTitle}>Hospilink</Text>
         </View>
-        <Text style={styles.logoText}>HospiLink</Text>
       </View>
+
+      <ScrollView
+        style={styles.scrollWrapper}
+        contentContainerStyle={[styles.scrollContent, isMobile && styles.scrollContentMobile]}
+        showsVerticalScrollIndicator={false}
+      >
 
       {/* ── Header Card ── */}
       <View style={[styles.headerCard, isMobile && styles.headerCardMobile]}>
@@ -621,6 +629,7 @@ export default function DocumentUpload() {
         </View>
       </Modal>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -734,6 +743,25 @@ const styles = StyleSheet.create({
   logoRow:  { flexDirection: "row", alignItems: "center", marginBottom: 4 },
   logoBox:  { width: 36, height: 36, backgroundColor: "#2563eb", borderRadius: 9, justifyContent: "center", alignItems: "center", marginRight: 10 },
   logoText: { color: "#0f172a", fontSize: 17, fontWeight: "700", letterSpacing: 0.4 },
+
+  safeArea: { flex: 1, backgroundColor: "#fff" },
+
+  appBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    height: 64,
+    paddingHorizontal: 20,
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#EEF1F5",
+    ...Platform.select({
+      web: { boxShadow: "0 1px 2px rgba(15,23,42,0.04)" } as any,
+      default: { shadowColor: "#0F172A", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
+    }),
+  },
+  appBarLeft:  { flexDirection: "row", alignItems: "center" },
+  appBarLogo:  { width: 40, height: 40, borderRadius: 11, backgroundColor: "#2563EB", alignItems: "center", justifyContent: "center" },
+  appBarTitle: { fontSize: 20, fontWeight: "700", color: "#1E293B", marginLeft: 12 },
 
   // Header Card
   headerCard: {

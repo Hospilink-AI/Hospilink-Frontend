@@ -517,7 +517,7 @@ export default function ForgotPasswordScreen() {
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerSecure}>SECURE END-TO-END ENCRYPTION</Text>
-          <Text style={styles.footerCopy}>© 2026 Hospilink Medical Systems. All rights reserved.</Text>
+          <Text style={styles.footerCopy}>© Developed and Managed by Rasika & Co.</Text>
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
   helpBtn: { width: 34, height: 34, borderRadius: 17, borderWidth: 1, borderColor: "#d1d5db", alignItems: "center", justifyContent: "center" },
   body: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 16, paddingVertical: 24 },
   card: { width: 380, maxWidth: "90%", backgroundColor: "#fff", borderRadius: 16, padding: 28, shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 4, marginBottom: 28 },
-  title: { fontSize: 22, fontWeight: "800", color: "#1F2937", marginBottom: 20 },
+  title: { fontSize: 22, fontWeight: "700", color: "#1F2937", marginBottom: 20 },
   successBanner: { flexDirection: "row", alignItems: "center", backgroundColor: "#f0fdf4", borderWidth: 1, borderColor: "#bbf7d0", borderRadius: 8, padding: 12, marginBottom: 16 },
   successText: { color: "#16a34a", fontSize: 13, fontWeight: "500", flex: 1, lineHeight: 18 },
   inputGroup: { marginBottom: 16 },

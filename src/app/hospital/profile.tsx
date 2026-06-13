@@ -1345,7 +1345,7 @@ const gSt = StyleSheet.create({
   completeBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F0FDF4', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: '#BBF7D0' },
   completeBadgeTxt: { color: '#15803D', fontSize: 11, fontWeight: '700' },
 
-  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: BLUE, paddingHorizontal: 10, paddingVertical: 0, borderRadius: 8 },
+  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: BLUE, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
   editBtnTxt: { color: WHITE, fontSize: 13, fontWeight: '600' },
   outlineBtn: { borderWidth: 1, borderColor: BLUE, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
 
@@ -1387,7 +1387,7 @@ const gSt = StyleSheet.create({
   keyboardView: { flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%' },
   modalBox: { width: 500, maxHeight: '90%', backgroundColor: WHITE, borderRadius: 16, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 10 },
   modalBoxMobile: { width: '95%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24},
   modalTitle: { fontSize: 18, fontWeight: '700', color: TEXT_PRIMARY },
   modalScroll: { flexShrink: 1, width: '100%' },
   modalAvatarRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 24 },

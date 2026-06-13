@@ -6,19 +6,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState, useCallback } from "react";
 import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  useWindowDimensions,
-  View,
-  Alert,
-  Platform
+    ActivityIndicator,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    useWindowDimensions,
+    View,
+    Alert,
+    Platform,
+    Modal   
 } from "react-native";
 import { dutyAPI, profileAPI } from "../../service/api";
-// import jsPDF from 'jspdf';
-// import autoTable from 'jspdf-autotable';
 
 const formatDate = (iso: string | null) => {
   if (!iso) return "—";
@@ -120,7 +119,9 @@ export default function History() {
   const lastDutyDate = summary ? formatDate(summary.lastDutyDate) : "—";
 
   // ── Show 4 cards by default, all on "See All"
-  // const visibleDuties = showAll ? duties : duties.slice(0, 4);
+  // // const visibleDuties = showAll ? duties : duties.slice(0, 4);
+  const [modalVisible, setModalVisible] = useState(false);
+  // const visibleDuties = duties.slice(0, 4);
   const filteredDuties = duties;  // API already filtered
   const visibleDuties = showAll ? filteredDuties : filteredDuties.slice(0, 4);
 
@@ -293,7 +294,7 @@ export default function History() {
               onPress={() => setShowAll(!showAll)}
             >
               <Text style={styles.seeAllText}>
-                {showAll ? "Show Less" : "See All History"}
+                {showAll ? "Show Less" : "View All History"}
               </Text>
               <Ionicons
                 name={showAll ? "arrow-up" : "arrow-forward"}

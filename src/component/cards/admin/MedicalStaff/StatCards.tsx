@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   titleBlock: { flex: 1, paddingRight: 10 },
   title: {
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: 'bold',
     color: '#111827',
     letterSpacing: -0.3,
   },
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
   },
   cardValue: {
     fontSize: 30,
-    fontWeight: '800',
+    fontWeight: '600',
     color: '#111827',
     letterSpacing: -1,
     marginBottom: 4,

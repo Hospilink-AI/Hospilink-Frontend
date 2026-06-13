@@ -10,6 +10,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
@@ -25,6 +26,10 @@ export default function ResetPasswordScreen() {
   // The reset link sent to email will contain the token as a query param
   // e.g. https://yourapp.com/auth/reset-password?token=2e3f69529c...
   const { token } = useLocalSearchParams<{ token: string }>();
+
+  // Responsive: tighten things up on small phones, keep the card capped on web/tablet
+  const { width } = useWindowDimensions();
+  const isSmall = width < 400;
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -73,7 +78,7 @@ export default function ResetPasswordScreen() {
       // API: POST /api/auth/reset-password
       // Body: { token, newPassword, confirmPassword }
       // Returns: { success: true, message: "Password reset successful. Please sign in with your new password." }
-      await authAPI.resetPassword(token, newPassword, confirmPassword)
+      await authAPI.resetPassword(token, newPassword, confirmPassword);
       setSuccess(true);
 
       // Redirect to sign-in after a short delay so user sees success message
@@ -82,11 +87,11 @@ export default function ResetPasswordScreen() {
       }, 2000);
     } catch (error: any) {
       const message =
-      error?.response?.data?.message ??
-      error?.response?.data?.error ??
-      error?.message ??
-      'Something went wrong. The reset link may have expired.';
-    setErrors({ general: message });
+        error?.response?.data?.message ??
+        error?.response?.data?.error ??
+        error?.message ??
+        "Something went wrong. The reset link may have expired.";
+      setErrors({ general: message });
     } finally {
       setLoading(false);
     }
@@ -94,29 +99,49 @@ export default function ResetPasswordScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
+      {/* Top App Bar — kept outside KeyboardAvoidingView so it stays fixed when the keyboard opens.
+          NOTE: if your _layout already renders a header, set headerShown: false for this route
+          or move this bar into the layout to avoid a double header. */}
+      <View style={[styles.header, { paddingHorizontal: isSmall ? 16 : 20 }]}>
+        <View style={styles.headerLeft}>
+          <View style={styles.logoBox}>
+            <Ionicons name="pulse" size={22} color="#FFFFFF" />
+          </View>
+          <Text style={styles.logoText}>Hospilink</Text>
+        </View>
+
+        <TouchableOpacity
+          style={styles.helpBtn}
+          activeOpacity={0.7}
+          onPress={() => {}}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="help-circle-outline" size={22} color="#94A3B8" />
+        </TouchableOpacity>
+      </View>
 
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
       >
-        <View style={styles.content}>
+        <View style={[styles.content, { paddingHorizontal: isSmall ? 16 : 20 }]}>
           {/* Main Card */}
-          <View style={styles.card}>
-            {/* Icon */}
-            <View style={styles.iconWrap}>
-              <Ionicons name="shield-checkmark-outline" size={26} color="#2563EB" />
-            </View>
-
-            <Text style={styles.title}>Reset Your Password</Text>
-            <Text style={styles.subtitle}>
-              Choose a strong new password for your HospiLink account.
+          <View style={[styles.card, { padding: isSmall ? 22 : 32 }]}>
+            <Text style={[styles.title, { fontSize: isSmall ? 24 : 28 }]}>
+              Reset Your Password
             </Text>
 
             {/* Success State */}
             {success ? (
               <View style={styles.successBanner}>
-                <Ionicons name="checkmark-circle-outline" size={18} color="#16a34a" style={{ marginRight: 8 }} />
+                <Ionicons
+                  name="checkmark-circle-outline"
+                  size={18}
+                  color="#16a34a"
+                  style={{ marginRight: 8 }}
+                />
                 <Text style={styles.successText}>
                   Password reset successful! Redirecting you to sign in...
                 </Text>
@@ -126,7 +151,12 @@ export default function ResetPasswordScreen() {
             {/* General Error */}
             {errors.general ? (
               <View style={styles.generalError}>
-                <Ionicons name="alert-circle-outline" size={14} color="#dc2626" style={{ marginRight: 6 }} />
+                <Ionicons
+                  name="alert-circle-outline"
+                  size={14}
+                  color="#dc2626"
+                  style={{ marginRight: 6 }}
+                />
                 <Text style={styles.generalErrorText}>{errors.general}</Text>
               </View>
             ) : null}
@@ -163,7 +193,12 @@ export default function ResetPasswordScreen() {
               </View>
               {errors.newPassword ? (
                 <View style={styles.errorRow}>
-                  <Ionicons name="information-circle-outline" size={13} color="#dc2626" style={{ marginRight: 4 }} />
+                  <Ionicons
+                    name="information-circle-outline"
+                    size={13}
+                    color="#dc2626"
+                    style={{ marginRight: 4 }}
+                  />
                   <Text style={styles.errorText}>{errors.newPassword}</Text>
                 </View>
               ) : null}
@@ -201,15 +236,15 @@ export default function ResetPasswordScreen() {
               </View>
               {errors.confirmPassword ? (
                 <View style={styles.errorRow}>
-                  <Ionicons name="information-circle-outline" size={13} color="#dc2626" style={{ marginRight: 4 }} />
+                  <Ionicons
+                    name="information-circle-outline"
+                    size={13}
+                    color="#dc2626"
+                    style={{ marginRight: 4 }}
+                  />
                   <Text style={styles.errorText}>{errors.confirmPassword}</Text>
                 </View>
               ) : null}
-            </View>
-
-            {/* Password Rules Hint */}
-            <View style={styles.hintBox}>
-              <Text style={styles.hintText}>Password must be at least 6 characters and include uppercase, lowercase & a number.</Text>
             </View>
 
             {/* Reset Button */}
@@ -230,7 +265,7 @@ export default function ResetPasswordScreen() {
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerSecure}>SECURE END-TO-END ENCRYPTION</Text>
-            <Text style={styles.footerCopy}>© 2026 HospiLink Medical Systems. All rights reserved.</Text>
+            <Text style={styles.footerCopy}>© Developed and Managed by Rasika & Co.</Text>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -246,45 +281,78 @@ const styles = StyleSheet.create({
   keyboardView: {
     flex: 1,
   },
+
+  /* Header */
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    height: 64,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#EEF1F5",
+    ...Platform.select({
+      web: { boxShadow: "0 1px 2px rgba(15,23,42,0.04)" } as any,
+      default: {
+        shadowColor: "#0F172A",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.04,
+        shadowRadius: 4,
+        elevation: 2,
+      },
+    }),
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  logoBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 11,
+    backgroundColor: "#2563EB",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoText: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#1E293B",
+    marginLeft: 12,
+  },
+  helpBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  /* Content + Card */
   content: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 20,
   },
   card: {
     backgroundColor: "#FFFFFF",
     width: "100%",
     maxWidth: 440,
     borderRadius: 16,
-    padding: 32,
     shadowColor: "#000",
     shadowOpacity: 0.04,
     shadowRadius: 15,
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
-  iconWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    backgroundColor: "#EFF6FF",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
   title: {
-    fontSize: 22,
     fontWeight: "700",
-    color: "#1F2937",
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: "#6B7280",
-    lineHeight: 20,
+    color: "#1E293B",
     marginBottom: 24,
   },
+
+  /* Banners */
   successBanner: {
     flexDirection: "row",
     alignItems: "center",
@@ -318,24 +386,26 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     flex: 1,
   },
+
+  /* Inputs */
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 18,
   },
   label: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: "600",
-    color: "#374151",
+    color: "#334155",
     marginBottom: 8,
   },
   passwordContainer: {
     flexDirection: "row",
     alignItems: "center",
-    height: 46,
+    height: 50,
     borderWidth: 1.5,
-    borderColor: "#E5E7EB",
-    borderRadius: 8,
-    backgroundColor: "#F8FAFC",
-    paddingHorizontal: 12,
+    borderColor: "#E2E8F0",
+    borderRadius: 10,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 14,
   },
   inputError: {
     borderColor: "#dc2626",
@@ -363,25 +433,15 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     flex: 1,
   },
-  hintBox: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 6,
-    padding: 10,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-  hintText: {
-    fontSize: 11.5,
-    color: "#6B7280",
-    lineHeight: 17,
-  },
+
+  /* Button */
   resetBtn: {
     backgroundColor: "#2563EB",
-    height: 48,
-    borderRadius: 8,
+    height: 52,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
+    marginTop: 6,
     ...Platform.select({
       web: { boxShadow: "0 4px 14px rgba(37,99,235,0.30)" } as any,
       default: {
@@ -395,11 +455,13 @@ const styles = StyleSheet.create({
   },
   resetBtnText: {
     color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "700",
   },
+
+  /* Footer */
   footer: {
-    marginTop: 32,
+    marginTop: 28,
     alignItems: "center",
   },
   footerSecure: {

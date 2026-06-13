@@ -289,13 +289,13 @@ export default function Header() {
   const role = pathname.startsWith("/admin")
     ? "admin"
     : pathname.startsWith("/hospital")
-    ? "hospital"
-    : "medicalStaff";
+      ? "hospital"
+      : "medicalStaff";
 
-  const [displayName, setDisplayName]             = useState("...");
-  const [profilePicture, setProfilePicture]       = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState("...");
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [unreadCount, setUnreadCount]             = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -405,6 +405,17 @@ export default function Header() {
         role={role}
         onClose={() => setShowNotifications(false)}
         onUnreadCountChange={setUnreadCount}
+        onOpenCenter={() => {
+          setShowNotifications(false);
+          // Navigate to the notifications page based on role
+          if (role === "admin") {
+            router.push("/admin/notifications");
+          } else if (role === "hospital") {
+            router.push("/hospital/notifications");
+          } else {
+            router.push("/medicalStaff/notifications");
+          }
+        }}
       />
     </View>
   );
@@ -540,6 +551,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  adminTitle:    { fontSize: 14, fontWeight: "700", color: "#2563EB" },
+  adminTitle: { fontSize: 14, fontWeight: "700", color: "#2563EB" },
   adminSubtitle: { fontSize: 11, color: "#6B7280", fontWeight: "400" },
 });

@@ -852,7 +852,7 @@ backButtonText: {
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },
   backBtnText: { fontSize: 14, fontWeight: '600', color: '#1E293B' },
   headerMainRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 },
-  pageTitle: { fontSize: 24, fontWeight: '800', color: '#1E293B', letterSpacing: -0.5 },
+  pageTitle: { fontSize: 24, fontWeight: '700', color: '#1E293B', letterSpacing: -0.5 },
   pageSubtitle: { fontSize: 14, color: '#94A3B8', marginTop: 4 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   badgeHighPriority: { backgroundColor: '#DBEAFE', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },

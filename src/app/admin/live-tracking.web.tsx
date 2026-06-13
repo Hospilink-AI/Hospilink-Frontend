@@ -405,7 +405,7 @@ export default function StaffTrackingDashboard() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#F9FAFB', padding: 24 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, zIndex: 100 },
-  title: { fontSize: 24, fontWeight: '800', color: '#111827' },
+  title: { fontSize: 24, fontWeight: '700', color: '#111827' },
   subtitle: { fontSize: 12, color: '#6B7280', marginTop: 4 },
   headerFilters: { flexDirection: 'row', gap: 12 },
   dropdownContainer: { position: 'relative', zIndex: 100 },

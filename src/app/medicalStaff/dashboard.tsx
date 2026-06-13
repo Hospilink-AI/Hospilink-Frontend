@@ -38,6 +38,7 @@ interface Duty {
   urgency?: string;
   startTime?: string;
   endTime?: string;
+  dutySubType?: string;
 
   totalPayment?: number;
   status?: string;
@@ -214,7 +215,8 @@ export default function Dashboard() {
           day: 'numeric',
           year: 'numeric'
         }),
-        tag: job.urgency?.toUpperCase() || 'MEDIUM'
+        tag: job.urgency?.toUpperCase() || 'MEDIUM',
+        dutySubType: job.staffRole === 'rmo' ? job.dutySubType : undefined,
       }));
       setDuties(transformedDuties);
       setTotalJobs(response.totalJobs || 0);
@@ -274,6 +276,7 @@ export default function Dashboard() {
           }),
           status: job.status,
           distanceText: job.distanceText || `${job.distance} km` || "N/A",
+          dutySubType: job.staffRole === 'rmo' ? job.dutySubType : undefined,
         }));
       setUpcomingDuties(transformedDuties);
     } catch (err: any) {
@@ -319,6 +322,7 @@ export default function Dashboard() {
             year: "numeric",
           }),
           status: job.status,
+          dutySubType: job.staffRole === 'rmo' ? job.dutySubType : undefined,
         }));
       setOngoingDuties(transformed);
     } catch (err) {

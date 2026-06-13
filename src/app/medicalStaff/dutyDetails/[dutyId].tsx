@@ -11,12 +11,13 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { dutyAPI } from '../../../service/api'; 
+import { dutyAPI } from '../../../service/api';
 
 // ─── Types ────────────────────────────────────────────────
 interface DutyDetail {
   _id: string;
   staffRole: string;
+  dutySubType?: string;
   date: string;
   startTime: string;
   endTime: string;
@@ -37,7 +38,7 @@ interface DutyDetail {
     latitude: number;
     longitude: number;
     // address: string;
-     address: string | {       
+    address: string | {
       currentAddress: string;
       city: string;
       state: string;
@@ -369,6 +370,7 @@ export default function DutyDetailsScreen() {
   const hasMap = hospLat != null && hospLng != null;
   const urgencyCfg = URGENCY_CONFIG[duty.urgency] ?? { bg: '#F3F4F6', text: '#374151' };
   const mapHeight = isMobile ? 200 : 240;
+  const showSubType = duty.staffRole === 'rmo' && !!duty.dutySubType;
 
   return (
     <View style={styles.screen}>
@@ -470,6 +472,12 @@ export default function DutyDetailsScreen() {
                   {(duty.urgency ?? '').charAt(0).toUpperCase() + (duty.urgency ?? '').slice(1)} Priority
                 </Text>
               </View>
+              {showSubType && (
+                <View style={styles.extraChip}>
+                  <Ionicons name="git-branch-outline" size={14} color="#2563EB" />
+                  <Text style={styles.extraChipText}>{duty.dutySubType!.toUpperCase()}</Text>
+                </View>
+              )}
             </View>
 
             {/* Review (if present) */}
@@ -652,10 +660,10 @@ const styles = StyleSheet.create({
   // Scroll
   scroll: { flex: 1 },
   content: { paddingHorizontal: 20, paddingBottom: 40 },
-contentMobile: {
-  paddingHorizontal: 12,
-  width: '100%',
-},
+  contentMobile: {
+    paddingHorizontal: 12,
+    width: '100%',
+  },
 
   // Heading
   pageHeading: { marginBottom: 18 },
@@ -664,7 +672,7 @@ contentMobile: {
 
   // Layout
   layout: { flexDirection: 'row', gap: 18, alignItems: 'flex-start', flexWrap: 'wrap' },
-  layoutMobile: { flexDirection: 'column', width: '100%',gap: 14, },
+  layoutMobile: { flexDirection: 'column', width: '100%', gap: 14, },
 
   // Left card
   leftCard: {
@@ -676,15 +684,15 @@ contentMobile: {
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
-  leftCardMobile: { flex: 0, minWidth: 0, width: '100%' , padding: 16,},
+  leftCardMobile: { flex: 0, minWidth: 0, width: '100%', padding: 16, },
 
   cardHeaderRow: {
-     flexDirection: 'row',
-  alignItems: 'flex-start',
-  justifyContent: 'space-between',
-  gap: 10,
-  marginBottom: 14,
-  flexWrap: 'wrap', 
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 14,
+    flexWrap: 'wrap',
   },
   roleIconWrap: {
     width: 40,
@@ -695,21 +703,27 @@ contentMobile: {
     justifyContent: 'center',
     flexShrink: 0,
   },
-  roleInfo: {  flex: 1,
-  minWidth: 0,        // ← KEEP THIS
-  paddingRight: 6,
-  flexShrink: 1,  },
-  roleTitle: { fontSize: 16,
-  fontWeight: '800',
-  color: '#111827',
-  marginBottom: 2,
-  lineHeight: 22,
-  flexWrap: 'wrap', },
+  roleInfo: {
+    flex: 1,
+    minWidth: 0,        // ← KEEP THIS
+    paddingRight: 6,
+    flexShrink: 1,
+  },
+  roleTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 2,
+    lineHeight: 22,
+    flexWrap: 'wrap',
+  },
   hospitalSubtitle: { fontSize: 13, color: '#6B7280' },
 
-  headerRight: { alignItems: 'flex-end',
-  justifyContent: 'flex-start',
-  gap: 6, flexShrink: 0},
+  headerRight: {
+    alignItems: 'flex-end',
+    justifyContent: 'flex-start',
+    gap: 6, flexShrink: 0
+  },
 
   // Badges
   badge: {
@@ -730,17 +744,17 @@ contentMobile: {
   // Info grid
   infoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 0, marginBottom: 4 },
   infoGridMobile: {
-  flexDirection: 'column',
-},
+    flexDirection: 'column',
+  },
   infoCell: {
-  width: '50%',
-  paddingRight: 12,
-  marginBottom: 12,
-},
-infoCellMobile: {
-  width: '100%',
-  paddingRight: 0,
-},
+    width: '50%',
+    paddingRight: 12,
+    marginBottom: 12,
+  },
+  infoCellMobile: {
+    width: '100%',
+    paddingRight: 0,
+  },
   infoCellLabel: { fontSize: 11, fontWeight: '700', color: '#374151', marginBottom: 5 },
   infoCellValueRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   infoCellValue: { fontSize: 14, color: '#111827', fontWeight: '500' },
@@ -771,14 +785,14 @@ infoCellMobile: {
   rightColMobile: { flex: 0, minWidth: 0, width: '100%', gap: 14 },
 
   // Map card
- mapCard: {
-  backgroundColor: '#fff',
-  borderRadius: 14,
-  overflow: 'hidden',
-  borderWidth: 1,
-  borderColor: '#E5E7EB',
-  width: '100%',
-},
+  mapCard: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    width: '100%',
+  },
   mapPlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -788,7 +802,7 @@ infoCellMobile: {
   mapPlaceholderText: { fontSize: 12, color: '#9CA3AF', textAlign: 'center', paddingHorizontal: 20 },
 
   locationBar: {
-     flexDirection: 'column',
+    flexDirection: 'column',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     padding: 14,
@@ -1441,7 +1455,7 @@ infoCellMobile: {
 //   pageTitle: { fontSize: 24, fontWeight: '800', color: '#111827', marginBottom: 4 },
 //   pageSubtitle: { fontSize: 13, color: '#6B7280', lineHeight: 19 },
 
-//   /* CRITICAL FIX HERE: 
+//   /* CRITICAL FIX HERE:
 //     Changed layout from flex-wrap to explicit layout directions.
 //     On desktop, it uses explicit row flex without wrapping constraints.
 //   */
@@ -1457,7 +1471,7 @@ infoCellMobile: {
 //     borderColor: '#E5E7EB',
 //   },
 //   leftCardMobile: {
-//     flex: 0, 
+//     flex: 0,
 //     width: '100%',
 //     padding: 16,
 //   },
@@ -1594,7 +1608,7 @@ infoCellMobile: {
 //   reviewText: { fontSize: 13, color: '#6B7280', fontStyle: 'italic', lineHeight: 19 },
 
 //   /* CRITICAL MOBILE FIXES:
-//     Removed static minWidths on mobile blocks that caused horizontal scaling failure 
+//     Removed static minWidths on mobile blocks that caused horizontal scaling failure
 //     and element stacking conflicts.
 //   */
 //   rightCol: { flex: 2, minWidth: 260, gap: 14 },

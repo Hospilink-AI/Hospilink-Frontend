@@ -382,6 +382,7 @@ function DocumentViewerModal({ visible, item, onClose, onVerified, onRejected }:
   const [loading, setLoading] = useState(false);
   const [imageError, setImageError] = useState(false);
 
+
   const handleClose = () => {
     setDecision(null);
     setShowRejectInput(false);
@@ -930,6 +931,12 @@ export default function PendingReviewList({
         </TouchableOpacity>
       )}
 
+      <ScrollView
+  style={{ flex: 1 }}
+  showsVerticalScrollIndicator={true}
+  nestedScrollEnabled={true}
+>
+
       {/* ── Document List ── */}
       {error ? (
         <View style={s.center}>
@@ -976,7 +983,7 @@ export default function PendingReviewList({
           </TouchableOpacity>
         </View>
       )}
-
+    </ScrollView>
       {/* ── Review Modal ── */}
       <DocumentViewerModal
         visible={reviewVisible}
@@ -1368,7 +1375,7 @@ const pr = StyleSheet.create({
 });
 
 const s = StyleSheet.create({
-  card: { backgroundColor: '#fff', borderRadius: 16, padding: 18, ...Platform.select({ ios: { shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: 3 } }, android: { elevation: 3 } }) },
+  card: {flex: 1, backgroundColor: '#fff', borderRadius: 16, padding: 18, ...Platform.select({ ios: { shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: 3 } }, android: { elevation: 3 } }) },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
   title: { fontSize: 16, fontWeight: '700', color: '#0F172A', flex: 1 },
   badge: { backgroundColor: '#EFF6FF', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
