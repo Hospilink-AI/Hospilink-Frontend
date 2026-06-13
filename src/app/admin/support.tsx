@@ -200,7 +200,7 @@ export default function SupportScreen() {
              © Developed and Managed by Rasika & Co.
           </Text>
         </View>
-      </ScrollView>
+      </ScrollView>  
     </SafeAreaView>
   );
 }
