@@ -14,6 +14,10 @@ import { COLORS } from "@/constant/colors";
 import { adminAPI } from "@/service/api";
 import { useSocket } from "../../context/SocketContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import NotificationsCenterScreen from "./NotificationCenter";
+
+// inside the component, add:
+const [showCenter, setShowCenter] = useState(false);
 
 // ─── Constants ───────────────────────────────────────────────────
 const PAGE_SIZE = 10; // FIX: was 50 — now loads 10 at a time
@@ -60,6 +64,7 @@ interface NotificationPopupProps {
   role: string;
   onClose: () => void;
   onUnreadCountChange?: (count: number) => void;
+  onOpenCenter?: () => void;
 }
 
 // ─── Type → visual config ────────────────────────────────────────
@@ -109,6 +114,7 @@ export default function NotificationPopup({
   role,
   onClose,
   onUnreadCountChange,
+  onOpenCenter,
 }: NotificationPopupProps) {
   const { socket } = useSocket();
 
@@ -269,6 +275,7 @@ export default function NotificationPopup({
 
   // ─────────────────────────────────────────────────────────────
   if (!isVisible) return null;
+
   if (Platform.OS !== "web") {
     return (
       <Modal
@@ -395,11 +402,18 @@ export default function NotificationPopup({
             )}
 
             {!loading && !error && notifications.length > 0 && (
-              <View style={styles.footerRow}>
+              // Currently this is a plain <View> with no onPress — replace it:
+              <TouchableOpacity    // ← was <View>
+                style={styles.footerRow}
+                onPress={() => onOpenCenter?.()}   // ← add this
+                activeOpacity={0.7}
+              >
                 <Ionicons name="notifications-outline" size={14} color="#94a3b8" />
                 <Text style={styles.footerText}>Show All Notifications</Text>
-              </View>
+              </TouchableOpacity>  // ← was </View>
             )}
+
+
           </View>
         </View>
       </Modal>
@@ -536,13 +550,16 @@ export default function NotificationPopup({
           </View>
         )} */}
         {!loading && !error && notifications.length > 0 && (
-          <View style={styles.footerRow}>
-            <Ionicons name="notifications-outline" size={14} color="#94a3b8" />
-            <Text style={styles.footerText}>
-              Show All Notifications
-            </Text>
-          </View>
-        )}
+              // Currently this is a plain <View> with no onPress — replace it:
+              <TouchableOpacity    // ← was <View>
+                style={styles.footerRow}
+                onPress={() => onOpenCenter?.()}   // ← add this
+                activeOpacity={0.7}
+              >
+                <Ionicons name="notifications-outline" size={14} color="#94a3b8" />
+                <Text style={styles.footerText}>Show All Notifications</Text>
+              </TouchableOpacity>  // ← was </View>
+            )}
       </View>
     </View>
   );
@@ -564,6 +581,7 @@ const styles = StyleSheet.create({
     left: -1000,
     right: -1000,
     bottom: -1000,
+    zIndex: 1,
   },
   // popupBox: {
   //   backgroundColor: "#fff",
@@ -605,6 +623,7 @@ const styles = StyleSheet.create({
         overflow: "hidden",
       },
     }),
+    zIndex: 2,
   },
   // Add to StyleSheet.create():
 
