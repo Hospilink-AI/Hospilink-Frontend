@@ -236,7 +236,7 @@ export default function ResetPasswordScreen() {
         <View style={styles.footer}>
           <Text style={styles.footerSecure}>SECURE END-TO-END ENCRYPTION</Text>
           <Text style={styles.footerCopy}>
-            © 2026 Hospilink Medical Systems. All rights reserved.
+            © Developed and Managed by Rasika & Co.
           </Text>
         </View>
       </KeyboardAvoidingView>

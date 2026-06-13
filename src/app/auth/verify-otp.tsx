@@ -423,7 +423,7 @@ export default function VerifyOtp() {
       </ScrollView>
 
       <Text style={styles.footer}>
-        © 2026 HospiLink Medical Systems. All rights reserved.
+        © Developed and Managed by Rasika & Co.
       </Text>
 
     </View>

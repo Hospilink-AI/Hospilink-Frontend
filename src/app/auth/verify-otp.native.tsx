@@ -94,20 +94,12 @@ export default function VerifyOtp() {
   };
 
   // ─── Route after successful verification, based on the role already chosen.
-  //     (No welcome-choice hop: the role was selected before signup.) ───
+  //     Goes to welcome-choice screen where user can choose to complete profile or explore ───
   const routeAfterVerify = () => {
-    if (accountType === "hospital") {
-      router.replace({
-        pathname: "/profile/hospital",
-        params: { prefillName: signupName, prefillEmail: email },
-      });
-    } else {
-      router.replace({
-        // pathname: "/profile/medical-staff",
-        pathname: "/auth/onboarding",
-        params: { prefillName: signupName, prefillEmail: email },
-      });
-    }
+    router.replace({
+      pathname: "/auth/welcome-choice",
+      params: { email, signupName, accountType },
+    });
   };
 
   const handleVerify = async () => {

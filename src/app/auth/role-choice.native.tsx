@@ -76,7 +76,7 @@ export default function WelcomeChoiceScreen() {
         <View style={{ flex: 1 }} />
 
         <Text style={styles.footerCopy}>
-          © 2026 Hospilink Medical Systems. All rights reserved.
+          © Developed and Managed by Rasika & Co.
         </Text>
       </ScrollView>
     </SafeAreaView>
