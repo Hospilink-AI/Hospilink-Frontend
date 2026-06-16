@@ -262,14 +262,7 @@ export default function BottomTab() {
         );
       })}
 
-      {/* ── Logout tab ── */}
-      <TouchableOpacity
-        style={styles.tab}
-        onPress={handleLogout}
-        activeOpacity={0.7}
-      >
-        <Ionicons name="log-out-outline" size={24} color="#2563EB" />
-      </TouchableOpacity>
+      
 
       {/* ── Logout Modal ── */}
       <LogoutModal
