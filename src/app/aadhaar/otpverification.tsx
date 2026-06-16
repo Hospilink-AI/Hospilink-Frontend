@@ -1,0 +1,292 @@
+import { Ionicons } from "@expo/vector-icons";
+import React, { useState } from "react";
+import {
+    Image,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    useWindowDimensions,
+    View,
+} from "react-native";
+
+const HOSPILINK_LOGO = require("../../../assets/Images/Hospilink.png");
+const MERI_PEHCHAAN_LOGO = require("../../../assets/Images/digitlocker.png");
+
+function MeriPehchaanLogo() {
+    return (
+        <View style={logoStyles.wrap}>
+            <Image
+                source={MERI_PEHCHAAN_LOGO}
+                style={logoStyles.logoImg}
+                resizeMode="contain"
+            />
+        </View>
+    );
+}
+
+const logoStyles = StyleSheet.create({
+    wrap: {
+        alignItems: "center",
+        justifyContent: "center",
+        marginBottom: 18,
+    },
+    logoImg: {
+        width: 170,
+        height: 52,
+    },
+});
+
+//  Main Screen 
+export default function OtpVerification() {
+    const { width } = useWindowDimensions();
+    const isMobile = width <= 768;
+
+    const [otp, setOtp] = useState("");
+    const [showOtp, setShowOtp] = useState(false);
+
+    // Last 4 digits of the registered mobile (replace with real value via props/route params)
+    const maskedMobile = "xxxxxx1946";
+
+    return (
+        <SafeAreaView style={s.safe}>
+            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
+            {/* ── Top App Bar ── */}
+            <View style={s.appBar}>
+                <View style={s.appBarInner}>
+                    <Image
+                        source={HOSPILINK_LOGO}
+                        style={s.appBarLogoImg}
+                        resizeMode="contain"
+                    />
+                    <TouchableOpacity style={s.helpBtn} activeOpacity={0.7}>
+                        <Ionicons name="help-circle-outline" size={26} color="#94A3B8" />
+                    </TouchableOpacity>
+                </View>
+            </View>
+
+            {/* ── Body ── */}
+            <ScrollView
+                style={s.scrollWrapper}
+                contentContainerStyle={[
+                    s.scrollContent,
+                    isMobile && s.scrollContentMobile,
+                ]}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Meri Pehchaan Logo */}
+                <MeriPehchaanLogo />
+
+                {/* Card */}
+                <View style={[s.card, isMobile && s.cardMobile]}>
+                    {/* Title */}
+                    <Text style={s.cardTitle}>Digital Onboarding</Text>
+
+                    {/* Description */}
+                    <Text style={s.cardDesc}>
+                        DigiLocker has sent you an OTP to your registered mobile (
+                        {maskedMobile})
+                    </Text>
+
+                    {/* OTP Input */}
+                    <View style={s.inputWrap}>
+                        <TextInput
+                            style={s.input}
+                            value={otp}
+                            onChangeText={setOtp}
+                            keyboardType="number-pad"
+                            maxLength={6}
+                            secureTextEntry={!showOtp}
+                            autoFocus
+                        />
+                        <TouchableOpacity
+                            style={s.eyeBtn}
+                            onPress={() => setShowOtp((v) => !v)}
+                            activeOpacity={0.7}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                            <Ionicons
+                                name={showOtp ? "eye-outline" : "eye-off-outline"}
+                                size={20}
+                                color="#475569"
+                            />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Wait / warning note */}
+                    <View style={s.noteWrap}>
+                        <Text style={s.noteText}>Wait few minutes for the OTP,</Text>
+                        <Text style={s.noteBold}>do not refresh or close!</Text>
+                    </View>
+
+                    {/* Continue Button */}
+                    <TouchableOpacity style={s.continueBtn} activeOpacity={0.85}>
+                        <Text style={s.continueBtnText}>Continue</Text>
+                    </TouchableOpacity>
+                </View>
+            </ScrollView>
+        </SafeAreaView>
+    );
+}
+
+// Styles
+const s = StyleSheet.create({
+    safe: {
+        flex: 1,
+        backgroundColor: "#FFFFFF",
+    },
+
+    /* ── App Bar ── */
+    appBar: {
+        height: 64,
+        backgroundColor: "#FFFFFF",
+        borderBottomWidth: 1,
+        borderBottomColor: "#EEF1F5",
+        justifyContent: "center",
+        ...Platform.select({
+            web: { boxShadow: "0 1px 3px rgba(15,23,42,0.06)" } as any,
+            default: {
+                shadowColor: "#0F172A",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.06,
+                shadowRadius: 4,
+                elevation: 3,
+            },
+        }),
+    },
+    appBarInner: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        paddingHorizontal: 20,
+    },
+    appBarLogoImg: {
+        width: 132,
+        height: 40,
+    },
+    helpBtn: {
+        width: 40,
+        height: 40,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+
+    /* ── Scroll ── */
+    scrollWrapper: {
+        flex: 1,
+        backgroundColor: "#F5F7FB",
+    },
+    scrollContent: {
+        flexGrow: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        paddingVertical: 24,
+        paddingHorizontal: 24,
+    },
+    scrollContentMobile: {
+        paddingVertical: 20,
+        paddingHorizontal: 16,
+    },
+
+    /* ── Card ── */
+    card: {
+        width: "100%",
+        maxWidth: 549,
+        backgroundColor: "#FFFFFF",
+        borderRadius: 20,
+        paddingVertical: 36,
+        paddingHorizontal: 60,
+        // Drop shadow: X 4, Y 4, Blur 25.3, Spread 0, #64748B @ 7%
+        ...Platform.select({
+            web: { boxShadow: "4px 4px 25px rgba(100,116,139,0.07)" } as any,
+            default: {
+                shadowColor: "#64748B",
+                shadowOffset: { width: 4, height: 4 },
+                shadowOpacity: 0.07,
+                shadowRadius: 25,
+                elevation: 5,
+            },
+        }),
+    },
+    cardMobile: {
+        paddingVertical: 28,
+        paddingHorizontal: 24,
+        borderRadius: 16,
+    },
+
+    // Card Content 
+    cardTitle: {
+        fontSize: 26,
+        fontWeight: "800",
+        color: "#0F172A",
+        textAlign: "center",
+        marginBottom: 16,
+    },
+    cardDesc: {
+        fontSize: 14,
+        color: "#64748B",
+        lineHeight: 22,
+        textAlign: "center",
+        marginBottom: 28,
+    },
+
+    // OTP Input 
+    inputWrap: {
+        flexDirection: "row",
+        alignItems: "center",
+        borderWidth: 1,
+        borderColor: "#D1D5DB",
+        borderRadius: 8,
+        backgroundColor: "#FFFFFF",
+        paddingHorizontal: 16,
+        height: 52,
+        marginBottom: 22,
+    },
+    input: {
+        flex: 1,
+        fontSize: 18,
+        color: "#0F172A",
+        height: "100%",
+        letterSpacing: 4,
+        ...(Platform.OS === "web" ? { outlineStyle: "none" } as any : {}),
+    },
+    eyeBtn: {
+        paddingLeft: 8,
+    },
+
+    // Wait / warning note
+    noteWrap: {
+        marginBottom: 28,
+    },
+    noteText: {
+        fontSize: 15,
+        color: "#64748B",
+        marginBottom: 4,
+    },
+    noteBold: {
+        fontSize: 15,
+        fontWeight: "800",
+        color: "#0F172A",
+    },
+
+    // Continue Button 
+    continueBtn: {
+        width: "100%",
+        height: 52,
+        backgroundColor: "#16A34A",
+        borderRadius: 10,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    continueBtnText: {
+        color: "#FFFFFF",
+        fontSize: 17,
+        fontWeight: "700",
+        letterSpacing: 0.3,
+    },
+});
