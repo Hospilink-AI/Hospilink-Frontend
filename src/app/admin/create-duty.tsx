@@ -1097,7 +1097,7 @@ export default function CreateDutyScreen() {
               </View>
               {form.staffRole === 'rmo' && (
                 <View style={{ marginBottom: 14 }}>
-                  <FieldLabel label="Duty Sub-Type" required />
+                  {/* <FieldLabel label="Duty Sub-Type" required /> */}
                   <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
                     {RMO_SUB_TYPES.map(opt => {
                       const active = form.dutySubType === opt.value;
@@ -1107,7 +1107,7 @@ export default function CreateDutyScreen() {
                           onPress={() => set('dutySubType')(opt.value)}
                           style={{
                             paddingHorizontal: 16, paddingVertical: 8,
-                            borderRadius: 20, borderWidth: 1,
+                            borderRadius: 8, borderWidth: 1,
                             borderColor: active ? '#2563EB' : '#E5E7EB',
                             backgroundColor: active ? '#EFF6FF' : '#fff',
                           }}
@@ -1124,7 +1124,7 @@ export default function CreateDutyScreen() {
               )}
               {/* Staff Count */}
               <View style={{ marginTop: 4 }}>
-                <FieldLabel label="Number of Staff Required" />
+                <FieldLabel label="Staff Count" />
                 <InputField
                   placeholder="e.g. 2"
                   value={form.staffCount}

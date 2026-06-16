@@ -1079,7 +1079,7 @@ const handleRoleChange = (val: string) => {
               </View>
               {form.staffRole === 'rmo' && (
   <View style={{ marginBottom: 14 }}>
-    <FieldLabel label="Duty Sub-Type" required />
+    {/* <FieldLabel label="Duty Sub-Type" required /> */}
     <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
       {RMO_SUB_TYPES.map(opt => {
         const active = form.dutySubType === opt.value;
@@ -1089,7 +1089,7 @@ const handleRoleChange = (val: string) => {
             onPress={() => set('dutySubType')(opt.value)}
             style={{
               paddingHorizontal: 16, paddingVertical: 8,
-              borderRadius: 20, borderWidth: 1,
+              borderRadius: 8, borderWidth: 1,
               borderColor: active ? '#DC2626' : '#E5E7EB',
               backgroundColor: active ? '#FEF2F2' : '#fff',
             }}

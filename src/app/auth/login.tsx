@@ -470,7 +470,7 @@ export default function AuthScreen() {
             </View>
 
             <View>
-              <Text style={styles.copyright}>© 2026 HospiLink Medical Systems. All rights reserved.</Text>
+              <Text style={styles.copyright}>© Developed and Managed by Rasika & Co.</Text>
             </View>
           </View>
         </View>

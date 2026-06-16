@@ -458,7 +458,7 @@ export default function HospitalProfile() {
             <Text style={styles.label}>Hospital Legal Name</Text>
             <View style={styles.inputRow}>
               <TextInput
-                placeholder="e.g. Government Hospital"
+                placeholder="e.g. Hospital Name"
                 placeholderTextColor="#b0bec5"
                 style={styles.inputInner}
                 value={hospitalName}
@@ -469,7 +469,7 @@ export default function HospitalProfile() {
             {/* ── NEW: Email (prefilled, non-editable) ── */}
             <Text style={styles.label}>Email Address</Text>
             <View style={[styles.inputRow, styles.inputRowDisabled]}>
-              <Ionicons name="mail-outline" size={15} color="#94a3b8" style={{ marginRight: 8 }} />
+              {/* <Ionicons name="mail-outline" size={15} color="#94a3b8" style={{ marginRight: 8 }} /> */}
               <TextInput
                 style={[styles.inputInner, styles.inputDisabled]}
                 value={email}
@@ -497,7 +497,7 @@ export default function HospitalProfile() {
             </View> */}
 
             <View style={styles.inputRow}>
-              <Ionicons name="call-outline" size={15} color="#94a3b8" style={{ marginRight: 8 }} />
+              {/* <Ionicons name="call-outline" size={15} color="#94a3b8" style={{ marginRight: 8 }} /> */}
               <View style={styles.phonePrefix}>
                 <Text style={styles.phonePrefixText}>+91</Text>
               </View>

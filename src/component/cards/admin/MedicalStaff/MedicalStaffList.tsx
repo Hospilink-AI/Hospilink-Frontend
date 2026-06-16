@@ -1848,11 +1848,7 @@ export default function MedicalStaffListSection() {
       {/* ── Header ── */}
       <View style={s.header}>
         <View style={s.headerLeft}>
-          <Text style={s.title}>Medical Staff</Text>
-          <Text style={s.subtitle}>
-            Directory of all registered medical professionals on Hospilink+.
-            Monitor availability, completed duties, and role distribution.
-          </Text>
+          
         </View>
         <TouchableOpacity
           style={[s.exportBtn, exporting && { opacity: 0.7 }]}

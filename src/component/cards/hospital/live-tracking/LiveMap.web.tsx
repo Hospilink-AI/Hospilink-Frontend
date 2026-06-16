@@ -194,12 +194,12 @@ const LiveMap: React.FC<LiveMapProps> = ({ hospital, doctors, rangeKm, onRefresh
         position: 'absolute',
         top: 58,
         // left: 12,          // left side so it doesn't clash with RangeDropdown on right
-        right:10,
+        right:9,
         zIndex: 1000,
         backgroundColor: '#fff',
         border: '1px solid #E5E7EB',
         borderRadius: 8,
-        padding: '7px 12px',
+        padding: '9px 12px',
         fontSize: 11,
         fontWeight: 600,
         color: '#111827',
@@ -210,7 +210,7 @@ const LiveMap: React.FC<LiveMapProps> = ({ hospital, doctors, rangeKm, onRefresh
         gap: 6,
       }}
     >
-      {isSatellite ? '🗺 Street View' : '🛰 Satellite'}
+      {isSatellite ? '🗺 Street' : '🛰 Satellite'}
     </button>
     </div>
     

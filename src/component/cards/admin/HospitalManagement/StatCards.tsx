@@ -86,15 +86,15 @@ const CARDS: StatCardProps[] = [
     actionLabel: 'Send Notifications 🔔',
     actionColor: '#D97706',
   },
-  {
-    icon:        '⚡',
-    iconBg:      '#F0FDF4',
-    label:       'System Capacity',
-    value:       '94%',
-    description: 'Integration efficiency across all nodes',
-    actionLabel: 'View Performance Data →',
-    actionColor: '#16A34A',
-  },
+  // {
+  //   icon:        '⚡',
+  //   iconBg:      '#F0FDF4',
+  //   label:       'System Capacity',
+  //   value:       '94%',
+  //   description: 'Integration efficiency across all nodes',
+  //   actionLabel: 'View Performance Data →',
+  //   actionColor: '#16A34A',
+  // },
 ];
 
 export default function StatCards() {

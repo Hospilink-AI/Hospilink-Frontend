@@ -21,6 +21,7 @@ interface DutyDetail {
   startTime: string;
   endTime: string;
   isOvernightDuty: boolean;
+  dutySubType?: string;
   urgency: string;
   description: string;
   offeredRate: number;
@@ -103,18 +104,18 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const STATUS_CONFIG: Record<string, { bg: string; text: string; dot: string; label: string }> = {
-  available:     { bg: '#D1FAE5', text: '#065F46', dot: '#10B981', label: 'Available' },
-  assigned:      { bg: '#DBEAFE', text: '#1E40AF', dot: '#3B82F6', label: 'Assigned' },
-  enroute:       { bg: '#FEF3C7', text: '#92400E', dot: '#F59E0B', label: 'En Route' },
+  available: { bg: '#D1FAE5', text: '#065F46', dot: '#10B981', label: 'Available' },
+  assigned: { bg: '#DBEAFE', text: '#1E40AF', dot: '#3B82F6', label: 'Assigned' },
+  enroute: { bg: '#FEF3C7', text: '#92400E', dot: '#F59E0B', label: 'En Route' },
   'in-progress': { bg: '#EDE9FE', text: '#5B21B6', dot: '#8B5CF6', label: 'In Progress' },
-  completed:     { bg: '#D1FAE5', text: '#065F46', dot: '#10B981', label: 'Completed' },
-  cancelled:     { bg: '#FEE2E2', text: '#991B1B', dot: '#EF4444', label: 'Cancelled' },
+  completed: { bg: '#D1FAE5', text: '#065F46', dot: '#10B981', label: 'Completed' },
+  cancelled: { bg: '#FEE2E2', text: '#991B1B', dot: '#EF4444', label: 'Cancelled' },
 };
 
 const URGENCY_CONFIG: Record<string, { bg: string; text: string }> = {
-  low:       { bg: '#D1FAE5', text: '#065F46' },
-  medium:    { bg: '#DBEAFE', text: '#1E40AF' },
-  high:      { bg: '#FEF3C7', text: '#92400E' },
+  low: { bg: '#D1FAE5', text: '#065F46' },
+  medium: { bg: '#DBEAFE', text: '#1E40AF' },
+  high: { bg: '#FEF3C7', text: '#92400E' },
   emergency: { bg: '#FEE2E2', text: '#991B1B' },
 };
 
@@ -205,7 +206,7 @@ function StatusBadge({ status }: { status: string }) {
 function Stars({ rating }: { rating: number }) {
   return (
     <View style={{ flexDirection: 'row', gap: 2 }}>
-      {[1,2,3,4,5].map(i => (
+      {[1, 2, 3, 4, 5].map(i => (
         <Ionicons key={i} name={i <= rating ? 'star' : 'star-outline'} size={14} color={i <= rating ? '#F59E0B' : '#D1D5DB'} />
       ))}
     </View>
@@ -229,6 +230,7 @@ function MobileLayout({ duty, dutyId, router }: { duty: DutyDetail; dutyId: stri
   const hasMap = hospLat != null && hospLng != null;
   const staffName = duty.assignedTo?.fullName ?? duty.assignedTo?.user?.name ?? 'Staff';
   const urgencyCfg = URGENCY_CONFIG[duty.urgency] ?? { bg: '#F3F4F6', text: '#374151' };
+  const showSubType = duty.staffRole === 'rmo' && !!duty.dutySubType;
 
   return (
     <ScrollView style={mobileS.scroll} contentContainerStyle={mobileS.content} showsVerticalScrollIndicator={false}>
@@ -319,6 +321,12 @@ function MobileLayout({ duty, dutyId, router }: { duty: DutyDetail; dutyId: stri
             </Text>
           </View>
         </View>
+        {showSubType && (
+          <View style={mobileS.chip}>
+            <Ionicons name="git-branch-outline" size={13} color="#2563EB" />
+            <Text style={mobileS.chipText}>{duty.dutySubType!.toUpperCase()}</Text>
+          </View>
+        )}
       </View>
 
       {/* ── Card 4: Map ── */}
@@ -414,6 +422,7 @@ function DesktopLayout({ duty, dutyId, router }: { duty: DutyDetail; dutyId: str
   const hasMap = hospLat != null && hospLng != null;
   const staffName = duty.assignedTo?.fullName ?? duty.assignedTo?.user?.name ?? 'Staff';
   const urgencyCfg = URGENCY_CONFIG[duty.urgency] ?? { bg: '#F3F4F6', text: '#374151' };
+  const showSubType = duty.staffRole === 'rmo' && !!duty.dutySubType;
 
   return (
     <ScrollView style={desktopS.scroll} contentContainerStyle={desktopS.content} showsVerticalScrollIndicator={false}>
@@ -464,9 +473,9 @@ function DesktopLayout({ duty, dutyId, router }: { duty: DutyDetail; dutyId: str
             <View style={desktopS.infoGrid}>
               {[
                 { label: 'Start Date:', value: formatDate(duty.date), icon: 'calendar-outline' },
-                { label: 'End Date:',   value: formatDate(duty.date), icon: 'calendar-outline' },
+                { label: 'End Date:', value: formatDate(duty.date), icon: 'calendar-outline' },
                 { label: 'Start Time:', value: formatTime(duty.startTime), icon: 'time-outline' },
-                { label: 'End Time:',   value: formatTime(duty.endTime), icon: 'time-outline' },
+                { label: 'End Time:', value: formatTime(duty.endTime), icon: 'time-outline' },
               ].map(({ label, value, icon }) => (
                 <View key={label} style={desktopS.infoCell}>
                   <Text style={desktopS.infoCellLabel}>{label}</Text>
@@ -656,11 +665,11 @@ export default function DutyDetailsScreen() {
 
 // ─── Shared styles ────────────────────────────────────────
 const sharedS = StyleSheet.create({
-  screen:   { flex: 1, backgroundColor: '#F3F4F6' },
+  screen: { flex: 1, backgroundColor: '#F3F4F6' },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F3F4F6', padding: 24 },
   retryBtn: { marginTop: 16, backgroundColor: '#2563EB', paddingHorizontal: 24, paddingVertical: 10, borderRadius: 8 },
-  topBar:   { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#F3F4F6' },
-  backBtn:  { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#F3F4F6' },
+  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   backText: { fontSize: 13, fontWeight: '500', color: '#6B7280' },
   badge: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
   badgeDot: { width: 7, height: 7, borderRadius: 4 },
@@ -671,14 +680,14 @@ const sharedS = StyleSheet.create({
 
 // ─── Mobile-specific styles ───────────────────────────────
 const mobileS = StyleSheet.create({
-  scroll:   { flex: 1 },
-  content:  { paddingHorizontal: 14, paddingBottom: 24 },
+  scroll: { flex: 1 },
+  content: { paddingHorizontal: 14, paddingBottom: 24 },
 
-  pageHeader:   { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14, gap: 10 },
-  pageTitle:    { fontSize: 20, fontWeight: '800', color: '#111827', marginBottom: 3 },
+  pageHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14, gap: 10 },
+  pageTitle: { fontSize: 20, fontWeight: '800', color: '#111827', marginBottom: 3 },
   pageSubtitle: { fontSize: 12, color: '#6B7280', lineHeight: 18 },
-  editBtn:      { backgroundColor: '#2563EB', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, flexShrink: 0 },
-  editBtnText:  { color: '#fff', fontSize: 13, fontWeight: '700' },
+  editBtn: { backgroundColor: '#2563EB', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, flexShrink: 0 },
+  editBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
 
   card: {
     backgroundColor: '#fff',
@@ -689,26 +698,26 @@ const mobileS = StyleSheet.create({
     marginBottom: 12,
   },
 
-  roleRow:     { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
-  roleIconWrap:{ width: 38, height: 38, borderRadius: 10, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  roleTitle:   { fontSize: 15, fontWeight: '800', color: '#111827', marginBottom: 2 },
-  hospitalName:{ fontSize: 12, color: '#6B7280' },
-  badgeRow:    { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  roleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
+  roleIconWrap: { width: 38, height: 38, borderRadius: 10, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  roleTitle: { fontSize: 15, fontWeight: '800', color: '#111827', marginBottom: 2 },
+  hospitalName: { fontSize: 12, color: '#6B7280' },
+  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   overnightBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#EFF6FF', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
-  overnightText:  { fontSize: 12, fontWeight: '700', color: '#2563EB' },
+  overnightText: { fontSize: 12, fontWeight: '700', color: '#2563EB' },
 
   sectionLabel: { fontSize: 13, fontWeight: '700', color: '#111827', marginBottom: 10 },
 
-  grid2:       { flexDirection: 'row', flexWrap: 'wrap' },
-  gridCell:    { width: '50%', paddingRight: 12, marginBottom: 12 },
-  cellLabel:   { fontSize: 11, fontWeight: '600', color: '#6B7280', marginBottom: 4 },
-  cellValueRow:{ flexDirection: 'row', alignItems: 'center', gap: 5 },
-  cellValue:   { fontSize: 13, color: '#111827', fontWeight: '600', flexShrink: 1 },
+  grid2: { flexDirection: 'row', flexWrap: 'wrap' },
+  gridCell: { width: '50%', paddingRight: 12, marginBottom: 12 },
+  cellLabel: { fontSize: 11, fontWeight: '600', color: '#6B7280', marginBottom: 4 },
+  cellValueRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  cellValue: { fontSize: 13, color: '#111827', fontWeight: '600', flexShrink: 1 },
 
-  descText:  { fontSize: 13, color: '#4B5563', lineHeight: 20, marginBottom: 12 },
-  chipsRow:  { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip:      { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
-  chipText:  { fontSize: 12, fontWeight: '600', color: '#374151' },
+  descText: { fontSize: 13, color: '#4B5563', lineHeight: 20, marginBottom: 12 },
+  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  chipText: { fontSize: 12, fontWeight: '600', color: '#374151' },
 
   mapCard: {
     backgroundColor: '#fff',
@@ -719,45 +728,45 @@ const mobileS = StyleSheet.create({
     marginBottom: 12,
   },
   mapPlaceholder: { alignItems: 'center', justifyContent: 'center', gap: 8 },
-  placeholderText:{ fontSize: 12, color: '#9CA3AF', textAlign: 'center', paddingHorizontal: 20 },
-  locationBar:    { padding: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  locationTitle:  { fontSize: 12, fontWeight: '700', color: '#111827', marginBottom: 2 },
-  locationName:   { fontSize: 11, color: '#374151', fontWeight: '500', marginBottom: 2 },
-  locationAddr:   { fontSize: 11, color: '#6B7280', lineHeight: 15 },
-  distanceText:   { fontSize: 13, fontWeight: '700', color: '#2563EB', flexShrink: 0 },
+  placeholderText: { fontSize: 12, color: '#9CA3AF', textAlign: 'center', paddingHorizontal: 20 },
+  locationBar: { padding: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  locationTitle: { fontSize: 12, fontWeight: '700', color: '#111827', marginBottom: 2 },
+  locationName: { fontSize: 11, color: '#374151', fontWeight: '500', marginBottom: 2 },
+  locationAddr: { fontSize: 11, color: '#6B7280', lineHeight: 15 },
+  distanceText: { fontSize: 13, fontWeight: '700', color: '#2563EB', flexShrink: 0 },
 
-  staffRow:    { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  staffName:   { fontSize: 14, fontWeight: '700', color: '#111827' },
-  staffSub:    { fontSize: 12, color: '#6B7280', marginTop: 2 },
+  staffRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  staffName: { fontSize: 14, fontWeight: '700', color: '#111827' },
+  staffSub: { fontSize: 12, color: '#6B7280', marginTop: 2 },
   ratingBadge: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  ratingText:  { fontSize: 12, fontWeight: '700', color: '#374151' },
-  ratingNum:   { fontSize: 14, fontWeight: '700', color: '#374151' },
-  reviewText:  { fontSize: 13, color: '#6B7280', fontStyle: 'italic', lineHeight: 19 },
+  ratingText: { fontSize: 12, fontWeight: '700', color: '#374151' },
+  ratingNum: { fontSize: 14, fontWeight: '700', color: '#374151' },
+  reviewText: { fontSize: 13, color: '#6B7280', fontStyle: 'italic', lineHeight: 19 },
 
-  historyRow:    { flexDirection: 'row', gap: 12, marginBottom: 4 },
-  timeline:      { alignItems: 'center', width: 14 },
-  dot:           { width: 10, height: 10, borderRadius: 5, flexShrink: 0, marginTop: 3 },
-  line:          { flex: 1, width: 2, backgroundColor: '#E5E7EB', marginTop: 3, marginBottom: -4, minHeight: 18 },
-  historyContent:{ flex: 1, paddingBottom: 12 },
+  historyRow: { flexDirection: 'row', gap: 12, marginBottom: 4 },
+  timeline: { alignItems: 'center', width: 14 },
+  dot: { width: 10, height: 10, borderRadius: 5, flexShrink: 0, marginTop: 3 },
+  line: { flex: 1, width: 2, backgroundColor: '#E5E7EB', marginTop: 3, marginBottom: -4, minHeight: 18 },
+  historyContent: { flex: 1, paddingBottom: 12 },
   historyStatus: { fontSize: 13, fontWeight: '700', marginBottom: 2 },
   historyReason: { fontSize: 12, color: '#6B7280', lineHeight: 17, marginBottom: 2 },
-  historyTime:   { fontSize: 11, color: '#9CA3AF' },
+  historyTime: { fontSize: 11, color: '#9CA3AF' },
 });
 
 // ─── Desktop-specific styles ──────────────────────────────
 const desktopS = StyleSheet.create({
-  scroll:   { flex: 1 },
-  content:  { paddingHorizontal: 24, paddingBottom: 40 },
+  scroll: { flex: 1 },
+  content: { paddingHorizontal: 24, paddingBottom: 40 },
 
-  pageHeader:   { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 20, gap: 12 },
-  pageTitle:    { fontSize: 24, fontWeight: '800', color: '#111827', marginBottom: 4 },
+  pageHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 20, gap: 12 },
+  pageTitle: { fontSize: 24, fontWeight: '800', color: '#111827', marginBottom: 4 },
   pageSubtitle: { fontSize: 13, color: '#6B7280', lineHeight: 19 },
-  editBtn:      { backgroundColor: '#2563EB', paddingHorizontal: 16, paddingVertical: 9, borderRadius: 8, flexShrink: 0 },
-  editBtnText:  { color: '#fff', fontSize: 13, fontWeight: '700' },
+  editBtn: { backgroundColor: '#2563EB', paddingHorizontal: 16, paddingVertical: 9, borderRadius: 8, flexShrink: 0 },
+  editBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
 
   columns: { flexDirection: 'row', gap: 20, alignItems: 'flex-start' },
   leftCol: { flex: 3, minWidth: 320 },
-  rightCol:{ flex: 2, minWidth: 280, gap: 16 },
+  rightCol: { flex: 2, minWidth: 280, gap: 16 },
 
   card: {
     backgroundColor: '#fff',
@@ -768,26 +777,26 @@ const desktopS = StyleSheet.create({
     marginBottom: 16,
   },
 
-  roleRow:     { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
-  roleIconWrap:{ width: 42, height: 42, borderRadius: 10, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  roleTitle:   { fontSize: 18, fontWeight: '800', color: '#111827', marginBottom: 3 },
-  hospitalName:{ fontSize: 13, color: '#6B7280' },
+  roleRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  roleIconWrap: { width: 42, height: 42, borderRadius: 10, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  roleTitle: { fontSize: 18, fontWeight: '800', color: '#111827', marginBottom: 3 },
+  hospitalName: { fontSize: 13, color: '#6B7280' },
   overnightBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#EFF6FF', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
-  overnightText:  { fontSize: 12, fontWeight: '700', color: '#2563EB' },
+  overnightText: { fontSize: 12, fontWeight: '700', color: '#2563EB' },
 
   divider: { height: 1, backgroundColor: '#F3F4F6', marginVertical: 16 },
 
-  sectionLabel:{ fontSize: 13, fontWeight: '700', color: '#111827', marginBottom: 10 },
-  descText:    { fontSize: 13, color: '#4B5563', lineHeight: 21, marginBottom: 14 },
+  sectionLabel: { fontSize: 13, fontWeight: '700', color: '#111827', marginBottom: 10 },
+  descText: { fontSize: 13, color: '#4B5563', lineHeight: 21, marginBottom: 14 },
 
-  infoGrid:      { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 4 },
-  infoCell:      { width: '50%', paddingRight: 16, marginBottom: 14 },
+  infoGrid: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 4 },
+  infoCell: { width: '50%', paddingRight: 16, marginBottom: 14 },
   infoCellLabel: { fontSize: 11, fontWeight: '700', color: '#374151', marginBottom: 5 },
   infoCellValueRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   infoCellValue: { fontSize: 14, color: '#111827', fontWeight: '500' },
 
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip:     { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
   chipText: { fontSize: 12, fontWeight: '600', color: '#374151' },
 
   mapCard: {
@@ -797,12 +806,12 @@ const desktopS = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
-  locationBar:  { padding: 14, flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  locationTitle:{ fontSize: 13, fontWeight: '700', color: '#111827', marginBottom: 3 },
+  locationBar: { padding: 14, flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  locationTitle: { fontSize: 13, fontWeight: '700', color: '#111827', marginBottom: 3 },
   locationName: { fontSize: 12, color: '#374151', fontWeight: '500', marginBottom: 2 },
   locationAddr: { fontSize: 11, color: '#6B7280', lineHeight: 16 },
   distanceText: { fontSize: 13, fontWeight: '700', color: '#2563EB', flexShrink: 0 },
 
   staffName: { fontSize: 14, fontWeight: '700', color: '#111827' },
-  staffSub:  { fontSize: 12, color: '#6B7280', marginTop: 2 },
+  staffSub: { fontSize: 12, color: '#6B7280', marginTop: 2 },
 });

@@ -65,6 +65,10 @@ export default function DocumentVerification() {
   const [roleFilter, setRoleFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
+
+ // 1. Add this state near your other state declarations
+const [rightColHeight, setRightColHeight] = useState(0);
+
   // ─── FETCH DOCUMENTS (SINGLE SOURCE OF TRUTH) ───────────────────────────
   const fetchDocuments = useCallback(async (page = 1) => {
     setLoading(true);
@@ -195,39 +199,43 @@ export default function DocumentVerification() {
 
       {/* ── Layout ── */}
       {isTablet ? (
-        // Desktop: Pending List left, Stats + Actions right
-        <View style={s.rowLayout}>
-          <View style={{ flex: 1.4 }}>
-            {/* ✅ PASS ALL PROPS TO PENDING LIST */}
-            <PendingReviewList
-              documents={documents}
-              pagination={pagination}
-              loading={loading}
-              error={error}
-              statusFilter={statusFilter}
-              roleFilter={roleFilter}
-              currentPage={currentPage}
-              onStatusFilterChange={handleStatusFilterChange}
-              onRoleFilterChange={handleRoleFilterChange}
-              onClearFilters={handleClearFilters}
-              onFetchDocuments={fetchDocuments}
-              onStatusChange={handleStatusChange}
-            />
-          </View>
-          <View style={{ flex: 1, gap: 14 }}>
-            {/* ✅ PASS STATS TO VERIFICATION STATS */}
-            <VerificationStats
-              stats={statsData.stats}
-              total={statsData.total}
-              loading={statsLoading}
-              error={statsError}
-              onRetry={fetchStats}
+  <View style={s.rowLayout}>
 
-            />
-            <RecentActions />
-          </View>
-        </View>
-      ) : (
+    {/* Left — height locked to right column's measured height */}
+    <View style={{ flex: 1.4, height: rightColHeight > 0 ? rightColHeight : undefined }}>
+      <PendingReviewList
+        documents={documents}
+        pagination={pagination}
+        loading={loading}
+        error={error}
+        statusFilter={statusFilter}
+        roleFilter={roleFilter}
+        currentPage={currentPage}
+        onStatusFilterChange={handleStatusFilterChange}
+        onRoleFilterChange={handleRoleFilterChange}
+        onClearFilters={handleClearFilters}
+        onFetchDocuments={fetchDocuments}
+        onStatusChange={handleStatusChange}
+      />
+    </View>
+
+    {/* Right — drives the page scroll height */}
+    <View
+      style={{ flex: 1, gap: 14 }}
+      onLayout={(e) => setRightColHeight(e.nativeEvent.layout.height)}
+    >
+      <VerificationStats
+        stats={statsData.stats}
+        total={statsData.total}
+        loading={statsLoading}
+        error={statsError}
+        onRetry={fetchStats}
+      />
+      <RecentActions />
+    </View>
+
+  </View>
+) : (
         // Mobile: stacked
         <View style={s.colLayout}>
           {/* ✅ PASS ALL PROPS TO PENDING LIST */}
@@ -264,7 +272,7 @@ const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#F3F4F6' },
   content: { padding: 16, paddingBottom: 40 },
   pageHeader: { marginBottom: 20 },
-  pageTitle: { fontSize: 24, fontWeight: '800', color: '#0F172A', letterSpacing: -0.5, marginBottom: 6 },
+  pageTitle: { fontSize: 24, fontWeight: '700', color: '#0F172A', letterSpacing: -0.5, marginBottom: 6 },
   pageSubtitle: { fontSize: 13, color: '#64748B', lineHeight: 20 },
   rowLayout: { flexDirection: 'row', gap: 16, alignItems: 'flex-start' },
   colLayout: { gap: 14 },

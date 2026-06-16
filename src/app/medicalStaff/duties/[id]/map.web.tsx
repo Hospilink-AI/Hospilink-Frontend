@@ -1,620 +1,651 @@
+// import { Ionicons } from "@expo/vector-icons";
 // import { useLocalSearchParams, useRouter } from "expo-router";
 // import React, { useCallback, useEffect, useRef, useState } from "react";
-// import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+// import {
+//     ActivityIndicator,
+//     Alert,
+//     Animated,
+//     Platform,
+//     SafeAreaView,
+//     StatusBar,
+//     StyleSheet,
+//     Text,
+//     TouchableOpacity,
+//     View
+// } from "react-native";
+
 // import { fetchDutyRoute } from "../../../../service/dutyService";
 // import { DutyRouteApiResponse } from "../../../../types/duty";
 // import { decodePolyline, haversineMeters } from "../../../../utils/polylineDecoder";
 
+// // ── Conditionally import native-only modules ──────────────────────────────────
+// const ExpoLocation: any =
+//   Platform.OS !== "web" ? require("expo-location") : null;
+// const NativeWebView: any =
+//   Platform.OS !== "web" ? require("react-native-webview").WebView : null;
 
-// // ─── Inject Leaflet CSS ────────────────────────────────────────────────────
-// function injectLeafletCSS() {
-//     if (typeof document === "undefined") return;
-//     if (document.getElementById("leaflet-css")) return;
-//     const link = document.createElement("link");
-//     link.id = "leaflet-css";
-//     link.rel = "stylesheet";
-//     link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-//     document.head.appendChild(link);
-//     const style = document.createElement("style");
-//     style.innerHTML = `
-//     html, body, #root { margin: 0; padding: 0; height: 100%; }
-//     .leaflet-container { font-family: inherit; }
-//     .leaflet-control-zoom {
-//       border: none !important;
-//       box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
-//       border-radius: 10px !important; overflow: hidden;
-//     }
-//     .leaflet-control-zoom a {
-//       color: #374151 !important; font-weight: 300 !important;
-//       font-size: 18px !important; width: 36px !important;
-//       height: 36px !important; line-height: 36px !important;
-//     }
-//     .leaflet-control-zoom-in { border-bottom: 1px solid #E2E8F0 !important; }
-//     .user-location-pulse {
-//       width: 20px; height: 20px; background: #2563EB;
-//       border: 3px solid #fff; border-radius: 50%;
-//       box-shadow: 0 0 0 6px rgba(37,99,235,0.2);
-//       animation: pulse 2s infinite;
-//     }
-//     @keyframes pulse {
-//       0%   { box-shadow: 0 0 0 0   rgba(37,99,235,0.4); }
-//       70%  { box-shadow: 0 0 0 10px rgba(37,99,235,0);  }
-//       100% { box-shadow: 0 0 0 0   rgba(37,99,235,0);  }
-//     }
-//     .hospital-pin {
-//       width: 40px; height: 40px; background: #DC2626;
-//       border: 3px solid #fff; border-radius: 50% 50% 50% 0;
-//       transform: rotate(-45deg); display: flex;
-//       align-items: center; justify-content: center;
-//       box-shadow: 0 4px 14px rgba(220,38,38,0.45);
-//     }
-//     .hospital-pin-inner { transform: rotate(45deg); font-size: 17px; }
-//   `;
-//     document.head.appendChild(style);
-// }
+// // ── Types ─────────────────────────────────────────────────────────────────────
+// type ScreenState = "loading" | "permission_denied" | "error" | "navigating" | "arrived";
+// type Coord = { latitude: number; longitude: number };
 
-// // ─── Types ─────────────────────────────────────────────────────────────────
-// type ScreenState = "loading" | "permission_denied" | "error" | "navigating";
-
-// // ─── Helpers ───────────────────────────────────────────────────────────────
+// // ── Helpers ───────────────────────────────────────────────────────────────────
 // function cleanInstruction(raw: string): string {
-//     return raw.replace(/Pass by.+/gi, "").replace(/Destination.+/gi, "").trim();
+//   return raw.replace(/Pass by.+/gi, "").replace(/Destination.+/gi, "").trim();
 // }
 
 // function stepArrow(instruction: string): string {
-//     const s = instruction.toLowerCase();
-//     if (s.includes("turn left")) return "↰";
-//     if (s.includes("turn right")) return "↱";
-//     if (s.includes("u-turn")) return "↩";
-//     if (s.includes("slight left")) return "↖";
-//     if (s.includes("slight right")) return "↗";
-//     if (s.includes("keep left")) return "↖";
-//     if (s.includes("keep right")) return "↗";
-//     if (s.includes("merge")) return "⤵";
-//     return "↑";
+//   const s = instruction.toLowerCase();
+//   if (s.includes("turn left")) return "↰";
+//   if (s.includes("turn right")) return "↱";
+//   if (s.includes("u-turn")) return "↩";
+//   if (s.includes("slight left")) return "↖";
+//   if (s.includes("slight right")) return "↗";
+//   if (s.includes("keep left")) return "↖";
+//   if (s.includes("keep right")) return "↗";
+//   if (s.includes("merge")) return "⤵";
+//   return "↑";
 // }
 
-// // ─── Main Component ────────────────────────────────────────────────────────
-// export default function DutyMapScreenWeb() {
-//     const { id, hospitalName } = useLocalSearchParams<{ id: string; hospitalName: string }>();
-//     const router = useRouter();
+// // ── Leaflet HTML ──────────────────────────────────────────────────────────────
+// function buildLeafletHTML(
+//   routeCoords: Coord[],
+//   hospitalCoord: Coord,
+//   hospitalName: string,
+//   hospitalAddress: string,
+//   initialLoc: Coord,
+// ): string {
+//   const coordsJson = JSON.stringify(routeCoords.map(c => [c.latitude, c.longitude]));
+//   const hospitalJson = JSON.stringify([hospitalCoord.latitude, hospitalCoord.longitude]);
+//   const esc = (s: string) => s.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 
-//     const mapRef = useRef<any>(null);
-//     const userMarkerRef = useRef<any>(null);
-//     const watchIdRef = useRef<number | null>(null);
-//     const mapContainerRef = useRef<HTMLDivElement | null>(null);
+//   return `<!DOCTYPE html>
+// <html>
+// <head>
+//   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+//   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+//   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+//   <style>
+//     * { margin:0; padding:0; box-sizing:border-box; }
+//     html, body, #map { width:100%; height:100vh; overflow:hidden; }
+//     .leaflet-control-zoom {
+//       border:none !important;
+//       box-shadow:0 2px 8px rgba(0,0,0,0.15) !important;
+//       border-radius:10px !important; overflow:hidden;
+//     }
+//     .leaflet-control-zoom a {
+//       color:#374151 !important; font-weight:300 !important;
+//       font-size:18px !important; width:36px !important;
+//       height:36px !important; line-height:36px !important;
+//     }
+//       .leaflet-bottom.leaflet-right {
+//   bottom: 130px !important;   /* clears the floating card height */
+//   right: 8px !important;
+// }
+//     .user-pulse {
+//       width:20px; height:20px; background:#2563EB;
+//       border:3px solid #fff; border-radius:50%;
+//       box-shadow:0 0 0 6px rgba(37,99,235,0.2);
+//       animation:pulse 2s infinite;
+//     }
+//     @keyframes pulse {
+//       0%   { box-shadow:0 0 0 0   rgba(37,99,235,0.4); }
+//       70%  { box-shadow:0 0 0 10px rgba(37,99,235,0);  }
+//       100% { box-shadow:0 0 0 0   rgba(37,99,235,0);  }
+//     }
+//   </style>
+// </head>
+// <body>
+// <div id="map"></div>
+// <script>
 
-//     const [screenState, setScreenState] = useState<ScreenState>("loading");
-//     const [routeData, setRouteData] = useState<DutyRouteApiResponse | null>(null);
-//     const [stepIndex, setStepIndex] = useState(0);
-//     const [errorMsg, setErrorMsg] = useState("");
-//     const [navigationStarted, setNavigationStarted] = useState(false);
+//   var map = L.map('map', { zoomControl: false })
+// L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
+//   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+//     attribution:'© OpenStreetMap contributors', maxZoom:19
+//   }).addTo(map);
 
-//     // ─── Safe back — works whether there's a history stack or not ─────────────
-//     const handleBack = () => {
-//         stopNavigation();
-//         try {
-//             if (router.canGoBack()) {
-//                 router.back();
-//             } else {
-//                 // ← Change this to your actual dashboard path if needed
-//                 router.replace("/medicalStaff/dashboard" as any);
-//             }
-//         } catch {
-//             router.replace("/medicalStaff/dashboard" as any);
-//         }
-//     };
+//   var coords = ${coordsJson};
+//   if (coords.length > 0) {
+//     var poly = L.polyline(coords, {
+//       color:'#2563EB', weight:5, opacity:0.92, lineCap:'round', lineJoin:'round'
+//     }).addTo(map);
+//     map.fitBounds(poly.getBounds(), { padding:[80,80] });
+//   }
 
-//     // ─── Mount ────────────────────────────────────────────────────────────────
-//     useEffect(() => {
-//         injectLeafletCSS();
-//         init();
-//         return () => {
-//             stopNavigation();
-//             if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
-//         };
-//     }, []);
+//   var hIcon = L.divIcon({
+//     className: '',
+//     html: '<div style="width:40px;height:40px;background:#DC2626;border:3px solid #fff;' +
+//           'border-radius:50% 50% 50% 0;transform:rotate(-45deg);' +
+//           'display:flex;align-items:center;justify-content:center;' +
+//           'box-shadow:0 4px 14px rgba(220,38,38,0.45);">' +
+//           '<span style="transform:rotate(45deg);font-size:17px;line-height:1;">🏥</span></div>',
+//     iconSize:[40,40], iconAnchor:[20,40], popupAnchor:[0,-44],
+//   });
+//   L.marker(${hospitalJson}, { icon: hIcon })
+//     .addTo(map)
+//     .bindPopup('<b>${esc(hospitalName)}</b><br/><small>${esc(hospitalAddress)}</small>');
 
-//     // ─── Get location → fetch route ───────────────────────────────────────────
-//     const init = async () => {
-//         setScreenState("loading");
-//         if (!navigator.geolocation) {
-//             setErrorMsg("Geolocation is not supported by your browser.");
-//             setScreenState("error");
-//             return;
-//         }
-//         navigator.geolocation.getCurrentPosition(
-//             async (pos) => {
-//                 const loc = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
-//                 await loadRoute(loc);
-//             },
-//             (err) => {
-//                 if (err.code === err.PERMISSION_DENIED) setScreenState("permission_denied");
-//                 else { setErrorMsg(err.message); setScreenState("error"); }
-//             },
-//             { enableHighAccuracy: true, timeout: 15000 }
-//         );
-//     };
+//   var uIcon = L.divIcon({
+//     html: '<div class="user-pulse"></div>',
+//     iconSize:[20,20], iconAnchor:[10,10], className:'',
+//   });
+//   var userMarker = L.marker(
+//     [${initialLoc.latitude}, ${initialLoc.longitude}],
+//     { icon: uIcon, zIndexOffset: 1000 }
+//   ).addTo(map);
 
-//     // ─── Call backend API ─────────────────────────────────────────────────────
-//     const loadRoute = async (loc: { latitude: number; longitude: number }) => {
-//         try {
-//             const data = await fetchDutyRoute(id, loc);
-//             setRouteData(data);
-//             setScreenState("navigating");
-//             setTimeout(() => initLeafletMap(data, loc), 150);
-//         } catch (err: any) {
-//             setErrorMsg(err.message ?? "Failed to load route");
-//             setScreenState("error");
-//         }
-//     };
+//   function sendToNative(data) {
+//     if (window.ReactNativeWebView)
+//       window.ReactNativeWebView.postMessage(JSON.stringify(data));
+//   }
 
-//     // ─── Build Leaflet map ────────────────────────────────────────────────────
-//     const initLeafletMap = async (
-//         data: DutyRouteApiResponse,
-//         loc: { latitude: number; longitude: number }
-//     ) => {
-//         if (!mapContainerRef.current) return;
-//         const L = await import("leaflet" as any);
-//         if (mapRef.current) { mapRef.current.remove(); }
+//   function updateUserLocation(lat, lng, follow) {
+//     userMarker.setLatLng([lat, lng]);
+//     if (follow) map.panTo([lat, lng], { animate:true, duration:1 });
+//   }
 
-//         const map = L.map(mapContainerRef.current, {
-//             center: [loc.latitude, loc.longitude],
-//             zoom: 13, zoomControl: true,
-//         });
-//         mapRef.current = map;
+//   function handleIncoming(e) {
+//     try {
+//       var msg = JSON.parse(e.data);
+//       if (msg.type === 'updateLocation') updateUserLocation(msg.lat, msg.lng, msg.follow);
+//     } catch(_) {}
+//   }
+//   document.addEventListener('message', handleIncoming);
+//   window.addEventListener('message', handleIncoming);
+// </script>
+// </body>
+// </html>`;
+// }
 
-//         // Free OpenStreetMap tiles
-//         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-//             attribution: "© OpenStreetMap contributors", maxZoom: 19,
-//         }).addTo(map);
+// // ── Component ─────────────────────────────────────────────────────────────────
+// export default function DutyMapScreen() {
+//   const { id, hospitalName } = useLocalSearchParams<{ id: string; hospitalName: string }>();
+//   const router = useRouter();
 
-//         // Blue route polyline - use step polylines for better road accuracy
-//         const allCoords = data.route.stepPolylines.flatMap(stepPolyline => {
-//         try {
-//             return decodePolyline(stepPolyline);
-//         } catch (error) {
-//             console.warn("Failed to decode step polyline:", error);
-//             return [];
-//         }
-//         });
-//         const coords = allCoords;
-//         if (coords.length === 0) {
-//             console.warn("No valid polyline data available for route display");
-//             return;
-//         }
-//         const latLngs = coords.map((c) => [c.latitude, c.longitude]);
-//         const poly = L.polyline(latLngs, {
-//             color: "#2563EB", weight: 5, opacity: 0.92, lineCap: "round", lineJoin: "round",
-//         }).addTo(map);
+//   const [screenState, setScreenState] = useState<ScreenState>("loading");
+//   const [routeData, setRouteData] = useState<DutyRouteApiResponse | null>(null);
+//   const [routeCoords, setRouteCoords] = useState<Coord[]>([]);
+//   const [currentLocation, setCurrentLocation] = useState<Coord | null>(null);
+//   const [stepIndex, setStepIndex] = useState(0);
+//   const [isFollowing, setIsFollowing] = useState(true);
+//   const [navigationStarted, setNavigationStarted] = useState(false);
+//   const [errorMsg, setErrorMsg] = useState("");
+
+//   const webViewRef = useRef<any>(null);
+//   const mapDivRef = useRef<any>(null);
+//   const mapInstanceRef = useRef<any>(null);
+//   const userMarkerWebRef = useRef<any>(null);
+//   const locationSubRef = useRef<any>(null);
+//   const watchIdRef = useRef<number | null>(null);
+
+//   const bottomAnim = useRef(new Animated.Value(300)).current;
+//   const bannerAnim = useRef(new Animated.Value(-120)).current;
+
+//   // const screenW = Dimensions.get("window").width;
+//   // // Floating card: on desktop give side margins, on mobile minimal margins
+//   // const cardLeft  = Platform.OS === "web" && screenW > 700 ? screenW * 0.2 : 12;
+//   // const cardRight = Platform.OS === "web" && screenW > 700 ? screenW * 0.2 : 12;
+
+//   useEffect(() => {
+//     if (Platform.OS === "web") injectLeafletCSS();
+//     init();
+//     return () => cleanup();
+//   }, []);
+
+//   const cleanup = () => {
+//     locationSubRef.current?.remove();
+//     if (watchIdRef.current !== null) navigator.geolocation?.clearWatch(watchIdRef.current);
+//     if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; }
+//   };
+
+//   const injectLeafletCSS = () => {
+//     if (typeof document === "undefined" || document.getElementById("leaflet-css")) return;
+//     const link = document.createElement("link");
+//     link.id = "leaflet-css"; link.rel = "stylesheet";
+//     link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+//     document.head.appendChild(link);
+//   };
+
+//   const init = async () => {
+//     setScreenState("loading");
+//     if (Platform.OS === "web") {
+//       if (!navigator.geolocation) { setErrorMsg("Geolocation not supported."); setScreenState("error"); return; }
+//       navigator.geolocation.getCurrentPosition(
+//         async (pos) => { const loc = { latitude: pos.coords.latitude, longitude: pos.coords.longitude }; setCurrentLocation(loc); await loadRoute(loc); },
+//         (err) => { if (err.code === err.PERMISSION_DENIED) setScreenState("permission_denied"); else { setErrorMsg(err.message); setScreenState("error"); } },
+//         { enableHighAccuracy: true, timeout: 15000 },
+//       );
+//     } else {
+//       const { status: ex } = await ExpoLocation.getForegroundPermissionsAsync();
+//       let final = ex;
+//       if (ex !== "granted") { const { status } = await ExpoLocation.requestForegroundPermissionsAsync(); final = status; }
+//       if (final !== "granted") { setScreenState("permission_denied"); return; }
+//       try {
+//         const pos = await ExpoLocation.getCurrentPositionAsync({ accuracy: ExpoLocation.Accuracy.High });
+//         const loc = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+//         setCurrentLocation(loc); await loadRoute(loc);
+//       } catch (err: any) { setErrorMsg(err.message ?? "Could not get location"); setScreenState("error"); }
+//     }
+//   };
+
+//   const loadRoute = async (loc: Coord) => {
+//     try {
+//       const data = await fetchDutyRoute(id, loc);
+//       setRouteData(data);
+//       const allCoords: Coord[] = data.route.stepPolylines.flatMap((sp: string) => {
+//         try { return decodePolyline(sp); } catch { return []; }
+//       });
+//       setRouteCoords(allCoords);
+//       setScreenState("navigating");
+//       Animated.parallel([
+//         Animated.spring(bottomAnim, { toValue: 0, useNativeDriver: true, tension: 65, friction: 11 }),
+//         Animated.spring(bannerAnim, { toValue: 0, useNativeDriver: true, tension: 65, friction: 11, delay: 200 }),
+//       ]).start();
+//       if (Platform.OS === "web") setTimeout(() => initWebMap(data, allCoords, loc), 200);
+//     } catch (err: any) { setErrorMsg(err.message ?? "Failed to load route"); setScreenState("error"); }
+//   };
+
+//   const initWebMap = (data: DutyRouteApiResponse, coords: Coord[], loc: Coord) => {
+//     if (!mapDivRef.current) return;
+//     const boot = () => {
+//       const L = (window as any).L;
+//       if (!L) return;
+//       if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; }
+//       const map = L.map(mapDivRef.current).setView([loc.latitude, loc.longitude], 13);
+//       mapInstanceRef.current = map;
+//       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap contributors", maxZoom: 19 }).addTo(map);
+//       if (coords.length > 0) {
+//         const poly = L.polyline(coords.map(c => [c.latitude, c.longitude]), { color: "#2563EB", weight: 5, opacity: 0.92, lineCap: "round", lineJoin: "round" }).addTo(map);
 //         map.fitBounds(poly.getBounds(), { padding: [80, 80] });
-
-//         // Pulsing blue user dot
-//         const userIcon = L.divIcon({
-//             html: '<div class="user-location-pulse"></div>',
-//             iconSize: [20, 20], iconAnchor: [10, 10], className: "",
-//         });
-//         userMarkerRef.current = L.marker([loc.latitude, loc.longitude], { icon: userIcon }).addTo(map);
-
-//         // Red hospital pin
-//         const hospitalIcon = L.divIcon({
-//             html: '<div class="hospital-pin"><div class="hospital-pin-inner">🏥</div></div>',
-//             iconSize: [40, 40], iconAnchor: [20, 40], className: "",
-//         });
-//         L.marker(
-//             [data.hospital.location.latitude, data.hospital.location.longitude],
-//             { icon: hospitalIcon }
-//         ).addTo(map)
-//             .bindPopup(`<b>${data.hospital.name}</b><br/><small>${data.hospital.address}</small>`);
-
-//         // Green start dot
-//         const startIcon = L.divIcon({
-//             html: '<div style="width:14px;height:14px;background:#22C55E;border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(34,197,94,0.45)"></div>',
-//             iconSize: [14, 14], iconAnchor: [7, 7], className: "",
-//         });
-//         L.marker([loc.latitude, loc.longitude], { icon: startIcon }).addTo(map);
+//       }
+//       const hIcon = L.divIcon({ className: "", html: `<div style="width:40px;height:40px;background:#DC2626;border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(220,38,38,0.45);"><span style="transform:rotate(45deg);font-size:17px;line-height:1;">🏥</span></div>`, iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -44] });
+//       L.marker([data.hospital.location.latitude, data.hospital.location.longitude], { icon: hIcon }).addTo(map).bindPopup(`<b>${data.hospital.name}</b><br/><small>${data.hospital.address}</small>`);
+//       const style = document.createElement("style");
+//       style.innerHTML = `.user-pulse{width:20px;height:20px;background:#2563EB;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 6px rgba(37,99,235,0.2);animation:pulse 2s infinite;}@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(37,99,235,0.4);}70%{box-shadow:0 0 0 10px rgba(37,99,235,0);}100%{box-shadow:0 0 0 0 rgba(37,99,235,0);}}`;
+//       document.head.appendChild(style);
+//       const uIcon = L.divIcon({ html: '<div class="user-pulse"></div>', iconSize: [20, 20], iconAnchor: [10, 10], className: "" });
+//       userMarkerWebRef.current = L.marker([loc.latitude, loc.longitude], { icon: uIcon, zIndexOffset: 1000 }).addTo(map);
 //     };
+//     if (!(window as any).L) { const s = document.createElement("script"); s.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"; s.onload = boot; document.head.appendChild(s); }
+//     else boot();
+//   };
 
-//     // ─── Navigation controls ──────────────────────────────────────────────────
-//     const startNavigation = () => {
-//         setNavigationStarted(true);
-//         watchIdRef.current = navigator.geolocation.watchPosition(
-//             (pos) => handleLocationUpdate({
-//                 latitude: pos.coords.latitude,
-//                 longitude: pos.coords.longitude,
-//             }),
-//             (err) => {
-//                 if (err.code === err.POSITION_UNAVAILABLE) {
-//                     alert("Location services turned off. Navigation stopped.");
-//                     stopNavigation();
-//                 }
-//             },
-//             { enableHighAccuracy: true, maximumAge: 2000 }
-//         );
-//     };
+//   const startNavigation = async () => {
+//     setNavigationStarted(true);
+//     if (Platform.OS === "web") {
+//       watchIdRef.current = navigator.geolocation.watchPosition(
+//         (pos) => onLocationUpdate({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+//         (err) => { Alert.alert("Location error", err.message); stopNavigation(); },
+//         { enableHighAccuracy: true, maximumAge: 2000 },
+//       );
+//     } else {
+//       locationSubRef.current = await ExpoLocation.watchPositionAsync(
+//         { accuracy: ExpoLocation.Accuracy.BestForNavigation, distanceInterval: 10, timeInterval: 2000 },
+//         (pos: any) => onLocationUpdate({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+//       );
+//     }
+//   };
 
-//     const stopNavigation = () => {
-//         if (watchIdRef.current !== null) {
-//             navigator.geolocation.clearWatch(watchIdRef.current);
-//             watchIdRef.current = null;
+//   const stopNavigation = () => {
+//     if (Platform.OS === "web") { if (watchIdRef.current !== null) { navigator.geolocation.clearWatch(watchIdRef.current); watchIdRef.current = null; } }
+//     else { locationSubRef.current?.remove(); locationSubRef.current = null; }
+//     setNavigationStarted(false);
+//   };
+
+//   const onLocationUpdate = useCallback((loc: Coord) => {
+//     setCurrentLocation(loc);
+//     if (Platform.OS === "web") {
+//       userMarkerWebRef.current?.setLatLng([loc.latitude, loc.longitude]);
+//       if (isFollowing && mapInstanceRef.current) mapInstanceRef.current.panTo([loc.latitude, loc.longitude], { animate: true, duration: 1 });
+//     } else {
+//       webViewRef.current?.injectJavaScript(`updateUserLocation(${loc.latitude},${loc.longitude},${isFollowing});true;`);
+//     }
+//     if (routeData) {
+//       setStepIndex(prev => {
+//         const steps = routeData.route.steps;
+//         for (let i = prev; i < steps.length; i++) {
+//           if (haversineMeters(loc, { latitude: steps[i].endLocation.lat, longitude: steps[i].endLocation.lng }) < 50)
+//             return Math.min(i + 1, steps.length - 1);
 //         }
-//         setNavigationStarted(false);
-//     };
-
-//     // ─── Location update handler ──────────────────────────────────────────────
-//     const handleLocationUpdate = useCallback(
-//         (loc: { latitude: number; longitude: number }) => {
-//             userMarkerRef.current?.setLatLng([loc.latitude, loc.longitude]);
-//             mapRef.current?.panTo([loc.latitude, loc.longitude], { animate: true, duration: 1 });
-
-//             if (routeData) {
-//                 // Advance step
-//                 setStepIndex((prev) => {
-//                     const steps = routeData.route.steps;
-//                     for (let i = prev; i < steps.length; i++) {
-//                         const d = haversineMeters(loc, {
-//                             latitude: steps[i].endLocation.lat,
-//                             longitude: steps[i].endLocation.lng,
-//                         });
-//                         if (d < 50) return Math.min(i + 1, steps.length - 1);
-//                     }
-//                     return prev;
-//                 });
-
-//                 // Arrival check
-//                 const dist = haversineMeters(loc, routeData.hospital.location);
-//                 if (dist < (routeData.tracking.arrivalThreshold ?? 100)) {
-//                     stopNavigation();
-//                     alert(`🏥 You have arrived at ${routeData.hospital.name}!`);
-//                     handleBack();
-//                 }
-//             }
-//         },
-//         [routeData]
-//     );
-
-//     const currentStep = routeData?.route.steps[stepIndex] ?? null;
-
-//     // ─── Render: Loading ───────────────────────────────────────────────────────
-//     if (screenState === "loading") {
-//         return (
-//             <View style={styles.centered}>
-//                 <ActivityIndicator size="large" color="#2563EB" />
-//                 <Text style={styles.loadingText}>Getting your location…</Text>
-//             </View>
-//         );
+//         return prev;
+//       });
+//       const dist = haversineMeters(loc, routeData.hospital.location);
+//       if (dist < (routeData.tracking.arrivalThreshold ?? 100)) {
+//         stopNavigation(); setScreenState("arrived");
+//         const msg = `You have arrived at ${routeData.hospital.name}!`;
+//         if (Platform.OS === "web") { alert(`🏥 ${msg}`); router.back(); }
+//         else Alert.alert("🏥 Arrived!", msg, [{ text: "OK", onPress: () => router.back() }]);
+//       }
 //     }
+//   }, [routeData, isFollowing]);
 
-//     // ─── Render: Permission Denied ─────────────────────────────────────────────
-//     if (screenState === "permission_denied") {
-//         return (
-//             <View style={styles.centered}>
-//                 <Text style={styles.bigEmoji}>📍</Text>
-//                 <Text style={styles.stateTitle}>Location Required</Text>
-//                 <Text style={styles.stateSubtitle}>
-//                     Please allow location access in your browser to view navigation.
-//                 </Text>
-//                 <TouchableOpacity style={styles.primaryBtn} onPress={init}>
-//                     <Text style={styles.primaryBtnText}>Try Again</Text>
-//                 </TouchableOpacity>
-//                 <TouchableOpacity style={styles.ghostBtn} onPress={handleBack}>
-//                     <Text style={styles.ghostBtnText}>Go Back</Text>
-//                 </TouchableOpacity>
-//             </View>
-//         );
-//     }
+//   const handleBack = () => {
+//     stopNavigation();
+//     try { if (router.canGoBack()) router.back(); else router.replace("/medicalStaff/dashboard" as any); }
+//     catch { router.replace("/medicalStaff/dashboard" as any); }
+//   };
 
-//     // ─── Render: Error ─────────────────────────────────────────────────────────
-//     if (screenState === "error") {
-//         return (
-//             <View style={styles.centered}>
-//                 <Text style={styles.bigEmoji}>⚠️</Text>
-//                 <Text style={styles.stateTitle}>Something went wrong</Text>
-//                 <Text style={styles.stateSubtitle}>{errorMsg}</Text>
-//                 <TouchableOpacity
-//                     style={styles.primaryBtn}
-//                     onPress={() => { setScreenState("loading"); init(); }}
-//                 >
-//                     <Text style={styles.primaryBtnText}>Retry</Text>
-//                 </TouchableOpacity>
-//                 <TouchableOpacity style={styles.ghostBtn} onPress={handleBack}>
-//                     <Text style={styles.ghostBtnText}>Go Back</Text>
-//                 </TouchableOpacity>
-//             </View>
-//         );
-//     }
+//   const currentStep = routeData?.route.steps[stepIndex] ?? null;
 
-//     // ─── Render: Map ───────────────────────────────────────────────────────────
-//     return (
-//         <View style={styles.container}>
+//   // ── Loading ────────────────────────────────────────────────────────────────
+//   if (screenState === "loading") return (
+//     <View style={styles.centered}>
+//       <ActivityIndicator size="large" color="#2563EB" />
+//       <Text style={styles.loadingText}>Getting your location…</Text>
+//     </View>
+//   );
 
-//             {/* ── TOP HEADER — everything in ONE row ── */}
-//             <View style={styles.topBar}>
+//   // ── Permission Denied ──────────────────────────────────────────────────────
+//   if (screenState === "permission_denied") return (
+//     <SafeAreaView style={styles.centered}>
+//       <Text style={styles.bigEmoji}>📍</Text>
+//       <Text style={styles.stateTitle}>Location Required</Text>
+//       <Text style={styles.stateSubtitle}>Please allow location access to view navigation.</Text>
+//       <TouchableOpacity style={styles.primaryBtn} onPress={init}><Text style={styles.primaryBtnText}>Grant Location Access</Text></TouchableOpacity>
+//       <TouchableOpacity style={styles.ghostBtn} onPress={handleBack}><Text style={styles.ghostBtnText}>Go Back</Text></TouchableOpacity>
+//     </SafeAreaView>
+//   );
 
-//                 {/* Back button */}
-//                 <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
-//                     <Text style={styles.backBtnText}>←</Text>
-//                 </TouchableOpacity>
+//   // ── Error ──────────────────────────────────────────────────────────────────
+//   if (screenState === "error") return (
+//     <SafeAreaView style={styles.centered}>
+//       <Text style={styles.bigEmoji}>⚠️</Text>
+//       <Text style={styles.stateTitle}>Route Unavailable</Text>
+//       <Text style={styles.stateSubtitle}>{errorMsg}</Text>
+//       <TouchableOpacity style={styles.primaryBtn} onPress={() => { setScreenState("loading"); init(); }}><Text style={styles.primaryBtnText}>Retry</Text></TouchableOpacity>
+//       <TouchableOpacity style={styles.ghostBtn} onPress={handleBack}><Text style={styles.ghostBtnText}>Go Back</Text></TouchableOpacity>
+//     </SafeAreaView>
+//   );
 
-//                 {/* Title */}
-//                 <Text style={styles.topBarTitle}>Active Duty Route</Text>
+//   // ── Map ────────────────────────────────────────────────────────────────────
+//   return (
+//     <View style={styles.container}>
+//       {Platform.OS !== "web" && <StatusBar barStyle="dark-content" />}
 
-//                 {/* Distance · Duration */}
-//                 {routeData && (
-//                     <Text style={styles.topBarSub} numberOfLines={1}>
-//                         · {routeData.route.distanceText} · {routeData.route.durationText}
-//                     </Text>
-//                 )}
+//       {/* MAP */}
+//       <View style={StyleSheet.absoluteFillObject}>
+//         {Platform.OS === "web" ? (
+//           React.createElement("div", { ref: mapDivRef, style: { position: "absolute", inset: 0, zIndex: 0 } })
+//         ) : (
+//           currentLocation && routeData && NativeWebView && (
+//             <NativeWebView
+//               ref={webViewRef}
+//               source={{ html: buildLeafletHTML(routeCoords, routeData.hospital.location, routeData.hospital.name, routeData.hospital.address, currentLocation) }}
+//               style={StyleSheet.absoluteFill}
+//               originWhitelist={["*"]} javaScriptEnabled domStorageEnabled
+//               startInLoadingState mixedContentMode="always"
+//               onTouchStart={() => setIsFollowing(false)}
+//             />
+//           )
+//         )}
+//       </View>
 
-//                 {/* Pushes On Call badge to right */}
-//                 <View style={{ flex: 1 }} />
-
-//                 {/* On Call badge */}
-//                 <View style={styles.onCallBadge}>
-//                     <View style={styles.onCallDot} />
-//                     <Text style={styles.onCallText}>On Call</Text>
-//                 </View>
-
-//             </View>
-
-//             {/* ── STEP BANNER ── */}
-//             {currentStep && (
-//                 <View style={styles.stepBanner}>
-//                     <Text style={styles.stepArrowText}>{stepArrow(currentStep.instruction)}</Text>
-//                     <Text style={styles.stepInstruction} numberOfLines={1}>
-//                         {cleanInstruction(currentStep.instruction)}
-//                     </Text>
-//                     <Text style={styles.stepDist}>
-//                         {currentStep.distance < 1
-//                             ? `· in ${Math.round(currentStep.distance * 1000)} m`
-//                             : `· in ${currentStep.distance.toFixed(1)} km`}
-//                     </Text>
-//                     <View style={{ flex: 1 }} />
-//                     <Text style={styles.stepCount}>
-//                         {stepIndex + 1}/{routeData?.route.steps.length}
-//                     </Text>
-//                 </View>
-//             )}
-
-//             {/* ── MAP WRAPPER ── */}
-//             <View style={styles.mapWrapper}>
-
-//                 {/* Leaflet fills entire wrapper */}
-//                 <div
-//                     ref={mapContainerRef}
-//                     style={{ position: "absolute", inset: 0, zIndex: 0 }}
-//                 />
-
-//                 {/* ── FLOATING CARD — overlaid on map, single row ── */}
-//                 {/* ── FLOATING CARD — 2 rows ── */}
-//                 <View style={styles.floatingCard}>
-
-//                     {/* Row 1: Hospital icon + name + address */}
-//                     <View style={styles.cardRow1}>
-//                         <View style={styles.hospitalIconBox}>
-//                             <Text style={{ fontSize: 16 }}>🏥</Text>
-//                         </View>
-//                         <View style={styles.hospitalInfo}>
-//                             <Text style={styles.hospitalName} numberOfLines={1}>
-//                                 {routeData?.hospital.name ?? hospitalName}
-//                             </Text>
-//                             <Text style={styles.hospitalAddress} numberOfLines={1}>
-//                                 {routeData?.hospital.address ?? ""}
-//                             </Text>
-//                         </View>
-//                     </View>
-
-//                     {/* Row 2: Stats + Buttons */}
-//                     <View style={styles.cardRow2}>
-//                         <View style={styles.statItem}>
-//                             <View style={[styles.statDot, { backgroundColor: "#22C55E" }]} />
-//                             <Text style={styles.statValueGreen}>
-//                                 {routeData?.route.durationText?.split(" ")[0] ?? "--"}
-//                             </Text>
-//                             <Text style={styles.statLabel}>
-//                                 {routeData?.route.durationText?.split(" ").slice(1).join(" ") ?? "mins"}
-//                             </Text>
-//                         </View>
-//                         <View style={styles.statItem}>
-//                             <View style={[styles.statDot, { backgroundColor: "#64748B" }]} />
-//                             <Text style={styles.statValue}>{routeData?.route.distanceText ?? "--"}</Text>
-//                         </View>
-//                         <View style={{ flex: 1 }} />
-//                         <TouchableOpacity style={styles.exitBtn} onPress={handleBack}>
-//                             <Text style={styles.exitBtnText}>Exit Map</Text>
-//                         </TouchableOpacity>
-//                         <TouchableOpacity
-//                             style={[styles.startBtn, navigationStarted && styles.startBtnActive]}
-//                             onPress={navigationStarted ? stopNavigation : startNavigation}
-//                         >
-//                             <Text style={styles.startBtnText}>
-//                                 {navigationStarted ? "⏹ Stop" : "▲ Start Navigation"}
-//                             </Text>
-//                         </TouchableOpacity>
-//                     </View>
-
-//                 </View>
-//             </View>
-
+//       {/* ── TOP BAR ── */}
+//       <SafeAreaView style={styles.topBar}>
+//         <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
+//           <Ionicons name="arrow-back" size={18} color="#374151" />
+//         </TouchableOpacity>
+//         <View style={styles.topBarMid}>
+//           <Text style={styles.topBarTitle} numberOfLines={1}>Active Duty Route</Text>
+//           {routeData && (
+//             <Text style={styles.topBarSub} numberOfLines={1}>
+//               · {routeData.route.distanceText} · {routeData.route.durationText}
+//             </Text>
+//           )}
 //         </View>
-//     );
+//         <View style={styles.onCallBadge}>
+//           <View style={styles.onCallDot} />
+//           <Text style={styles.onCallText}>On Call</Text>
+//         </View>
+//       </SafeAreaView>
+
+//       {/* ── STEP BANNER ── */}
+//       {currentStep && (
+//         <Animated.View style={[styles.stepBanner, { transform: [{ translateY: bannerAnim }] }]}>
+//           <Text style={styles.stepArrow}>{stepArrow(currentStep.instruction)}</Text>
+//           <Text style={styles.stepText} numberOfLines={1}>
+//             {cleanInstruction(currentStep.instruction)}
+//           </Text>
+//           <Text style={styles.stepDist}>
+//             · in {currentStep.distance < 1
+//               ? `${Math.round(currentStep.distance * 1000)} m`
+//               : `${currentStep.distance.toFixed(1)} km`}
+//           </Text>
+//           <View style={{ flex: 1 }} />
+//           <Text style={styles.stepCount}>{stepIndex + 1}/{routeData?.route.steps.length}</Text>
+//         </Animated.View>
+//       )}
+
+//       {/* ── RECENTER ── */}
+//       {!isFollowing && (
+//         <TouchableOpacity style={styles.recenterBtn} onPress={() => {
+//           setIsFollowing(true);
+//           if (currentLocation) {
+//             if (Platform.OS === "web" && mapInstanceRef.current)
+//               mapInstanceRef.current.setView([currentLocation.latitude, currentLocation.longitude], 16, { animate: true });
+//             else
+//               webViewRef.current?.injectJavaScript(`map.setView([${currentLocation.latitude},${currentLocation.longitude}],16,{animate:true});true;`);
+//           }
+//         }}>
+//           <Ionicons name="locate" size={20} color="#2563EB" />
+//         </TouchableOpacity>
+//       )}
+
+//       {/* ── FLOATING BOTTOM CARD ── */}
+//       <Animated.View style={[styles.card, { transform: [{ translateY: bottomAnim }] }]}>
+
+//         {/* Row 1: Hospital */}
+//         <View style={styles.cardHospRow}>
+//           <View style={styles.cardHospIcon}>
+//             <Text style={{ fontSize: 16 }}>🏥</Text>
+//           </View>
+//           <View style={styles.cardHospInfo}>
+//             <Text style={styles.cardHospName} numberOfLines={1}>
+//               {routeData?.hospital.name ?? hospitalName}
+//             </Text>
+//             <Text style={styles.cardHospAddr} numberOfLines={1}>
+//               {routeData?.hospital.address ?? ""}
+//             </Text>
+//           </View>
+//         </View>
+
+//         {/* Row 2: Stats + Buttons */}
+//         <View style={styles.cardBottomRow}>
+//           {/* Stats */}
+//           <View style={styles.statsGroup}>
+//             <View style={styles.statChip}>
+//               <View style={[styles.statDot, { backgroundColor: "#22C55E" }]} />
+//               <Text style={styles.statTxt} numberOfLines={1}>
+//                 {routeData?.route.durationText ?? "--"}
+//               </Text>
+//             </View>
+//             <View style={styles.statChip}>
+//               <View style={[styles.statDot, { backgroundColor: "#64748B" }]} />
+//               <Text style={styles.statTxt} numberOfLines={1}>
+//                 {routeData?.route.distanceText ?? "--"}
+//               </Text>
+//             </View>
+//           </View>
+
+//           {/* Buttons */}
+//           <View style={styles.btnGroup}>
+//             <TouchableOpacity style={styles.exitBtn} onPress={handleBack}>
+//               <Text style={styles.exitBtnTxt}>Exit Map</Text>
+//             </TouchableOpacity>
+//             <TouchableOpacity
+//               style={[styles.startBtn, navigationStarted && styles.startBtnActive]}
+//               onPress={navigationStarted ? stopNavigation : startNavigation}
+//             >
+//               <Ionicons
+//                 name={navigationStarted ? "navigate" : "navigate-outline"}
+//                 size={13} color="#fff" style={{ marginRight: 4 }}
+//               />
+//               <Text style={styles.startBtnTxt} numberOfLines={1}>
+//                 {navigationStarted ? "Navigating…" : "Start Navigation"}
+//               </Text>
+//             </TouchableOpacity>
+//           </View>
+//         </View>
+
+//       </Animated.View>
+//     </View>
+//   );
 // }
 
-// // ─── Styles ───────────────────────────────────────────────────────────────────
+// // ── Styles ────────────────────────────────────────────────────────────────────
 // const styles = StyleSheet.create({
-//     container: {
-//         flex: 1, flexDirection: "column",
-//         backgroundColor: "#F1F5F9",
-//         overflow: "hidden" as any,
-//     },
+//   container: { flex: 1, backgroundColor: "#E8EFF7" },
 
-//     // Loading / error
-//     centered: {
-//         flex: 1, alignItems: "center", justifyContent: "center",
-//         backgroundColor: "#fff", padding: 28,
-//     },
-//     loadingText: { marginTop: 14, fontSize: 16, color: "#64748B" },
-//     bigEmoji: { fontSize: 64, marginBottom: 16 },
-//     stateTitle: { fontSize: 22, fontWeight: "700", color: "#0F172A", textAlign: "center" },
-//     stateSubtitle: {
-//         fontSize: 15, color: "#64748B", textAlign: "center",
-//         marginTop: 8, marginBottom: 32, lineHeight: 22,
-//     },
-//     primaryBtn: {
-//         backgroundColor: "#2563EB", borderRadius: 14,
-//         paddingVertical: 14, paddingHorizontal: 32,
-//         width: "100%", alignItems: "center", marginBottom: 12,
-//     },
-//     primaryBtnText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-//     ghostBtn: { paddingVertical: 12 },
-//     ghostBtnText: { color: "#64748B", fontSize: 15 },
+//   // Loading / error
+//   centered: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#fff", padding: 28 },
+//   loadingText: { marginTop: 14, fontSize: 16, color: "#64748B" },
+//   bigEmoji: { fontSize: 64, marginBottom: 16 },
+//   stateTitle: { fontSize: 22, fontWeight: "700", color: "#0F172A", textAlign: "center" },
+//   stateSubtitle: { fontSize: 15, color: "#64748B", textAlign: "center", marginTop: 8, marginBottom: 32, lineHeight: 22 },
+//   primaryBtn: { backgroundColor: "#2563EB", borderRadius: 14, paddingVertical: 14, paddingHorizontal: 32, width: "100%", alignItems: "center", marginBottom: 12 },
+//   primaryBtnText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+//   ghostBtn: { paddingVertical: 12 },
+//   ghostBtnText: { color: "#64748B", fontSize: 15 },
 
-//     // Top bar — single row
-//     topBar: {
-//         flexDirection: "row",
-//         alignItems: "center",
-//         paddingHorizontal: 16,
-//         paddingVertical: 8,
-//         backgroundColor: "#fff",
-//         borderBottomWidth: 1,
-//         borderBottomColor: "#F1F5F9",
-//         zIndex: 20,
-//         gap: 6,
-//     },
-//     backBtn: {
-//         width: 30, height: 30, borderRadius: 15,
-//         backgroundColor: "#F8FAFC",
-//         alignItems: "center", justifyContent: "center",
-//         flexShrink: 0,
-//     },
-//     backBtnText: { fontSize: 16, color: "#374151" },
-//     topBarTitle: { fontSize: 15, fontWeight: "700", color: "#0F172A", flexShrink: 0 },
-//     topBarSub: { fontSize: 13, color: "#64748B", flexShrink: 1 },
-//     onCallBadge: {
-//         flexDirection: "row", alignItems: "center",
-//         backgroundColor: "#DCFCE7",
-//         paddingHorizontal: 10, paddingVertical: 4,
-//         borderRadius: 12, gap: 5, flexShrink: 0,
-//     },
-//     onCallDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#16A34A" },
-//     onCallText: { fontSize: 11, fontWeight: "700", color: "#16A34A" },
+//   // ── Top bar ──
+//   topBar: {
+//     position: "absolute", top: 0, left: 0, right: 0,
+//     flexDirection: "row", alignItems: "center",
+//     paddingHorizontal: 12, paddingVertical: 8,
+//     backgroundColor: "rgba(255,255,255,0.97)",
+//     borderBottomWidth: 1, borderBottomColor: "#E8EFF7",
+//     zIndex: 20, gap: 8,
+//   },
+//   backBtn: {
+//     width: 32, height: 32, borderRadius: 16,
+//     backgroundColor: "#F1F5F9",
+//     alignItems: "center", justifyContent: "center", flexShrink: 0,
+//   },
+//   topBarMid: { flex: 1, flexDirection: "row", alignItems: "center", flexWrap: "nowrap", minWidth: 0 },
+//   topBarTitle: { fontSize: 14, fontWeight: "700", color: "#0F172A", flexShrink: 0 },
+//   topBarSub: { fontSize: 12, color: "#64748B", marginLeft: 4, flexShrink: 1 },
+//   onCallBadge: {
+//     flexDirection: "row", alignItems: "center",
+//     backgroundColor: "#DCFCE7", paddingHorizontal: 8,
+//     paddingVertical: 4, borderRadius: 12, gap: 4, flexShrink: 0,
+//   },
+//   onCallDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#16A34A" },
+//   onCallText: { fontSize: 11, fontWeight: "700", color: "#16A34A" },
 
-//     // Step banner
-//     stepBanner: {
-//         flexDirection: "row",
-//         alignItems: "center",          // all on one line
-//         backgroundColor: "#1E3A8A",
-//         paddingVertical: 8,            // slimmer
-//         paddingHorizontal: 16,
-//         zIndex: 20,
-//         gap: 6,
-//     },
-//     stepArrowText: { fontSize: 18, color: "#fff", flexShrink: 0 },
-//     stepInstruction: { fontSize: 13, fontWeight: "600", color: "#fff", flexShrink: 1 },
-//     stepDist: { fontSize: 12, color: "#93C5FD", flexShrink: 0 },
-//     stepCount: { fontSize: 11, color: "#93C5FD", flexShrink: 0 },
+//   // ── Step banner — single row ──
+//   stepBanner: {
+//     position: "absolute", top: 52, left: 12, right: 12,
+//     flexDirection: "row", alignItems: "center",
+//     backgroundColor: "#1E3A8A",
+//     paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12,
+//     zIndex: 20, gap: 6,
+//   },
+//   stepArrow: { fontSize: 20, color: "#fff", flexShrink: 0 },
+//   stepText: { fontSize: 13, fontWeight: "600", color: "#fff", flexShrink: 1 },
+//   stepDist: { fontSize: 12, color: "#93C5FD", flexShrink: 0 },
+//   stepCount: { fontSize: 11, color: "#93C5FD", flexShrink: 0 },
 
-//     // Map wrapper
-//     mapWrapper: {
-//         flex: 1,
-//         position: "relative" as any,
-//         overflow: "hidden" as any,
-//     },
+//   // ── Recenter ──
+//   recenterBtn: {
+//     position: "absolute", right: 14, bottom: 160,
+//     width: 42, height: 42, borderRadius: 21,
+//     backgroundColor: "#fff", alignItems: "center", justifyContent: "center",
+//     zIndex: 20, shadowColor: "#000",
+//     shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 4,
+//   },
 
-//     // Floating card
-//     floatingCard: {
-//   position: "absolute" as any,
-//   bottom: 16,
-//   left: "20%" as any,   // ← reduced width, centered
-//   right: "20%" as any,
-//   zIndex: 100,
-//   backgroundColor: "#fff",
-//   borderRadius: 12,
-//   paddingHorizontal: 14,
-//   paddingVertical: 10,
-//   boxShadow: "0px 4px 24px rgba(15, 23, 42, 0.14)" as any,
-// },
-// cardRow1: {
-//   flexDirection: "row",
-//   alignItems: "center",
-//   gap: 8,
-//   marginBottom: 8,
-// },
-// cardRow2: {
-//   flexDirection: "row",
-//   alignItems: "center",
-//   gap: 8,
-// },
+//   // ── Floating card ──
+//   card: {
+//     position: "absolute",
+//     bottom: 20,               // floats above bottom edge
+//     left: 12,
+//     right: 12,
+//     backgroundColor: "#fff",
+//     borderRadius: 16,         // all 4 corners rounded — matches screenshot
+//     paddingHorizontal: 14,
+//     paddingVertical: 12,
+//     zIndex: 20,
+//     shadowColor: "#0F172A",
+//     shadowOffset: { width: 0, height: 4 },
+//     shadowOpacity: 0.12,
+//     shadowRadius: 16,
+//     elevation: 10,
+//   },
 
+//   // Row 1 — hospital info
+//   cardHospRow: {
+//     flexDirection: "row", alignItems: "center",
+//     gap: 10, marginBottom: 10,
+//   },
+//   cardHospIcon: {
+//     width: 34, height: 34, borderRadius: 8,
+//     backgroundColor: "#EFF6FF",
+//     alignItems: "center", justifyContent: "center", flexShrink: 0,
+//   },
+//   cardHospInfo: { flex: 1, minWidth: 0 },
+//   cardHospName: { fontSize: 13, fontWeight: "700", color: "#0F172A" },
+//   cardHospAddr: { fontSize: 11, color: "#64748B", marginTop: 1 },
 
-//     // Hospital
-//     hospitalIconBox: {
-//         width: 32, height: 32, borderRadius: 8,
-//         backgroundColor: "#EFF6FF",
-//         alignItems: "center", justifyContent: "center",
-//         flexShrink: 0,
-//     },
-//     hospitalInfo: {
-//         flex: 1,
-//         minWidth: 0,
-//     },
-//     hospitalName: { fontSize: 13, fontWeight: "700", color: "#0F172A" },
-//     hospitalAddress: { fontSize: 11, color: "#64748B", marginTop: 1 },
+//   // Row 2 — stats + buttons
+//   cardBottomRow: {
+//     flexDirection: "row", alignItems: "center", gap: 8, justifyContent: "space-between",
+//   },
 
-//     // Stats
-//     statItem: { flexDirection: "row", alignItems: "center", gap: 3, flexShrink: 0 },
-//     statDot: { width: 7, height: 7, borderRadius: 4 },
-//     statValueGreen: { fontSize: 13, fontWeight: "700", color: "#22C55E" },
-//     statValue: { fontSize: 12, fontWeight: "600", color: "#0F172A" },
-//     statLabel: { fontSize: 11, color: "#64748B" },
+//   // Stats — left side
+//   statsGroup: {
+//     flexDirection: "row", alignItems: "center", gap: 10, flexShrink: 1, minWidth: 0,
+//   },
+//   statChip: {
+//     flexDirection: "row", alignItems: "center", gap: 4, minWidth: 0,
+//   },
+//   statDot: { width: 7, height: 7, borderRadius: 4, flexShrink: 0 },
+//   statTxt: {
+//     fontSize: 12, fontWeight: "600", color: "#374151",
+//     flexShrink: 1,
+//   },
 
-//     // Buttons
-//     exitBtn: {
-//         paddingVertical: 7, paddingHorizontal: 12,
-//         borderRadius: 8, borderWidth: 1.5, borderColor: "#E2E8F0",
-//         backgroundColor: "#fff",
-//         alignItems: "center", justifyContent: "center",
-//         flexShrink: 0,
-//     },
-//     exitBtnText: { fontSize: 12, fontWeight: "600", color: "#374151" },
-//     startBtn: {
-//         paddingVertical: 7, paddingHorizontal: 14,
-//         borderRadius: 8, backgroundColor: "#2563EB",
-//         alignItems: "center", justifyContent: "center",
-//         flexShrink: 0,
-//     },
-//     startBtnActive: { backgroundColor: "#DC2626" },
-//     startBtnText: { fontSize: 12, fontWeight: "700", color: "#fff" },
+//   // Buttons — right side
+//   btnGroup: {
+//     flexDirection: "row", alignItems: "center", gap: 8,
+//     flexShrink: 0,
+//   },
+//   exitBtn: {
+//     paddingVertical: 9, paddingHorizontal: 14,
+//     borderRadius: 10, borderWidth: 1.5, borderColor: "#E2E8F0",
+//     backgroundColor: "#fff", alignItems: "center", justifyContent: "center",
+//   },
+//   exitBtnTxt: { fontSize: 12, fontWeight: "600", color: "#374151" },
+//   startBtn: {
+//     flexDirection: "row", alignItems: "center", justifyContent: "center",
+//     paddingVertical: 9, paddingHorizontal: 14,
+//     borderRadius: 10, backgroundColor: "#2563EB",
+//     shadowColor: "#2563EB", shadowOffset: { width: 0, height: 3 },
+//     shadowOpacity: 0.3, shadowRadius: 6, elevation: 4,
+//   },
+//   startBtnActive: { backgroundColor: "#16A34A" },
+//   startBtnTxt: { fontSize: 12, fontWeight: "700", color: "#fff", flexShrink: 1 },
 // });
-
-
-
-
-/**
- * DutyMapScreen.tsx
- * UI matches screenshots exactly — floating card, proper mobile layout.
- * Works on Web + Android. No react-native-maps needed.
- */
 
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Animated,
-    Platform,
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Platform,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
 } from "react-native";
 
 import { fetchDutyRoute } from "../../../../service/dutyService";
-import { DutyRouteApiResponse } from "../../../../types/duty";
+import { DutyRouteApiResponse, RouteStep } from "../../../../types/duty";
 import { decodePolyline, haversineMeters } from "../../../../utils/polylineDecoder";
 
 // ── Conditionally import native-only modules ──────────────────────────────────
@@ -622,6 +653,12 @@ const ExpoLocation: any =
   Platform.OS !== "web" ? require("expo-location") : null;
 const NativeWebView: any =
   Platform.OS !== "web" ? require("react-native-webview").WebView : null;
+
+// ── Tile sources ──────────────────────────────────────────────────────────────
+const TILE_STANDARD = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+// Esri World Imagery — free to use with attribution
+const TILE_SATELLITE =
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type ScreenState = "loading" | "permission_denied" | "error" | "navigating" | "arrived";
@@ -697,12 +734,26 @@ function buildLeafletHTML(
 <div id="map"></div>
 <script>
 
-  var map = L.map('map', { zoomControl: false })
-L.control.zoom({ position: 'bottomleft' }).addTo(map);
+  // Leaflet's built-in zoom control is disabled — zoom is handled by native RN buttons
+  var map = L.map('map', { zoomControl: false });
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  var TILE_STANDARD = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+  var TILE_SATELLITE = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+
+  var baseLayer = L.tileLayer(TILE_STANDARD, {
     attribution:'© OpenStreetMap contributors', maxZoom:19
   }).addTo(map);
+
+  // Called from React Native via injectJavaScript
+  function setMapType(type) {
+    if (baseLayer) map.removeLayer(baseLayer);
+    var url = type === 'satellite' ? TILE_SATELLITE : TILE_STANDARD;
+    var attr = type === 'satellite'
+      ? '© Esri, Maxar, Earthstar Geographics'
+      : '© OpenStreetMap contributors';
+    baseLayer = L.tileLayer(url, { attribution: attr, maxZoom: 19 }).addTo(map);
+    baseLayer.bringToBack();
+  }
 
   var coords = ${coordsJson};
   if (coords.length > 0) {
@@ -762,6 +813,9 @@ export default function DutyMapScreen() {
   const { id, hospitalName } = useLocalSearchParams<{ id: string; hospitalName: string }>();
   const router = useRouter();
 
+  const { width: screenWidth } = useWindowDimensions();
+  const isWide = screenWidth >= 700; // card goes 70% only on wide screens
+
   const [screenState, setScreenState] = useState<ScreenState>("loading");
   const [routeData, setRouteData] = useState<DutyRouteApiResponse | null>(null);
   const [routeCoords, setRouteCoords] = useState<Coord[]>([]);
@@ -770,21 +824,19 @@ export default function DutyMapScreen() {
   const [isFollowing, setIsFollowing] = useState(true);
   const [navigationStarted, setNavigationStarted] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [mapType, setMapType] = useState<"standard" | "satellite">("standard");
+  const [headerH, setHeaderH] = useState(60); // measured header height (bar + banner)
 
   const webViewRef = useRef<any>(null);
   const mapDivRef = useRef<any>(null);
   const mapInstanceRef = useRef<any>(null);
   const userMarkerWebRef = useRef<any>(null);
+  const tileLayerWebRef = useRef<any>(null);
   const locationSubRef = useRef<any>(null);
   const watchIdRef = useRef<number | null>(null);
 
   const bottomAnim = useRef(new Animated.Value(300)).current;
   const bannerAnim = useRef(new Animated.Value(-120)).current;
-
-  // const screenW = Dimensions.get("window").width;
-  // // Floating card: on desktop give side margins, on mobile minimal margins
-  // const cardLeft  = Platform.OS === "web" && screenW > 700 ? screenW * 0.2 : 12;
-  // const cardRight = Platform.OS === "web" && screenW > 700 ? screenW * 0.2 : 12;
 
   useEffect(() => {
     if (Platform.OS === "web") injectLeafletCSS();
@@ -851,9 +903,10 @@ export default function DutyMapScreen() {
       const L = (window as any).L;
       if (!L) return;
       if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; }
-      const map = L.map(mapDivRef.current).setView([loc.latitude, loc.longitude], 13);
+      // zoomControl disabled — native RN +/- buttons handle zoom
+      const map = L.map(mapDivRef.current, { zoomControl: false }).setView([loc.latitude, loc.longitude], 13);
       mapInstanceRef.current = map;
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap contributors", maxZoom: 19 }).addTo(map);
+      tileLayerWebRef.current = L.tileLayer(TILE_STANDARD, { attribution: "© OpenStreetMap contributors", maxZoom: 19 }).addTo(map);
       if (coords.length > 0) {
         const poly = L.polyline(coords.map(c => [c.latitude, c.longitude]), { color: "#2563EB", weight: 5, opacity: 0.92, lineCap: "round", lineJoin: "round" }).addTo(map);
         map.fitBounds(poly.getBounds(), { padding: [80, 80] });
@@ -868,6 +921,36 @@ export default function DutyMapScreen() {
     };
     if (!(window as any).L) { const s = document.createElement("script"); s.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"; s.onload = boot; document.head.appendChild(s); }
     else boot();
+  };
+
+  // ── Swap the base tile layer on the web map instance ──
+  const setWebTileLayer = (type: "standard" | "satellite") => {
+    const L = (window as any).L;
+    const map = mapInstanceRef.current;
+    if (!L || !map) return;
+    if (tileLayerWebRef.current) map.removeLayer(tileLayerWebRef.current);
+    const url = type === "satellite" ? TILE_SATELLITE : TILE_STANDARD;
+    const attribution = type === "satellite" ? "© Esri, Maxar, Earthstar Geographics" : "© OpenStreetMap contributors";
+    tileLayerWebRef.current = L.tileLayer(url, { attribution, maxZoom: 19 }).addTo(map);
+    tileLayerWebRef.current.bringToBack();
+  };
+
+  // ── Toggle standard ⇄ satellite (works on web + native) ──
+  const toggleMapType = () => {
+    const next = mapType === "standard" ? "satellite" : "standard";
+    setMapType(next);
+    if (Platform.OS === "web") setWebTileLayer(next);
+    else webViewRef.current?.injectJavaScript(`setMapType('${next}');true;`);
+  };
+
+  // ── Zoom in / out (web + native) ──
+  const zoomBy = (delta: number) => {
+    if (Platform.OS === "web") {
+      const map = mapInstanceRef.current;
+      if (map) map.setZoom(map.getZoom() + delta);
+    } else {
+      webViewRef.current?.injectJavaScript(`map.setZoom(map.getZoom()+(${delta}));true;`);
+    }
   };
 
   const startNavigation = async () => {
@@ -980,41 +1063,72 @@ export default function DutyMapScreen() {
         )}
       </View>
 
-      {/* ── TOP BAR ── */}
-      <SafeAreaView style={styles.topBar}>
-        <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
-          <Ionicons name="arrow-back" size={18} color="#374151" />
-        </TouchableOpacity>
-        <View style={styles.topBarMid}>
-          <Text style={styles.topBarTitle} numberOfLines={1}>Active Duty Route</Text>
-          {routeData && (
-            <Text style={styles.topBarSub} numberOfLines={1}>
-              · {routeData.route.distanceText} · {routeData.route.durationText}
+      {/* ── TOP HEADER (bar + step banner, never overlapping) ── */}
+      <SafeAreaView
+        style={styles.topContainer}
+        pointerEvents="box-none"
+        onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}
+      >
+        {/* TOP BAR */}
+        <View style={styles.topBar}>
+          <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
+            <Ionicons name="arrow-back" size={18} color="#374151" />
+          </TouchableOpacity>
+          <View style={styles.topBarMid}>
+            <Text style={styles.topBarTitle} numberOfLines={1}>Active Duty Route</Text>
+            {routeData && (
+              <Text style={styles.topBarSub} numberOfLines={1}>
+                · {routeData.route.distanceText} · {routeData.route.durationText}
+              </Text>
+            )}
+          </View>
+          <View style={styles.onCallBadge}>
+            <View style={styles.onCallDot} />
+            <Text style={styles.onCallText}>On Call</Text>
+          </View>
+        </View>
+
+        {/* STEP BANNER — flows below the bar at any bar height */}
+        {currentStep && (
+          <Animated.View style={[styles.stepBanner, { transform: [{ translateY: bannerAnim }] }]}>
+            <Text style={styles.stepArrow}>{stepArrow(currentStep.instruction)}</Text>
+            <Text style={styles.stepText} numberOfLines={1}>
+              {cleanInstruction(currentStep.instruction)}
             </Text>
-          )}
-        </View>
-        <View style={styles.onCallBadge}>
-          <View style={styles.onCallDot} />
-          <Text style={styles.onCallText}>On Call</Text>
-        </View>
+            <Text style={styles.stepDist}>
+              · in {currentStep.distance < 1
+                ? `${Math.round(currentStep.distance * 1000)} m`
+                : `${currentStep.distance.toFixed(1)} km`}
+            </Text>
+            <View style={{ flex: 1 }} />
+            <Text style={styles.stepCount}>{stepIndex + 1}/{routeData?.route.steps.length}</Text>
+          </Animated.View>
+        )}
       </SafeAreaView>
 
-      {/* ── STEP BANNER ── */}
-      {currentStep && (
-        <Animated.View style={[styles.stepBanner, { transform: [{ translateY: bannerAnim }] }]}>
-          <Text style={styles.stepArrow}>{stepArrow(currentStep.instruction)}</Text>
-          <Text style={styles.stepText} numberOfLines={1}>
-            {cleanInstruction(currentStep.instruction)}
-          </Text>
-          <Text style={styles.stepDist}>
-            · in {currentStep.distance < 1
-              ? `${Math.round(currentStep.distance * 1000)} m`
-              : `${currentStep.distance.toFixed(1)} km`}
-          </Text>
-          <View style={{ flex: 1 }} />
-          <Text style={styles.stepCount}>{stepIndex + 1}/{routeData?.route.steps.length}</Text>
-        </Animated.View>
-      )}
+      {/* ── ZOOM (+/-) — left, below the two banners ── */}
+      <View style={[styles.zoomControl, { top: headerH + 12 }]}>
+        <TouchableOpacity style={styles.zoomBtn} onPress={() => zoomBy(1)} activeOpacity={0.7}>
+          <Ionicons name="add" size={22} color="#374151" />
+        </TouchableOpacity>
+        <View style={styles.zoomDivider} />
+        <TouchableOpacity style={styles.zoomBtn} onPress={() => zoomBy(-1)} activeOpacity={0.7}>
+          <Ionicons name="remove" size={22} color="#374151" />
+        </TouchableOpacity>
+      </View>
+
+      {/* ── SATELLITE / MAP TOGGLE — right, below the two banners ── */}
+      <TouchableOpacity
+        style={[styles.layersBtn, { top: headerH + 12 }]}
+        onPress={toggleMapType}
+        activeOpacity={0.85}
+      >
+        <Ionicons
+          name={mapType === "satellite" ? "map-outline" : "globe-outline"}
+          size={20}
+          color="#2563EB"
+        />
+      </TouchableOpacity>
 
       {/* ── RECENTER ── */}
       {!isFollowing && (
@@ -1032,7 +1146,13 @@ export default function DutyMapScreen() {
       )}
 
       {/* ── FLOATING BOTTOM CARD ── */}
-      <Animated.View style={[styles.card, { transform: [{ translateY: bottomAnim }] }]}>
+      <Animated.View
+        style={[
+          styles.card,
+          isWide ? styles.cardWide : styles.cardNarrow,
+          { transform: [{ translateY: bottomAnim }] },
+        ]}
+      >
 
         {/* Row 1: Hospital */}
         <View style={styles.cardHospRow}>
@@ -1107,14 +1227,17 @@ const styles = StyleSheet.create({
   ghostBtn: { paddingVertical: 12 },
   ghostBtnText: { color: "#64748B", fontSize: 15 },
 
-  // ── Top bar ──
-  topBar: {
+  // ── Top header group (bar + banner) ──
+  topContainer: {
     position: "absolute", top: 0, left: 0, right: 0,
+    zIndex: 20,
+  },
+  topBar: {
     flexDirection: "row", alignItems: "center",
     paddingHorizontal: 12, paddingVertical: 8,
     backgroundColor: "rgba(255,255,255,0.97)",
     borderBottomWidth: 1, borderBottomColor: "#E8EFF7",
-    zIndex: 20, gap: 8,
+    gap: 8,
   },
   backBtn: {
     width: 32, height: 32, borderRadius: 16,
@@ -1132,18 +1255,39 @@ const styles = StyleSheet.create({
   onCallDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#16A34A" },
   onCallText: { fontSize: 11, fontWeight: "700", color: "#16A34A" },
 
-  // ── Step banner — single row ──
+  // ── Step banner — single row, flows below bar ──
   stepBanner: {
-    position: "absolute", top: 52, left: 12, right: 12,
+    marginHorizontal: 12,
+    marginTop: 8,
     flexDirection: "row", alignItems: "center",
     backgroundColor: "#1E3A8A",
     paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12,
-    zIndex: 20, gap: 6,
+    gap: 6,
   },
   stepArrow: { fontSize: 20, color: "#fff", flexShrink: 0 },
   stepText: { fontSize: 13, fontWeight: "600", color: "#fff", flexShrink: 1 },
   stepDist: { fontSize: 12, color: "#93C5FD", flexShrink: 0 },
   stepCount: { fontSize: 11, color: "#93C5FD", flexShrink: 0 },
+
+  // ── Zoom control (left, below banners) ──
+  zoomControl: {
+    position: "absolute", left: 14,
+    width: 42, borderRadius: 12, backgroundColor: "#fff",
+    zIndex: 20, overflow: "hidden",
+    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12, shadowRadius: 6, elevation: 4,
+  },
+  zoomBtn: { width: 42, height: 40, alignItems: "center", justifyContent: "center" },
+  zoomDivider: { height: 1, backgroundColor: "#E5E7EB" },
+
+  // ── Layers / satellite toggle (top-right) ──
+  layersBtn: {
+    position: "absolute", right: 14,
+    width: 42, height: 42, borderRadius: 21,
+    backgroundColor: "#fff", alignItems: "center", justifyContent: "center",
+    zIndex: 20, shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 4,
+  },
 
   // ── Recenter ──
   recenterBtn: {
@@ -1158,8 +1302,6 @@ const styles = StyleSheet.create({
   card: {
     position: "absolute",
     bottom: 20,               // floats above bottom edge
-    left: 12,
-    right: 12,
     backgroundColor: "#fff",
     borderRadius: 16,         // all 4 corners rounded — matches screenshot
     paddingHorizontal: 14,
@@ -1171,6 +1313,8 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 10,
   },
+  cardNarrow: { left: 12, right: 12 },          // phones: near full-width
+  cardWide: { left: "15%", right: "15%" },      // wide screens: 70%, centered
 
   // Row 1 — hospital info
   cardHospRow: {
