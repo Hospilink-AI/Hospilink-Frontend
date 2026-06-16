@@ -278,8 +278,13 @@ export default function NotificationsCenterScreen() {
 
   // ── Initial load ─────────────────────────────────────────────
   useEffect(() => {
-    fetchNotifications(true, 0);
-  }, [fetchNotifications]);
+    // ✅ Only fetch if component is visible for 2 seconds
+    const timer = setTimeout(() => {
+      fetchNotifications(true, 0);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // ── WebSocket listeners ──────────────────────────────────────
   useEffect(() => {
@@ -310,20 +315,41 @@ export default function NotificationsCenterScreen() {
       });
     };
 
+    // const handleConnect = async () => {
+    //   try {
+    //     const lastSeen = await AsyncStorage.getItem(LAST_CONNECTED_KEY);
+    //     if (lastSeen) {
+    //       socket.emit("get_missed_notifications", { since: lastSeen });
+    //     }
+    //     await AsyncStorage.setItem(
+    //       LAST_CONNECTED_KEY,
+    //       new Date().toISOString()
+    //     );
+    //   } catch (e) {
+    //     console.error("❌ handleConnect:", e);
+    //   }
+    // };
+
+    // src/component/layout/NotificationCenter.tsx
     const handleConnect = async () => {
       try {
-        const lastSeen = await AsyncStorage.getItem(LAST_CONNECTED_KEY);
-        if (lastSeen) {
-          socket.emit("get_missed_notifications", { since: lastSeen });
-        }
-        await AsyncStorage.setItem(
-          LAST_CONNECTED_KEY,
-          new Date().toISOString()
-        );
+        // ✅ Debounce and don't block UI
+        setTimeout(async () => {
+          try {
+            const lastSeen = await AsyncStorage.getItem(LAST_CONNECTED_KEY);
+            if (lastSeen && socket) {
+              socket.emit("get_missed_notifications", { since: lastSeen });
+            }
+            await AsyncStorage.setItem(LAST_CONNECTED_KEY, new Date().toISOString());
+          } catch (e) {
+            console.error("❌ handleConnect:", e);
+          }
+        }, 1000);  // ✅ Delay 1 second
       } catch (e) {
-        console.error("❌ handleConnect:", e);
+        console.error("❌ handleConnect outer:", e);
       }
     };
+
 
     socket.on("notification", handleNewNotification);
     socket.on("unread_count", handleUnreadCount);
