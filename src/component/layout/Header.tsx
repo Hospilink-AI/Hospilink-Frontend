@@ -294,8 +294,10 @@ export default function Header() {
 
   const [displayName, setDisplayName] = useState("...");
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
-  const [showNotifications, setShowNotifications] = useState(false);
+  // const [showNotifications, setShowNotifications] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(Platform.OS === 'web');
   const [unreadCount, setUnreadCount] = useState(0);
+  
 
   useEffect(() => {
     (async () => {
