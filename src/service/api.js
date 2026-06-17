@@ -568,7 +568,7 @@ export const dutyAPI = {
   getAvailableDuties: async () => {
     const getLocation = () => {
       return new Promise((resolve) => {
-        if (!navigator.geolocation) {
+        if (typeof navigator === 'undefined' || !navigator.geolocation) {
           resolve({ permission: "denied", location: null });
           return;
         }
@@ -626,7 +626,7 @@ export const dutyAPI = {
   getMyUpcomingDuties: async () => {
     const getLocation = () => {
       return new Promise((resolve) => {
-        if (!navigator.geolocation) {
+        if (typeof navigator === 'undefined' || !navigator.geolocation) {
           resolve({ permission: "denied", location: null });
           return;
         }
