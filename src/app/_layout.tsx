@@ -2,7 +2,6 @@ import { Stack } from "expo-router";
 import { Platform, View, useWindowDimensions } from "react-native";
 import { AuthProvider } from '@/context/AuthContext';
 import { SocketProvider } from "@/context/SocketContext";
-import { NotificationProvider } from "@/context/NotificationContext";
 
 export default function RootLayout() {
   const { width } = useWindowDimensions();

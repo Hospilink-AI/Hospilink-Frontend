@@ -14,11 +14,6 @@ import { COLORS } from "@/constant/colors";
 import { adminAPI } from "@/service/api";
 import { useSocket } from "../../context/SocketContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import NotificationsCenterScreen from "./NotificationCenter";
-
-// inside the component, add:
-const [showCenter, setShowCenter] = useState(false);
-
 // ─── Constants ───────────────────────────────────────────────────
 const PAGE_SIZE = 10; // FIX: was 50 — now loads 10 at a time
 const LAST_CONNECTED_KEY = "hospilink_socket_last_connected";
@@ -126,6 +121,7 @@ export default function NotificationPopup({
   const [error, setError] = useState<string | null>(null);
   const [markingAll, setMarkingAll] = useState(false);
   const [pendingRead, setPendingRead] = useState<Set<string>>(new Set());
+  const [showCenter, setShowCenter] = useState(false);
 
   // ── Stable ref so parent re-renders never cause stale effect ─
   const onUnreadCountChangeRef = useRef(onUnreadCountChange);

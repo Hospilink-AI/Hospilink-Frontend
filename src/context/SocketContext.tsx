@@ -3,9 +3,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { io, Socket } from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
-
-const SOCKET_URL = API_URL
+const SOCKET_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
 
 interface SocketContextType {
   socket: Socket | null;
@@ -36,6 +34,11 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (!token) {
         console.log('❌ [SocketContext] No auth token found, skipping connection');
+        return;
+      }
+
+      if (!SOCKET_URL) {
+        console.log('❌ [SocketContext] EXPO_PUBLIC_API_URL is not set, skipping connection');
         return;
       }
 
