@@ -979,7 +979,7 @@ interface StaffProfileModalProps {
 function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfileModalProps) {
   const [loading, setLoading] = useState(false);
   const [staffDetails, setStaffDetails] = useState<StaffDetails | null>(null);
-  const [decision, setDecision] = useState<'approved' | 'rejected' | null>(null);
+  const [decision, setDecision] = useState<'approved' | 'rejected' | 'suspended' | null>(null);
   const [docViewerVisible, setDocViewerVisible] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<StaffDocument | null>(null);
   const [rejectionModalVisible, setRejectionModalVisible] = useState(false);
@@ -1035,6 +1035,26 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
       setActionError(msg);
     }
   };
+
+  const handleSuspend = async () => {
+  if (!staffId) return;
+  setActionError('');
+  try {
+    // const data = await adminAPI.suspendMedicalStaff(staffId);
+    // if (data.success) {
+    //   setDecision('suspended');
+    //   onRefresh();
+    // } else {
+    //   setActionError(data.message ?? 'Failed to suspend staff.');
+    // }
+  } catch (error: any) {
+    const msg =
+      error?.response?.data?.message ??
+      error?.message ??
+      'Failed to suspend staff member.';
+    setActionError(msg);
+  }
+};
 
   const handleReject = async (reason: string) => {
     if (!staffId) return;
@@ -1127,6 +1147,8 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
 
   const showVerifyButton = staffDetails.verificationStatus !== 'verified';
   const showRejectButton = staffDetails.verificationStatus !== 'rejected';
+  const showSuspendButton = staffDetails.verificationStatus === 'verified'
+  || staffDetails.verificationStatus === 'auto-verified';
 
   return (
     <>
@@ -1139,20 +1161,30 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
 
             {decision ? (
               <View style={pm.resultWrap}>
-                <View style={[pm.resultIcon, decision === 'approved' ? pm.resultIconGreen : pm.resultIconRed]}>
-                  <Text style={[pm.resultCheck, { color: decision === 'approved' ? '#16A34A' : '#DC2626' }]}>
-                    {decision === 'approved' ? '✓' : '✕'}
+                <View style={[
+                  pm.resultIcon,
+                  decision === 'approved' ? pm.resultIconGreen :
+                    decision === 'suspended' ? pm.resultIconAmber : pm.resultIconRed,
+                ]}>
+                  <Text style={[pm.resultCheck, {
+                    color: decision === 'approved' ? '#16A34A' :
+                      decision === 'suspended' ? '#D97706' : '#DC2626',
+                  }]}>
+                    {decision === 'approved' ? '✓' : decision === 'suspended' ? '⏸' : '✕'}
                   </Text>
                 </View>
                 <Text style={pm.resultTitle}>
-                  {decision === 'approved' ? 'Profile Approved' : 'Profile Rejected'}
+                  {decision === 'approved' ? 'Profile Approved' :
+                    decision === 'suspended' ? 'Profile Suspended' : 'Profile Rejected'}
                 </Text>
                 <Text style={pm.resultSub}>
                   <Text style={{ fontWeight: '700', color: '#0F172A' }}>{staffDetails.fullName || 'Staff Member'}</Text>
                   {'\n'}
                   has been {decision === 'approved'
                     ? 'approved and verified successfully.'
-                    : 'rejected. The staff member will be notified.'}
+                    : decision === 'suspended'
+                      ? 'suspended. The staff member will be notified.'
+                      : 'rejected. The staff member will be notified.'}
                 </Text>
                 <TouchableOpacity style={pm.doneBtn} onPress={handleClose}>
                   <Text style={pm.doneBtnTxt}>Done</Text>
@@ -1285,6 +1317,15 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
                     <Text style={pm.rejectBtnTxt}>✕   Reject</Text>
                   </TouchableOpacity>
                 )}
+                 {showSuspendButton && (
+                  <TouchableOpacity
+                    style={pm.suspendBtn}
+                    onPress={handleSuspend}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={pm.suspendBtnTxt}>⏸   Suspend</Text>
+                  </TouchableOpacity>
+                )}
                 {showVerifyButton && (
                   <TouchableOpacity
                     style={pm.approveBtn}
@@ -1317,6 +1358,9 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
 }
 
 const pm = StyleSheet.create({
+  suspendBtn: { flex: 1, height: 48, borderRadius: 12, borderWidth: 1.5, borderColor: '#E2E8F0', backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center' },
+suspendBtnTxt: { fontSize: 13, color: '#64748B', fontWeight: '700' },
+resultIconAmber: { backgroundColor: '#FEF3C7' },
   overlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.45)', justifyContent: 'center', alignItems: 'center' },
   sheet: {
     backgroundColor: '#fff',

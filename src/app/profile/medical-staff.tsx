@@ -144,6 +144,12 @@ export default function MedicalStaffProfile() {
 
   const [phone, setPhone] = useState("");
 
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [resendCountdown, setResendCountdown] = useState(0);
+
   // ── Profile Summary
   const [profileSummary, setProfileSummary] = useState("");
 
@@ -231,6 +237,7 @@ export default function MedicalStaffProfile() {
   // STEP 2 — Submit profile
   // ────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
+
     if (!fullName.trim()) {
       showAlert("Missing Field", "Full name is required.");
       return;
@@ -257,6 +264,11 @@ export default function MedicalStaffProfile() {
     }
     if (phone.replace(/\D/g, "").length < 10) {
       showAlert("Invalid Phone", "Please enter a valid 10-digit phone number.");
+      return;
+    }
+
+    if (!phoneVerified) {
+      showAlert("Phone Not Verified", "Please verify your phone number with the OTP first.");
       return;
     }
 
@@ -322,6 +334,66 @@ export default function MedicalStaffProfile() {
       setLoading(false);
     }
   };
+
+
+  const handleSendOtp = async () => {
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length < 10) {
+      showAlert("Invalid Phone", "Please enter a valid 10-digit phone number.");
+      return;
+    }
+    setOtpError("");
+    setSendingOtp(true);
+    try {
+      const res = await profileAPI.sendPhoneOTP(formatPhone(phone));
+      if (res?.success) {
+        setShowOTP(true);
+        setOtp(["", "", "", "", "", ""]);
+        setResendCountdown(45);
+        setTimeout(() => otpRefs.current[0]?.focus(), 100);
+      } else {
+        setOtpError(res?.message || "Failed to send OTP.");
+      }
+    } catch (error: any) {
+      setOtpError(
+        error?.response?.data?.message ?? error?.message ?? "Failed to send OTP."
+      );
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+
+  const handleVerifyOtp = async () => {
+    const code = otp.join("");
+    if (code.length < 6) {
+      setOtpError("Please enter all 6 digits.");
+      return;
+    }
+    setOtpError("");
+    setVerifyingOtp(true);
+    try {
+      const res = await profileAPI.verifyPhoneOTP(formatPhone(phone), code);
+      if (res?.success) {
+        setPhoneVerified(true);
+        setShowOTP(false);
+      } else {
+        setOtpError(res?.message || "Invalid OTP. Please try again.");
+      }
+    } catch (error: any) {
+      setOtpError(
+        error?.response?.data?.message ?? error?.message ?? "Verification failed."
+      );
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
+  useEffect(() => {
+    if (resendCountdown <= 0) return;
+    const t = setInterval(() => setResendCountdown((c) => c - 1), 1000);
+    return () => clearInterval(t);
+  }, [resendCountdown]);
 
   // ── Progress calculation
   let filledCount = 0;
@@ -550,7 +622,7 @@ export default function MedicalStaffProfile() {
 
             {/* ── Phone Number ── */}
             <Text style={styles.label}>Phone Number</Text>
-            <View style={styles.phoneRow}>
+            {/* <View style={styles.phoneRow}>
               <View style={[styles.inputRow, { flex: 1, marginBottom: 0 }]}>
                 <Ionicons name="call-outline" size={16} color="#94a3b8" style={styles.inputIcon} />
                 <Text style={styles.phonePrefix}>+91</Text>
@@ -565,10 +637,56 @@ export default function MedicalStaffProfile() {
                   maxLength={10}
                 />
               </View>
+            </View> */}
+            <View style={styles.phoneRow}>
+              <View style={[styles.inputRow, { flex: 1, marginBottom: 0 }]}>
+                <Ionicons name="call-outline" size={16} color="#94a3b8" style={styles.inputIcon} />
+                <Text style={styles.phonePrefix}>+91</Text>
+                <View style={styles.phoneDivider} />
+                <TextInput
+                  placeholder="000-000-0000"
+                  placeholderTextColor="#b0bec5"
+                  style={styles.inputInner}
+                  value={phone}
+                  onChangeText={(v) => {
+                    setPhone(v);
+                    setShowOTP(false);
+                    setPhoneVerified(false);
+                    setOtp(["", "", "", "", "", ""]);
+                  }}
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                  editable={!phoneVerified}
+                />
+                {phoneVerified && (
+                  <Ionicons name="checkmark-circle" size={18} color="#16a34a" />
+                )}
+              </View>
+
+              {!phoneVerified && (
+                <TouchableOpacity
+                  style={styles.verifyBtnOutline}
+                  onPress={handleSendOtp}
+                  disabled={sendingOtp || (showOTP && resendCountdown > 0)}
+                  activeOpacity={0.85}
+                >
+                  {sendingOtp ? (
+                    <ActivityIndicator size="small" color="#2563eb" />
+                  ) : (
+                    <Text style={styles.verifyBtnOutlineText}>
+                      {showOTP
+                        ? resendCountdown > 0
+                          ? `Resend ${resendCountdown}s`
+                          : "Resend"
+                        : "Send OTP"}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* ── OTP Section ── */}
-            {showOTP && (
+            {/* {showOTP && (
               <View style={styles.otpSection}>
                 <Text style={styles.otpHint}>Enter the code sent to your phone number.</Text>
                 <View style={styles.otpRow}>
@@ -603,6 +721,49 @@ export default function MedicalStaffProfile() {
                     <Text style={styles.verifyOtpBtnText}>Verify OTP</Text>
                   </TouchableOpacity>
                 </View>
+              </View>
+            )} */}
+            {showOTP && !phoneVerified && (
+              <View style={styles.otpSection}>
+                <Text style={styles.otpHint}>Enter the code sent to your phone number.</Text>
+                <View style={styles.otpRow}>
+                  {otp.map((digit, i) => (
+                    <TextInput
+                      key={i}
+                      ref={(r) => { otpRefs.current[i] = r as any; }}
+                      style={[styles.otpBox, digit !== "" && styles.otpBoxFilled]}
+                      value={digit}
+                      onChangeText={(v) => {
+                        const val = v.replace(/\D/g, "").slice(-1);
+                        const updated = [...otp];
+                        updated[i] = val;
+                        setOtp(updated);
+                        if (val && i < 5) otpRefs.current[i + 1]?.focus();
+                      }}
+                      onKeyPress={({ nativeEvent }) => {
+                        if (nativeEvent.key === "Backspace" && !otp[i] && i > 0) {
+                          otpRefs.current[i - 1]?.focus();
+                        }
+                      }}
+                      keyboardType="number-pad"
+                      maxLength={1}
+                      textAlign="center"
+                    />
+                  ))}
+                  <TouchableOpacity
+                    style={styles.verifyOtpBtn}
+                    onPress={handleVerifyOtp}
+                    disabled={verifyingOtp}
+                    activeOpacity={0.85}
+                  >
+                    {verifyingOtp ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={styles.verifyOtpBtnText}>Verify OTP</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+                {otpError ? <Text style={styles.otpErrorText}>{otpError}</Text> : null}
               </View>
             )}
 
@@ -881,7 +1042,7 @@ const styles = StyleSheet.create({
     padding: 20,
     minHeight: "100%",
   },
-
+  otpErrorText: { fontSize: 12, color: "#ef4444", marginTop: 8, fontWeight: "500" },
   logoRow: { flexDirection: "row", alignItems: "center", marginBottom: 28 },
   logoBox: {
     width: 36, height: 36,
