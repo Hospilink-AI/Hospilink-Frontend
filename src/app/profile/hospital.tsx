@@ -157,6 +157,8 @@ function MapComponent({
       };
     }, []);
 
+
+
     return (
       <iframe
         ref={iframeRef}
@@ -247,6 +249,16 @@ export default function HospitalProfile() {
   const [loading, setLoading] = useState(false);
   const [description, setDescription] = useState("");
 
+
+  const [showOTP, setShowOTP] = useState(false);
+  const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
+  const otpRefs = useRef<any[]>([]);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [resendCountdown, setResendCountdown] = useState(0);
+
   // ── Dynamic completion percentage ──
   // 9 tracked fields: email & staffCount always count (prefilled/defaulted)
   const completionPercent = Math.round(
@@ -259,7 +271,7 @@ export default function HospitalProfile() {
       city.trim().length > 0,
       pincode.trim().length === 6,
       state.trim().length > 0,
-       description.trim().length > 0, 
+      description.trim().length > 0,
       selectedServices.length > 0,
     ].filter(Boolean).length /
       9) *
@@ -281,6 +293,8 @@ export default function HospitalProfile() {
       Alert.alert(title, message);
     }
   };
+
+  const formatPhone = (raw: string) => `+91 ${raw.replace(/\D/g, "").slice(0, 10)}`;
 
   const geocode = useCallback(
     (addressVal: string, cityVal: string, stateVal: string) => {
@@ -352,6 +366,7 @@ export default function HospitalProfile() {
   const handleFinishSetup = async () => {
     if (!hospitalName.trim()) { showAlert("Missing Field", "Please enter the hospital legal name."); return; }
     if (!phoneNumber.trim()) { showAlert("Missing Field", "Please enter the phone number."); return; }
+    if (!phoneVerified) { showAlert("Phone Not Verified", "Please verify your phone number with the OTP first."); return; }
     if (!address.trim()) { showAlert("Missing Field", "Please enter the current address."); return; }
     if (!city.trim()) { showAlert("Missing Field", "Please enter the city."); return; }
     if (!state.trim()) { showAlert("Missing Field", "Please select a state."); return; }
@@ -362,9 +377,9 @@ export default function HospitalProfile() {
 
     const payload = {
       hospitalLegalName: hospitalName.trim(),
-      email: email.trim(),                  // ← added
-      // phoneNumber: phoneNumber.trim(),       // ← added
-      phoneNumber: `+91 ${phoneNumber}`,
+      email: email.trim(),
+      phoneNumber: formatPhone(phoneNumber),
+      // phoneNumber: `+91 ${phoneNumber}`,
       currentAddress: fullAddress,
       city: city.trim(),
       state: state,
@@ -390,6 +405,65 @@ export default function HospitalProfile() {
       setLoading(false);
     }
   };
+
+  const handleSendOtp = async () => {
+    const digits = phoneNumber.replace(/\D/g, "");
+    if (digits.length < 10) {
+      showAlert("Invalid Phone", "Please enter a valid 10-digit phone number.");
+      return;
+    }
+    setOtpError("");
+    setSendingOtp(true);
+    try {
+      const res = await profileAPI.sendPhoneOTP(formatPhone(phoneNumber));
+      if (res?.success) {
+        setShowOTP(true);
+        setOtp(["", "", "", "", "", ""]);
+        setResendCountdown(45);
+        setTimeout(() => otpRefs.current[0]?.focus(), 100);
+      } else {
+        setOtpError(res?.message || "Failed to send OTP.");
+      }
+    } catch (error: any) {
+      setOtpError(
+        error?.response?.data?.message ?? error?.message ?? "Failed to send OTP."
+      );
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+
+  const handleVerifyOtp = async () => {
+    const code = otp.join("");
+    if (code.length < 6) {
+      setOtpError("Please enter all 6 digits.");
+      return;
+    }
+    setOtpError("");
+    setVerifyingOtp(true);
+    try {
+      const res = await profileAPI.verifyPhoneOTP(formatPhone(phoneNumber), code);
+      if (res?.success) {
+        setPhoneVerified(true);
+        setShowOTP(false);
+      } else {
+        setOtpError(res?.message || "Invalid OTP. Please try again.");
+      }
+    } catch (error: any) {
+      setOtpError(
+        error?.response?.data?.message ?? error?.message ?? "Verification failed."
+      );
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
+  useEffect(() => {
+    if (resendCountdown <= 0) return;
+    const t = setInterval(() => setResendCountdown((c) => c - 1), 1000);
+    return () => clearInterval(t);
+  }, [resendCountdown]);
 
   return (
     <View style={styles.outerContainer}>
@@ -496,9 +570,9 @@ export default function HospitalProfile() {
               />
             </View> */}
 
-            <View style={styles.inputRow}>
-              {/* <Ionicons name="call-outline" size={15} color="#94a3b8" style={{ marginRight: 8 }} /> */}
-              <View style={styles.phonePrefix}>
+            {/* <View style={styles.inputRow}> */}
+            {/* <Ionicons name="call-outline" size={15} color="#94a3b8" style={{ marginRight: 8 }} /> */}
+            {/* <View style={styles.phonePrefix}>
                 <Text style={styles.phonePrefixText}>+91</Text>
               </View>
               <View style={styles.phoneDivider} />
@@ -511,7 +585,95 @@ export default function HospitalProfile() {
                 keyboardType="number-pad"
                 maxLength={10}
               />
+            </View> */}
+
+            <View style={styles.inputRow}>
+              <View style={styles.phonePrefix}>
+                <Text style={styles.phonePrefixText}>+91</Text>
+              </View>
+              <View style={styles.phoneDivider} />
+              <TextInput
+                placeholder="98765 43210"
+                placeholderTextColor="#b0bec5"
+                style={styles.inputInner}
+                value={phoneNumber}
+                onChangeText={(v) => {
+                  setPhoneNumber(v.replace(/\D/g, "").slice(0, 10));
+                  setShowOTP(false);
+                  setPhoneVerified(false);
+                  setOtp(["", "", "", "", "", ""]);
+                }}
+                keyboardType="number-pad"
+                maxLength={10}
+                editable={!phoneVerified}
+              />
+              {phoneVerified ? (
+                <Ionicons name="checkmark-circle" size={18} color="#16a34a" />
+              ) : (
+                <TouchableOpacity
+                  style={styles.sendOtpBtn}
+                  onPress={handleSendOtp}
+                  disabled={sendingOtp || (showOTP && resendCountdown > 0)}
+                  activeOpacity={0.85}
+                >
+                  {sendingOtp ? (
+                    <ActivityIndicator size="small" color="#2563eb" />
+                  ) : (
+                    <Text style={styles.sendOtpBtnText}>
+                      {showOTP
+                        ? resendCountdown > 0
+                          ? `Resend ${resendCountdown}s`
+                          : "Resend"
+                        : "Send OTP"}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              )}
             </View>
+
+            {showOTP && !phoneVerified && (
+              <View style={styles.otpSection}>
+                <Text style={styles.otpHint}>Enter the code sent to your phone number.</Text>
+                <View style={styles.otpRow}>
+                  {otp.map((digit, i) => (
+                    <TextInput
+                      key={i}
+                      ref={(r) => { otpRefs.current[i] = r as any; }}
+                      style={[styles.otpBox, digit !== "" && styles.otpBoxFilled]}
+                      value={digit}
+                      onChangeText={(v) => {
+                        const val = v.replace(/\D/g, "").slice(-1);
+                        const updated = [...otp];
+                        updated[i] = val;
+                        setOtp(updated);
+                        if (val && i < 5) otpRefs.current[i + 1]?.focus();
+                      }}
+                      onKeyPress={({ nativeEvent }) => {
+                        if (nativeEvent.key === "Backspace" && !otp[i] && i > 0) {
+                          otpRefs.current[i - 1]?.focus();
+                        }
+                      }}
+                      keyboardType="number-pad"
+                      maxLength={1}
+                      textAlign="center"
+                    />
+                  ))}
+                  <TouchableOpacity
+                    style={styles.verifyOtpBtn}
+                    onPress={handleVerifyOtp}
+                    disabled={verifyingOtp}
+                    activeOpacity={0.85}
+                  >
+                    {verifyingOtp ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={styles.verifyOtpBtnText}>Verify</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+                {otpError ? <Text style={styles.otpErrorText}>{otpError}</Text> : null}
+              </View>
+            )}
 
             {/* Current Address */}
             <Text style={styles.label}>Current Address</Text>
@@ -595,20 +757,20 @@ export default function HospitalProfile() {
             )}
 
             <Text style={styles.label}>Hospital Description</Text>
-          <View style={[styles.inputRow, { height: 'auto', alignItems: 'flex-start', paddingVertical: 10 }]}>
-            <TextInput
-              placeholder="e.g. A premier multispeciality hospital providing quality healthcare..."
-              placeholderTextColor="#b0bec5"
-              style={[styles.inputInner, { minHeight: 90, textAlignVertical: 'top' }]}
-              value={description}
-              onChangeText={setDescription}
-              multiline
-              numberOfLines={4}
-            />
-          </View>
+            <View style={[styles.inputRow, { height: 'auto', alignItems: 'flex-start', paddingVertical: 10 }]}>
+              <TextInput
+                placeholder="e.g. A premier multispeciality hospital providing quality healthcare..."
+                placeholderTextColor="#b0bec5"
+                style={[styles.inputInner, { minHeight: 90, textAlignVertical: 'top' }]}
+                value={description}
+                onChangeText={setDescription}
+                multiline
+                numberOfLines={4}
+              />
+            </View>
           </View>
           {/* ── Description ── */}
-          
+
 
           {/* ── RIGHT CARD: Capacity & Services ── */}
           <View style={[styles.card, isDesktop && { marginLeft: 16 }]}>
@@ -798,6 +960,17 @@ const styles = StyleSheet.create({
 
   scrollWrapper: { flex: 1 },
   scrollContent: { padding: 24, paddingBottom: 40 },
+
+  sendOtpBtn: { paddingHorizontal: 12, height: 32, borderRadius: 8, borderWidth: 1.5, borderColor: "#2563eb", justifyContent: "center", alignItems: "center", marginLeft: 6 },
+  sendOtpBtnText: { color: "#2563eb", fontSize: 12, fontWeight: "700" },
+  otpSection: { marginTop: 12 },
+  otpHint: { fontSize: 12, color: "#64748b", marginBottom: 10 },
+  otpRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  otpBox: { width: 40, height: 44, borderRadius: 9, borderWidth: 1.5, borderColor: "#e2e8f0", backgroundColor: "#f8fafc", fontSize: 16, fontWeight: "700", color: "#0f172a", textAlign: "center" },
+  otpBoxFilled: { borderColor: "#2563eb", backgroundColor: "#eff6ff" },
+  verifyOtpBtn: { backgroundColor: "#2563eb", paddingHorizontal: 16, height: 44, borderRadius: 9, justifyContent: "center", alignItems: "center", marginLeft: 4 },
+  verifyOtpBtnText: { color: "#fff", fontSize: 13, fontWeight: "700" },
+  otpErrorText: { fontSize: 12, color: "#ef4444", marginTop: 8, fontWeight: "500" },
 
   progressCard: { backgroundColor: "#ffffff", padding: 24, borderRadius: 14, marginBottom: 20, borderWidth: 1, borderColor: "#e2e8f0", ...Platform.select({ web: { boxShadow: "0 4px 20px rgba(100,140,200,0.10)" }, default: { elevation: 3 } }) },
   progressHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 },

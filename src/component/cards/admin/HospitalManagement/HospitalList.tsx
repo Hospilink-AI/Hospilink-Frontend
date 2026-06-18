@@ -1013,6 +1013,9 @@ const dv = StyleSheet.create({
   docImage: {
     width: '100%', height: 300,
   },
+  // in dv StyleSheet
+suspendBtn: { flex: 1, height: 46, borderRadius: 12, borderWidth: 1.5, borderColor: '#E2E8F0', backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center' },
+suspendBtnTxt: { fontSize: 13, color: '#64748B', fontWeight: '700' },
 });
 
 // ─── Hospital Review Modal ────────────────────────────────────────────────────
@@ -1022,14 +1025,15 @@ interface HospitalReviewModalProps {
   onClose: () => void;
   onApprove: () => void;
   onReject: () => void;
+  onSuspend: () => void;  
 }
 
-function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject }: HospitalReviewModalProps) {
+function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject, onSuspend }: HospitalReviewModalProps) {
   const [selectedDoc, setSelectedDoc] = useState<HospitalDocument | null>(null);
   const [docViewerVisible, setDocViewerVisible] = useState(false);
   const [detailData, setDetailData] = useState<Partial<Hospital> | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [actionDecision, setActionDecision] = useState<'approved' | 'rejected' | null>(null);
+  const [actionDecision, setActionDecision] = useState<'approved' | 'rejected'  | 'suspended' | null>(null);
   const [detailError, setDetailError] = useState('');
 
   useEffect(() => {
@@ -1085,17 +1089,29 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject }
 
             {actionDecision ? (
               <View style={rm.resultWrap}>
-                <View style={[rm.resultIcon, actionDecision === 'approved' ? rm.resultIconGreen : rm.resultIconRed]}>
-                  <Text style={[rm.resultCheck, { color: actionDecision === 'approved' ? '#16A34A' : '#DC2626' }]}>
-                    {actionDecision === 'approved' ? '✓' : '✕'}
+                <View style={[
+                  rm.resultIcon,
+                  actionDecision === 'approved' ? rm.resultIconGreen :
+                    actionDecision === 'suspended' ? rm.resultIconAmber : rm.resultIconRed,
+                ]}>
+                  <Text style={[rm.resultCheck, {
+                    color: actionDecision === 'approved' ? '#16A34A' :
+                      actionDecision === 'suspended' ? '#D97706' : '#DC2626',
+                  }]}>
+                    {actionDecision === 'approved' ? '✓' : actionDecision === 'suspended' ? '⏸' : '✕'}
                   </Text>
                 </View>
                 <Text style={rm.resultTitle}>
-                  {actionDecision === 'approved' ? 'Hospital Approved' : 'Hospital Rejected'}
+                  {actionDecision === 'approved' ? 'Hospital Approved' :
+                    actionDecision === 'suspended' ? 'Hospital Suspended' : 'Hospital Rejected'}
                 </Text>
                 <Text style={rm.resultSub}>
                   <Text style={{ fontWeight: '700', color: '#0F172A' }}>{legalName}</Text>
-                  {'\n'}has been {actionDecision === 'approved' ? 'approved and verified.' : 'rejected. The hospital will be notified.'}
+                  {'\n'}has been {
+                    actionDecision === 'approved' ? 'approved and verified.' :
+                      actionDecision === 'suspended' ? 'suspended. The hospital will be notified.' :
+                        'rejected. The hospital will be notified.'
+                  }
                 </Text>
                 <TouchableOpacity style={rm.doneBtn} onPress={handleClose}>
                   <Text style={rm.doneBtnTxt}>Done</Text>
@@ -1247,7 +1263,7 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject }
                       </TouchableOpacity>
                     ) : (
                       <>
-                        <TouchableOpacity
+                        {/* <TouchableOpacity
                           style={dv.rejectBtn}
                           onPress={() => { setActionDecision('rejected'); onReject(); }}
                           activeOpacity={0.85}
@@ -1260,6 +1276,27 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject }
                           activeOpacity={0.85}
                         >
                           <Text style={dv.approveBtnTxt}>✓   Approve</Text>
+                        </TouchableOpacity> */}
+                         <TouchableOpacity
+                          style={dv.rejectBtn}
+                          onPress={() => { setActionDecision('rejected'); onReject(); }}
+                          activeOpacity={0.85}
+                        >
+                          <Text style={dv.rejectBtnTxt}>✕   Reject</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={dv.suspendBtn}
+                          onPress={() => { setActionDecision('suspended'); onSuspend(); }}
+                          activeOpacity={0.85}
+                        >
+                          <Text style={dv.suspendBtnTxt}>⏸   Suspend</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[dv.approveBtn, { flex: 1 }]}
+                          onPress={() => { setActionDecision('approved'); onApprove(); }}
+                          activeOpacity={0.85}
+                        >
+                          <Text style={dv.approveBtnTxt}>✓   Verify</Text>
                         </TouchableOpacity>
                       </>
                     )}
@@ -1282,6 +1319,8 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject }
 }
 
 const rm = StyleSheet.create({
+  // in rm StyleSheet
+resultIconAmber: { backgroundColor: '#FEF3C7' },
   overlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.45)', justifyContent: 'center', alignItems: 'center' },
   sheet: { backgroundColor: '#fff', borderRadius: 16, width: '50%', maxHeight: '85%', overflow: 'hidden', ...Platform.select({ ios: { shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 30, shadowOffset: { width: 0, height: -8 } }, android: { elevation: 20 } }) },
   handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#E2E8F0', alignSelf: 'center', marginTop: 12, marginBottom: 4 },
@@ -1934,6 +1973,22 @@ export default function HospitalListSection() {
     }
   };
 
+  const handleSuspend = async (h: Hospital | null = activeHospital) => {
+  if (!h) return;
+  try {
+    // await adminAPI.suspendHospital(h.id);
+    showToast(`${h.name} has been suspended`, 'error');
+    fetchHospitals({ search, status, city, page: currentPage, tabStatus: activeTab });
+    fetchStats();
+  } catch (err: any) {
+    const msg =
+      err?.response?.data?.message ??
+      err?.message ??
+      'Suspend failed. Please try again.';
+    showToast(msg, 'error');
+  }
+};
+
   const handleReject = (h: Hospital | null = activeHospital) => {
     if (!h) return;
     setPendingRejectTarget(h);
@@ -2173,6 +2228,7 @@ export default function HospitalListSection() {
         onClose={() => setReviewVisible(false)}
         onApprove={() => handleVerify(activeHospital)}
         onReject={() => handleReject(activeHospital)}
+         onSuspend={() => handleSuspend(activeHospital)} 
       />
 
       <RejectReasonModal

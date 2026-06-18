@@ -473,7 +473,17 @@ export const profileAPI = {
       console.error("Error updating skills:", error);
       throw error;
     }
-  }
+  },
+
+  sendPhoneOTP: async (phoneNumber) => {
+    const response = await api.post('/api/profile/send-phone-otp', { phoneNumber });
+    return response.data;
+  },
+
+  verifyPhoneOTP: async (phoneNumber, otp) => {
+    const response = await api.post('/api/profile/verify-phone-otp', { phoneNumber, otp });
+    return response.data;
+  },
 
 }
 
