@@ -8,6 +8,7 @@ import {
   Alert,
   Image,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -18,6 +19,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  AppState
 } from "react-native";
 import { documentAPI } from "@/service/api"; // Make sure this path is correct for your project
 
@@ -301,6 +303,29 @@ function UploadModal({ visible, onClose, onSubmit }: UploadModalProps) {
     if (!validate()) return;
     try {
       setSubmitting(true);
+      
+      // Upload document and get response
+      const uploadResponse = await documentAPI.uploadDocument(
+        selectedType!.value,
+        previewUri!,
+        previewMimeType
+      );
+      
+      // ✅ Check for redirectUrl (Digilocker) and redirect if present
+      const redirectUrl = uploadResponse?.data?.[0]?.redirectUrl || uploadResponse?.redirectUrl;
+      
+      if (redirectUrl) {
+        if (Platform.OS === "web") {
+          resetAll();
+          window.open(redirectUrl, "_blank", "noopener,noreferrer");
+          return; // Stop execution as we're leaving the page
+        } else {
+          // For mobile, open in external browser
+          await Linking.openURL(redirectUrl);
+        }
+      }
+      
+      // Continue with normal flow if no redirect
       await onSubmit(selectedType!, previewUri!, previewFileType, previewMimeType);
       resetAll();
     } catch {
@@ -457,6 +482,19 @@ function CredentialComplianceCard({ initialItems = [] }: Props) {
   useEffect(() => {
     fetchDocuments();
   }, [fetchDocuments]);
+
+  useEffect(() => {
+  if (Platform.OS === "web") {
+    const onFocus = () => fetchDocuments();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  } else {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") fetchDocuments();
+    });
+    return () => subscription.remove();
+  }
+}, [fetchDocuments]);
 
   async function handleSubmit(
     docType: DocTypeOption,

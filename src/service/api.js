@@ -381,7 +381,8 @@ export const profileAPI = {
     }
 
     try {
-      const res = await fetch(`${API_URL}/api/profile/profile-picture`, {
+      const baseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
+      const res = await fetch(`${baseUrl}/api/profile/profile-picture`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -421,7 +422,8 @@ export const profileAPI = {
       : await AsyncStorage.getItem("hospilink_token");
 
     try {
-      const res = await fetch(`${API_URL}/api/profile/delete-picture`, {
+      const baseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
+      const res = await fetch(`${baseUrl}/api/profile/delete-picture`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -829,7 +831,8 @@ export const documentAPI = {
     try {
       console.log("Uploading:", { fileUri, documentType });
 
-      const res = await fetch(`${API_URL}/api/documents/upload`, {
+      const baseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
+      const res = await fetch(`${baseUrl}/api/documents/upload`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

@@ -18,6 +18,7 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   View,
+  AppState
 } from "react-native";
 import { documentAPI, profileAPI } from "../../service/api";
 
@@ -221,6 +222,23 @@ export default function DocumentUpload() {
     loadDocuments();
   }, []);
 
+  useEffect(() => {
+    if (Platform.OS === "web") {
+      const onFocus = () => {
+        loadDocuments();
+      };
+      window.addEventListener("focus", onFocus);
+      return () => window.removeEventListener("focus", onFocus);
+    } else {
+      const subscription = AppState.addEventListener("change", (nextState) => {
+        if (nextState === "active") {
+          loadDocuments();
+        }
+      });
+      return () => subscription.remove();
+    }
+  }, []);
+
   // ── All 5 must be uploaded to proceed
   const allRequiredDone = documents.every((d) => d.status !== "not_uploaded");
 
@@ -246,7 +264,21 @@ export default function DocumentUpload() {
         (file as any).mimeType ??
         (file.uri.endsWith(".pdf") ? "application/pdf" : "image/jpeg");
 
-      await documentAPI.uploadDocument(apiKey, file.uri, mimeType);
+      const uploadResponse = await documentAPI.uploadDocument(apiKey, file.uri, mimeType);
+
+      // ✅ Check for redirectUrl (Digilocker) and redirect if present
+      const redirectUrl = uploadResponse?.data?.[0]?.redirectUrl || uploadResponse?.redirectUrl;
+
+      if (redirectUrl) {
+        if (Platform.OS === "web") {
+          // Redirect to Digilocker in the same window
+          window.open(redirectUrl, "_blank", "noopener,noreferrer");
+          return; // Stop execution as we're leaving the page
+        } else {
+          // For mobile, open in external browser
+          await Linking.openURL(redirectUrl);
+        }
+      }
 
       // Optimistically mark as pending with local URI
       setDocuments((prev) =>
@@ -358,7 +390,7 @@ export default function DocumentUpload() {
   const uploadedCount = documents.filter((d) => d.status !== "not_uploaded").length;
   const progressPct = Math.round((uploadedCount / documents.length) * 100);
 
-return (
+  return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
@@ -378,270 +410,270 @@ return (
         showsVerticalScrollIndicator={false}
       >
 
-      {/* ── Header Card ── */}
-      <View style={[styles.headerCard, isMobile && styles.headerCardMobile]}>
-        <Text style={styles.headerTitle}>Upload Documents</Text>
-        <Text style={styles.headerSub}>
-          Upload your hospital credentials for verification. All 5 documents are required.
-        </Text>
-
-        {/* Progress bar */}
-        <View style={styles.progressWrap}>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${progressPct}%` }]} />
-          </View>
-          <Text style={styles.progressLabel}>
-            {profileLoading ? "Loading…" : `${uploadedCount}/${documents.length} uploaded`}
+        {/* ── Header Card ── */}
+        <View style={[styles.headerCard, isMobile && styles.headerCardMobile]}>
+          <Text style={styles.headerTitle}>Upload Documents</Text>
+          <Text style={styles.headerSub}>
+            Upload your hospital credentials for verification. All 5 documents are required.
           </Text>
-        </View>
-      </View>
 
-      {/* ── Loading row for initial fetch ── */}
-      {profileLoading && (
-        <View style={styles.loadingRow}>
-          <ActivityIndicator size="small" color="#2563eb" />
-          <Text style={styles.loadingText}>Loading your documents…</Text>
-        </View>
-      )}
-
-      {/* ── Required Documents Card ── */}
-      <View style={[styles.card, isMobile && styles.cardMobile]}>
-        <View style={styles.sectionHeader}>
-          <View style={styles.shieldIcon}>
-            <Ionicons name="shield-checkmark" size={14} color="#2563eb" />
-          </View>
-          <View>
-            <Text style={styles.sectionTitle}>Credential &amp; Compliance</Text>
-            <Text style={styles.sectionSub}>Required for account activation</Text>
+          {/* Progress bar */}
+          <View style={styles.progressWrap}>
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: `${progressPct}%` }]} />
+            </View>
+            <Text style={styles.progressLabel}>
+              {profileLoading ? "Loading…" : `${uploadedCount}/${documents.length} uploaded`}
+            </Text>
           </View>
         </View>
 
-        {/* Table Header */}
-        <View style={[styles.tableHeader, isMobile && styles.tableHeaderMobile]}>
-          <Text style={[styles.colHeader, { flex: 1 }]}>DOCUMENT NAME</Text>
-          <Text style={[styles.colHeader, styles.colStatus]}>STATUS</Text>
-          <Text style={[styles.colHeader, styles.colActions]}>ACTIONS</Text>
+        {/* ── Loading row for initial fetch ── */}
+        {profileLoading && (
+          <View style={styles.loadingRow}>
+            <ActivityIndicator size="small" color="#2563eb" />
+            <Text style={styles.loadingText}>Loading your documents…</Text>
+          </View>
+        )}
+
+        {/* ── Required Documents Card ── */}
+        <View style={[styles.card, isMobile && styles.cardMobile]}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.shieldIcon}>
+              <Ionicons name="shield-checkmark" size={14} color="#2563eb" />
+            </View>
+            <View>
+              <Text style={styles.sectionTitle}>Credential &amp; Compliance</Text>
+              <Text style={styles.sectionSub}>Required for account activation</Text>
+            </View>
+          </View>
+
+          {/* Table Header */}
+          <View style={[styles.tableHeader, isMobile && styles.tableHeaderMobile]}>
+            <Text style={[styles.colHeader, { flex: 1 }]}>DOCUMENT NAME</Text>
+            <Text style={[styles.colHeader, styles.colStatus]}>STATUS</Text>
+            <Text style={[styles.colHeader, styles.colActions]}>ACTIONS</Text>
+          </View>
+
+          <View style={styles.divider} />
+
+          {documents.map((doc, index) => (
+            <DocRow
+              key={doc.id}
+              doc={doc}
+              isUploading={uploading === doc.id}
+              isDeleting={deleting === doc.id}
+              isMobile={isMobile}
+              isLast={index === documents.length - 1}
+              onUpload={() => handleUpload(doc)}
+              onReUpload={() => handleReUpload(doc)}
+              onView={() => handleView(doc)}
+              onDelete={() => handleDelete(doc)}
+            />
+          ))}
         </View>
 
-        <View style={styles.divider} />
+        {/* ── Note if required docs not done ── */}
+        {!allRequiredDone && !profileLoading && (
+          <View style={styles.noteRow}>
+            <Ionicons name="information-circle-outline" size={15} color="#f59e0b" />
+            <Text style={styles.noteText}>
+              Please upload all 5 required documents to proceed.
+            </Text>
+          </View>
+        )}
 
-        {documents.map((doc, index) => (
-          <DocRow
-            key={doc.id}
-            doc={doc}
-            isUploading={uploading === doc.id}
-            isDeleting={deleting === doc.id}
-            isMobile={isMobile}
-            isLast={index === documents.length - 1}
-            onUpload={() => handleUpload(doc)}
-            onReUpload={() => handleReUpload(doc)}
-            onView={() => handleView(doc)}
-            onDelete={() => handleDelete(doc)}
+        {/* ── Bottom Button ── */}
+        <TouchableOpacity
+          style={[styles.exploreBtn, !allRequiredDone && styles.exploreBtnDisabled]}
+          activeOpacity={allRequiredDone ? 0.85 : 1}
+          onPress={() => {
+            if (!allRequiredDone) {
+              showAlert(
+                "Required Documents Missing",
+                "Please upload all 5 documents (Aadhaar Card, PAN Card, Registration Certificate, CIN Certificate, and GST Certificate) before proceeding.",
+              );
+              return;
+            }
+            router.replace("/hospital/dashboard");
+          }}
+        >
+          <Text style={[styles.exploreBtnText, !allRequiredDone && styles.exploreBtnTextDisabled]}>
+            Explore HospiLink
+          </Text>
+          <Ionicons
+            name="arrow-forward"
+            size={16}
+            color={allRequiredDone ? "#fff" : "#94a3b8"}
+            style={{ marginLeft: 8 }}
           />
-        ))}
-      </View>
+        </TouchableOpacity>
 
-      {/* ── Note if required docs not done ── */}
-      {!allRequiredDone && !profileLoading && (
-        <View style={styles.noteRow}>
-          <Ionicons name="information-circle-outline" size={15} color="#f59e0b" />
-          <Text style={styles.noteText}>
-            Please upload all 5 required documents to proceed.
-          </Text>
+        {/* ── Secure Footer ── */}
+        <View style={styles.secureRow}>
+          <Ionicons name="lock-closed" size={11} color="#94a3b8" />
+          <Text style={styles.secureText}>  SECURE HEALTH DATA ENVIRONMENT</Text>
         </View>
-      )}
 
-      {/* ── Bottom Button ── */}
-      <TouchableOpacity
-        style={[styles.exploreBtn, !allRequiredDone && styles.exploreBtnDisabled]}
-        activeOpacity={allRequiredDone ? 0.85 : 1}
-        onPress={() => {
-          if (!allRequiredDone) {
-            showAlert(
-              "Required Documents Missing",
-              "Please upload all 5 documents (Aadhaar Card, PAN Card, Registration Certificate, CIN Certificate, and GST Certificate) before proceeding.",
-            );
-            return;
-          }
-          router.replace("/hospital/dashboard");
-        }}
-      >
-        <Text style={[styles.exploreBtnText, !allRequiredDone && styles.exploreBtnTextDisabled]}>
-          Explore HospiLink
-        </Text>
-        <Ionicons
-          name="arrow-forward"
-          size={16}
-          color={allRequiredDone ? "#fff" : "#94a3b8"}
-          style={{ marginLeft: 8 }}
-        />
-      </TouchableOpacity>
-
-      {/* ── Secure Footer ── */}
-      <View style={styles.secureRow}>
-        <Ionicons name="lock-closed" size={11} color="#94a3b8" />
-        <Text style={styles.secureText}>  SECURE HEALTH DATA ENVIRONMENT</Text>
-      </View>
-
-      {/* ══════════════════════════════════════════════════════
+        {/* ══════════════════════════════════════════════════════
           Registration cert-type picker modal
       ══════════════════════════════════════════════════════ */}
-      <Modal
-        visible={certPicker.visible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setCertPicker({ visible: false, docId: "" })}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setCertPicker({ visible: false, docId: "" })}
+        <Modal
+          visible={certPicker.visible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setCertPicker({ visible: false, docId: "" })}
         >
-          {/* Stop tap-through on the sheet itself */}
-          <TouchableOpacity activeOpacity={1} style={styles.modalSheet}>
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setCertPicker({ visible: false, docId: "" })}
+          >
+            {/* Stop tap-through on the sheet itself */}
+            <TouchableOpacity activeOpacity={1} style={styles.modalSheet}>
 
-            {/* Header */}
-            <View style={styles.modalHeader}>
-              <View style={styles.modalIconWrap}>
-                <Ionicons name="documents-outline" size={20} color="#2563eb" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.modalTitle}>Select Registration Type</Text>
-                <Text style={styles.modalSub}>
-                  Choose which registration certificate you want to upload.
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => setCertPicker({ visible: false, docId: "" })}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Ionicons name="close" size={20} color="#94a3b8" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.modalDivider} />
-
-            {/* Options */}
-            {REGISTRATION_SUBTYPES.map((opt, idx) => (
-              <TouchableOpacity
-                key={opt.key}
-                style={[
-                  styles.certOption,
-                  idx < REGISTRATION_SUBTYPES.length - 1 && styles.certOptionBorder,
-                ]}
-                activeOpacity={0.75}
-                onPress={() => {
-                  const docId = certPicker.docId;
-                  setCertPicker({ visible: false, docId: "" });
-                  // Small delay so modal closes before file picker opens (iOS)
-                  setTimeout(() => {
-                    const found = documents.find((d) => d.id === docId);
-                    if (found) pickAndUpload(found, opt.key);
-                  }, 200);
-                }}
-              >
-                <View style={styles.certOptionIcon}>
-                  <Ionicons name={opt.icon} size={18} color="#2563eb" />
+              {/* Header */}
+              <View style={styles.modalHeader}>
+                <View style={styles.modalIconWrap}>
+                  <Ionicons name="documents-outline" size={20} color="#2563eb" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.certOptionLabel}>{opt.label}</Text>
-                  <Text style={styles.certOptionDesc}>{opt.desc}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color="#cbd5e1" />
-              </TouchableOpacity>
-            ))}
-
-            {/* Cancel */}
-            <TouchableOpacity
-              style={styles.cancelBtn}
-              onPress={() => setCertPicker({ visible: false, docId: "" })}
-            >
-              <Text style={styles.cancelBtnText}>Cancel</Text>
-            </TouchableOpacity>
-
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* ══════════════════════════════════════════════════════
-          Document Viewer Modal
-      ══════════════════════════════════════════════════════ */}
-      <Modal
-        visible={docViewer.visible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setDocViewer((s) => ({ ...s, visible: false }))}
-      >
-        <View style={styles.viewerOverlay}>
-          <View style={[styles.viewerSheet, isMobile && styles.viewerSheetMobile]}>
-
-            {/* Viewer Header */}
-            <View style={styles.viewerHeader}>
-              <View style={styles.viewerHeaderLeft}>
-                <View style={styles.viewerIconWrap}>
-                  <Ionicons name="document-text" size={18} color="#2563eb" />
-                </View>
-                <Text style={styles.viewerTitle} numberOfLines={1}>
-                  {docViewer.name}
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => setDocViewer((s) => ({ ...s, visible: false }))}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                style={styles.viewerCloseBtn}
-              >
-                <Ionicons name="close" size={20} color="#64748b" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.modalDivider} />
-
-            {/* Document Preview */}
-            <View style={styles.viewerBody}>
-              {!docViewer.imgError ? (
-                <Image
-                  source={{ uri: docViewer.url }}
-                  style={styles.viewerImage}
-                  resizeMode="contain"
-                  onError={() => setDocViewer((s) => ({ ...s, imgError: true }))}
-                />
-              ) : (
-                /* PDF or failed image — show placeholder */
-                <View style={styles.viewerFallback}>
-                  <Ionicons name="document-outline" size={56} color="#cbd5e1" />
-                  <Text style={styles.viewerFallbackTitle}>Preview unavailable</Text>
-                  <Text style={styles.viewerFallbackSub}>
-                    This document type cannot be previewed inline.{"\n"}Open it in your browser instead.
+                  <Text style={styles.modalTitle}>Select Registration Type</Text>
+                  <Text style={styles.modalSub}>
+                    Choose which registration certificate you want to upload.
                   </Text>
                 </View>
-              )}
-            </View>
+                <TouchableOpacity
+                  onPress={() => setCertPicker({ visible: false, docId: "" })}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons name="close" size={20} color="#94a3b8" />
+                </TouchableOpacity>
+              </View>
 
-            <View style={styles.modalDivider} />
+              <View style={styles.modalDivider} />
 
-            {/* Viewer Footer Actions */}
-            <View style={styles.viewerFooter}>
+              {/* Options */}
+              {REGISTRATION_SUBTYPES.map((opt, idx) => (
+                <TouchableOpacity
+                  key={opt.key}
+                  style={[
+                    styles.certOption,
+                    idx < REGISTRATION_SUBTYPES.length - 1 && styles.certOptionBorder,
+                  ]}
+                  activeOpacity={0.75}
+                  onPress={() => {
+                    const docId = certPicker.docId;
+                    setCertPicker({ visible: false, docId: "" });
+                    // Small delay so modal closes before file picker opens (iOS)
+                    setTimeout(() => {
+                      const found = documents.find((d) => d.id === docId);
+                      if (found) pickAndUpload(found, opt.key);
+                    }, 200);
+                  }}
+                >
+                  <View style={styles.certOptionIcon}>
+                    <Ionicons name={opt.icon} size={18} color="#2563eb" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.certOptionLabel}>{opt.label}</Text>
+                    <Text style={styles.certOptionDesc}>{opt.desc}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color="#cbd5e1" />
+                </TouchableOpacity>
+              ))}
+
+              {/* Cancel */}
               <TouchableOpacity
-                style={styles.viewerOpenBtn}
-                activeOpacity={0.8}
-                onPress={() => openExternal(docViewer.url)}
+                style={styles.cancelBtn}
+                onPress={() => setCertPicker({ visible: false, docId: "" })}
               >
-                <Ionicons name="open-outline" size={15} color="#fff" />
-                <Text style={styles.viewerOpenBtnText}>Open in Browser</Text>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.viewerCancelBtn}
-                activeOpacity={0.7}
-                onPress={() => setDocViewer((s) => ({ ...s, visible: false }))}
-              >
-                <Text style={styles.viewerCancelBtnText}>Close</Text>
-              </TouchableOpacity>
-            </View>
 
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </Modal>
+
+        {/* ══════════════════════════════════════════════════════
+          Document Viewer Modal
+      ══════════════════════════════════════════════════════ */}
+        <Modal
+          visible={docViewer.visible}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setDocViewer((s) => ({ ...s, visible: false }))}
+        >
+          <View style={styles.viewerOverlay}>
+            <View style={[styles.viewerSheet, isMobile && styles.viewerSheetMobile]}>
+
+              {/* Viewer Header */}
+              <View style={styles.viewerHeader}>
+                <View style={styles.viewerHeaderLeft}>
+                  <View style={styles.viewerIconWrap}>
+                    <Ionicons name="document-text" size={18} color="#2563eb" />
+                  </View>
+                  <Text style={styles.viewerTitle} numberOfLines={1}>
+                    {docViewer.name}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => setDocViewer((s) => ({ ...s, visible: false }))}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  style={styles.viewerCloseBtn}
+                >
+                  <Ionicons name="close" size={20} color="#64748b" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.modalDivider} />
+
+              {/* Document Preview */}
+              <View style={styles.viewerBody}>
+                {!docViewer.imgError ? (
+                  <Image
+                    source={{ uri: docViewer.url }}
+                    style={styles.viewerImage}
+                    resizeMode="contain"
+                    onError={() => setDocViewer((s) => ({ ...s, imgError: true }))}
+                  />
+                ) : (
+                  /* PDF or failed image — show placeholder */
+                  <View style={styles.viewerFallback}>
+                    <Ionicons name="document-outline" size={56} color="#cbd5e1" />
+                    <Text style={styles.viewerFallbackTitle}>Preview unavailable</Text>
+                    <Text style={styles.viewerFallbackSub}>
+                      This document type cannot be previewed inline.{"\n"}Open it in your browser instead.
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.modalDivider} />
+
+              {/* Viewer Footer Actions */}
+              <View style={styles.viewerFooter}>
+                <TouchableOpacity
+                  style={styles.viewerOpenBtn}
+                  activeOpacity={0.8}
+                  onPress={() => openExternal(docViewer.url)}
+                >
+                  <Ionicons name="open-outline" size={15} color="#fff" />
+                  <Text style={styles.viewerOpenBtnText}>Open in Browser</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.viewerCancelBtn}
+                  activeOpacity={0.7}
+                  onPress={() => setDocViewer((s) => ({ ...s, visible: false }))}
+                >
+                  <Text style={styles.viewerCancelBtnText}>Close</Text>
+                </TouchableOpacity>
+              </View>
+
+            </View>
           </View>
-        </View>
-      </Modal>
-    </ScrollView>
+        </Modal>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -789,8 +821,8 @@ const styles = StyleSheet.create({
       default: { shadowColor: "#0F172A", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
     }),
   },
-  appBarLeft:  { flexDirection: "row", alignItems: "center" },
-  appBarLogo:  { width: 40, height: 40, borderRadius: 11, backgroundColor: "#2563EB", alignItems: "center", justifyContent: "center" },
+  appBarLeft: { flexDirection: "row", alignItems: "center" },
+  appBarLogo: { width: 40, height: 40, borderRadius: 11, backgroundColor: "#2563EB", alignItems: "center", justifyContent: "center" },
   appBarTitle: { fontSize: 20, fontWeight: "700", color: "#1E293B", marginLeft: 12 },
 
   // Loading row
