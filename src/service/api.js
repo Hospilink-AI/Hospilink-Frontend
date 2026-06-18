@@ -334,12 +334,12 @@ export const profileAPI = {
   //   const response = await api.post('/api/profile/dashboard/location-permission', payload);
   //   return response.data;
   // },
-   
+
   sendDashboardLocationPermission: async (permissionGranted) => {
-  const payload = { permissionGranted };
-  const response = await api.post('/api/profile/dashboard/location-permission', payload);
-  return response.data;
-   },
+    const payload = { permissionGranted };
+    const response = await api.post('/api/profile/dashboard/location-permission', payload);
+    return response.data;
+  },
 
   // Get earnings data for dashboard
   getEarnings: async () => {
@@ -598,10 +598,10 @@ export const dutyAPI = {
     return response.data;
   },
 
- submitReview : async (payload) => {
-  const response = await api.post('/api/reviews/submit', payload);
-  return response.data;
-},
+  submitReview: async (payload) => {
+    const response = await api.post('/api/reviews/submit', payload);
+    return response.data;
+  },
 
 
   // Get Ongoing duties
@@ -636,10 +636,10 @@ export const dutyAPI = {
   },
 
   // Get all completed duty history for staff
- getCompletedDuties: async (params = {}) => {
-  const response = await api.get('/api/completed-duties', { params });
-  return response.data;
-},
+  getCompletedDuties: async (params = {}) => {
+    const response = await api.get('/api/completed-duties', { params });
+    return response.data;
+  },
 
   // Get route for a duty (map navigation)
   // POST /api/duties/:id/route
@@ -691,8 +691,8 @@ export const dutyAPI = {
     return response.data;
   },
 
-  getHospitalActiveDuties: async ({params}) => {
-    const response = await api.get('api/duties/active-duties',{params})
+  getHospitalActiveDuties: async ({ params }) => {
+    const response = await api.get('api/duties/active-duties', { params })
     return response.data;
   },
 
@@ -975,6 +975,16 @@ export const adminAPI = {
     return response.data;
   },
 
+  suspendHospital: async (hospitalId, reason) => {
+    const response = await api.patch(`/api/admin/hospitals/${hospitalId}/suspend`, { reason });
+    return response.data;
+  },
+
+  unsuspendHospital: async (hospitalId) => {
+    const response = await api.patch(`/api/admin/hospitals/${hospitalId}/unsuspend`);
+    return response.data;
+  },
+
 
   getStatsAdminDashboard: async () => {
     const response = await api.get('/api/admin/dashboard-stats');
@@ -1023,6 +1033,16 @@ export const adminAPI = {
     const response = await api.patch(`/api/admin/medical-staff/${id}/reject`, {
       reason: reason
     });
+    return response.data;
+  },
+
+  suspendMedicalStaff: async (staffId, reason) => {
+    const response = await api.patch(`/api/admin/medical-staff/${staffId}/suspend`, { reason });
+    return response.data;
+  },
+
+  unsuspendMedicalStaff: async (staffId) => {
+    const response = await api.patch(`/api/admin/medical-staff/${staffId}/unsuspend`);
     return response.data;
   },
 
@@ -1091,7 +1111,7 @@ export const adminAPI = {
     return response.data;
   },
 
-  getActiveDuties: async ({params}) => {
+  getActiveDuties: async ({ params }) => {
     const response = await api.get('/api/admin/active-duties', { params });
     return response.data;
   },
