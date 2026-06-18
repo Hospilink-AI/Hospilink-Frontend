@@ -516,6 +516,35 @@ export const dutyAPI = {
     return response.data;
   },
 
+  requestStartOtp: async (dutyId) => {
+    const response = await api.post(`/api/duties/${dutyId}/request-start-otp`);
+    return response.data;
+  },
+ 
+  // POST /api/duties/:id/verify-start-otp
+  // Body: { otp: "123456" }
+  // On success, backend should flip duty status to "in-progress".
+  verifyStartOtp: async (dutyId, otp) => {
+    const response = await api.post(`/api/duties/${dutyId}/verify-start-otp`, {
+      otp,
+    });
+    return response.data;
+  },
+ 
+  // POST /api/duties/:id/request-end-otp
+  // No body required (per reference: Content-Type "None").
+  requestEndOtp: async (dutyId) => {
+    const response = await api.post(`/api/duties/${dutyId}/request-end-otp`);
+    return response.data;
+  },
+
+  // POST /api/duties/:id/verify-end-otp
+  // Body: { otp: "123456", paymentMethod: "cash", isPaid: true }
+  // On success, backend should flip duty status to "completed".
+  verifyEndOtp: async (dutyId, payload) => {
+    const response = await api.post(`/api/duties/${dutyId}/verify-end-otp`, payload);
+    return response.data;
+  },
 
   getDuty: async (dutyId) => {
     const response = await api.get(`/api/duties/${dutyId}`);
@@ -558,7 +587,8 @@ export const dutyAPI = {
       params.currentLocation = JSON.stringify(location);
     }
 
-    const response = await api.get("/api/duties/available", { params });
+    // const response = await api.get("/api/duties/available", { params });
+    const response = await api.get("/api/duties/available");
     return response.data;
   },
 
