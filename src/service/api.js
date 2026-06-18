@@ -4,6 +4,8 @@ import { Platform } from "react-native";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 const AGENT_URL = process.env.EXPO_PUBLIC_AGENT_URL;
+console.log("API_URL =", API_URL);
+console.log("AGENT_URL =", AGENT_URL);
 
 // Creating an instance of axios with the base URL from env variables
 
@@ -114,6 +116,21 @@ api.interceptors.response.use(
 apiAgent.interceptors.response.use(
   (response) => response,
   async (error) => {
+    console.log("INTERCEPTOR HIT");
+    console.log("STATUS =", error.response?.status);
+    console.log("DATA =", error.response?.data);
+
+    if (error.response?.status === 403) {
+      const message = error.response?.data?.message || "";
+
+      console.log("403 RESPONSE:", error.response?.data);
+
+      if (message.toLowerCase().includes("suspend")) {
+        window.location.replace("/auth/accountsuspended");
+        return Promise.reject(error);
+      }
+    }
+
     if (error.response?.status === 401) {
       console.log(
         "Agent API Unauthorized:",
@@ -985,6 +1002,16 @@ export const adminAPI = {
     return response.data;
   },
 
+  suspendHospital: async (hospitalId, reason) => {
+    const response = await api.patch(`/api/admin/hospitals/${hospitalId}/suspend`, { reason });
+    return response.data;
+  },
+
+  unsuspendHospital: async (hospitalId) => {
+    const response = await api.patch(`/api/admin/hospitals/${hospitalId}/unsuspend`);
+    return response.data;
+  },
+
 
   getStatsAdminDashboard: async () => {
     const response = await api.get('/api/admin/dashboard-stats');
@@ -1033,6 +1060,16 @@ export const adminAPI = {
     const response = await api.patch(`/api/admin/medical-staff/${id}/reject`, {
       reason: reason
     });
+    return response.data;
+  },
+
+  suspendMedicalStaff: async (staffId, reason) => {
+    const response = await api.patch(`/api/admin/medical-staff/${staffId}/suspend`, { reason });
+    return response.data;
+  },
+
+  unsuspendMedicalStaff: async (staffId) => {
+    const response = await api.patch(`/api/admin/medical-staff/${staffId}/unsuspend`);
     return response.data;
   },
 

@@ -1,19 +1,19 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { adminAPI } from '@/service/api';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  Animated,
+  Dimensions,
+  Image,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Platform,
-  ScrollView,
-  Modal,
-  Animated,
-  Dimensions,
-  ActivityIndicator,
-  Image
+  View
 } from 'react-native';
-import { adminAPI } from '@/service/api';
 // import { exportHospitalReport } from '@/path/to/hospitalReportExport';
 import { exportHospitalReport } from './exportHospitalReport';
 
@@ -1014,8 +1014,8 @@ const dv = StyleSheet.create({
     width: '100%', height: 300,
   },
   // in dv StyleSheet
-suspendBtn: { flex: 1, height: 46, borderRadius: 12, borderWidth: 1.5, borderColor: '#E2E8F0', backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center' },
-suspendBtnTxt: { fontSize: 13, color: '#64748B', fontWeight: '700' },
+  suspendBtn: { flex: 1, height: 46, borderRadius: 12, borderWidth: 1.5, borderColor: '#E2E8F0', backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center' },
+  suspendBtnTxt: { fontSize: 13, color: '#64748B', fontWeight: '700' },
 });
 
 // ─── Hospital Review Modal ────────────────────────────────────────────────────
@@ -1025,7 +1025,7 @@ interface HospitalReviewModalProps {
   onClose: () => void;
   onApprove: () => void;
   onReject: () => void;
-  onSuspend: () => void;  
+  onSuspend: () => void;
 }
 
 function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject, onSuspend }: HospitalReviewModalProps) {
@@ -1033,7 +1033,7 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject, 
   const [docViewerVisible, setDocViewerVisible] = useState(false);
   const [detailData, setDetailData] = useState<Partial<Hospital> | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [actionDecision, setActionDecision] = useState<'approved' | 'rejected'  | 'suspended' | null>(null);
+  const [actionDecision, setActionDecision] = useState<'approved' | 'rejected' | 'suspended' | null>(null);
   const [detailError, setDetailError] = useState('');
 
   useEffect(() => {
@@ -1251,19 +1251,18 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject, 
                   )}
                 </View>
 
-                {!isVerified && (
-                  <View style={dv.footer}>
-                    {isRejected ? (
-                      <TouchableOpacity
-                        style={[dv.approveBtn, { flex: 1 }]}
-                        onPress={() => { setActionDecision('approved'); onApprove(); }}
-                        activeOpacity={0.85}
-                      >
-                        <Text style={dv.approveBtnTxt}>✓   Approve Hospital</Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <>
-                        {/* <TouchableOpacity
+                <View style={dv.footer}>
+                  {isRejected ? (
+                    <TouchableOpacity
+                      style={[dv.approveBtn, { flex: 1 }]}
+                      onPress={() => { setActionDecision('approved'); onApprove(); }}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={dv.approveBtnTxt}>✓   Approve Hospital</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <>
+                      {/* <TouchableOpacity
                           style={dv.rejectBtn}
                           onPress={() => { setActionDecision('rejected'); onReject(); }}
                           activeOpacity={0.85}
@@ -1277,31 +1276,30 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject, 
                         >
                           <Text style={dv.approveBtnTxt}>✓   Approve</Text>
                         </TouchableOpacity> */}
-                         <TouchableOpacity
-                          style={dv.rejectBtn}
-                          onPress={() => { setActionDecision('rejected'); onReject(); }}
-                          activeOpacity={0.85}
-                        >
-                          <Text style={dv.rejectBtnTxt}>✕   Reject</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={dv.suspendBtn}
-                          onPress={() => { setActionDecision('suspended'); onSuspend(); }}
-                          activeOpacity={0.85}
-                        >
-                          <Text style={dv.suspendBtnTxt}>⏸   Suspend</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[dv.approveBtn, { flex: 1 }]}
-                          onPress={() => { setActionDecision('approved'); onApprove(); }}
-                          activeOpacity={0.85}
-                        >
-                          <Text style={dv.approveBtnTxt}>✓   Verify</Text>
-                        </TouchableOpacity>
-                      </>
-                    )}
-                  </View>
-                )}
+                      <TouchableOpacity
+                        style={dv.rejectBtn}
+                        onPress={() => { setActionDecision('rejected'); onReject(); }}
+                        activeOpacity={0.85}
+                      >
+                        <Text style={dv.rejectBtnTxt}>✕   Reject</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={dv.suspendBtn}
+                        onPress={() => { setActionDecision('suspended'); onSuspend(); }}
+                        activeOpacity={0.85}
+                      >
+                        <Text style={dv.suspendBtnTxt}>⏸   Suspend</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[dv.approveBtn, { flex: 1 }]}
+                        onPress={() => { setActionDecision('approved'); onApprove(); }}
+                        activeOpacity={0.85}
+                      >
+                        <Text style={dv.approveBtnTxt}>✓   Verify</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
               </ScrollView>
             )}
           </View>
@@ -1320,7 +1318,7 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject, 
 
 const rm = StyleSheet.create({
   // in rm StyleSheet
-resultIconAmber: { backgroundColor: '#FEF3C7' },
+  resultIconAmber: { backgroundColor: '#FEF3C7' },
   overlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.45)', justifyContent: 'center', alignItems: 'center' },
   sheet: { backgroundColor: '#fff', borderRadius: 16, width: '50%', maxHeight: '85%', overflow: 'hidden', ...Platform.select({ ios: { shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 30, shadowOffset: { width: 0, height: -8 } }, android: { elevation: 20 } }) },
   handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#E2E8F0', alignSelf: 'center', marginTop: 12, marginBottom: 4 },
@@ -1974,20 +1972,20 @@ export default function HospitalListSection() {
   };
 
   const handleSuspend = async (h: Hospital | null = activeHospital) => {
-  if (!h) return;
-  try {
-    // await adminAPI.suspendHospital(h.id);
-    showToast(`${h.name} has been suspended`, 'error');
-    fetchHospitals({ search, status, city, page: currentPage, tabStatus: activeTab });
-    fetchStats();
-  } catch (err: any) {
-    const msg =
-      err?.response?.data?.message ??
-      err?.message ??
-      'Suspend failed. Please try again.';
-    showToast(msg, 'error');
-  }
-};
+    if (!h) return;
+    try {
+      await adminAPI.suspendHospital(h.id, "Suspended by admin");
+      showToast(`${h.name} has been suspended`, 'error');
+      fetchHospitals({ search, status, city, page: currentPage, tabStatus: activeTab });
+      fetchStats();
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ??
+        err?.message ??
+        'Suspend failed. Please try again.';
+      showToast(msg, 'error');
+    }
+  };
 
   const handleReject = (h: Hospital | null = activeHospital) => {
     if (!h) return;
@@ -2228,7 +2226,7 @@ export default function HospitalListSection() {
         onClose={() => setReviewVisible(false)}
         onApprove={() => handleVerify(activeHospital)}
         onReject={() => handleReject(activeHospital)}
-         onSuspend={() => handleSuspend(activeHospital)} 
+        onSuspend={() => handleSuspend(activeHospital)}
       />
 
       <RejectReasonModal
