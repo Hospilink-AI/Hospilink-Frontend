@@ -2189,5 +2189,5 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 12, borderBottomRightRadius: 12,
     alignItems: 'center', borderTopWidth: 1, borderTopColor: '#F1F5F9',
   },
-  viewHistoryText: { color: '#3B82F6', fontSize: 13, fontWeight: '700' },
+  viewHistoryText: { color: '#3B82F6', fontSize: 13, fontWeight: '700' }
 });

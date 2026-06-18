@@ -19,6 +19,7 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   View,
+  AppState
 } from "react-native";
 import { documentAPI, profileAPI } from "../../service/api";
 
@@ -170,6 +171,23 @@ export default function DocumentUpload() {
     loadDocuments();
   }, []);
 
+  useEffect(() => {
+  if (Platform.OS === "web") {
+    const onFocus = () => {
+      loadDocuments();
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  } else {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        loadDocuments();
+      }
+    });
+    return () => subscription.remove();
+  }
+}, []);
+
   // ── Required 4 must all be uploaded to proceed
   const requiredDocs    = documents.filter((d) => !d.optional);
   const allRequiredDone = requiredDocs.every((d) => d.status !== "not_uploaded");
@@ -196,7 +214,21 @@ export default function DocumentUpload() {
         (file as any).mimeType ??
         (file.uri.endsWith(".pdf") ? "application/pdf" : "image/jpeg");
 
-      await documentAPI.uploadDocument(apiKey, file.uri, mimeType);
+      const uploadResponse = await documentAPI.uploadDocument(apiKey, file.uri, mimeType);
+
+      // ✅ Check for redirectUrl (Digilocker) and redirect if present
+      const redirectUrl = uploadResponse?.data?.[0]?.redirectUrl || uploadResponse?.redirectUrl;
+      
+      if (redirectUrl) {
+        if (Platform.OS === "web") {
+          // Redirect to Digilocker in the same window
+          window.open(redirectUrl, "_blank", "noopener,noreferrer");
+          return; // Stop execution as we're leaving the page
+        } else {
+          // For mobile, open in external browser
+          await Linking.openURL(redirectUrl);
+        }
+      }
 
       // Optimistically mark as pending with local URI
       setDocuments((prev) =>

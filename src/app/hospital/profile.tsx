@@ -19,6 +19,7 @@ import {
   Linking,
   Image,
   useWindowDimensions,
+  AppState
 } from "react-native";
 import { profileAPI, documentAPI } from "../../service/api";
 import { Ionicons } from '@expo/vector-icons';
@@ -388,6 +389,22 @@ const UploadDocModal = ({ visible, onClose, onAdd }: {
     try {
       setUploading(true);
       const response = await documentAPI.uploadDocument(docType, pickedFile.uri, pickedFile.mimeType);
+      
+      // ✅ Check for redirectUrl (Digilocker) and redirect if present
+      const redirectUrl = response?.data?.[0]?.redirectUrl || response?.redirectUrl;
+      
+      if (redirectUrl) {
+        reset();
+        if (Platform.OS === "web") {
+          // Redirect to Digilocker in the same window
+          window.open(redirectUrl, "_blank", "noopener,noreferrer");
+          return; // Stop execution as we're leaving the page
+        } else {
+          // For mobile, open in external browser
+          await Linking.openURL(redirectUrl);
+        }
+      }
+      
       const uploadedDoc = response?.document
         ? mapAPIDocument(response.document)
         : response?.documents?.[0]
@@ -710,6 +727,19 @@ const Profile = () => {
     fetchProfile();
     fetchDocuments();
   }, [fetchProfile, fetchDocuments]);
+
+  useEffect(() => {
+  if (Platform.OS === "web") {
+    const onFocus = () => fetchDocuments();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  } else {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") fetchDocuments();
+    });
+    return () => subscription.remove();
+  }
+}, [fetchDocuments]);
 
   // ─── Edit handlers ───────────────────────────────────────────────────────────
   const handleStartEdit = () => {
