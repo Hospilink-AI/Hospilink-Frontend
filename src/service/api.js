@@ -4,6 +4,8 @@ import { Platform } from "react-native";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 const AGENT_URL = process.env.EXPO_PUBLIC_AGENT_URL;
+console.log("API_URL =", API_URL);
+console.log("AGENT_URL =", AGENT_URL);
 
 // Creating an instance of axios with the base URL from env variables
 
@@ -114,6 +116,21 @@ api.interceptors.response.use(
 apiAgent.interceptors.response.use(
   (response) => response,
   async (error) => {
+    console.log("INTERCEPTOR HIT");
+    console.log("STATUS =", error.response?.status);
+    console.log("DATA =", error.response?.data);
+
+    if (error.response?.status === 403) {
+      const message = error.response?.data?.message || "";
+
+      console.log("403 RESPONSE:", error.response?.data);
+
+      if (message.toLowerCase().includes("suspend")) {
+        window.location.replace("/auth/accountsuspended");
+        return Promise.reject(error);
+      }
+    }
+
     if (error.response?.status === 401) {
       console.log(
         "Agent API Unauthorized:",

@@ -1,21 +1,21 @@
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { adminAPI } from '@/service/api';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Dimensions,
+  Image,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Platform,
-  ScrollView,
-  Modal,
-  Animated,
-  Dimensions,
-  Alert,
-  Image,
-  ActivityIndicator,
+  View,
 } from 'react-native';
-import { adminAPI } from '@/service/api';
 import { exportStaffReport } from './staffreportExport';
 
 // ─── Types & Config ───────────────────────────────────────────────────────────
@@ -1037,24 +1037,24 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
   };
 
   const handleSuspend = async () => {
-  if (!staffId) return;
-  setActionError('');
-  try {
-    // const data = await adminAPI.suspendMedicalStaff(staffId);
-    // if (data.success) {
-    //   setDecision('suspended');
-    //   onRefresh();
-    // } else {
-    //   setActionError(data.message ?? 'Failed to suspend staff.');
-    // }
-  } catch (error: any) {
-    const msg =
-      error?.response?.data?.message ??
-      error?.message ??
-      'Failed to suspend staff member.';
-    setActionError(msg);
-  }
-};
+    if (!staffId) return;
+    setActionError('');
+    try {
+      const data = await adminAPI.suspendMedicalStaff(staffId, "Suspended by admin");
+      if (data.success) {
+        setDecision('suspended');
+        onRefresh();
+      } else {
+        setActionError(data.message ?? 'Failed to suspend staff.');
+      }
+    } catch (error: any) {
+      const msg =
+        error?.response?.data?.message ??
+        error?.message ??
+        'Failed to suspend staff member.';
+      setActionError(msg);
+    }
+  };
 
   const handleReject = async (reason: string) => {
     if (!staffId) return;
@@ -1147,8 +1147,10 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
 
   const showVerifyButton = staffDetails.verificationStatus !== 'verified';
   const showRejectButton = staffDetails.verificationStatus !== 'rejected';
-  const showSuspendButton = staffDetails.verificationStatus === 'verified'
-  || staffDetails.verificationStatus === 'auto-verified';
+  const showSuspendButton =
+    staffDetails.verificationStatus === 'verified' ||
+    staffDetails.verificationStatus === 'auto-verified' ||
+    staffDetails.verificationStatus === 'pending';
 
   return (
     <>
@@ -1317,7 +1319,7 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
                     <Text style={pm.rejectBtnTxt}>✕   Reject</Text>
                   </TouchableOpacity>
                 )}
-                 {showSuspendButton && (
+                {showSuspendButton && (
                   <TouchableOpacity
                     style={pm.suspendBtn}
                     onPress={handleSuspend}
@@ -1359,8 +1361,8 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
 
 const pm = StyleSheet.create({
   suspendBtn: { flex: 1, height: 48, borderRadius: 12, borderWidth: 1.5, borderColor: '#E2E8F0', backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center' },
-suspendBtnTxt: { fontSize: 13, color: '#64748B', fontWeight: '700' },
-resultIconAmber: { backgroundColor: '#FEF3C7' },
+  suspendBtnTxt: { fontSize: 13, color: '#64748B', fontWeight: '700' },
+  resultIconAmber: { backgroundColor: '#FEF3C7' },
   overlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.45)', justifyContent: 'center', alignItems: 'center' },
   sheet: {
     backgroundColor: '#fff',
@@ -1892,7 +1894,7 @@ export default function MedicalStaffListSection() {
       {/* ── Header ── */}
       <View style={s.header}>
         <View style={s.headerLeft}>
-          
+
         </View>
         <TouchableOpacity
           style={[s.exportBtn, exporting && { opacity: 0.7 }]}
