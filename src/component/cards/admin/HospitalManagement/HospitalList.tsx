@@ -73,6 +73,7 @@ interface Hospital {
   documents: HospitalDocument[];
   servicesAvailable?: string[];
   profilePictureUrl: string | null;
+  isSuspended?: boolean;
 }
 
 // ─── Mapper ───────────────────────────────────────────────────────────────────
@@ -169,6 +170,7 @@ const mapHospital = (h: any): Hospital => {
     occupiedDuties,
     documents: Array.isArray(h?.documents) ? h.documents.map(mapDoc) : [],
     profilePictureUrl,
+    isSuspended: h?.isSuspended === true,
   };
 };
 
@@ -188,6 +190,7 @@ const mapHospitalDetail = (data: any): Partial<Hospital> => ({
   staffCount: safeStr(data?.staffCount, '0'),
   servicesAvailable: Array.isArray(data?.servicesAvailable) ? data.servicesAvailable : [],
   documents: Array.isArray(data?.documents) ? data.documents.map(mapDoc) : [],
+  isSuspended: data?.isSuspended === true,
 });
 
 const toApiStatus = (s: string): string | undefined => {
@@ -1026,14 +1029,15 @@ interface HospitalReviewModalProps {
   onApprove: () => void;
   onReject: () => void;
   onSuspend: () => void;
+  onUnsuspend: () => void;
 }
 
-function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject, onSuspend }: HospitalReviewModalProps) {
+function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject, onSuspend, onUnsuspend }: HospitalReviewModalProps) {
   const [selectedDoc, setSelectedDoc] = useState<HospitalDocument | null>(null);
   const [docViewerVisible, setDocViewerVisible] = useState(false);
   const [detailData, setDetailData] = useState<Partial<Hospital> | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [actionDecision, setActionDecision] = useState<'approved' | 'rejected' | 'suspended' | null>(null);
+  const [actionDecision, setActionDecision] = useState<'approved' | 'rejected' | 'suspended' | 'unsuspended' | null>(null);
   const [detailError, setDetailError] = useState('');
 
   useEffect(() => {
@@ -1046,6 +1050,7 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject, 
         .getHospitalById(hospital.id)
         .then((res: any) => {
           const data = res?.data ?? res;
+          console.log("HOSPITAL DETAIL:", JSON.stringify(data));
           setDetailData(mapHospitalDetail(data));
         })
         .catch((err: any) => {
@@ -1076,6 +1081,9 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject, 
 
   const isVerified = hospital.licenseStatus === 'VERIFIED' || hospital.licenseStatus === 'AUTO_VERIFIED';
   const isRejected = hospital.licenseStatus === 'REJECTED';
+  const isSuspended =
+    detailData?.isSuspended === true ||
+    hospital?.isSuspended === true;
 
   return (
     <>
@@ -1091,26 +1099,29 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject, 
               <View style={rm.resultWrap}>
                 <View style={[
                   rm.resultIcon,
-                  actionDecision === 'approved' ? rm.resultIconGreen :
+                  actionDecision === 'approved' || actionDecision === 'unsuspended' ? rm.resultIconGreen :
                     actionDecision === 'suspended' ? rm.resultIconAmber : rm.resultIconRed,
                 ]}>
                   <Text style={[rm.resultCheck, {
-                    color: actionDecision === 'approved' ? '#16A34A' :
+                    color: actionDecision === 'approved' || actionDecision === 'unsuspended' ? '#16A34A' :
                       actionDecision === 'suspended' ? '#D97706' : '#DC2626',
                   }]}>
-                    {actionDecision === 'approved' ? '✓' : actionDecision === 'suspended' ? '⏸' : '✕'}
+                    {actionDecision === 'approved' || actionDecision === 'unsuspended' ? '✓' :
+                      actionDecision === 'suspended' ? '⏸' : '✕'}
                   </Text>
                 </View>
                 <Text style={rm.resultTitle}>
                   {actionDecision === 'approved' ? 'Hospital Approved' :
-                    actionDecision === 'suspended' ? 'Hospital Suspended' : 'Hospital Rejected'}
+                    actionDecision === 'unsuspended' ? 'Hospital Reactivated' :
+                      actionDecision === 'suspended' ? 'Hospital Suspended' : 'Hospital Rejected'}
                 </Text>
                 <Text style={rm.resultSub}>
                   <Text style={{ fontWeight: '700', color: '#0F172A' }}>{legalName}</Text>
                   {'\n'}has been {
                     actionDecision === 'approved' ? 'approved and verified.' :
-                      actionDecision === 'suspended' ? 'suspended. The hospital will be notified.' :
-                        'rejected. The hospital will be notified.'
+                      actionDecision === 'unsuspended' ? 'reactivated. The hospital can sign in again.' :
+                        actionDecision === 'suspended' ? 'suspended. The hospital will be notified.' :
+                          'rejected. The hospital will be notified.'
                   }
                 </Text>
                 <TouchableOpacity style={rm.doneBtn} onPress={handleClose}>
@@ -1283,13 +1294,23 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject, 
                       >
                         <Text style={dv.rejectBtnTxt}>✕   Reject</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity
-                        style={dv.suspendBtn}
-                        onPress={() => { setActionDecision('suspended'); onSuspend(); }}
-                        activeOpacity={0.85}
-                      >
-                        <Text style={dv.suspendBtnTxt}>⏸   Suspend</Text>
-                      </TouchableOpacity>
+                      {isSuspended ? (
+                        <TouchableOpacity
+                          style={dv.suspendBtn}
+                          onPress={() => { setActionDecision('unsuspended'); onUnsuspend(); }}
+                          activeOpacity={0.85}
+                        >
+                          <Text style={[dv.suspendBtnTxt, { color: '#16A34A' }]}>▶   Unsuspend</Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <TouchableOpacity
+                          style={dv.suspendBtn}
+                          onPress={() => { setActionDecision('suspended'); onSuspend(); }}
+                          activeOpacity={0.85}
+                        >
+                          <Text style={dv.suspendBtnTxt}>⏸   Suspend</Text>
+                        </TouchableOpacity>
+                      )}
                       <TouchableOpacity
                         style={[dv.approveBtn, { flex: 1 }]}
                         onPress={() => { setActionDecision('approved'); onApprove(); }}
@@ -1986,6 +2007,21 @@ export default function HospitalListSection() {
       showToast(msg, 'error');
     }
   };
+  const handleUnsuspend = async (h: Hospital | null = activeHospital) => {
+    if (!h) return;
+    try {
+      await adminAPI.unsuspendHospital(h.id);
+      showToast(`${h.name} has been reactivated`, 'success');
+      fetchHospitals({ search, status, city, page: currentPage, tabStatus: activeTab });
+      fetchStats();
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ??
+        err?.message ??
+        'Unsuspend failed. Please try again.';
+      showToast(msg, 'error');
+    }
+  };
 
   const handleReject = (h: Hospital | null = activeHospital) => {
     if (!h) return;
@@ -2227,6 +2263,7 @@ export default function HospitalListSection() {
         onApprove={() => handleVerify(activeHospital)}
         onReject={() => handleReject(activeHospital)}
         onSuspend={() => handleSuspend(activeHospital)}
+        onUnsuspend={() => handleUnsuspend(activeHospital)}
       />
 
       <RejectReasonModal

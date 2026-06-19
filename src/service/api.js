@@ -4,8 +4,6 @@ import { Platform } from "react-native";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 const AGENT_URL = process.env.EXPO_PUBLIC_AGENT_URL;
-console.log("API_URL =", API_URL);
-console.log("AGENT_URL =", AGENT_URL);
 
 // Creating an instance of axios with the base URL from env variables
 
@@ -46,6 +44,39 @@ const clearStorage = async () => {
   }
 };
 
+// ─── Suspension handling ──────────────────────────
+let didRedirectToSuspended = false;
+
+const isSuspendedError = (error) => {
+  const status = error.response?.status;
+  const data = error.response?.data;
+  if (status !== 403 && status !== 401) return false;
+
+  // Collect text from every common error-body shape, plus the raw JSON as a safety net
+  let haystack = "";
+  try {
+    haystack = JSON.stringify(data || {}).toLowerCase();
+  } catch {
+    haystack = String(data || "").toLowerCase();
+  }
+  return haystack.includes("suspend");
+};
+
+const redirectToSuspended = async () => {
+  if (didRedirectToSuspended) return;
+  didRedirectToSuspended = true;
+
+  await clearStorage();
+
+  if (Platform.OS === "web") {
+    if (!window.location.pathname.includes("accountsuspended")) {
+      window.location.replace("/auth/accountsuspended");
+    }
+  } else {
+    router.replace("/auth/accountsuspended");
+  }
+};
+
 // ─── REQUEST INTERCEPTOR ──────────────────────────
 api.interceptors.request.use(
   async (config) => {
@@ -82,6 +113,11 @@ apiAgent.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+
+    if (isSuspendedError(error)) {
+      await redirectToSuspended();
+      return Promise.reject(error);
+    }
     if (error.response?.status === 401) {
 
       const requestUrl = error.config?.url || "";
@@ -116,19 +152,10 @@ api.interceptors.response.use(
 apiAgent.interceptors.response.use(
   (response) => response,
   async (error) => {
-    console.log("INTERCEPTOR HIT");
-    console.log("STATUS =", error.response?.status);
-    console.log("DATA =", error.response?.data);
 
-    if (error.response?.status === 403) {
-      const message = error.response?.data?.message || "";
-
-      console.log("403 RESPONSE:", error.response?.data);
-
-      if (message.toLowerCase().includes("suspend")) {
-        window.location.replace("/auth/accountsuspended");
-        return Promise.reject(error);
-      }
+    if (isSuspendedError(error)) {
+      await redirectToSuspended();
+      return Promise.reject(error);
     }
 
     if (error.response?.status === 401) {
@@ -190,6 +217,7 @@ export const authAPI = {
         email,
         password,
       });
+      didRedirectToSuspended = false;
       return response.data;
     } catch (error) {
       console.log('Signin Error Details:', {
