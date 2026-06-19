@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -41,10 +41,11 @@ export default function AuthScreen() {
   const isDesktop = Platform.OS === "web" && width > 900;
   const isMobile = width <= 600;
   const router = useRouter();
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
 
   const { setSession } = useAuth();
 
-  const [activeTab, setActiveTab] = useState("signup");
+  const [activeTab, setActiveTab] = useState(tab === "signin" ? "signin" : "signup");
   const [accountType, setAccountType] = useState("medical");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);

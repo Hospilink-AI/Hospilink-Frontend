@@ -7,6 +7,7 @@ import {
   Alert,
   Image,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -16,6 +17,7 @@ import {
   TouchableOpacity,
   View,
    useWindowDimensions, 
+   AppState,
 } from "react-native";
 import { documentAPI } from "../../../../service/api"; 
 import { useNavigation } from "@react-navigation/native";
@@ -471,6 +473,20 @@ const isMobile = width < 600;
 
   useEffect(() => { fetchDocuments(); }, [fetchDocuments]);
 
+
+  useEffect(() => {
+  if (Platform.OS === "web") {
+    const onFocus = () => fetchDocuments();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  } else {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") fetchDocuments();
+    });
+    return () => subscription.remove();
+  }
+}, [fetchDocuments]);
+
   // ── Upload ────────────────────────────────────────────────────────────────
   async function handleSubmit(
     docType: DocTypeOption,
@@ -479,6 +495,19 @@ const isMobile = width < 600;
     mimeType?: string
   ) {
     const response = await documentAPI.uploadDocument(docType.value, uri, mimeType);
+
+    // ✅ Check for redirectUrl (Digilocker) and redirect if present
+    const redirectUrl = response?.data?.[0]?.redirectUrl || response?.redirectUrl;
+    
+    if (redirectUrl) {
+      setModalVisible(false);
+      if (Platform.OS === "web") {
+        window.open(redirectUrl, "_blank", "noopener,noreferrer");
+      } else {
+        await Linking.openURL(redirectUrl);
+      }
+      return; 
+    }
 
     // Optimistic add with fallback — then refresh for real documentId + url
     const uploaded: CredentialDoc =
@@ -537,6 +566,8 @@ const isMobile = width < 600;
   function handleDeletePress(doc: CredentialDoc) {
       setDeleteDoc(doc);
   }
+
+  
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (

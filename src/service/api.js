@@ -138,7 +138,7 @@ api.interceptors.response.use(
       if (Platform.OS === "web") {
         //  Redirect admin vs regular users to the correct login page
         const isAdmin = requestUrl.includes("/admin/");
-        window.location.href = isAdmin ? "/auth/admin/login" : "/auth/login";
+        window.location.href = isAdmin ? "/auth/admin/login" : "/auth/login?tab=signin";
       } else {
         console.log("Session expired. Redirect to login manually.");
       }
@@ -426,7 +426,8 @@ export const profileAPI = {
     }
 
     try {
-      const res = await fetch(`${API_URL}/api/profile/profile-picture`, {
+      const baseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
+      const res = await fetch(`${baseUrl}/api/profile/profile-picture`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -466,7 +467,8 @@ export const profileAPI = {
       : await AsyncStorage.getItem("hospilink_token");
 
     try {
-      const res = await fetch(`${API_URL}/api/profile/delete-picture`, {
+      const baseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
+      const res = await fetch(`${baseUrl}/api/profile/delete-picture`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -544,6 +546,35 @@ export const dutyAPI = {
     return response.data;
   },
 
+  requestStartOtp: async (dutyId) => {
+    const response = await api.post(`/api/duties/${dutyId}/request-start-otp`);
+    return response.data;
+  },
+ 
+  // POST /api/duties/:id/verify-start-otp
+  // Body: { otp: "123456" }
+  // On success, backend should flip duty status to "in-progress".
+  verifyStartOtp: async (dutyId, otp) => {
+    const response = await api.post(`/api/duties/${dutyId}/verify-start-otp`, {
+      otp,
+    });
+    return response.data;
+  },
+ 
+  // POST /api/duties/:id/request-end-otp
+  // No body required (per reference: Content-Type "None").
+  requestEndOtp: async (dutyId) => {
+    const response = await api.post(`/api/duties/${dutyId}/request-end-otp`);
+    return response.data;
+  },
+
+  // POST /api/duties/:id/verify-end-otp
+  // Body: { otp: "123456", paymentMethod: "cash", isPaid: true }
+  // On success, backend should flip duty status to "completed".
+  verifyEndOtp: async (dutyId, payload) => {
+    const response = await api.post(`/api/duties/${dutyId}/verify-end-otp`, payload);
+    return response.data;
+  },
 
   getDuty: async (dutyId) => {
     const response = await api.get(`/api/duties/${dutyId}`);
@@ -586,7 +617,8 @@ export const dutyAPI = {
       params.currentLocation = JSON.stringify(location);
     }
 
-    const response = await api.get("/api/duties/available", { params });
+    // const response = await api.get("/api/duties/available", { params });
+    const response = await api.get("/api/duties/available");
     return response.data;
   },
 
@@ -643,7 +675,7 @@ export const dutyAPI = {
       params.currentLocation = JSON.stringify(location);
     }
 
-    const response = await api.get("/api/duties/my-upcoming", { params });
+    const response = await api.get("/api/duties/my-upcoming");
     return response.data;
   },
 
@@ -753,6 +785,26 @@ export const dutyAPI = {
 
   getTrackHospitalStaffLocation: async (dutyId) => {
     const response = await api.get(`api/duties/duty-route-map/${dutyId}`);
+    return response.data;
+  },
+
+  // PATCH /api/admin/duties/:id/unlock-otp
+  // Body: { otpType: "start" | "end", reason: string }
+  unlockOtp: async (dutyId, otpType, reason) => {
+    const response = await api.patch(`/api/admin/duties/${dutyId}/unlock-otp`, {
+      otpType,
+      reason,
+    });
+    return response.data;
+  },
+
+  // PATCH /api/admin/duties/:id/admin-override
+  // Body: { status: string, reason: string }
+  changeAdminStatus: async (dutyId, status, reason) => {
+    const response = await api.patch(`/api/admin/duties/${dutyId}/admin-override`, {
+      status,
+      reason,
+    });
     return response.data;
   },
 
@@ -874,7 +926,8 @@ export const documentAPI = {
     try {
       console.log("Uploading:", { fileUri, documentType });
 
-      const res = await fetch(`${API_URL}/api/documents/upload`, {
+      const baseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
+      const res = await fetch(`${baseUrl}/api/documents/upload`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

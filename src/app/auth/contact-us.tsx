@@ -129,7 +129,7 @@ export default function ContactUsPage() {
                             {/* BUTTON */}
 
                             <TouchableOpacity onPress={() =>
-                                router.push("/auth/login")
+                                router.push({ pathname: "/auth/login", params: { tab: "signin" } })
                             }
                                 style={styles.signBtn}
                             >

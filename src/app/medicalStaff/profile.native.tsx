@@ -274,7 +274,7 @@ export default function Profile() {
         style: "destructive",
         onPress: async () => {
           await logout();
-          router.replace("/auth/login");
+          router.replace({ pathname: "/auth/login", params: { tab: "signin" } });
         },
       },
     ]);

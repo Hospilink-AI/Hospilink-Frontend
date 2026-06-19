@@ -72,7 +72,7 @@ export default function ResetPasswordScreen() {
       await authAPI.resetPassword(token, newPassword, confirmPassword);
       setSuccess(true);
       setTimeout(() => {
-        router.replace("/auth/login");
+        router.replace({ pathname: "/auth/login", params: { tab: "signin" } });
       }, 2000);
     } catch (error: any) {
       const message =
