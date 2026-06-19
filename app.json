@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Hospilink-frontend",
-    "slug": "Hospilink-frontend",
+    "name": "Hospilink",
+    "slug": "Hospilink",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/Images/Hospilink_icon.png",
