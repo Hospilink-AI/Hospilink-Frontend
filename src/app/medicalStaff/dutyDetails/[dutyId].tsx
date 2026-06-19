@@ -330,6 +330,8 @@ export default function DutyDetailsScreen() {
         const res = await dutyAPI.getDuty(dutyId);
         // API returns { success, duty } — handle both shapes
         const d = res?.duty ?? res?.data ?? res;
+        console.log("DUTY hospitalLocation:", JSON.stringify(d?.hospitalLocation));
+        console.log("DUTY hospital.location:", JSON.stringify(d?.hospital?.location));
         setDuty(d);
       } catch (err: any) {
         setError(err?.response?.data?.message ?? err?.message ?? 'Failed to load duty details.');
@@ -361,8 +363,7 @@ export default function DutyDetailsScreen() {
   }
 
   // ── Data extraction ──
-  const staffName =
-    duty.assignedTo?.fullName ?? duty.assignedTo?.user?.name ?? 'Staff';
+  const staffName = duty.assignedTo?.fullName ?? duty.assignedTo?.user?.name ?? 'Staff';
   const hospLat = duty.hospitalLocation?.latitude;
   const hospLng = duty.hospitalLocation?.longitude;
   const staffLat = duty.assignedTo?.coordinates?.coordinates?.latitude;

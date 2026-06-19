@@ -1289,9 +1289,12 @@ const styles = StyleSheet.create({
   verifyBtnOutlineText: { color: "#2563eb", fontSize: 13, fontWeight: "700" },
   otpSection: { marginTop: 10 },
   otpHint: { fontSize: 12, color: "#64748b", marginBottom: 10 },
-  otpRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  otpRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   otpBox: {
-    width: 40, height: 44,
+    flex: 1, 
+    width: 40, 
+    minWidth: 0,  
+    height: 44,
     borderRadius: 9,
     borderWidth: 1.5,
     borderColor: "#e2e8f0",
@@ -1310,6 +1313,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginLeft: 4,
+    flexShrink: 0,
   },
   verifyOtpBtnText: { color: "#fff", fontSize: 13, fontWeight: "700" },
 

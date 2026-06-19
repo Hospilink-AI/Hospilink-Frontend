@@ -4,7 +4,7 @@
     "slug": "Hospilink-frontend",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/Images/loginbg.png",
+    "icon": "./assets/Images/Hospilink_icon.png",
     "scheme": "hospilinkfrontend",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,

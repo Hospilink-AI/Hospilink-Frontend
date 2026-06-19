@@ -236,10 +236,11 @@ export default function AuthScreen() {
 
     } catch (error: any) {
       console.error("❌ Signin error:", error?.response?.data);
+      const status = error?.response?.status;
       const message =
         error?.response?.data?.message ||
-        error?.message ||
-        "Invalid email or password.";
+        error?.response?.data?.error ||
+        (status === 401 ? "Invalid email or password." : "Invalid email or password.");
       setSignInErrors({ general: message });
     } finally {
       setLoading(false);

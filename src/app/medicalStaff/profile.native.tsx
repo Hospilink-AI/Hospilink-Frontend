@@ -19,7 +19,7 @@ import {
 import { documentAPI, profileAPI } from "../../service/api";
 
 // ── Toggle this off if you already render a global app header (Hospilink bar) ──
-const SHOW_TOP_BAR = true;
+const SHOW_TOP_BAR = false;
 const APP_VERSION = "1.0.0";
 
 // ─── Role labels ──────────────────────────────────────────────────
