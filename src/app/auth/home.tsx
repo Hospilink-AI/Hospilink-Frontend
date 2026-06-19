@@ -1268,7 +1268,7 @@ export default function LandingPage() {
                                     <Text style={s.navLink}>About Us</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                    onPress={() => router.push("/auth/login")}
+                                    onPress={() => router.push({ pathname: "/auth/login", params: { tab: "signin" } })}
                                     style={s.outlineBtn}
                                 >
                                     <Text style={s.outlineBtnText}>Sign In</Text>
@@ -1279,7 +1279,7 @@ export default function LandingPage() {
                         {/* Mobile: show Sign In button in navbar */}
                         {!isDesktop && (
                             <TouchableOpacity
-                                onPress={() => router.push("/auth/login")}
+                                onPress={() => router.push({ pathname: "/auth/login", params: { tab: "signin" } })}
                                 style={s.outlineBtn}
                             >
                                 <Text style={s.outlineBtnText}>Sign In</Text>
@@ -1304,7 +1304,7 @@ export default function LandingPage() {
                             </Text>
                             <TouchableOpacity
                                 style={s.blueBtn}
-                                onPress={() => router.push("/auth/login")}
+                                onPress={() => router.push({ pathname: "/auth/login", params: { tab: "signup" } })}
                             >
                                 <Text style={s.blueBtnText}>Sign Up</Text>
                             </TouchableOpacity>
