@@ -22,8 +22,11 @@ import {
   useWindowDimensions,
   AppState,
 } from "react-native";
-import { profileAPI, documentAPI } from "../../service/api";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { profileAPI, documentAPI, authAPI } from "../../service/api";
 import { Ionicons } from "@expo/vector-icons";
+import { useAuth } from "@/context/AuthContext";
+import { router } from "expo-router";
 
 // ─── Theme Colors ─────────────────────────────────────────────────────────────
 const BLUE = "#2563EB";
@@ -1432,6 +1435,10 @@ const Profile = () => {
   const [pushNotifications, setPushNotifications] = useState(true);
   const [preSelectedDocType, setPreSelectedDocType] = useState("");
 
+  // ── Logout Modal & Role ──
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [role, setRole] = useState<"hospital" | "admin" | null>(null);
+
   // ── Edit modal state ──
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [draftName, setDraftName] = useState("");
@@ -1451,6 +1458,20 @@ const Profile = () => {
   const [uploadModal, setUploadModal] = useState(false);
   const [viewModal, setViewModal] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<Credential | null>(null);
+
+  // ─── Load role from storage ──
+  useEffect(() => {
+    const loadRole = async () => {
+      try {
+        const userRole = await AsyncStorage.getItem("hospilink_role");
+        setRole((userRole as "hospital" | "admin") || "hospital");
+      } catch (e) {
+        console.warn("Error loading role:", e);
+        setRole("hospital");
+      }
+    };
+    loadRole();
+  }, []);
 
   // ─── fetchDocuments ──────────────────────────────────────────────────────────
   const fetchDocuments = useCallback(async () => {
@@ -1651,6 +1672,44 @@ const Profile = () => {
     } finally {
       setUploadingImage(false);
     }
+  };
+
+  // ─── Logout Handler ──────────────────────────────────────────────────────────
+  const doLogout = async () => {
+    setShowLogoutModal(false);
+    try {
+      if (role === "admin") {
+        await authAPI.adminLogout();
+      } else {
+        await authAPI.logout();
+      }
+    } catch (e) {
+      console.warn("Logout API error (ignored):", e);
+    } finally {
+      try {
+        await AsyncStorage.removeItem("hospilink_token");
+        await AsyncStorage.removeItem("hospilink_user");
+        await AsyncStorage.removeItem("hospilink_role");
+      } catch (e) {
+        console.warn("Error clearing storage:", e);
+      }
+      router.replace("/");
+    }
+  };
+
+  const handleLogoutPress = () => {
+    Alert.alert(
+      "Log Out",
+      "Are you sure you want to log out?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Log Out",
+          style: "destructive",
+          onPress: doLogout,
+        },
+      ]
+    );
   };
 
   // ─── Loading ─────────────────────────────────────────────────────────────────
@@ -1864,6 +1923,16 @@ const Profile = () => {
               }
             />
           </View>
+
+          {/* ── LOG OUT BUTTON ── */}
+          <TouchableOpacity
+            style={gSt.logoutBtn}
+            activeOpacity={0.85}
+            onPress={handleLogoutPress}
+          >
+            <Ionicons name="log-out-outline" size={20} color={WHITE} />
+            <Text style={gSt.logoutText}>Log Out</Text>
+          </TouchableOpacity>
         </ScrollView>
       ) : (
         // ════════════════════════════════════════════════════════════════════════
@@ -2276,6 +2345,16 @@ const Profile = () => {
               </ScrollView>
             </View>
           </View>
+
+          {/* ── LOG OUT BUTTON ── */}
+          <TouchableOpacity
+            style={gSt.logoutBtn}
+            activeOpacity={0.85}
+            onPress={handleLogoutPress}
+          >
+            <Ionicons name="log-out-outline" size={20} color={WHITE} />
+            <Text style={gSt.logoutText}>Log Out</Text>
+          </TouchableOpacity>
         </ScrollView>
       )}
 
@@ -3294,6 +3373,19 @@ const gSt = StyleSheet.create({
     alignItems: "center",
   },
   modalSaveTxt: { color: WHITE, fontSize: 14, fontWeight: "700" },
+
+  // Logout Button
+  logoutBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    backgroundColor: RED_TEXT,
+    borderRadius: 14,
+    paddingVertical: 16,
+    marginTop: 28,
+  },
+  logoutText: { color: WHITE, fontSize: 16, fontWeight: "800" },
 
   // Toast
   toast: {

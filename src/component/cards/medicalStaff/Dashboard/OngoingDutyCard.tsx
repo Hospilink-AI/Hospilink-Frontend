@@ -857,6 +857,30 @@ export default function OngoingDutyCard({ duty, isMobile, onStatusChange, onPres
   // ---------------------------------------------------------------------
   // STEP 2: Verify OTP (start or end) -> update status -> refresh
   // ---------------------------------------------------------------------
+  // const handleVerifyOtp = async () => {
+  //   const code = otp.join("");
+  //   if (code.length < OTP_LENGTH) return;
+  //   setVerifying(true);
+  //   setOtpError("");
+  //   try {
+  //     if (otpMode === "start") {
+  //       await dutyAPI.verifyStartOtp(duty._id, code);
+  //     } else {
+  //       // NOTE: no "verify-end-otp" endpoint was provided as reference.
+  //       // Wired symmetrically to verifyStartOtp's pattern — confirm/adjust
+  //       // the actual endpoint path with backend before shipping.
+  //       // await dutyAPI.verifyEndOtp(duty._id, code);
+  //     }
+  //     setShowOtpModal(false);
+  //     setOtp(Array(OTP_LENGTH).fill(""));
+  //     onStatusChange?.(); // refresh -> "redirect to same page"
+  //   } catch (err: any) {
+  //     setOtpError(err?.response?.data?.message || "Invalid OTP. Please try again.");
+  //   } finally {
+  //     setVerifying(false);
+  //   }
+  // };
+
   const handleVerifyOtp = async () => {
     const code = otp.join("");
     if (code.length < OTP_LENGTH) return;
@@ -864,16 +888,13 @@ export default function OngoingDutyCard({ duty, isMobile, onStatusChange, onPres
     setOtpError("");
     try {
       if (otpMode === "start") {
-        await dutyAPI.verifyStartOtp(duty._id, code);
+        await dutyAPI.verifyStartOtp(duty._id, { otp: code });
       } else {
-        // NOTE: no "verify-end-otp" endpoint was provided as reference.
-        // Wired symmetrically to verifyStartOtp's pattern — confirm/adjust
-        // the actual endpoint path with backend before shipping.
-        // await dutyAPI.verifyEndOtp(duty._id, code);
+        await dutyAPI.verifyEndOtp(duty._id, { otp: code });
       }
       setShowOtpModal(false);
       setOtp(Array(OTP_LENGTH).fill(""));
-      onStatusChange?.(); // refresh -> "redirect to same page"
+      onStatusChange?.();
     } catch (err: any) {
       setOtpError(err?.response?.data?.message || "Invalid OTP. Please try again.");
     } finally {
@@ -881,14 +902,27 @@ export default function OngoingDutyCard({ duty, isMobile, onStatusChange, onPres
     }
   };
 
+  // const handleResendOtp = async () => {
+  //   if (resendTimer > 0) return;
+  //   try {
+  //     if (otpMode === "start") {
+  //       await dutyAPI.requestStartOtp(duty._id);
+  //     } else {
+  //       await dutyAPI.requestEndOtp(duty._id);
+  //     }
+  //     setOtp(Array(OTP_LENGTH).fill(""));
+  //     setOtpError("");
+  //     setResendTimer(RESEND_SECONDS);
+  //     inputRefs.current[0]?.focus();
+  //   } catch (err: any) {
+  //     setOtpError(err?.response?.data?.message || "Failed to resend OTP.");
+  //   }
+  // };
+
   const handleResendOtp = async () => {
     if (resendTimer > 0) return;
     try {
-      if (otpMode === "start") {
-        await dutyAPI.requestStartOtp(duty._id);
-      } else {
-        await dutyAPI.requestEndOtp(duty._id);
-      }
+      await dutyAPI.resendOtp(duty._id, otpMode); // otpMode is "start" | "end"
       setOtp(Array(OTP_LENGTH).fill(""));
       setOtpError("");
       setResendTimer(RESEND_SECONDS);

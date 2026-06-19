@@ -4,7 +4,13 @@ import { Platform } from 'react-native';
 import { fcmService } from '@/service/fcm';
 import { notificationAPI } from '@/service/api';
 
-type User = { id: string; role: 'staff' | 'hospital' | 'admin' };
+type User = {
+  id: string;
+  role: 'staff' | 'hospital' | 'admin';
+  email?: string;
+  name?: string;
+  isEmailVerified?: boolean;
+};
 
 type AuthContextType = {
   user: User | null;

@@ -90,7 +90,9 @@ api.interceptors.response.use(
       const isOtpRoute =
         requestUrl.includes("verify-otp") ||
         requestUrl.includes("resend-otp") ||
-        requestUrl.includes("forgot-password");
+        requestUrl.includes("forgot-password")||
+        requestUrl.includes("/auth/login") ||
+        requestUrl.includes("/auth/signup");
 
       if (isOtpRoute) {
         return Promise.reject(error); // pass error back to the screen's catch block
@@ -547,6 +549,13 @@ export const dutyAPI = {
     const response = await api.post(`/api/duties/${dutyId}/verify-end-otp`, payload);
     return response.data;
   },
+ 
+
+  // resent otp for start duty and end duty 
+  resendOtp: async (dutyId, otpType) => {
+  const response = await api.post(`/api/duties/${dutyId}/resend-otp`, { otpType });
+  return response.data;
+},
 
   getDuty: async (dutyId) => {
     const response = await api.get(`/api/duties/${dutyId}`);
