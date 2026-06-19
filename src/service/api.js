@@ -102,7 +102,7 @@ api.interceptors.response.use(
       if (Platform.OS === "web") {
         //  Redirect admin vs regular users to the correct login page
         const isAdmin = requestUrl.includes("/admin/");
-        window.location.href = isAdmin ? "/auth/admin/login" : "/auth/login";
+        window.location.href = isAdmin ? "/auth/admin/login" : "/auth/login?tab=signin";
       } else {
         console.log("Session expired. Redirect to login manually.");
       }
@@ -647,7 +647,7 @@ export const dutyAPI = {
       params.currentLocation = JSON.stringify(location);
     }
 
-    const response = await api.get("/api/duties/my-upcoming", { params });
+    const response = await api.get("/api/duties/my-upcoming");
     return response.data;
   },
 
@@ -757,6 +757,26 @@ export const dutyAPI = {
 
   getTrackHospitalStaffLocation: async (dutyId) => {
     const response = await api.get(`api/duties/duty-route-map/${dutyId}`);
+    return response.data;
+  },
+
+  // PATCH /api/admin/duties/:id/unlock-otp
+  // Body: { otpType: "start" | "end", reason: string }
+  unlockOtp: async (dutyId, otpType, reason) => {
+    const response = await api.patch(`/api/admin/duties/${dutyId}/unlock-otp`, {
+      otpType,
+      reason,
+    });
+    return response.data;
+  },
+
+  // PATCH /api/admin/duties/:id/admin-override
+  // Body: { status: string, reason: string }
+  changeAdminStatus: async (dutyId, status, reason) => {
+    const response = await api.patch(`/api/admin/duties/${dutyId}/admin-override`, {
+      status,
+      reason,
+    });
     return response.data;
   },
 

@@ -111,7 +111,7 @@ function NavBar() {
                 ))}
             </View>
             <TouchableOpacity onPress={() =>
-                                router.push("/auth/login")
+                                router.push({ pathname: "/auth/login", params: { tab: "signin" } })
                             } style={styles.signInBtn}>
                 <Text style={styles.signInBtnText}>Sign In</Text>
             </TouchableOpacity>

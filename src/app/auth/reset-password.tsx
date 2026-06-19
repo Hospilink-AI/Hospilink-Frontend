@@ -83,7 +83,7 @@ export default function ResetPasswordScreen() {
 
       // Redirect to sign-in after a short delay so user sees success message
       setTimeout(() => {
-        router.replace("/auth/login");
+        router.replace({ pathname: "/auth/login", params: { tab: "signin" } });
       }, 2000);
     } catch (error: any) {
       const message =

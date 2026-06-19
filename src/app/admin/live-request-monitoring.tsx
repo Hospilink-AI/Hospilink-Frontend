@@ -1,19 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  TouchableOpacity,
-  Platform,
-  useWindowDimensions,
-} from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { adminAPI } from '@/service/api';
-import { decodePolyline } from '@/utils/polylineDecoderA';
 import { useTrackingReceiver } from '@/hooks/useTrackingReceiver';
+import { adminAPI, dutyAPI } from '@/service/api';
+import { decodePolyline } from '@/utils/polylineDecoderA';
+import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+    ActivityIndicator,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    useWindowDimensions,
+    View
+} from 'react-native';
+import EndDutyOtpVerification from '../hospital/endDutyOtpVerification';
 
 
 const isWeb = typeof window !== 'undefined' && !!window.document;
@@ -262,6 +264,33 @@ export default function LiveRequestMonitoring() {
   const [error, setError] = useState<string | null>(null);
   const [isSatellite, setIsSatellite] = useState(false);
 
+  // ── End Duty modal state ──
+  const [showEndDutyModal, setShowEndDutyModal] = useState(false);
+
+  // ── Unlock OTP modal state ──
+  const [showUnlockOtpModal, setShowUnlockOtpModal] = useState(false);
+  const [unlockOtpReason, setUnlockOtpReason] = useState('');
+  const [unlockOtpType, setUnlockOtpType] = useState<'start' | 'end'>('start');
+  const [unlockingOtp, setUnlockingOtp] = useState(false);
+  const [isUnlockOtpDropdownOpen, setIsUnlockOtpDropdownOpen] = useState(false);
+
+  // ── Status Change modal state ──
+  const [showStatusChangeModal, setShowStatusChangeModal] = useState(false);
+  const [selectedNextStatus, setSelectedNextStatus] = useState<string | null>(null);
+  const [statusChangeReason, setStatusChangeReason] = useState('');
+  const [changingStatus, setChangingStatus] = useState(false);
+  const [isStatusChangeDropdownOpen, setIsStatusChangeDropdownOpen] = useState(false);
+
+  // ── State transition rules ──
+  const STATE_TRANSITIONS: Record<string, string[]> = {
+    available: ['assigned', 'enroute', 'in-progress', 'complete'],
+    assigned: ['enroute', 'in-progress', 'complete'],
+    enroute: ['in-progress', 'complete'],
+    'in-progress': ['complete'],
+    'pending_confirmation': ['complete'],
+    complete: [], // final state
+  };
+
   const liveLocations = useTrackingReceiver({ dutyId: dutyId as string });
 
 
@@ -296,6 +325,61 @@ export default function LiveRequestMonitoring() {
       return () => clearInterval(interval);
     }
   }, [dutyId]);
+
+  // ── End Duty handlers ──
+  const handleEndDutySuccess = () => {
+    setShowEndDutyModal(false);
+    fetchDutyRoute(); // refresh so status/timeline/activity log reflect "completed"
+  };
+
+  // ── Unlock OTP handler ──
+  const handleUnlockOtp = async () => {
+    if (!dutyId || !unlockOtpReason.trim()) {
+      alert('Please enter a reason');
+      return;
+    }
+    try {
+      setUnlockingOtp(true);
+      const result = await dutyAPI.unlockOtp(dutyId as string, unlockOtpType, unlockOtpReason);
+      if (result.success) {
+        alert('OTP unlocked successfully');
+        setShowUnlockOtpModal(false);
+        setUnlockOtpReason('');
+        fetchDutyRoute();
+      } else {
+        alert(result.message || 'Failed to unlock OTP');
+      }
+    } catch (err: any) {
+      alert(err?.message ?? 'Error unlocking OTP');
+    } finally {
+      setUnlockingOtp(false);
+    }
+  };
+
+  // ── Status Change handler ──
+  const handleStatusChange = async () => {
+    if (!dutyId || !selectedNextStatus || !statusChangeReason.trim()) {
+      alert('Please select status and enter reason');
+      return;
+    }
+    try {
+      setChangingStatus(true);
+      const result = await dutyAPI.changeAdminStatus(dutyId as string, selectedNextStatus, statusChangeReason);
+      if (result.success) {
+        alert('Status changed successfully');
+        setShowStatusChangeModal(false);
+        setStatusChangeReason('');
+        setSelectedNextStatus(null);
+        fetchDutyRoute();
+      } else {
+        alert(result.message || 'Failed to change status');
+      }
+    } catch (err: any) {
+      alert(err?.message ?? 'Error changing status');
+    } finally {
+      setChangingStatus(false);
+    }
+  };
 
   // Helpers
   const formatTime = (isoString: string) => {
@@ -417,6 +501,7 @@ if (error || !data) {
   // Get duty role and status
   const dutyRole = duty.formattedRole || duty.dutyRole || duty.role || 'Medical Staff';
   const dutyStatus = (duty as any).status?.status || duty.status || 'unknown';
+  const isDutyCompleted = dutyStatus === 'completed';
 
   const timelineSteps = [
     // { key: 'available', label: 'Posted', icon: 'checkmark' },
@@ -522,12 +607,29 @@ if (error || !data) {
             <View style={styles.badgeHighPriority}>
               <Text style={styles.badgeHighPriorityText}>High Priority</Text>
             </View>
-            <TouchableOpacity style={styles.btnOutline} activeOpacity={0.8}>
-              <Text style={styles.btnOutlineText}>Edit Request</Text>
+            <TouchableOpacity
+              style={styles.btnAdmin}
+              activeOpacity={0.8}
+              onPress={() => setShowUnlockOtpModal(true)}
+            >
+              <Text style={styles.btnAdminText}>Unlock OTP</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.btnDanger} activeOpacity={0.8}>
-              <Ionicons name="close-circle-outline" size={14} color="#EF4444" />
-              <Text style={styles.btnDangerText}>Cancel</Text>
+            <TouchableOpacity
+              style={styles.btnAdmin}
+              activeOpacity={0.8}
+              onPress={() => setShowStatusChangeModal(true)}
+            >
+              <Text style={styles.btnAdminText}>Status Change</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.btnEndDuty, isDutyCompleted && styles.btnEndDutyDisabled]}
+              activeOpacity={0.8}
+              disabled={isDutyCompleted}
+              onPress={() => setShowEndDutyModal(true)}
+            >
+              <Text style={styles.btnEndDutyText}>
+                {isDutyCompleted ? 'Duty Ended' : 'End Duty'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -793,6 +895,208 @@ if (error || !data) {
         </View>
       </View>
 
+      {/* ── Unlock OTP Modal ── */}
+      <Modal
+        visible={showUnlockOtpModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          setShowUnlockOtpModal(false);
+          setIsUnlockOtpDropdownOpen(false);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Unlock OTP</Text>
+              <TouchableOpacity onPress={() => {
+                setShowUnlockOtpModal(false);
+                setIsUnlockOtpDropdownOpen(false);
+              }}>
+                <Ionicons name="close" size={24} color="#1E293B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalBody}>
+              <Text style={styles.modalLabel}>OTP Type</Text>
+              <View style={styles.dropdownContainer}>
+                <TouchableOpacity
+                  style={styles.dropdownButton}
+                  onPress={() => setIsUnlockOtpDropdownOpen(!isUnlockOtpDropdownOpen)}
+                >
+                  <Text style={styles.dropdownButtonText}>
+                    {unlockOtpType === 'start' ? 'Start OTP' : 'End OTP'}
+                  </Text>
+                  <Ionicons
+                    name={isUnlockOtpDropdownOpen ? "chevron-up" : "chevron-down"}
+                    size={20}
+                    color="#64748B"
+                  />
+                </TouchableOpacity>
+                {isUnlockOtpDropdownOpen && (
+                  <View style={styles.dropdownOptions}>
+                    <TouchableOpacity
+                      style={styles.dropdownOption}
+                      onPress={() => {
+                        setUnlockOtpType('start');
+                        setIsUnlockOtpDropdownOpen(false);
+                      }}
+                    >
+                      <Text style={styles.dropdownOptionText}>Start OTP</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.dropdownOption}
+                      onPress={() => {
+                        setUnlockOtpType('end');
+                        setIsUnlockOtpDropdownOpen(false);
+                      }}
+                    >
+                      <Text style={styles.dropdownOptionText}>End OTP</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+
+              <Text style={styles.modalLabel}>Reason for Unlock</Text>
+              <TextInput
+                style={styles.reasonInput}
+                placeholder="Enter reason for unlocking OTP..."
+                placeholderTextColor="#94A3B8"
+                value={unlockOtpReason}
+                onChangeText={setUnlockOtpReason}
+                multiline
+                numberOfLines={4}
+              />
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => {
+                  setShowUnlockOtpModal(false);
+                  setIsUnlockOtpDropdownOpen(false);
+                }}
+              >
+                <Text style={styles.modalCancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalSubmitBtn, unlockingOtp && styles.modalBtnDisabled]}
+                onPress={handleUnlockOtp}
+                disabled={unlockingOtp}
+              >
+                <Text style={styles.modalSubmitBtnText}>
+                  {unlockingOtp ? 'Processing...' : 'Unlock OTP'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Status Change Modal ── */}
+      <Modal
+        visible={showStatusChangeModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          setShowStatusChangeModal(false);
+          setIsStatusChangeDropdownOpen(false);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Change Duty Status</Text>
+              <TouchableOpacity onPress={() => {
+                setShowStatusChangeModal(false);
+                setIsStatusChangeDropdownOpen(false);
+              }}>
+                <Ionicons name="close" size={24} color="#1E293B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalBody}>
+              <Text style={styles.modalLabel}>Current Status: {dutyStatus}</Text>
+
+              <Text style={styles.modalLabel}>New Status</Text>
+              <View style={styles.dropdownContainer}>
+                <TouchableOpacity
+                  style={styles.dropdownButton}
+                  onPress={() => setIsStatusChangeDropdownOpen(!isStatusChangeDropdownOpen)}
+                >
+                  <Text style={styles.dropdownButtonText}>
+                    {selectedNextStatus ? selectedNextStatus.charAt(0).toUpperCase() + selectedNextStatus.slice(1) : 'Select Status...'}
+                  </Text>
+                  <Ionicons
+                    name={isStatusChangeDropdownOpen ? "chevron-up" : "chevron-down"}
+                    size={20}
+                    color="#64748B"
+                  />
+                </TouchableOpacity>
+                {isStatusChangeDropdownOpen && (
+                  <View style={styles.dropdownOptions}>
+                    {STATE_TRANSITIONS[dutyStatus]?.map((status) => (
+                      <TouchableOpacity
+                        key={status}
+                        style={styles.dropdownOption}
+                        onPress={() => {
+                          setSelectedNextStatus(status);
+                          setIsStatusChangeDropdownOpen(false);
+                        }}
+                      >
+                        <Text style={styles.dropdownOptionText}>
+                          {status.charAt(0).toUpperCase() + status.slice(1)}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+
+              <Text style={styles.modalLabel}>Reason for Change</Text>
+              <TextInput
+                style={styles.reasonInput}
+                placeholder="Enter reason for status change..."
+                placeholderTextColor="#94A3B8"
+                value={statusChangeReason}
+                onChangeText={setStatusChangeReason}
+                multiline
+                numberOfLines={4}
+              />
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => {
+                  setShowStatusChangeModal(false);
+                  setIsStatusChangeDropdownOpen(false);
+                }}
+              >
+                <Text style={styles.modalCancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalSubmitBtn, changingStatus && styles.modalBtnDisabled]}
+                onPress={handleStatusChange}
+                disabled={changingStatus}
+              >
+                <Text style={styles.modalSubmitBtnText}>
+                  {changingStatus ? 'Processing...' : 'Change Status'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── End Duty: OTP & Payment Verification Modal ── */}
+      <EndDutyOtpVerification
+        visible={showEndDutyModal}
+        dutyId={duty.dutyId}
+        onClose={() => setShowEndDutyModal(false)}
+        onSuccess={handleEndDutySuccess}
+      />
+
     </ScrollView>
   );
 }
@@ -861,6 +1165,149 @@ backButtonText: {
   btnOutlineText: { color: '#1E293B', fontSize: 13, fontWeight: '600' },
   btnDanger: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FEE2E2', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 6 },
   btnDangerText: { color: '#EF4444', fontSize: 13, fontWeight: '600' },
+
+  // Admin action buttons
+  btnAdmin: {
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, marginRight: 8,
+  },
+  btnAdminText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  btnEndDuty: {
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8,
+  },
+  btnEndDutyDisabled: { backgroundColor: '#94A3B8' },
+  btnEndDutyText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    maxHeight: '90%',
+    width: '100%',
+    maxWidth: 500,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  modalBody: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  modalLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1E293B',
+    marginBottom: 8,
+    marginTop: 12,
+  },
+  dropdownContainer: {
+    marginBottom: 16,
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    backgroundColor: '#F8FAFC',
+  },
+  dropdownButtonText: {
+    fontSize: 14,
+    color: '#1E293B',
+    fontWeight: '500',
+  },
+  dropdownOptions: {
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 8,
+    marginTop: 4,
+    backgroundColor: '#FFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  dropdownOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  dropdownOptionText: {
+    fontSize: 14,
+    color: '#1E293B',
+  },
+  reasonInput: {
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#1E293B',
+    backgroundColor: '#F8FAFC',
+    marginBottom: 16,
+    textAlignVertical: 'top',
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+  },
+  modalCancelBtn: {
+    flex: 1,
+    backgroundColor: '#2563EB',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalCancelBtnText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modalSubmitBtn: {
+    flex: 1,
+    backgroundColor: '#2563EB',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalSubmitBtnText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modalBtnDisabled: {
+    backgroundColor: '#94A3B8',
+    opacity: 0.6,
+  },
 
   // Responsive Grid Settings
   mainGrid: {

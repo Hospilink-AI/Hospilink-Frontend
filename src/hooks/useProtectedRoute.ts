@@ -11,8 +11,11 @@ export function useProtectedRoute(allowedRole: 'staff' | 'hospital' | 'admin') {
 
         if (!token || !user) {
             // Not signed in → send to login
-            const loginPath = allowedRole === 'admin' ? '/auth/admin/login' : '/auth/login';
-            router.replace(loginPath);
+            if (allowedRole === 'admin') {
+                router.replace('/auth/admin/login');
+            } else {
+                router.replace({ pathname: '/auth/login', params: { tab: 'signin' } });
+            }
             return;
         }
 
