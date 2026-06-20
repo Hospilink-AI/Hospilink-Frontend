@@ -2046,6 +2046,47 @@ export default function HospitalListSection() {
         </TouchableOpacity>
       </View>
 
+      {/* ── Stat Cards ── */}
+      {/* ── Stat Cards ── */}
+      {statsError ? (
+        <View style={{
+          marginHorizontal: 16, marginBottom: 14,
+          backgroundColor: '#FEF2F2', borderRadius: 10,
+          borderWidth: 1, borderColor: '#FECACA',
+          padding: 14, flexDirection: 'row',
+          alignItems: 'center', gap: 10,
+        }}>
+          <Text style={{ flex: 1, fontSize: 13, color: '#DC2626' }}>
+            ⚠️ {statsError}
+          </Text>
+          <TouchableOpacity
+            onPress={fetchStats}
+            style={{ backgroundColor: '#DC2626', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8 }}
+          >
+            <Text style={{ fontSize: 12, color: '#fff', fontWeight: '700' }}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={s.statsRow}>
+          <StatCard
+            icon="🏥" iconBg="#EEF2FF" iconColor="#4F46E5"
+            badge="+12%" badgeColor="#16A34A"
+            value={stats.totalHospitals.toLocaleString()} label="Total Hospitals"
+          />
+          <StatCard
+            icon="⚠️" iconBg="#FEF3C7" iconColor="#D97706"
+            badge="Action Req." badgeColor="#D97706"
+            value={String(stats.pendingVerification)} label="Pending Verification"
+          />
+          <StatCard
+            icon="✅" iconBg="#ECFDF5" iconColor="#16A34A"
+            badge={`${stats.totalHospitals > 0 ? Math.round((stats.verifiedHospitals / stats.totalHospitals) * 100) : 0}% Verified`}
+            badgeColor="#16A34A"
+            value={stats.verifiedHospitals.toLocaleString()} label="Approved Hospitals"
+          />
+        </View>
+      )}
+
       {/* ── Filter Bar ── */}
       <View style={s.filterCard}>
         <FilterBar
@@ -2097,46 +2138,7 @@ export default function HospitalListSection() {
         </View>
       )}
 
-      {/* ── Stat Cards ── */}
-      {/* ── Stat Cards ── */}
-      {statsError ? (
-        <View style={{
-          marginHorizontal: 16, marginBottom: 14,
-          backgroundColor: '#FEF2F2', borderRadius: 10,
-          borderWidth: 1, borderColor: '#FECACA',
-          padding: 14, flexDirection: 'row',
-          alignItems: 'center', gap: 10,
-        }}>
-          <Text style={{ flex: 1, fontSize: 13, color: '#DC2626' }}>
-            ⚠️ {statsError}
-          </Text>
-          <TouchableOpacity
-            onPress={fetchStats}
-            style={{ backgroundColor: '#DC2626', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8 }}
-          >
-            <Text style={{ fontSize: 12, color: '#fff', fontWeight: '700' }}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <View style={s.statsRow}>
-          <StatCard
-            icon="🏥" iconBg="#EEF2FF" iconColor="#4F46E5"
-            badge="+12%" badgeColor="#16A34A"
-            value={stats.totalHospitals.toLocaleString()} label="Total Hospitals"
-          />
-          <StatCard
-            icon="⚠️" iconBg="#FEF3C7" iconColor="#D97706"
-            badge="Action Req." badgeColor="#D97706"
-            value={String(stats.pendingVerification)} label="Pending Verification"
-          />
-          <StatCard
-            icon="✅" iconBg="#ECFDF5" iconColor="#16A34A"
-            badge={`${stats.totalHospitals > 0 ? Math.round((stats.verifiedHospitals / stats.totalHospitals) * 100) : 0}% Verified`}
-            badgeColor="#16A34A"
-            value={stats.verifiedHospitals.toLocaleString()} label="Approved Hospitals"
-          />
-        </View>
-      )}
+      
 
       {/* ── Toast ── */}
       {toast && <Toast message={toast.msg} type={toast.type} />}

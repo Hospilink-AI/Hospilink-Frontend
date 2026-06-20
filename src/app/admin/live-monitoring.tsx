@@ -1082,9 +1082,9 @@ export default function LiveMonitoring() {
       <View style={styles.subHeader}>
         <Text style={styles.subHeaderTitle}>ACTIVE DUTIES TRACKING</Text>
         <View style={styles.activeCountBadge}>
-          <Text style={styles.activeCountText}>
+          {/* <Text style={styles.activeCountText}>
             {summary?.totalActiveDuties ?? duties.length} {isFiltered ? 'RESULTS' : 'ACTIVE'}
-          </Text>
+          </Text> */}
         </View>
       </View>
 

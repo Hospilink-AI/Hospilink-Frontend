@@ -170,7 +170,7 @@ const StatusBadge = ({ status }: { status: CredStatus }) => {
     "Manual Review": { bg: "#DBEAFE", text: "#1D4ED8", dot: "#3B82F6" },
     "Expiring Soon": { bg: "#FEF9C3", text: "#A16207", dot: "#EAB308" },
     "Expired": { bg: RED_BG, text: RED_TEXT, dot: "#EF4444" },
-    "Pending": { bg: "#EFF6FF", text: "#1D4ED8", dot: "#3B82F6" },
+    "Pending": { bg: "#FEF3C7", text: "#92400E", dot: "#D97706" },
   };
   const c = cfg[status];
   return (
@@ -603,6 +603,39 @@ const crSt = StyleSheet.create({
   removeBtn: { width: 28, height: 28, borderRadius: 7, backgroundColor: RED_BG, alignItems: "center", justifyContent: "center" },
 });
 
+const VERIFY_STATUS_CFG: Record<string, {
+  bg: string; border: string; text: string; dot: string;
+  icon: any; label: string;
+}> = {
+  "verified": {
+    bg: "#DCFCE7", border: "#6EE7B7", text: "#065F46", dot: GREEN,
+    icon: "checkmark-circle", label: "Verified Profile",
+  },
+  "auto-verified": {
+    bg: "#D1FAE5", border: "#6EE7B7", text: "#065F46", dot: "#34D399",
+    icon: "checkmark-done-circle", label: "Auto Verified",
+  },
+  "rejected": {
+    bg: "#FEF2F2", border: "#FECACA", text: "#DC2626", dot: "#EF4444",
+    icon: "close-circle", label: "Rejected",
+  },
+  "expired": {
+    bg: "#FEE2E2", border: "#FCA5A5", text: "#B91C1C", dot: "#EF4444",
+    icon: "alert-circle", label: "Expired",
+  },
+  "expiring-soon": {
+    bg: "#FEF9C3", border: "#FDE68A", text: "#A16207", dot: "#EAB308",
+    icon: "warning", label: "Expiring Soon",
+  },
+  "manual-pending-verification": {
+    bg: "#EDE9FE", border: "#C4B5FD", text: "#6D28D9", dot: "#8B5CF6",
+    icon: "eye-outline", label: "Manual Review",
+  },
+  "pending": {
+    bg: "#FFFBEB", border: "#FDE68A", text: "#A16207", dot: "#F59E0B",
+    icon: "time-outline", label: "Verification Under Process",
+  },
+};
 // ═══════════════════════════════════════════════════════════════════════════════
 //  MAIN PROFILE SCREEN
 // ═══════════════════════════════════════════════════════════════════════════════

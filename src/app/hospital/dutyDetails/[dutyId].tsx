@@ -649,7 +649,7 @@ export default function DutyDetailsScreen() {
     <View style={sharedS.screen}>
       {/* Back button — always visible */}
       <View style={sharedS.topBar}>
-        <TouchableOpacity style={sharedS.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
+        <TouchableOpacity style={sharedS.backBtn} onPress={() => router.push("/hospital/dashboard")} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={16} color="#6B7280" />
           <Text style={sharedS.backText}>Back to Dashboard</Text>
         </TouchableOpacity>
@@ -684,7 +684,7 @@ const mobileS = StyleSheet.create({
   content: { paddingHorizontal: 14, paddingBottom: 24 },
 
   pageHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14, gap: 10 },
-  pageTitle: { fontSize: 20, fontWeight: '800', color: '#111827', marginBottom: 3 },
+  pageTitle: { fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 3 },
   pageSubtitle: { fontSize: 12, color: '#6B7280', lineHeight: 18 },
   editBtn: { backgroundColor: '#2563EB', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, flexShrink: 0 },
   editBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
@@ -700,7 +700,7 @@ const mobileS = StyleSheet.create({
 
   roleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
   roleIconWrap: { width: 38, height: 38, borderRadius: 10, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  roleTitle: { fontSize: 15, fontWeight: '800', color: '#111827', marginBottom: 2 },
+  roleTitle: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 2 },
   hospitalName: { fontSize: 12, color: '#6B7280' },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   overnightBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#EFF6FF', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
@@ -759,7 +759,7 @@ const desktopS = StyleSheet.create({
   content: { paddingHorizontal: 24, paddingBottom: 40 },
 
   pageHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 20, gap: 12 },
-  pageTitle: { fontSize: 24, fontWeight: '800', color: '#111827', marginBottom: 4 },
+  pageTitle: { fontSize: 24, fontWeight: '700', color: '#111827', marginBottom: 4 },
   pageSubtitle: { fontSize: 13, color: '#6B7280', lineHeight: 19 },
   editBtn: { backgroundColor: '#2563EB', paddingHorizontal: 16, paddingVertical: 9, borderRadius: 8, flexShrink: 0 },
   editBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
@@ -779,7 +779,7 @@ const desktopS = StyleSheet.create({
 
   roleRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
   roleIconWrap: { width: 42, height: 42, borderRadius: 10, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  roleTitle: { fontSize: 18, fontWeight: '800', color: '#111827', marginBottom: 3 },
+  roleTitle: { fontSize: 18, fontWeight: '700', color: '#111827', marginBottom: 3 },
   hospitalName: { fontSize: 13, color: '#6B7280' },
   overnightBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#EFF6FF', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
   overnightText: { fontSize: 12, fontWeight: '700', color: '#2563EB' },

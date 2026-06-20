@@ -748,7 +748,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#111827',
   },
   viewAll: {
@@ -791,7 +791,7 @@ const styles = StyleSheet.create({
   },
   assignedAvatarInitial: {
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#FFFFFF',
   },
   assignedLabel: {
@@ -886,10 +886,10 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   priorityDot: { width: 7, height: 7, borderRadius: 4 },
-  priorityText: { fontSize: 12, fontWeight: '800', letterSpacing: 0.3 },
+  priorityText: { fontSize: 12, fontWeight: '700', letterSpacing: 0.3 },
   departmentText: { fontSize: 14, color: '#1F2937', fontWeight: '600' },
   requirementText: { fontSize: 14, color: '#6B7280' },
-  etaText: { fontSize: 14, fontWeight: '800' },
+  etaText: { fontSize: 14, fontWeight: '700' },
   statusContainer: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
   statusText: { fontSize: 14, color: '#6B7280' },
@@ -929,7 +929,7 @@ const styles = StyleSheet.create({
   },
   popupTitle: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#1F2937',
   },
   selectBadge: {

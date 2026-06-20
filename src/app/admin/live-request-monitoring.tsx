@@ -131,45 +131,30 @@ const WebMap = ({ staffLocation, hospitalLocation, routePolylines, status, isSat
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const tileLayerRef = useRef<any>(null);
+  const staffMarkerRef = useRef<any>(null);
+  const hospitalMarkerRef = useRef<any>(null);
+  const polylineLayersRef = useRef<any[]>([]);
 
+  // Initialize the Leaflet map exactly once on mount. Live location/route
+  // updates must NOT recreate the map — destroying and rebuilding it on
+  // every websocket tick races with Leaflet's in-flight tile/marker layout
+  // callbacks, which then read `_leaflet_pos` off DOM nodes that already
+  // belong to a torn-down map instance (the "Cannot read properties of
+  // undefined (reading '_leaflet_pos')" crash).
   useEffect(() => {
     if (!isWeb || !mapRef.current) return;
-
-    const loadLeaflet = async () => {
-      if (!(window as any).L) {
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-        document.head.appendChild(link);
-
-        const script = document.createElement('script');
-        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-        script.onload = () => initMap();
-        document.head.appendChild(script);
-      } else {
-        initMap();
-      }
-    };
+    let cancelled = false;
 
     const initMap = () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
+      if (cancelled || !mapRef.current || mapInstanceRef.current) return;
 
       const L = (window as any).L;
-      const centerLat = (staffLocation.latitude + hospitalLocation.latitude) / 2;
-      const centerLng = (staffLocation.longitude + hospitalLocation.longitude) / 2;
 
-      const map = L.map(mapRef.current!).setView([centerLat, centerLng], 13);
+      const map = L.map(mapRef.current).setView(
+        [staffLocation.latitude, staffLocation.longitude],
+        13
+      );
       mapInstanceRef.current = map;
-
-      // const tile = isSatellite ? SATELLITE_TILE : STREET_TILE;
-
-      // L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      //   attribution: '© OpenStreetMap contributors',
-      //   maxZoom: 19,
-      // }).addTo(map);
 
       const tile = isSatellite ? SATELLITE_TILE : STREET_TILE;
       tileLayerRef.current = L.tileLayer(tile.url, {
@@ -191,32 +176,90 @@ const WebMap = ({ staffLocation, hospitalLocation, routePolylines, status, isSat
         iconAnchor: [18, 18],
       });
 
-      L.marker([staffLocation.latitude, staffLocation.longitude], { icon: staffIcon }).addTo(map);
-      L.marker([hospitalLocation.latitude, hospitalLocation.longitude], { icon: hospitalIcon }).addTo(map);
+      staffMarkerRef.current = L.marker(
+        [staffLocation.latitude, staffLocation.longitude],
+        { icon: staffIcon }
+      ).addTo(map);
 
-      if (routePolylines && routePolylines.length > 0) {
-        const allPoints: [number, number][] = [];
-        routePolylines.forEach((encodedPolyline: string) => {
-          const points = decodePolyline(encodedPolyline);
-          allPoints.push(...points);
-          L.polyline(points, { color: status === 'in-progress' ? '#10B981' : '#2563EB', weight: 4, opacity: 0.8 }).addTo(map);
-        });
-        if (allPoints.length > 0) {
-          map.fitBounds(L.latLngBounds(allPoints), { padding: [50, 50] });
-        }
+      hospitalMarkerRef.current = L.marker(
+        [hospitalLocation.latitude, hospitalLocation.longitude],
+        { icon: hospitalIcon }
+      ).addTo(map);
+    };
+
+    const loadLeaflet = async () => {
+      if (!(window as any).L) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        script.onload = () => initMap();
+        document.head.appendChild(script);
+      } else {
+        initMap();
       }
     };
 
     loadLeaflet();
 
     return () => {
+      cancelled = true;
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
         tileLayerRef.current = null;
+        staffMarkerRef.current = null;
+        hospitalMarkerRef.current = null;
+        polylineLayersRef.current = [];
       }
     };
-  }, [staffLocation, hospitalLocation, routePolylines, status]);
+    // Intentionally empty — map is created once and updated imperatively below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Move the staff marker as live location ticks in, instead of rebuilding the map.
+  useEffect(() => {
+    if (staffMarkerRef.current) {
+      staffMarkerRef.current.setLatLng([staffLocation.latitude, staffLocation.longitude]);
+    }
+  }, [staffLocation.latitude, staffLocation.longitude]);
+
+  // Move the hospital marker if its coordinates change.
+  useEffect(() => {
+    if (hospitalMarkerRef.current) {
+      hospitalMarkerRef.current.setLatLng([hospitalLocation.latitude, hospitalLocation.longitude]);
+    }
+  }, [hospitalLocation.latitude, hospitalLocation.longitude]);
+
+  // Redraw the route polyline only when the route itself changes.
+  useEffect(() => {
+    const L = (window as any).L;
+    const map = mapInstanceRef.current;
+    if (!map || !L) return;
+
+    polylineLayersRef.current.forEach((layer) => map.removeLayer(layer));
+    polylineLayersRef.current = [];
+
+    if (routePolylines && routePolylines.length > 0) {
+      const allPoints: [number, number][] = [];
+      routePolylines.forEach((encodedPolyline: string) => {
+        const points = decodePolyline(encodedPolyline);
+        allPoints.push(...points);
+        const polyline = L.polyline(points, {
+          color: status === 'in-progress' ? '#10B981' : '#2563EB',
+          weight: 4,
+          opacity: 0.8,
+        }).addTo(map);
+        polylineLayersRef.current.push(polyline);
+      });
+      if (allPoints.length > 0) {
+        map.fitBounds(L.latLngBounds(allPoints), { padding: [50, 50] });
+      }
+    }
+  }, [routePolylines, status]);
 
   useEffect(() => {
     const L = (window as any).L;
@@ -283,11 +326,11 @@ export default function LiveRequestMonitoring() {
 
   // ── State transition rules ──
   const STATE_TRANSITIONS: Record<string, string[]> = {
-    available: ['assigned', 'enroute', 'in-progress', 'complete'],
-    assigned: ['enroute', 'in-progress', 'complete'],
-    enroute: ['in-progress', 'complete'],
-    'in-progress': ['complete'],
-    'pending_confirmation': ['complete'],
+    available: ['assigned', 'enroute', 'in-progress', 'completed'],
+    assigned: ['enroute', 'in-progress', 'completed'],
+    enroute: ['in-progress', 'completed'],
+    'in-progress': ['completed'],
+    'pending_confirmation': ['completed'],
     complete: [], // final state
   };
 

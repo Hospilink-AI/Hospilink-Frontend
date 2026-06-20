@@ -39,6 +39,7 @@ interface CalendarDay {
   hasShift?: boolean;
   hasEmergency?: boolean;
   isToday?: boolean;
+  isPast?: boolean;
 }
 
 export default function PortalUsage() {
@@ -75,7 +76,8 @@ const generateCalendar = (): CalendarDay[] => {
     if ([5, 12, 17, 23, 26].includes(i)) day.hasShift = true;
     if ([8, 15, 22].includes(i)) day.hasEmergency = true;
 
-    if (i === todayDate) day.isToday = true; // ← real today instead of hardcoded 23
+    if (i === todayDate) day.isToday = true; 
+    if (i < todayDate) day.isPast = true;
 
     days.push(day);
   }
@@ -128,6 +130,7 @@ const generateCalendar = (): CalendarDay[] => {
                     style={[
                       styles.dayText,
                       dayData.isToday && styles.dayTodayText,
+                       dayData.isPast  && styles.dayPastText,
                     ]}
                   >
                     {dayData.day}
@@ -175,6 +178,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#111827',
+  },
+
+   dayPastText: {
+    color: '#D1D5DB',   // dull gray — same as Tailwind gray-300
+    fontWeight: '400',
   },
   
   // Alerts
