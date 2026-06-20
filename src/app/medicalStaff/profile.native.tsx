@@ -486,7 +486,7 @@ export default function Profile() {
           <Row
             icon="shield-checkmark-outline"
             label="Terms & Privacy"
-            onPress={() => router.push("#")}
+            onPress={() => router.push("/auth/privacy-policy")}
             right={<Chevron />}
             isLast
           />
