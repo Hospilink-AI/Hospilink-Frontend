@@ -14,7 +14,9 @@ import { COLORS } from "@/constant/colors";
 import { adminAPI } from "@/service/api";
 import { useSocket } from "../../context/SocketContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import NotificationsCenterScreen from "./NotificationCenter";
+import { HEADER_CONTENT_HEIGHT } from "@/constant/layout";
 
 // inside the component, add:
 const [showCenter, setShowCenter] = useState(false);
@@ -117,6 +119,8 @@ export default function NotificationPopup({
   onOpenCenter,
 }: NotificationPopupProps) {
   const { socket } = useSocket();
+  const insets = useSafeAreaInsets();
+  const popupTop = HEADER_CONTENT_HEIGHT + insets.top;
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -293,7 +297,7 @@ export default function NotificationPopup({
         />
 
         {/* Popup positioned top-right, same visual as web */}
-        <View style={styles.modalPopupWrapper} pointerEvents="box-none">
+        <View style={[styles.modalPopupWrapper, { top: popupTop }]} pointerEvents="box-none">
           <View style={styles.popupBox}>
             {/* ── exact same inner content as web version ── */}
             <View style={styles.headerRow}>

@@ -95,12 +95,19 @@ export default function VerifyOtp() {
 
   // ─── Route after successful verification, based on the role already chosen.
   //     Goes to welcome-choice screen where user can choose to complete profile or explore ───
-  const routeAfterVerify = () => {
+const routeAfterVerify = () => {
+  if (accountType === "hospital") {
     router.replace({
-      pathname: "/auth/welcome-choice",
-      params: { email, signupName, accountType },
+      pathname: "/auth/onboardingH",
+      params: { prefillName: signupName, prefillEmail: email },
     });
-  };
+  } else {
+    router.replace({
+      pathname: "/auth/onboarding",
+      params: { prefillName: signupName, prefillEmail: email, accountType },
+    });
+  }
+};
 
   const handleVerify = async () => {
     const otpCode = otp.join("");

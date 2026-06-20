@@ -267,6 +267,8 @@ import {
 } from "react-native";
 import { profileAPI } from "../../service/api";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { HEADER_CONTENT_HEIGHT } from "@/constant/layout";
 import NotificationPopup from "./Notification";
 
 // ─── Dynamic greeting ────────────────────────────────────
@@ -318,9 +320,15 @@ export default function Header() {
   }, [role]);
 
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { height: HEADER_CONTENT_HEIGHT + insets.top, paddingTop: insets.top },
+      ]}
+    >
 
       {/* ── LEFT: Logo (fixed — never shrinks) ── */}
       {role === "admin" ? (
@@ -425,7 +433,7 @@ export default function Header() {
 
 const styles = StyleSheet.create({
   container: {
-    height: 64,
+    height: HEADER_CONTENT_HEIGHT,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
     borderColor: COLORS.border,

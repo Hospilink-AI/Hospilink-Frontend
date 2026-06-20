@@ -1,0 +1,1 @@
+export const HEADER_CONTENT_HEIGHT = 64;

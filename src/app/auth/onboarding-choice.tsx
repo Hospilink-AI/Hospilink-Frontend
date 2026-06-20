@@ -14,12 +14,15 @@ export default function OnboardingChoiceScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
 
-  const prefillName = (Array.isArray(params.prefillName) ? params.prefillName[0] : params.prefillName) ?? "";
+    const prefillName  = (Array.isArray(params.prefillName)  ? params.prefillName[0]  : params.prefillName)  ?? "";
   const prefillEmail = (Array.isArray(params.prefillEmail) ? params.prefillEmail[0] : params.prefillEmail) ?? "";
+  const accountType  = (Array.isArray(params.accountType)  ? params.accountType[0]  : params.accountType)  ?? "medical";
+
+   const isHospital = accountType === "hospital";
 
   const completeProfile = () => {
     router.replace({
-      pathname: "/profile/medical-staff",
+      pathname: isHospital ? "/profile/hospital" : "/profile/medical-staff",
       params: { prefillName, prefillEmail },
     });
   };
@@ -27,8 +30,8 @@ export default function OnboardingChoiceScreen() {
   // NOTE: this lands the user on the dashboard with an incomplete profile.
   // The dashboard must tolerate null profile data and surface the
   // "Complete Your Profile" banner.
-  const exploreApp = () => {
-    router.replace("/medicalStaff/dashboard");
+   const exploreApp = () => {
+    router.replace(isHospital ? "/hospital/dashboard" : "/medicalStaff/dashboard");
   };
 
   return (
