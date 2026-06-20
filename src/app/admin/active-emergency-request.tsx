@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#111827',
   },
   scrollContent: {
@@ -322,21 +322,21 @@ const styles = StyleSheet.create({
   colAction: { flex: 1, alignItems: 'flex-start' },
   
   priorityBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, alignSelf: 'flex-start', gap: 6 },
-  criticalIcon: { fontSize: 13, fontWeight: '900', color: '#DC2626' },
-  priorityText: { fontSize: 12, fontWeight: '800', letterSpacing: 0.3 },
+  criticalIcon: { fontSize: 13, fontWeight: '800', color: '#DC2626' },
+  priorityText: { fontSize: 12, fontWeight: '700', letterSpacing: 0.3 },
   departmentText: { fontSize: 14, color: '#1F2937', fontWeight: '600' },
   requirementText: { fontSize: 14, color: '#6B7280' },
-  etaText: { fontSize: 14, fontWeight: '800' },
+  etaText: { fontSize: 14, fontWeight: '700' },
   
   statusContainer: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
   statusText: { fontSize: 14, color: '#6B7280' },
   
-  assignText: { fontSize: 14, fontWeight: '800', color: '#2563EB' },
+  assignText: { fontSize: 14, fontWeight: '700', color: '#2563EB' },
 
   popupContainer: { position: 'absolute', top: -20, right: '100%', marginLeft: 16, width: 310, backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 15, borderWidth: 1, borderColor: '#E5E7EB' },
   popupHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  popupTitle: { fontSize: 18, fontWeight: '800', color: '#1F2937' },
+  popupTitle: { fontSize: 18, fontWeight: '700', color: '#1F2937' },
   popupSectionLabel: { fontSize: 12, fontWeight: '600', color: '#9CA3AF', marginBottom: 8 },
   searchContainer: { backgroundColor: '#F8FAFC', borderRadius: 10, marginBottom: 16 },
   searchInput: { paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, fontWeight: '600', color: '#374151', ...(Platform.select({ web: { outlineStyle: 'none' } }) as any) },

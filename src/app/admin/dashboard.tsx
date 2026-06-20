@@ -349,7 +349,7 @@ retryBtnText: {
   },
   quickActionsTitle: {
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#111827',
   },
   quickActionsButtons: {

@@ -377,7 +377,7 @@ export default function DutyDetailsScreen() {
     <View style={styles.screen}>
       {/* ── Top bar ── */}
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.push("/hospital/dashboard")} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={16} color="#6B7280" />
           <Text style={styles.backText}>Back to Dashboard</Text>
         </TouchableOpacity>
@@ -533,9 +533,9 @@ export default function DutyDetailsScreen() {
                       </Text>
                     ) : null}
                   </View>
-                  {duty.distanceText ? (
+                  {/* {duty.distanceText ? (
                     <Text style={styles.distanceText}>{duty.distanceText}</Text>
-                  ) : null}
+                  ) : null} */}
                 </View>
               </View>
             ) : (
@@ -668,7 +668,7 @@ const styles = StyleSheet.create({
 
   // Heading
   pageHeading: { marginBottom: 18 },
-  pageTitle: { fontSize: 24, fontWeight: '800', color: '#111827', marginBottom: 4 },
+  pageTitle: { fontSize: 24, fontWeight: '700', color: '#111827', marginBottom: 4 },
   pageSubtitle: { fontSize: 13, color: '#6B7280', lineHeight: 19 },
 
   // Layout
@@ -712,7 +712,7 @@ const styles = StyleSheet.create({
   },
   roleTitle: {
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#111827',
     marginBottom: 2,
     lineHeight: 22,
