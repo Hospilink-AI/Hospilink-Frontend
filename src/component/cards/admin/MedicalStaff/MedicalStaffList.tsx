@@ -65,6 +65,7 @@ interface StaffDetails {
   isProfileComplete: boolean;
   verificationStatus: VerificationStatus;
   rejectionReason: string | null;
+  isSuspended?: boolean;
   totalExperience: number;
   averageRating: number;
   totalRatings: number;
@@ -979,7 +980,7 @@ interface StaffProfileModalProps {
 function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfileModalProps) {
   const [loading, setLoading] = useState(false);
   const [staffDetails, setStaffDetails] = useState<StaffDetails | null>(null);
-  const [decision, setDecision] = useState<'approved' | 'rejected' | 'suspended' | null>(null);
+  const [decision, setDecision] = useState<'approved' | 'rejected' | 'suspended' | 'unsuspended' | null>(null);
   const [docViewerVisible, setDocViewerVisible] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<StaffDocument | null>(null);
   const [rejectionModalVisible, setRejectionModalVisible] = useState(false);
@@ -1052,6 +1053,26 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
         error?.response?.data?.message ??
         error?.message ??
         'Failed to suspend staff member.';
+      setActionError(msg);
+    }
+  };
+
+  const handleUnsuspend = async () => {
+    if (!staffId) return;
+    setActionError('');
+    try {
+      const data = await adminAPI.unsuspendMedicalStaff(staffId);
+      if (data.success) {
+        setDecision('unsuspended');
+        onRefresh();
+      } else {
+        setActionError(data.message ?? 'Failed to unsuspend staff.');
+      }
+    } catch (error: any) {
+      const msg =
+        error?.response?.data?.message ??
+        error?.message ??
+        'Failed to unsuspend staff member.';
       setActionError(msg);
     }
   };
@@ -1152,6 +1173,8 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
     staffDetails.verificationStatus === 'auto-verified' ||
     staffDetails.verificationStatus === 'pending';
 
+  const isSuspended = staffDetails.isSuspended === true;
+
   return (
     <>
       <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
@@ -1165,28 +1188,32 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
               <View style={pm.resultWrap}>
                 <View style={[
                   pm.resultIcon,
-                  decision === 'approved' ? pm.resultIconGreen :
+                  decision === 'approved' || decision === 'unsuspended' ? pm.resultIconGreen :
                     decision === 'suspended' ? pm.resultIconAmber : pm.resultIconRed,
                 ]}>
                   <Text style={[pm.resultCheck, {
-                    color: decision === 'approved' ? '#16A34A' :
+                    color: decision === 'approved' || decision === 'unsuspended' ? '#16A34A' :
                       decision === 'suspended' ? '#D97706' : '#DC2626',
                   }]}>
-                    {decision === 'approved' ? '✓' : decision === 'suspended' ? '⏸' : '✕'}
+                    {decision === 'approved' || decision === 'unsuspended' ? '✓' :
+                      decision === 'suspended' ? '⏸' : '✕'}
                   </Text>
                 </View>
                 <Text style={pm.resultTitle}>
                   {decision === 'approved' ? 'Profile Approved' :
-                    decision === 'suspended' ? 'Profile Suspended' : 'Profile Rejected'}
+                    decision === 'unsuspended' ? 'Profile Reactivated' :
+                      decision === 'suspended' ? 'Profile Suspended' : 'Profile Rejected'}
                 </Text>
                 <Text style={pm.resultSub}>
                   <Text style={{ fontWeight: '700', color: '#0F172A' }}>{staffDetails.fullName || 'Staff Member'}</Text>
                   {'\n'}
                   has been {decision === 'approved'
                     ? 'approved and verified successfully.'
-                    : decision === 'suspended'
-                      ? 'suspended. The staff member will be notified.'
-                      : 'rejected. The staff member will be notified.'}
+                    : decision === 'unsuspended'
+                      ? 'reactivated. The staff member can sign in again.'
+                      : decision === 'suspended'
+                        ? 'suspended. The staff member will be notified.'
+                        : 'rejected. The staff member will be notified.'}
                 </Text>
                 <TouchableOpacity style={pm.doneBtn} onPress={handleClose}>
                   <Text style={pm.doneBtnTxt}>Done</Text>
@@ -1319,7 +1346,15 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
                     <Text style={pm.rejectBtnTxt}>✕   Reject</Text>
                   </TouchableOpacity>
                 )}
-                {showSuspendButton && (
+                {isSuspended ? (
+                  <TouchableOpacity
+                    style={pm.suspendBtn}
+                    onPress={handleUnsuspend}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={[pm.suspendBtnTxt, { color: '#16A34A' }]}>▶   Unsuspend</Text>
+                  </TouchableOpacity>
+                ) : showSuspendButton && (
                   <TouchableOpacity
                     style={pm.suspendBtn}
                     onPress={handleSuspend}

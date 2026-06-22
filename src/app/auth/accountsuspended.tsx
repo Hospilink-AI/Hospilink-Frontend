@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import React from "react";
 import {
     Image,
@@ -58,7 +59,11 @@ export default function AccountSuspended() {
                     </Text>
 
                     {/* Back button */}
-                    <TouchableOpacity style={s.backBtn} activeOpacity={0.7}>
+                    <TouchableOpacity
+                        style={s.backBtn}
+                        activeOpacity={0.7}
+                        onPress={() => router.replace("/auth/login")}
+                    >
                         <Text style={s.backText}>Back</Text>
                     </TouchableOpacity>
                 </View>
