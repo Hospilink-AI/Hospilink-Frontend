@@ -299,7 +299,7 @@ export default function Header() {
   const [showNotifications, setShowNotifications] = useState(false);
   // const [showNotifications, setShowNotifications] = useState(Platform.OS === 'web');
   const [unreadCount, setUnreadCount] = useState(0);
-  
+
 
   useEffect(() => {
     (async () => {
@@ -334,7 +334,11 @@ export default function Header() {
       {role === "admin" ? (
         <View style={styles.adminHeader}>
           <View style={styles.adminIconBox}>
-            <Ionicons name="add" size={22} color="#fff" />
+            <Image
+              source={require("../../../assets/Images/Hospilink_icon.png")}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
           <View>
             <Text style={styles.adminTitle}>Hospilink+</Text>
@@ -344,7 +348,12 @@ export default function Header() {
       ) : (
         <View style={styles.left}>
           <View style={[styles.logoIcon, { backgroundColor: COLORS.primary }]}>
-            <Ionicons name="medical" size={20} color="#fff" />
+            {/* <Ionicons name="attach-outline" size={20} color="#fff" /> */}
+            <Image
+              source={require("../../../assets/Images/Hospilink_icon.png")}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
           <Text style={styles.logo}>Hospilink</Text>
         </View>
@@ -446,6 +455,11 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 3,
     zIndex: 10,
+  },
+
+  logoImage: {
+    width: 40,
+    height: 40,
   },
 
   // ── LEFT ──────────────────────────────────────────────

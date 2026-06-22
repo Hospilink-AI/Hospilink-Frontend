@@ -4,7 +4,7 @@
     "slug": "Hospilink-frontend",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/Images/loginbg.png",
+    "icon": "./assets/Images/Hospilink_icon.png",
     "scheme": "hospilinkfrontend",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -44,7 +44,7 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#208AEF",
-          "image": "./assets/Images/loginbg.png",
+          "image": "./assets/Images/Hospilink_icon.png",
           "imageWidth": 76
         }
       ],

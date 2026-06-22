@@ -9,6 +9,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ScrollView
 } from 'react-native';
 import { dutyAPI } from '../../../service/api'; // ← adjust path if needed
 
@@ -418,36 +419,42 @@ export function ActiveDutyTable({
         )}
       </View>
 
-      {/* Column Headers */}
-      <View style={styles.colHeaders}>
-        <Text style={[styles.colHead, { flex: 1.4 }]}>DUTY TYPE</Text>
-        <Text style={[styles.colHead, { flex: 1.3 }]}>STAFF MEMBER</Text>
-        <Text style={[styles.colHead, { flex: 1.2 }]}>DEPARTMENT</Text>
-        <Text style={[styles.colHead, { flex: 0.9 }]}>STATUS</Text>
-        <Text style={[styles.colHead, { width: 50 }]}>ACTION</Text>
-      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <View style={{ minWidth: 560 }}>
 
-      {/* Body */}
-      {loading ? (
-        <View style={styles.emptyWrap}>
-          <ActivityIndicator size="small" color="#2563EB" />
-          <Text style={styles.emptyText}>Loading duties…</Text>
-        </View>
-      ) : duties.length === 0 ? (
-        <View style={styles.emptyWrap}>
-          <Ionicons name="document-outline" size={32} color="#D1D5DB" />
-          <Text style={styles.emptyText}>No active duties</Text>
-        </View>
-      ) : (
-        displayedDuties.map((d, i) => (
-          <View key={d._id}>
-            <TouchableOpacity onPress={() => handlePressDuty(d._id)}>
-              <DutyRow item={d} onPress={() => handlePressDuty(d._id)} onMenuPress={() => setMenuFor(d._id)} />
-            </TouchableOpacity>
-            {i < displayedDuties.length - 1 && <View style={styles.divider} />}
+          {/* Column Headers */}
+          <View style={styles.colHeaders}>
+            <Text style={[styles.colHead, { flex: 1.4 }]}>DUTY TYPE</Text>
+            <Text style={[styles.colHead, { flex: 1.3 }]}>STAFF MEMBER</Text>
+            <Text style={[styles.colHead, { flex: 1.2 }]}>DEPARTMENT</Text>
+            <Text style={[styles.colHead, { flex: 0.9 }]}>STATUS</Text>
+            <Text style={[styles.colHead, { width: 50 }]}>ACTION</Text>
           </View>
-        ))
-      )}
+
+          {/* Body */}
+          {loading ? (
+            <View style={styles.emptyWrap}>
+              <ActivityIndicator size="small" color="#2563EB" />
+              <Text style={styles.emptyText}>Loading duties…</Text>
+            </View>
+          ) : duties.length === 0 ? (
+            <View style={styles.emptyWrap}>
+              <Ionicons name="document-outline" size={32} color="#D1D5DB" />
+              <Text style={styles.emptyText}>No active duties</Text>
+            </View>
+          ) : (
+            displayedDuties.map((d, i) => (
+              <View key={d._id}>
+                <TouchableOpacity onPress={() => handlePressDuty(d._id)}>
+                  <DutyRow item={d} onPress={() => handlePressDuty(d._id)} onMenuPress={() => setMenuFor(d._id)} />
+                </TouchableOpacity>
+                {i < displayedDuties.length - 1 && <View style={styles.divider} />}
+              </View>
+            ))
+          )}
+
+        </View>
+      </ScrollView>
 
       {/* Action Menu Modal */}
       <ActionMenu
