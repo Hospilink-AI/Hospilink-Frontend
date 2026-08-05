@@ -4,17 +4,15 @@ import {
     ActivityIndicator,
     Alert,
     FlatList,
+    Modal,
     SafeAreaView,
     StyleSheet,
     Text,
+    TextInput,
     TouchableOpacity,
     View,
 } from "react-native";
-
-import {
-    Modal,
-    TextInput,
-} from "react-native";
+import { Dropdown } from 'react-native-element-dropdown';
 
 import { adminAPI } from "@/service/api";
 
@@ -49,6 +47,12 @@ export default function AdminLogs() {
     const [detailsLoading, setDetailsLoading] = React.useState(false);
     const [createLoading, setCreateLoading] = React.useState(false);
     const [actionLoading, setActionLoading] = React.useState(false);
+
+    const roles = [
+        { label: 'Super Admin', value: 'super_admin' },
+        { label: 'Operational Manager', value: 'operations_manager' },
+        { label: 'Tech Support', value: 'tech_support' },
+    ];
 
     const fetchAdminList = React.useCallback(async () => {
         setListLoading(true);
@@ -88,6 +92,11 @@ export default function AdminLogs() {
             <Text style={[styles.cell, { flex: 2 }]}>{item.name}</Text>
 
             <Text style={[styles.cell, { flex: 1 }]}>{item.role}</Text>
+
+            <Text style={[styles.cell, {
+                flex: 1, color: item.status === "Active" ? "#16A34A" : "#DC2626",
+                fontWeight: "600",
+            }]}>{item.status}</Text>
 
             <TouchableOpacity
                 style={{
@@ -129,6 +138,7 @@ export default function AdminLogs() {
                             <View style={styles.tableHeader}>
                                 <Text style={[styles.headerText, { flex: 2 }]}>NAME</Text>
                                 <Text style={[styles.headerText, { flex: 1 }]}>ROLE</Text>
+                                <Text style={[styles.headerText, { flex: 1 }]}>STATUS</Text>
                                 <Text
                                     style={[
                                         styles.headerText,
@@ -251,43 +261,15 @@ export default function AdminLogs() {
                                 </Text>
                             </View>
 
+
                             <TouchableOpacity
-                                style={styles.createBtn}
-                                disabled={createLoading}
-                                onPress={async () => {
-                                    if (!name.trim() || !email.trim() || !password.trim() || !role.trim()) {
-                                        Alert.alert("Missing details", "Please fill in all fields.");
-                                        return;
-                                    }
-                                    setCreateLoading(true);
-                                    try {
-                                        await adminAPI.createAdmin({
-                                            name: name.trim(),
-                                            email: email.trim(),
-                                            password,
-                                            adminSubRole: role.trim(),
-                                        });
-                                        setShowCreateAdmin(false);
-                                        setName("");
-                                        setEmail("");
-                                        setPassword("");
-                                        setRole("");
-                                        fetchAdminList();
-                                    } catch (err: any) {
-                                        Alert.alert("Error", err?.response?.data?.message ?? "Failed to create admin.");
-                                    } finally {
-                                        setCreateLoading(false);
-                                    }
-                                }}
+                                style={styles.closeButton}
+                                onPress={() => setShowCreateAdmin(false)}
                             >
-                                {createLoading ? (
-                                    <ActivityIndicator color="#fff" />
-                                ) : (
-                                    <Text style={styles.createBtnText}>
-                                        Create Admin
-                                    </Text>
-                                )}
+                                <Text style={styles.closeButtonText}>✕</Text>
                             </TouchableOpacity>
+
+
 
                         </View>
 
@@ -310,7 +292,7 @@ export default function AdminLogs() {
 
                             </View>
 
-                            <View style={styles.inputGroup}>
+                            {/* <View style={styles.inputGroup}>
 
                                 <Text style={styles.label}>
                                     Admin Sub-Role
@@ -323,6 +305,23 @@ export default function AdminLogs() {
                                     style={styles.input}
                                 />
 
+                            </View> */}
+
+
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.label}>Admin Sub-Role</Text>
+
+                                <Dropdown
+                                    style={styles.dropdown}
+                                    placeholderStyle={styles.placeholderStyle}
+                                    selectedTextStyle={styles.selectedTextStyle}
+                                    data={roles}
+                                    labelField="label"
+                                    valueField="value"
+                                    placeholder="Select Sub-Role"
+                                    value={role}
+                                    onChange={(item) => setRole(item.value)}
+                                />
                             </View>
 
                         </View>
@@ -364,6 +363,45 @@ export default function AdminLogs() {
 
                         </View>
 
+                        <View style={styles.footerButtonContainer}>
+                            <TouchableOpacity
+                                style={styles.createBtn}
+                                disabled={createLoading}
+                                onPress={async () => {
+                                    if (!name.trim() || !email.trim() || !password.trim() || !role.trim()) {
+                                        Alert.alert("Missing details", "Please fill in all fields.");
+                                        return;
+                                    }
+                                    setCreateLoading(true);
+                                    try {
+                                        await adminAPI.createAdmin({
+                                            name: name.trim(),
+                                            email: email.trim(),
+                                            password,
+                                            adminSubRole: role.trim(),
+                                        });
+                                        setShowCreateAdmin(false);
+                                        setName("");
+                                        setEmail("");
+                                        setPassword("");
+                                        setRole("");
+                                        fetchAdminList();
+                                    } catch (err: any) {
+                                        Alert.alert("Error", err?.response?.data?.message ?? "Failed to create admin.");
+                                    } finally {
+                                        setCreateLoading(false);
+                                    }
+                                }}
+                            >
+                                {createLoading ? (
+                                    <ActivityIndicator color="#fff" />
+                                ) : (
+                                    <Text style={styles.createBtnText}>
+                                        Create Admin
+                                    </Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
                 </View>
@@ -957,22 +995,22 @@ const styles = StyleSheet.create({
     },
 
     confirmButtons: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 24,
-    marginTop: 40,
-},
+        flexDirection: "row",
+        justifyContent: "center",
+        alignItems: "center",
+        gap: 24,
+        marginTop: 40,
+    },
 
 
-   confirmDeactivateBtn: {
-    width: 220,
-    height: 64,
-    backgroundColor: "#EF4444",
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-},
+    confirmDeactivateBtn: {
+        width: 220,
+        height: 64,
+        backgroundColor: "#EF4444",
+        borderRadius: 12,
+        justifyContent: "center",
+        alignItems: "center",
+    },
 
     confirmDeactivateText: {
         color: "#fff",
@@ -980,17 +1018,66 @@ const styles = StyleSheet.create({
         fontWeight: "700",
     },
 
-   cancelBtn: {
-    width: 220,
-    height: 64,
-    backgroundColor: "#EEF2F7",
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-},
+    cancelBtn: {
+        width: 220,
+        height: 64,
+        backgroundColor: "#EEF2F7",
+        borderRadius: 12,
+        justifyContent: "center",
+        alignItems: "center",
+    },
     cancelText: {
         color: "#64748B",
         fontSize: 20,
         fontWeight: "700",
     },
+    dropdown: {
+        height: 50,
+        borderColor: '#D1D5DB',
+        borderWidth: 1,
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        backgroundColor: '#fff',
+    },
+
+    placeholderStyle: {
+        color: '#9CA3AF',
+        fontSize: 16,
+    },
+
+    selectedTextStyle: {
+        fontSize: 16,
+        color: '#111827',
+    },
+
+    closeButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+
+    closeButtonText: {
+        fontSize: 24,
+        color: "#6B7280",
+        fontWeight: "700",
+    },
+
+    footerButtonContainer: {
+        marginTop: 30,
+        alignItems: "center",
+    },
+
+    bottomCreateBtn: {
+        width: 220,
+        height: 55,
+        backgroundColor: "#2563EB",
+        borderRadius: 10,
+        justifyContent: "center",
+        alignItems: "center",
+        alignSelf: "center"
+    },
+
+    
 });
