@@ -1382,7 +1382,40 @@ export const adminAPI = {
   getHospitalManagementStats: async () => {
     const response = await api.get('/api/admin/hospitals/stats')
     return response.data
-  }
+  },
+
+  // ─── Admin Management (Admin Logs page) APIs ──────────────────────────────
+
+  // GET /api/admin/admin-list
+  getAdminList: async (params = {}) => {
+    const response = await api.get('/api/admin/admin-list', { params });
+    return response.data;
+  },
+
+  // GET /api/admin/admin-detail/:adminId
+  getAdminDetail: async (adminId) => {
+    const response = await api.get(`/api/admin/admin-detail/${adminId}`);
+    return response.data;
+  },
+
+  // POST /api/admin/create-admin
+  // Body: { name, email, password, adminSubRole }
+  createAdmin: async (payload) => {
+    const response = await api.post('/api/admin/create-admin', payload);
+    return response.data;
+  },
+
+  // DELETE /api/admin/deactivate-admin/:adminId
+  deactivateAdmin: async (adminId) => {
+    const response = await api.delete(`/api/admin/deactivate-admin/${adminId}`);
+    return response.data;
+  },
+
+  // PATCH /api/admin/activate-admin/:adminId
+  activateAdmin: async (adminId) => {
+    const response = await api.patch(`/api/admin/activate-admin/${adminId}`);
+    return response.data;
+  },
 
 }
 

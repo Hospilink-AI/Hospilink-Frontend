@@ -1,6 +1,8 @@
 import PortalUsage from '@/component/cards/admin/Dashboard/PortalUsage';
 import React from "react";
 import {
+    ActivityIndicator,
+    Alert,
     FlatList,
     SafeAreaView,
     StyleSheet,
@@ -14,100 +16,19 @@ import {
     TextInput,
 } from "react-native";
 
+import { adminAPI } from "@/service/api";
 
 
-const DATA = [
-    {
-        id: "1",
-        name: "Sunil Patil",
-        role: "Admin",
-        subRole: "General Medicine",
-        email: "sunilpatil.admin@gmail.com",
-        phone: "+91 9876543210",
-        status: "Active",
-    },
-    {
-        id: "2",
-        name: "Peter Parker",
-        role: "Admin",
-        subRole: "Cardiology",
-        email: "peter.parker@gmail.com",
-        phone: "+91 9876543211",
-        status: "Active",
-    },
-    {
-        id: "3",
-        name: "Tom Holland",
-        role: "Admin",
-        subRole: "Orthopedics",
-        email: "tom.holland@gmail.com",
-        phone: "+91 9876543212",
-        status: "Inactive",
-    },
-    {
-        id: "4",
-        name: "Tony Stark",
-        role: "Admin",
-        subRole: "Radiology",
-        email: "tony.stark@gmail.com",
-        phone: "+91 9876543213",
-        status: "Active",
-    },
-    {
-        id: "5",
-        name: "Bruce Wayne",
-        role: "Admin",
-        subRole: "Neurology",
-        email: "bruce.wayne@gmail.com",
-        phone: "+91 9876543214",
-        status: "Inactive",
-    },
-    {
-        id: "6",
-        name: "Clark Kent",
-        role: "Admin",
-        subRole: "Pediatrics",
-        email: "clark.kent@gmail.com",
-        phone: "+91 9876543215",
-        status: "Active",
-    },
-    {
-        id: "7",
-        name: "Natasha Romanoff",
-        role: "Admin",
-        subRole: "Emergency",
-        email: "natasha@gmail.com",
-        phone: "+91 9876543216",
-        status: "Active",
-    },
-    {
-        id: "8",
-        name: "Steve Rogers",
-        role: "Admin",
-        subRole: "ICU",
-        email: "steve.rogers@gmail.com",
-        phone: "+91 9876543217",
-        status: "Inactive",
-    },
-    {
-        id: "9",
-        name: "Wanda Maximoff",
-        role: "Admin",
-        subRole: "Gynecology",
-        email: "wanda@gmail.com",
-        phone: "+91 9876543218",
-        status: "Active",
-    },
-    {
-        id: "10",
-        name: "Stephen Strange",
-        role: "Admin",
-        subRole: "Surgery",
-        email: "dr.strange@gmail.com",
-        phone: "+91 9876543219",
-        status: "Active",
-    },
-];
+
+const mapAdmin = (a: any) => ({
+    id: a._id ?? a.id ?? a.adminId ?? "",
+    name: a.name ?? "Unknown",
+    role: a.role ?? "Admin",
+    subRole: a.adminSubRole ?? a.subRole ?? "",
+    email: a.email ?? "—",
+    phone: a.phone ?? a.phoneNumber ?? "",
+    status: a.isActive === false ? "Inactive" : (a.status ?? "Active"),
+});
 
 
 
@@ -115,14 +36,54 @@ export default function AdminLogs() {
 
     const [showCreateAdmin, setShowCreateAdmin] = React.useState(false);
     const [showDetails, setShowDetails] = React.useState(false);
-    const [selectedAdmin, setSelectedAdmin] = React.useState(null);
+    const [selectedAdmin, setSelectedAdmin] = React.useState<any>(null);
     const [showDeactivateModal, setShowDeactivateModal] = React.useState(false);
 
     const [name, setName] = React.useState("");
     const [email, setEmail] = React.useState("");
     const [password, setPassword] = React.useState("");
     const [role, setRole] = React.useState("");
-    const renderItem = ({ item }) => (
+
+    const [admins, setAdmins] = React.useState<any[]>([]);
+    const [listLoading, setListLoading] = React.useState(true);
+    const [detailsLoading, setDetailsLoading] = React.useState(false);
+    const [createLoading, setCreateLoading] = React.useState(false);
+    const [actionLoading, setActionLoading] = React.useState(false);
+
+    const fetchAdminList = React.useCallback(async () => {
+        setListLoading(true);
+        try {
+            const res = await adminAPI.getAdminList();
+            const list = res?.data ?? res?.admins ?? res ?? [];
+            setAdmins(Array.isArray(list) ? list.map(mapAdmin) : []);
+        } catch (err: any) {
+            Alert.alert("Error", err?.response?.data?.message ?? "Failed to load admin list.");
+        } finally {
+            setListLoading(false);
+        }
+    }, []);
+
+    React.useEffect(() => {
+        fetchAdminList();
+    }, [fetchAdminList]);
+
+    const handleViewDetails = async (item: any) => {
+        setSelectedAdmin(item);
+        setShowDetails(true);
+        setDetailsLoading(true);
+        try {
+            const res = await adminAPI.getAdminDetail(item.id);
+            const detail = res?.data ?? res?.admin ?? res;
+            setSelectedAdmin(mapAdmin(detail));
+        } catch (err: any) {
+            Alert.alert("Error", err?.response?.data?.message ?? "Failed to load admin details.");
+            setShowDetails(false);
+        } finally {
+            setDetailsLoading(false);
+        }
+    };
+
+    const renderItem = ({ item }: { item: any }) => (
         <View style={styles.row}>
             <Text style={[styles.cell, { flex: 2 }]}>{item.name}</Text>
 
@@ -133,10 +94,7 @@ export default function AdminLogs() {
                     flex: 1,
                     alignItems: "flex-end"
                 }}
-                onPress={() => {
-                    setSelectedAdmin(item);
-                    setShowDetails(true);
-                }}
+                onPress={() => handleViewDetails(item)}
             >
                 <Text style={styles.details}>Details</Text>
             </TouchableOpacity>
@@ -184,12 +142,16 @@ export default function AdminLogs() {
                                 </Text>
                             </View>
 
-                            <FlatList
-                                data={DATA}
-                                keyExtractor={(item) => item.id}
-                                renderItem={renderItem}
-                                showsVerticalScrollIndicator={false}
-                            />
+                            {listLoading ? (
+                                <ActivityIndicator style={{ marginVertical: 30 }} color="#2563EB" />
+                            ) : (
+                                <FlatList
+                                    data={admins}
+                                    keyExtractor={(item) => item.id}
+                                    renderItem={renderItem}
+                                    showsVerticalScrollIndicator={false}
+                                />
+                            )}
 
                             <View style={styles.footer}>
                                 <Text style={styles.footerText}>
@@ -291,14 +253,40 @@ export default function AdminLogs() {
 
                             <TouchableOpacity
                                 style={styles.createBtn}
-                                onPress={() => {
-                                    // Save API
-                                    setShowCreateAdmin(false);
+                                disabled={createLoading}
+                                onPress={async () => {
+                                    if (!name.trim() || !email.trim() || !password.trim() || !role.trim()) {
+                                        Alert.alert("Missing details", "Please fill in all fields.");
+                                        return;
+                                    }
+                                    setCreateLoading(true);
+                                    try {
+                                        await adminAPI.createAdmin({
+                                            name: name.trim(),
+                                            email: email.trim(),
+                                            password,
+                                            adminSubRole: role.trim(),
+                                        });
+                                        setShowCreateAdmin(false);
+                                        setName("");
+                                        setEmail("");
+                                        setPassword("");
+                                        setRole("");
+                                        fetchAdminList();
+                                    } catch (err: any) {
+                                        Alert.alert("Error", err?.response?.data?.message ?? "Failed to create admin.");
+                                    } finally {
+                                        setCreateLoading(false);
+                                    }
                                 }}
                             >
-                                <Text style={styles.createBtnText}>
-                                    Create Admin
-                                </Text>
+                                {createLoading ? (
+                                    <ActivityIndicator color="#fff" />
+                                ) : (
+                                    <Text style={styles.createBtnText}>
+                                        Create Admin
+                                    </Text>
+                                )}
                             </TouchableOpacity>
 
                         </View>
@@ -440,6 +428,19 @@ export default function AdminLogs() {
 
                             <TouchableOpacity
                                 style={styles.inactiveBtn}
+                                disabled={actionLoading}
+                                onPress={async () => {
+                                    setActionLoading(true);
+                                    try {
+                                        await adminAPI.activateAdmin(selectedAdmin.id);
+                                        setShowDetails(false);
+                                        fetchAdminList();
+                                    } catch (err: any) {
+                                        Alert.alert("Error", err?.response?.data?.message ?? "Failed to activate admin.");
+                                    } finally {
+                                        setActionLoading(false);
+                                    }
+                                }}
                             >
 
                                 <Text style={styles.inactiveText}>
@@ -504,15 +505,27 @@ export default function AdminLogs() {
 
                             <TouchableOpacity
                                 style={styles.confirmDeactivateBtn}
-                                onPress={() => {
-                                    // TODO: Call API here
-
-                                    setShowDeactivateModal(false);
+                                disabled={actionLoading}
+                                onPress={async () => {
+                                    setActionLoading(true);
+                                    try {
+                                        await adminAPI.deactivateAdmin(selectedAdmin.id);
+                                        setShowDeactivateModal(false);
+                                        fetchAdminList();
+                                    } catch (err: any) {
+                                        Alert.alert("Error", err?.response?.data?.message ?? "Failed to deactivate admin.");
+                                    } finally {
+                                        setActionLoading(false);
+                                    }
                                 }}
                             >
-                                <Text style={styles.confirmDeactivateText}>
-                                    Deactivate
-                                </Text>
+                                {actionLoading ? (
+                                    <ActivityIndicator color="#fff" />
+                                ) : (
+                                    <Text style={styles.confirmDeactivateText}>
+                                        Deactivate
+                                    </Text>
+                                )}
                             </TouchableOpacity>
 
                             <TouchableOpacity
