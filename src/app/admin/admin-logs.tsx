@@ -91,7 +91,7 @@ export default function AdminLogs() {
         <View style={styles.row}>
             <Text style={[styles.cell, { flex: 2 }]}>{item.name}</Text>
 
-            <Text style={[styles.cell, { flex: 1 }]}>{item.role}</Text>
+            <Text style={[styles.cell, { flex: 1 }]}>{item.adminSubRole}</Text>
 
             <Text style={[styles.cell, {
                 flex: 1, color: item.status === "Active" ? "#16A34A" : "#DC2626",
@@ -420,6 +420,15 @@ export default function AdminLogs() {
 
                     <View style={styles.detailsModal}>
 
+
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={() => setShowDetails(false)}
+                        >
+                            <Text style={styles.closeButtonText}>✕</Text>
+                        </TouchableOpacity>
+
+
                         <Text style={styles.detailsTitle}>
                             Details
                         </Text>
@@ -442,21 +451,35 @@ export default function AdminLogs() {
                                 </Text>
 
                                 <Text style={styles.detailValue}>
-                                    {selectedAdmin?.role}
+                                    {selectedAdmin?.adminSubRole}
                                 </Text>
                             </View>
 
                         </View>
 
-                        <View style={{ marginTop: 30 }}>
+                        <View style={[styles.detailsRow, { marginTop: 30 }]}>
 
-                            <Text style={styles.detailLabel}>
-                                Email
-                            </Text>
 
-                            <Text style={styles.detailValue}>
-                                {selectedAdmin?.email}
-                            </Text>
+                            <View style={styles.detailItem}>
+                                <Text style={styles.detailLabel}>
+                                    Email
+                                </Text>
+
+                                <Text style={styles.detailValue}>
+                                    {selectedAdmin?.email}
+                                </Text>
+                            </View>
+
+                            <View style={styles.detailItem}>
+                                <Text style={styles.detailLabel}>
+                                    Status
+                                </Text>
+
+                                <Text style={styles.detailValue}>
+                                    {selectedAdmin?.status}
+                                </Text>
+                            </View>
+
 
                         </View>
 
@@ -1079,5 +1102,21 @@ const styles = StyleSheet.create({
         alignSelf: "center"
     },
 
-    
+    closeButton: {
+        position: "absolute",
+        top: 15,
+        right: 15,
+        width: 32,
+        height: 32,
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 10,
+    },
+
+    closeButtonText: {
+        fontSize: 20,
+        fontWeight: "600",
+    },
+
+
 });
