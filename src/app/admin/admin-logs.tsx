@@ -15,6 +15,9 @@ import {
 import { Dropdown } from 'react-native-element-dropdown';
 
 import { adminAPI } from "@/service/api";
+import { useAuth } from "@/context/AuthContext";
+import { useCapability } from "@/hooks/useCapability";
+import { ADMIN_SUB_ROLE_OPTIONS, adminSubRoleLabel } from "@/constant/adminCapabilities";
 
 
 
@@ -32,6 +35,12 @@ const mapAdmin = (a: any) => ({
 
 export default function AdminLogs() {
 
+    const { user } = useAuth();
+    const { can, subRole } = useCapability();
+
+    // Operations Manager gets a read-only view
+    const canManageAdmins = can('admin.manage');
+
     const [showCreateAdmin, setShowCreateAdmin] = React.useState(false);
     const [showDetails, setShowDetails] = React.useState(false);
     const [selectedAdmin, setSelectedAdmin] = React.useState<any>(null);
@@ -48,11 +57,16 @@ export default function AdminLogs() {
     const [createLoading, setCreateLoading] = React.useState(false);
     const [actionLoading, setActionLoading] = React.useState(false);
 
-    const roles = [
-        { label: 'Super Admin', value: 'super_admin' },
-        { label: 'Operational Manager', value: 'operations_manager' },
-        { label: 'Tech Support', value: 'tech_support' },
-    ];
+    // Update Role
+    const [showRoleModal, setShowRoleModal] = React.useState(false);
+    const [roleStep, setRoleStep] = React.useState<"choose" | "otp">("choose");
+    const [newSubRole, setNewSubRole] = React.useState("");
+    const [otp, setOtp] = React.useState("");
+    const [roleError, setRoleError] = React.useState<string | null>(null);
+    const [roleLoading, setRoleLoading] = React.useState(false);
+    const [resending, setResending] = React.useState(false);
+
+    const roles = ADMIN_SUB_ROLE_OPTIONS;
 
     const fetchAdminList = React.useCallback(async () => {
         setListLoading(true);
@@ -87,11 +101,102 @@ export default function AdminLogs() {
         }
     };
 
+    // No role change on yourself or on another super admin
+    const isSelf = Boolean(
+        selectedAdmin?.id && user?.id && String(selectedAdmin.id) === String(user.id)
+    );
+    const targetIsSuperAdmin = selectedAdmin?.subRole === "super_admin";
+    const canChangeThisRole = canManageAdmins && !isSelf && !targetIsSuperAdmin;
+
+    const openRoleModal = () => {
+        setNewSubRole(selectedAdmin?.subRole ?? "");
+        setOtp("");
+        setRoleError(null);
+        setRoleStep("choose");
+        setShowDetails(false);
+        setShowRoleModal(true);
+    };
+
+    const closeRoleModal = () => {
+        setShowRoleModal(false);
+        setRoleStep("choose");
+        setNewSubRole("");
+        setOtp("");
+        setRoleError(null);
+    };
+
+    const apiMessage = (err: any, fallback: string) =>
+        err?.response?.data?.message ?? fallback;
+
+    // Step 1 - OTP is sent to the logged in admin's email
+    const handleInitiateRoleChange = async () => {
+        if (!newSubRole) {
+            setRoleError("Pick a role to change to.");
+            return;
+        }
+        if (newSubRole === selectedAdmin?.subRole) {
+            setRoleError("That is already this admin's role.");
+            return;
+        }
+
+        setRoleLoading(true);
+        setRoleError(null);
+        try {
+            await adminAPI.initiateRoleChange(selectedAdmin.id, newSubRole);
+            setRoleStep("otp");
+        } catch (err: any) {
+            setRoleError(apiMessage(err, "Could not start the role change."));
+        } finally {
+            setRoleLoading(false);
+        }
+    };
+
+    // Step 2 - verify OTP
+    const handleVerifyRoleChange = async () => {
+        if (otp.trim().length !== 6) {
+            setRoleError("Enter the 6-digit code.");
+            return;
+        }
+
+        setRoleLoading(true);
+        setRoleError(null);
+        try {
+            await adminAPI.verifyRoleChangeOtp(otp.trim());
+            closeRoleModal();
+            setSelectedAdmin(null);
+            fetchAdminList();
+        } catch (err: any) {
+            const status = err?.response?.status;
+            const message = apiMessage(err, "Could not confirm the role change.");
+            setRoleError(message);
+            setOtp("");
+            // request expired or too many attempts - start again
+            if (status === 404 || (status === 401 && /attempts/i.test(message))) {
+                setRoleStep("choose");
+            }
+        } finally {
+            setRoleLoading(false);
+        }
+    };
+
+    const handleResendOtp = async () => {
+        setResending(true);
+        setRoleError(null);
+        try {
+            await adminAPI.resendRoleChangeOtp();
+            setOtp("");
+        } catch (err: any) {
+            setRoleError(apiMessage(err, "Could not resend the code."));
+        } finally {
+            setResending(false);
+        }
+    };
+
     const renderItem = ({ item }: { item: any }) => (
         <View style={styles.row}>
             <Text style={[styles.cell, { flex: 2 }]}>{item.name}</Text>
 
-            <Text style={[styles.cell, { flex: 1 }]}>{item.adminSubRole}</Text>
+            <Text style={[styles.cell, { flex: 1 }]}>{adminSubRoleLabel(item.subRole)}</Text>
 
             <Text style={[styles.cell, {
                 flex: 1, color: item.status === "Active" ? "#16A34A" : "#DC2626",
@@ -116,16 +221,18 @@ export default function AdminLogs() {
                 {/* Header */}
                 <View style={styles.headerContainer}>
                     <View>
-                        <Text style={styles.title}>Tom Hiddleston</Text>
-                        <Text style={styles.subtitle}>Super Admin</Text>
+                        <Text style={styles.title}>{user?.name ?? "Admin"}</Text>
+                        <Text style={styles.subtitle}>{adminSubRoleLabel(subRole)}</Text>
                     </View>
 
-                    <TouchableOpacity
-                        style={styles.createBtn}
-                        onPress={() => setShowCreateAdmin(true)}
-                    >
-                        <Text style={styles.createBtnText}>+ Create Admin</Text>
-                    </TouchableOpacity>
+                    {canManageAdmins && (
+                        <TouchableOpacity
+                            style={styles.createBtn}
+                            onPress={() => setShowCreateAdmin(true)}
+                        >
+                            <Text style={styles.createBtnText}>+ Create Admin</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 {/* Dashboard */}
@@ -451,7 +558,7 @@ export default function AdminLogs() {
                                 </Text>
 
                                 <Text style={styles.detailValue}>
-                                    {selectedAdmin?.adminSubRole}
+                                    {adminSubRoleLabel(selectedAdmin?.subRole)}
                                 </Text>
                             </View>
 
@@ -483,58 +590,82 @@ export default function AdminLogs() {
 
                         </View>
 
-                        <View style={styles.separator} />
+                        {canManageAdmins && (
+                            <>
+                                <View style={styles.separator} />
 
-                        <View style={styles.actionRow}>
+                                <View style={styles.actionRow}>
 
-                            <TouchableOpacity
-                                style={styles.inactiveBtn}
-                                disabled={actionLoading}
-                                onPress={async () => {
-                                    setActionLoading(true);
-                                    try {
-                                        await adminAPI.activateAdmin(selectedAdmin.id);
-                                        setShowDetails(false);
-                                        fetchAdminList();
-                                    } catch (err: any) {
-                                        Alert.alert("Error", err?.response?.data?.message ?? "Failed to activate admin.");
-                                    } finally {
-                                        setActionLoading(false);
-                                    }
-                                }}
-                            >
+                                    {/* super admins can't be activated/deactivated */}
+                                    {!targetIsSuperAdmin && selectedAdmin?.status === "Inactive" && (
+                                        <TouchableOpacity
+                                            style={styles.inactiveBtn}
+                                            disabled={actionLoading}
+                                            onPress={async () => {
+                                                setActionLoading(true);
+                                                try {
+                                                    await adminAPI.activateAdmin(selectedAdmin.id);
+                                                    setShowDetails(false);
+                                                    fetchAdminList();
+                                                } catch (err: any) {
+                                                    Alert.alert("Error", err?.response?.data?.message ?? "Failed to activate admin.");
+                                                } finally {
+                                                    setActionLoading(false);
+                                                }
+                                            }}
+                                        >
 
-                                <Text style={styles.inactiveText}>
-                                    Activate
-                                </Text>
+                                            <Text style={styles.inactiveText}>
+                                                Activate
+                                            </Text>
 
-                            </TouchableOpacity>
+                                        </TouchableOpacity>
+                                    )}
 
-                            <TouchableOpacity
-                                style={styles.deactivateBtn}
-                                onPress={() => {
-                                    setShowDetails(false);
-                                    setShowDeactivateModal(true);
-                                }}
-                            >
+                                    {!targetIsSuperAdmin && !isSelf && selectedAdmin?.status === "Active" && (
+                                        <TouchableOpacity
+                                            style={styles.deactivateBtn}
+                                            onPress={() => {
+                                                setShowDetails(false);
+                                                setShowDeactivateModal(true);
+                                            }}
+                                        >
 
-                                <Text style={styles.actionText}>
-                                    Deactivate
-                                </Text>
+                                            <Text style={styles.actionText}>
+                                                Deactivate
+                                            </Text>
 
-                            </TouchableOpacity>
+                                        </TouchableOpacity>
+                                    )}
 
-                            <TouchableOpacity
-                                style={styles.updateBtn}
-                            >
+                                    {canChangeThisRole && (
+                                        <TouchableOpacity
+                                            style={styles.updateBtn}
+                                            onPress={openRoleModal}
+                                        >
 
-                                <Text style={styles.actionText}>
-                                    Update Role
-                                </Text>
+                                            <Text style={styles.actionText}>
+                                                Update Role
+                                            </Text>
 
-                            </TouchableOpacity>
+                                        </TouchableOpacity>
+                                    )}
 
-                        </View>
+                                </View>
+
+                                {isSelf && (
+                                    <Text style={styles.actionNote}>
+                                        You cannot change or deactivate your own account. Ask another super admin.
+                                    </Text>
+                                )}
+
+                                {targetIsSuperAdmin && !isSelf && (
+                                    <Text style={styles.actionNote}>
+                                        Super admin accounts are protected and cannot be changed from this panel.
+                                    </Text>
+                                )}
+                            </>
+                        )}
 
                     </View>
 
@@ -598,6 +729,131 @@ export default function AdminLogs() {
                                 <Text style={styles.cancelText}>
                                     Cancel
                                 </Text>
+                            </TouchableOpacity>
+
+                        </View>
+
+                    </View>
+
+                </View>
+
+            </Modal>
+
+
+            <Modal
+                visible={showRoleModal}
+                transparent
+                animationType="fade"
+                onRequestClose={closeRoleModal}
+            >
+
+                <View style={styles.modalOverlay}>
+
+                    <View style={styles.roleModal}>
+
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={closeRoleModal}
+                        >
+                            <Text style={styles.closeButtonText}>✕</Text>
+                        </TouchableOpacity>
+
+                        <Text style={styles.modalTitle}>
+                            Update Role
+                        </Text>
+
+                        <Text style={styles.modalSubtitle}>
+                            {selectedAdmin?.name} · currently {adminSubRoleLabel(selectedAdmin?.subRole)}
+                        </Text>
+
+                        {roleStep === "choose" ? (
+                            <>
+                                <View style={styles.roleField}>
+                                    <Text style={styles.label}>New Role</Text>
+
+                                    <Dropdown
+                                        style={styles.dropdown}
+                                        placeholderStyle={styles.placeholderStyle}
+                                        selectedTextStyle={styles.selectedTextStyle}
+                                        data={roles}
+                                        labelField="label"
+                                        valueField="value"
+                                        placeholder="Select a role"
+                                        value={newSubRole}
+                                        onChange={(item) => {
+                                            setNewSubRole(item.value);
+                                            setRoleError(null);
+                                        }}
+                                    />
+                                </View>
+
+                                <Text style={styles.roleHint}>
+                                    A 6-digit code will be emailed to your own address to confirm
+                                    this change. The new permissions apply straight away.
+                                </Text>
+                            </>
+                        ) : (
+                            <>
+                                <View style={styles.roleField}>
+                                    <Text style={styles.label}>Enter Code</Text>
+
+                                    <TextInput
+                                        value={otp}
+                                        onChangeText={(text) => {
+                                            setOtp(text.replace(/[^0-9]/g, "").slice(0, 6));
+                                            setRoleError(null);
+                                        }}
+                                        placeholder="000000"
+                                        keyboardType="number-pad"
+                                        maxLength={6}
+                                        style={[styles.input, styles.otpInput]}
+                                    />
+                                </View>
+
+                                <Text style={styles.roleHint}>
+                                    Sent to {user?.email ?? "your email"}. The code lasts about 10 minutes,
+                                    and 5 wrong tries will cancel the request.
+                                </Text>
+
+                                <TouchableOpacity
+                                    onPress={handleResendOtp}
+                                    disabled={resending || roleLoading}
+                                >
+                                    <Text style={styles.resendText}>
+                                        {resending ? "Sending…" : "Resend code"}
+                                    </Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
+
+                        {roleError && (
+                            <Text style={styles.roleError}>{roleError}</Text>
+                        )}
+
+                        <View style={styles.roleActions}>
+
+                            <TouchableOpacity
+                                style={[styles.cancelBtn, styles.roleActionBtn, { marginRight: 12 }]}
+                                onPress={closeRoleModal}
+                                disabled={roleLoading}
+                            >
+                                <Text style={styles.cancelText}>
+                                    Cancel
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.updateBtn, styles.roleActionBtn]}
+                                disabled={roleLoading}
+                                onPress={roleStep === "choose" ? handleInitiateRoleChange : handleVerifyRoleChange}
+                            >
+                                {roleLoading ? (
+                                    <ActivityIndicator color="#fff" />
+                                ) : (
+                                    <Text style={styles.actionText}>
+                                        {roleStep === "choose" ? "Continue" : "Confirm Change"}
+                                    </Text>
+                                )}
                             </TouchableOpacity>
 
                         </View>
@@ -1073,20 +1329,6 @@ const styles = StyleSheet.create({
         color: '#111827',
     },
 
-    closeButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-
-    closeButtonText: {
-        fontSize: 24,
-        color: "#6B7280",
-        fontWeight: "700",
-    },
-
     footerButtonContainer: {
         marginTop: 30,
         alignItems: "center",
@@ -1118,5 +1360,62 @@ const styles = StyleSheet.create({
         fontWeight: "600",
     },
 
+    actionNote: {
+        marginTop: 16,
+        fontSize: 14,
+        color: "#64748B",
+        textAlign: "center",
+    },
+
+    roleModal: {
+        width: "45%",
+        backgroundColor: "#fff",
+        borderRadius: 22,
+        padding: 35,
+    },
+
+    roleField: {
+        marginTop: 25,
+    },
+
+    roleHint: {
+        marginTop: 14,
+        fontSize: 14,
+        lineHeight: 20,
+        color: "#64748B",
+    },
+
+    roleError: {
+        marginTop: 14,
+        fontSize: 14,
+        color: "#DC2626",
+    },
+
+    resendText: {
+        marginTop: 14,
+        fontSize: 14,
+        fontWeight: "600",
+        color: "#2563EB",
+    },
+
+    otpInput: {
+        letterSpacing: 8,
+        fontSize: 20,
+        fontWeight: "600",
+    },
+
+    roleActions: {
+        flexDirection: "row",
+        marginTop: 30,
+    },
+
+    roleActionBtn: {
+        flex: 1,
+        width: "auto",
+        height: 56,
+        marginLeft: 0,
+        paddingVertical: 0,
+        justifyContent: "center",
+    },
 
 });

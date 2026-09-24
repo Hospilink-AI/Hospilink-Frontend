@@ -1417,6 +1417,42 @@ export const adminAPI = {
     return response.data;
   },
 
+  // GET /api/admin/profile
+  // Returns: { success, data: { id, name, email, role, adminSubRole } }
+  getProfile: async () => {
+    const response = await api.get('/api/admin/profile');
+    return response.data;
+  },
+
+  // ─── Update Admin Role - two-step, OTP confirmed ──────────────────────────
+  // All three share one rate limit: 3 requests per 15 minutes combined.
+
+  // Step 1 - PATCH /api/admin/update-admin-role/:adminId
+  // Body: { adminSubRole: 'super_admin' | 'operations_manager' | 'tech_support' }
+  // Stages the change and emails a 6-digit OTP to the ACTING admin, not the target.
+  // Returns: { success, message, data: { targetAdminId, targetName, targetEmail, requestedSubRole } }
+  initiateRoleChange: async (adminId, adminSubRole) => {
+    const response = await api.patch(`/api/admin/update-admin-role/${adminId}`, { adminSubRole });
+    return response.data;
+  },
+
+  // Step 2 - POST /api/admin/update-admin-role/verify-otp
+  // Body: { otp } only - the staged change is held server-side against the acting
+  // admin, so the target id is not resent. Applies the change and drops the
+  // target's session immediately.
+  // OTP is valid ~10 minutes; 5 failed attempts discard the staged change and
+  // the flow must restart from step 1.
+  verifyRoleChangeOtp: async (otp) => {
+    const response = await api.post('/api/admin/update-admin-role/verify-otp', { otp });
+    return response.data;
+  },
+
+  // POST /api/admin/update-admin-role/resend-otp - no body
+  resendRoleChangeOtp: async () => {
+    const response = await api.post('/api/admin/update-admin-role/resend-otp');
+    return response.data;
+  },
+
 }
 
 export const notificationAPI = {

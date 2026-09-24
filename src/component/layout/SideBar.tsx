@@ -293,6 +293,8 @@ import {
   View,
 } from "react-native";
 import { authAPI } from "../../service/api";
+import { useCapability } from "@/hooks/useCapability";
+import { AdminCapability } from "@/constant/adminCapabilities";
 
 type IoniconName = ComponentProps<typeof Ionicons>["name"];
 
@@ -300,6 +302,8 @@ type NavItem = {
   label: string;
   icon: IoniconName;
   route: Href;
+  // admin only - hidden if the sub-role doesn't have it
+  capability?: AdminCapability;
 };
 
 type NavConfigType = {
@@ -331,18 +335,20 @@ const NavConfig: NavConfigType = {
     { label: "Live Tracking",        icon: "locate-outline",           route: "/admin/live-tracking"        },
     { label: "Live Monitoring",      icon: "eye-outline",              route: "/admin/live-monitoring"      },
     { label: "Activity Logs",        icon: "reload-outline",           route: "/admin/activity-logs"        },
-    { label: "Admin Logs",        icon: "reload-outline",           route: "/admin/admin-logs"        },
+    { label: "Admin Management",     icon: "shield-outline",           route: "/admin/admin-logs", capability: "admin.view" },
   ],
 };
 
 function useNavItems(): NavItem[] {
   const pathname = usePathname();
+  const { can } = useCapability();
   const role = pathname.startsWith("/admin")
     ? "admin"
     : pathname.startsWith("/hospital")
       ? "hospital"
       : "medicalStaff";
-  return NavConfig[role] ?? [];
+  const items = NavConfig[role] ?? [];
+  return items.filter((item) => !item.capability || can(item.capability));
 }
 
 export default function Sidebar() {
