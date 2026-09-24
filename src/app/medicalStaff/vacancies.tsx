@@ -434,12 +434,15 @@
 // });
 
 
+import PermanentVacancyCard from "@/component/cards/jobs/PermanentVacancyCard";
 import QuickFilters, { QuickFilterValues } from "@/component/cards/medicalStaff/Vacancies/QuickFilters";
 import VacancyJobCard, { JobItem } from "@/component/cards/medicalStaff/Vacancies/VacancyJobCard";
 import VacancyStatCard from "@/component/cards/medicalStaff/Vacancies/VacancyStatCard";
 import { COLORS } from "@/constant/colors";
 import { vacancyStats } from "@/data/vacancies";
+import { matchesSearch, usePermanentVacancies } from "@/hooks/usePermanentVacancies";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -469,6 +472,8 @@ export default function Vacancies() {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
   const scrollRef = useRef<ScrollView>(null);
+  const router = useRouter();
+  const permanent = usePermanentVacancies();
 
   // ── Jobs State ──
   const [jobs, setJobs] = useState<JobItem[]>([]);
@@ -556,6 +561,14 @@ export default function Vacancies() {
     return pages;
   };
 
+  // Hospital-posted vacancies sit above the agent jobs on the first page.
+  const permanentVisible =
+    pagination.currentPage === 1
+      ? permanent.vacancies.filter(
+          (v) => matchesSearch(v, activeRole) && matchesSearch(v, activeLocation)
+        )
+      : [];
+
   const startItem = (pagination.currentPage - 1) * pagination.itemsPerPage + 1;
   const endItem = Math.min(
     pagination.currentPage * pagination.itemsPerPage,
@@ -622,13 +635,21 @@ export default function Vacancies() {
       {/* ── Header ── */}
       <View style={styles.featuredHeader}>
         <View>
-          <Text style={styles.featuredTitle}>Available Vacancies</Text>
+          <Text style={styles.featuredTitle}>Permanent Vacancies</Text>
           <Text style={styles.featuredSub}>
             {activeRole || activeLocation
               ? `Results for "${[activeRole, activeLocation].filter(Boolean).join(" in ")}"`
               : "Based on your specialty and location"}
           </Text>
         </View>
+        <TouchableOpacity
+          style={styles.myAppsBtn}
+          onPress={() => router.push("/medicalStaff/applications" as any)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="document-text-outline" size={16} color={COLORS.primary} />
+          <Text style={styles.myAppsText}>My Applications</Text>
+        </TouchableOpacity>
       </View>
 
       {/* ── Pagination Meta ── */}
@@ -675,7 +696,7 @@ export default function Vacancies() {
       )}
 
       {/* ── Empty State ── */}
-      {!loading && !error && jobs.length === 0 && (
+      {!loading && !error && jobs.length === 0 && permanentVisible.length === 0 && (
         <View style={styles.emptyWrap}>
           <Ionicons name="search-outline" size={40} color={COLORS.subText} />
           <Text style={styles.emptyTitle}>No jobs found</Text>
@@ -686,6 +707,14 @@ export default function Vacancies() {
       {/* ── Job Cards ── */}
       {!loading && !error && (
         <View style={styles.jobList}>
+          {permanentVisible.map((v) => (
+            <PermanentVacancyCard
+              key={v._id}
+              vacancy={v}
+              applicationStatus={permanent.statusByVacancy[v._id]}
+              onPress={() => router.push(`/medicalStaff/jobs/${v._id}` as any)}
+            />
+          ))}
           {jobs.map((job) => (
             <VacancyJobCard key={job._id} job={job} />
           ))}
@@ -896,6 +925,18 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   featuredTitle: { fontSize: 20, fontWeight: "700", color: COLORS.text },
+  myAppsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    backgroundColor: "#EFF6FF",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  myAppsText: { fontSize: 13, fontWeight: "700", color: COLORS.primary },
   featuredSub: { fontSize: 13, color: COLORS.subText, marginTop: 3 },
 
   // ── Pagination Meta ──

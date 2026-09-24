@@ -866,6 +866,181 @@ export const vacancyAPI = {
 
 };
 
+// Permanent jobs - hospital-posted vacancies, applications and interviews
+export const jobAPI = {
+
+  // ─── Vacancies ────────────────────────────────────────────
+
+  // POST /api/vacancy
+  // Body: { title, specialty, experience?, education?, skills?, location?, salary?, description }
+  createVacancy: async (payload) => {
+    const response = await api.post('/api/vacancy', payload);
+    return response.data;
+  },
+
+  // GET /api/vacancies/posted - hospital's own, including closed
+  getPostedVacancies: async (page = 1, limit = 10) => {
+    const response = await api.get('/api/vacancies/posted', { params: { page, limit } });
+    return response.data;
+  },
+
+  // GET /api/vacancies - match-sorted for staff
+  getVacancies: async (params = {}) => {
+    const { specialty, location, page = 1, limit = 10 } = params;
+    const response = await api.get('/api/vacancies', {
+      params: { page, limit, ...(specialty && { specialty }), ...(location && { location }) },
+    });
+    return response.data;
+  },
+
+  // GET /api/vacancies/:id
+  getVacancy: async (vacancyId) => {
+    const response = await api.get(`/api/vacancies/${vacancyId}`);
+    return response.data;
+  },
+
+  // PATCH /api/vacancies/:id - partial edit
+  updateVacancy: async (vacancyId, payload) => {
+    const response = await api.patch(`/api/vacancies/${vacancyId}`, payload);
+    return response.data;
+  },
+
+  // PATCH /api/vacancies/:id/close - 409 if an interview is confirmed
+  closeVacancy: async (vacancyId) => {
+    const response = await api.patch(`/api/vacancies/${vacancyId}/close`);
+    return response.data;
+  },
+
+  // ─── Applications ─────────────────────────────────────────
+
+  // POST /api/vacancies/:id/apply - no body, uses the resume on file
+  apply: async (vacancyId) => {
+    const response = await api.post(`/api/vacancies/${vacancyId}/apply`);
+    return response.data;
+  },
+
+  // GET /api/vacancies/:id/applications
+  getApplicants: async (vacancyId, params = {}) => {
+    const { status, page = 1, limit = 10 } = params;
+    const response = await api.get(`/api/vacancies/${vacancyId}/applications`, {
+      params: { page, limit, ...(status && { status }) },
+    });
+    return response.data;
+  },
+
+  // GET /api/applications/mine
+  getMyApplications: async (params = {}) => {
+    const { status, page = 1, limit = 10 } = params;
+    const response = await api.get('/api/applications/mine', {
+      params: { page, limit, ...(status && { status }) },
+    });
+    return response.data;
+  },
+
+  // GET /api/applications/:applicationId
+  getApplication: async (applicationId) => {
+    const response = await api.get(`/api/applications/${applicationId}`);
+    return response.data;
+  },
+
+  // GET /api/applications/:applicationId/resume - 422 if no masked preview
+  getResume: async (applicationId) => {
+    const response = await api.get(`/api/applications/${applicationId}/resume`);
+    return response.data;
+  },
+
+  // PATCH /api/applications/:applicationId/status
+  // Body: { status: under_review | shortlisted | rejected, reason?, reasonText? }
+  updateStatus: async (applicationId, payload) => {
+    const response = await api.patch(`/api/applications/${applicationId}/status`, payload);
+    return response.data;
+  },
+
+  // PATCH /api/applications/:applicationId/withdraw - Body: { reason, reasonText? }
+  withdraw: async (applicationId, payload) => {
+    const response = await api.patch(`/api/applications/${applicationId}/withdraw`, payload);
+    return response.data;
+  },
+
+  // ─── Interview ────────────────────────────────────────────
+
+  // POST .../interview/offer-slots - Body: { slots: [{ start, end }], durationMinutes? }
+  offerSlots: async (applicationId, payload) => {
+    const response = await api.post(`/api/applications/${applicationId}/interview/offer-slots`, payload);
+    return response.data;
+  },
+
+  // PATCH .../slots/select - Body: { picks: [{ start, end }] }
+  selectSlots: async (applicationId, picks) => {
+    const response = await api.patch(`/api/applications/${applicationId}/slots/select`, { picks });
+    return response.data;
+  },
+
+  // POST .../interview/confirm
+  // Body: { slotStart, slotEnd, meetingLink, interviewerName, interviewerDesignation }
+  // 409: { blockedSlot, remainingPicks, needsReoffer }
+  confirmInterview: async (applicationId, payload) => {
+    const response = await api.post(`/api/applications/${applicationId}/interview/confirm`, payload);
+    return response.data;
+  },
+
+  // PATCH .../interview/cancel-offer - Body: { reason, reasonText? }
+  cancelOffer: async (applicationId, payload) => {
+    const response = await api.patch(`/api/applications/${applicationId}/interview/cancel-offer`, payload);
+    return response.data;
+  },
+
+  // PATCH .../interview/reschedule - Body: { slots, durationMinutes?, reason, reasonText? }
+  reschedule: async (applicationId, payload) => {
+    const response = await api.patch(`/api/applications/${applicationId}/interview/reschedule`, payload);
+    return response.data;
+  },
+
+  // PATCH .../interview/cancel - staff or hospital. Body: { reason, reasonText? }
+  cancelInterview: async (applicationId, payload) => {
+    const response = await api.patch(`/api/applications/${applicationId}/interview/cancel`, payload);
+    return response.data;
+  },
+
+  // PATCH .../interview/reschedule-request - staff. Body: { reason, reasonText? }
+  requestReschedule: async (applicationId, payload) => {
+    const response = await api.patch(`/api/applications/${applicationId}/interview/reschedule-request`, payload);
+    return response.data;
+  },
+
+  // PATCH .../interview/meeting-link
+  // Body: { meetingLink, interviewerName?, interviewerDesignation? }
+  updateMeetingLink: async (applicationId, payload) => {
+    const response = await api.patch(`/api/applications/${applicationId}/interview/meeting-link`, payload);
+    return response.data;
+  },
+
+  // PATCH .../outcome - Body: { result: offer | reject, reason?, reasonText? }
+  recordOutcome: async (applicationId, payload) => {
+    const response = await api.patch(`/api/applications/${applicationId}/outcome`, payload);
+    return response.data;
+  },
+
+  // PATCH .../no-show/mark - hospital. Body: { reoffer, newSlots?, durationMinutes? }
+  markNoShow: async (applicationId, payload) => {
+    const response = await api.patch(`/api/applications/${applicationId}/no-show/mark`, payload);
+    return response.data;
+  },
+
+  // PATCH .../no-show/report - staff, no body
+  reportNoShow: async (applicationId) => {
+    const response = await api.patch(`/api/applications/${applicationId}/no-show/report`);
+    return response.data;
+  },
+
+  // PATCH .../offer/respond - Body: { accept }
+  respondToOffer: async (applicationId, accept) => {
+    const response = await api.patch(`/api/applications/${applicationId}/offer/respond`, { accept });
+    return response.data;
+  },
+
+};
+
 
 export const documentAPI = {
 

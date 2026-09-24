@@ -1,5 +1,8 @@
+import PermanentVacancyCard from "@/component/cards/jobs/PermanentVacancyCard";
 import { COLORS } from "@/constant/colors";
+import { matchesSearch, usePermanentVacancies } from "@/hooks/usePermanentVacancies";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -259,8 +262,11 @@ function CompactCard({ vm, onApply }: { vm: VacancyVM; onApply: (vm: VacancyVM) 
 
 // ─── Main ─────────────────────────────────────────────────────────
 export default function Vacancies() {
+  const router = useRouter();
   const [view, setView] = useState<"list" | "map">("list");
   const [search, setSearch] = useState("");
+  const [query, setQuery] = useState("");
+  const permanent = usePermanentVacancies();
   const [activeChip, setActiveChip] = useState<string>("All");
 
   const [jobs, setJobs] = useState<VacancyVM[]>([]);
@@ -296,10 +302,14 @@ export default function Vacancies() {
     fetchJobs(1, "", "");
   }, [fetchJobs]);
 
-  const handleSearch = () => fetchJobs(1, search.trim(), "");
+  const handleSearch = () => {
+    setQuery(search.trim());
+    fetchJobs(1, search.trim(), "");
+  };
 
   const clearSearch = () => {
     setSearch("");
+    setQuery("");
     fetchJobs(1, "", "");
   };
 
@@ -318,27 +328,45 @@ export default function Vacancies() {
 
   const onApply = (vm: VacancyVM) => openLink(vm.applyLink);
 
+  // Hospital-posted vacancies sit above the agent jobs on the first page.
+  const permanentVisible = useMemo(
+    () => (pagination.currentPage === 1 ? permanent.vacancies.filter((v) => matchesSearch(v, query)) : []),
+    [permanent.vacancies, query, pagination.currentPage]
+  );
+
   // ── Shared header: title + list/map toggle ──
   const Header = (
-    <View style={styles.headerRow}>
-      <Text style={styles.headerTitle}>Vacancies Near You</Text>
-      <View style={styles.toggleWrap}>
-        <TouchableOpacity
-          style={[styles.toggleBtn, view === "list" && styles.toggleBtnActive]}
-          onPress={() => setView("list")}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="list" size={18} color={view === "list" ? "#fff" : COLORS.subText} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.toggleBtn, view === "map" && styles.toggleBtnActive]}
-          onPress={() => setView("map")}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="map-outline" size={18} color={view === "map" ? "#fff" : COLORS.subText} />
-        </TouchableOpacity>
+    <>
+      <View style={styles.headerRow}>
+        <Text style={styles.headerTitle}>Permanent Vacancies</Text>
+        <View style={styles.toggleWrap}>
+          <TouchableOpacity
+            style={[styles.toggleBtn, view === "list" && styles.toggleBtnActive]}
+            onPress={() => setView("list")}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="list" size={18} color={view === "list" ? "#fff" : COLORS.subText} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.toggleBtn, view === "map" && styles.toggleBtnActive]}
+            onPress={() => setView("map")}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="map-outline" size={18} color={view === "map" ? "#fff" : COLORS.subText} />
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+
+      <TouchableOpacity
+        style={styles.myAppsBtn}
+        onPress={() => router.push("/medicalStaff/applications" as any)}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="document-text-outline" size={16} color={COLORS.primary} />
+        <Text style={styles.myAppsText}>My Applications</Text>
+        <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
+      </TouchableOpacity>
+    </>
   );
 
   const SearchAndChips = (
@@ -421,13 +449,23 @@ export default function Vacancies() {
             </View>
           )}
 
-          {!loading && !error && visibleJobs.length === 0 && (
+          {!loading && !error && visibleJobs.length === 0 && permanentVisible.length === 0 && (
             <View style={styles.stateWrap}>
               <Ionicons name="search-outline" size={40} color={COLORS.subText} />
               <Text style={styles.emptyTitle}>No jobs found</Text>
               <Text style={styles.stateText}>Try adjusting your search or filters</Text>
             </View>
           )}
+
+          {!loading && !error &&
+            permanentVisible.map((v) => (
+              <PermanentVacancyCard
+                key={v._id}
+                vacancy={v}
+                applicationStatus={permanent.statusByVacancy[v._id]}
+                onPress={() => router.push(`/medicalStaff/jobs/${v._id}` as any)}
+              />
+            ))}
 
           {!loading && !error &&
             visibleJobs.map((vm) => <VacancyCard key={vm.id} vm={vm} onApply={onApply} />)}
@@ -523,6 +561,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   toggleBtnActive: { backgroundColor: COLORS.primary },
+  myAppsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    backgroundColor: "#EFF6FF",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    height: 42,
+    marginBottom: 14,
+  },
+  myAppsText: { flex: 1, fontSize: 13, fontWeight: "700", color: COLORS.primary },
 
   // Search row (input + button)
   searchRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 14 },
