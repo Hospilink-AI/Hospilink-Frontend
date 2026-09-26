@@ -1,6 +1,7 @@
 import DateTimeField from "@/component/common/DateTimeField";
 import { COLORS } from "@/constant/colors";
-import { INTERVIEW_DEFAULTS, Slot, SLOT_DURATIONS, formatSlot } from "@/constant/jobs";
+import { Slot, SLOT_DURATIONS, formatSlot } from "@/constant/jobs";
+import { useInterviewConfig } from "@/hooks/useInterviewConfig";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
@@ -12,10 +13,9 @@ interface Props {
   onChange: (slots: Slot[], duration: number) => void;
 }
 
-const { slotsPerOfferMin, slotsPerOfferMax, schedulingWindowMinHours, schedulingWindowMaxDays } =
-  INTERVIEW_DEFAULTS;
-
 export default function SlotBuilder({ slots, duration, onChange }: Props) {
+  const { slotsPerOfferMin, slotsPerOfferMax, schedulingWindowMinHours, schedulingWindowMaxDays } =
+    useInterviewConfig();
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
   const [date, setDate] = useState<Date | null>(null);

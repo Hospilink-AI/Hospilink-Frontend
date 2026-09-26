@@ -72,8 +72,9 @@ export default function StaffVacancyDetail() {
       const status = err?.response?.status;
       const message = apiError(err, "Could not submit your application.");
       if (status === 422) {
-        // Both gates are 422 with no code - the message says which one it is.
-        setGate({ message, action: /resume/i.test(message) ? "resume" : "profile" });
+        const code = err?.response?.data?.code;
+        const isResume = code ? code === "RESUME_REQUIRED_FOR_APPLICATION" : /resume/i.test(message);
+        setGate({ message, action: isResume ? "resume" : "profile" });
       } else if (status === 409) {
         setApplyError(message);
         load();

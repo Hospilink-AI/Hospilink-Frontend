@@ -20,6 +20,9 @@ interface Props {
   // When set, a reason must be picked before confirming.
   reasons?: Option[];
   showNote?: boolean;
+  noteRequired?: boolean;
+  noteMax?: number;
+  notePlaceholder?: string;
   confirmLabel: string;
   tone?: "primary" | "danger";
   loading?: boolean;
@@ -35,6 +38,9 @@ export default function ActionModal({
   message,
   reasons,
   showNote = !!reasons,
+  noteRequired = false,
+  noteMax = REASON_TEXT_MAX,
+  notePlaceholder = "Add a note (optional)",
   confirmLabel,
   tone = "primary",
   loading,
@@ -54,7 +60,7 @@ export default function ActionModal({
   }, [visible]);
 
   const needsReason = !!reasons?.length;
-  const disabled = loading || (needsReason && !reason);
+  const disabled = loading || (needsReason && !reason) || (noteRequired && !note.trim());
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -94,8 +100,8 @@ export default function ActionModal({
               <TextInput
                 style={styles.note}
                 value={note}
-                onChangeText={(t) => setNote(t.slice(0, REASON_TEXT_MAX))}
-                placeholder="Add a note (optional)"
+                onChangeText={(t) => setNote(t.slice(0, noteMax))}
+                placeholder={notePlaceholder}
                 placeholderTextColor="#9CA3AF"
                 multiline
               />

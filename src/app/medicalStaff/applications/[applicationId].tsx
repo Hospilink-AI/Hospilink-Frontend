@@ -3,7 +3,6 @@ import { COLORS } from "@/constant/colors";
 import {
   ApplicationStatus,
   CANDIDATE_CHANGE_REASONS,
-  INTERVIEW_DEFAULTS,
   STAFF_STATUS_LABELS,
   Slot,
   TERMINAL_STATUSES,
@@ -17,7 +16,8 @@ import {
   roleLabel,
   sameSlot,
 } from "@/constant/jobs";
-import { jobAPI } from "@/service/api";
+import { useInterviewConfig } from "@/hooks/useInterviewConfig";
+import { jobAPI, ticketAPI } from "@/service/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
@@ -51,7 +51,13 @@ const reachedStep = (app: any) => {
   return Math.max(0, ...(app.statusHistory ?? []).map((h: any) => STEP_INDEX[h.status as ApplicationStatus] ?? 0));
 };
 
-type ModalKind = null | "withdraw" | "cancel" | "rescheduleRequest" | "accept" | "decline" | "reportNoShow";
+type ModalKind = null | "withdraw" | "cancel" | "rescheduleRequest" | "accept" | "decline" | "reportNoShow" | "complaint";
+
+const NO_SHOW_CATEGORY = "jobs.interview_no_show";
+const OPEN_TICKET_STATUSES = [
+  "NEW", "TRIAGE", "OPEN", "IN_REVIEW", "AWAITING_RAISER", "AWAITING_RESPONDENT", "PENDING_APPROVAL", "ESCALATED", "REOPENED",
+];
+const TICKET_TEXT_MAX = 1000;
 
 function Stepper({ reached, closed, done }: { reached: number; closed: boolean; done: boolean }) {
   return (
@@ -85,6 +91,7 @@ function Stepper({ reached, closed, done }: { reached: number; closed: boolean; 
 export default function StaffApplicationDetail() {
   const router = useRouter();
   const { applicationId } = useLocalSearchParams<{ applicationId: string }>();
+  const cfg = useInterviewConfig();
 
   const [app, setApp] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -95,13 +102,18 @@ export default function StaffApplicationDetail() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalKind>(null);
   const [modalError, setModalError] = useState<string | null>(null);
+  const [complaint, setComplaint] = useState<any>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await jobAPI.getApplication(applicationId);
+      const [res, tickets] = await Promise.all([
+        jobAPI.getApplication(applicationId),
+        ticketAPI.getMine({ category: NO_SHOW_CATEGORY, limit: 50 }).catch(() => null),
+      ]);
       setApp(res.application);
+      setComplaint((tickets?.data ?? []).find((t: any) => t.subjectId === applicationId) ?? null);
       setPicked([]);
     } catch (err: any) {
       setError(apiError(err, "Could not load this application."));
@@ -173,8 +185,72 @@ export default function StaffApplicationDetail() {
   const start = iv.confirmedSlot?.start;
   const sinceStart = minutesSince(start);
   const joinOpen =
-    sinceStart >= -INTERVIEW_DEFAULTS.joinWindowBeforeMin && sinceStart <= INTERVIEW_DEFAULTS.joinWindowAfterMin;
-  const canReportNoShow = sinceStart >= INTERVIEW_DEFAULTS.noShowGraceMin;
+    sinceStart >= -cfg.joinWindowBeforeMin && sinceStart <= cfg.joinWindowAfterMin;
+  const canReportNoShow = sinceStart >= cfg.noShowGraceMin;
+
+  const noShow = iv.noShow?.markedAt ? iv.noShow : null;
+  const complaintOpen = !!complaint && OPEN_TICKET_STATUSES.includes(complaint.status);
+  const disputeBy = noShow
+    ? new Date(new Date(noShow.markedAt).getTime() + cfg.disputeWindowDays * 86400000)
+    : null;
+  const canDispute =
+    noShow?.by === "candidate" && noShow.disputeStatus === "none" && !!disputeBy && new Date() <= disputeBy && !complaintOpen;
+  const canComplain = noShow?.by === "hospital" && !complaintOpen;
+
+  const sendComplaint = async (text: string) => {
+    setBusy(true);
+    setModalError(null);
+    try {
+      const res = await ticketAPI.create({ category: NO_SHOW_CATEGORY, subjectType: "INTERVIEW", subjectId: applicationId, text });
+      setComplaint(res.ticket);
+      setModal(null);
+      load();
+    } catch (err: any) {
+      setModalError(
+        err?.response?.status === 409
+          ? "You already have an open complaint about this interview."
+          : apiError(err, "Could not send your complaint.")
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const renderNoShow = () => {
+    if (!noShow || status === "hired") return null;
+    const byCandidate = noShow.by === "candidate";
+    let note: string;
+    if (byCandidate) {
+      if (noShow.disputeStatus === "open") note = "You disputed this. Our team is reviewing it.";
+      else if (noShow.disputeStatus === "upheld") note = "Our team reviewed your dispute. The no-show stands.";
+      else if (noShow.disputeStatus === "voided") note = "Our team reviewed your dispute and removed the no-show.";
+      else if (canDispute) note = `If you did attend, you can dispute this until ${formatDate(disputeBy!.toISOString())}.`;
+      else note = `The ${cfg.disputeWindowDays}-day window to dispute this has passed.`;
+    } else if (complaint) {
+      note = complaintOpen
+        ? `Your complaint ${complaint.ticketId} is with our team.`
+        : `Your complaint ${complaint.ticketId} has been closed.`;
+    } else {
+      note = "If you'd like our team to look into it, you can raise a complaint.";
+    }
+
+    return (
+      <View style={[styles.section, { marginTop: 16 }]}>
+        <Text style={styles.sectionTitle}>Interview no-show</Text>
+        <Text style={styles.muted}>
+          {byCandidate
+            ? status === "rejected" ? "" : "The hospital marked that you didn't attend the interview. "
+            : "You reported that the hospital didn't join the interview. "}
+          {note}
+        </Text>
+        {(canDispute || canComplain) && (
+          <TouchableOpacity style={[styles.outlineBtn, { alignSelf: "flex-start" }]} onPress={() => openModal("complaint")}>
+            <Text style={styles.outlineText}>{canDispute ? "Dispute No-Show" : "Raise a Complaint"}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
 
   const renderStage = () => {
     switch (status) {
@@ -252,7 +328,7 @@ export default function StaffApplicationDetail() {
             )}
             {!joinOpen && sinceStart < 0 && (
               <Text style={[styles.muted, { textAlign: "center" }]}>
-                You can join from {INTERVIEW_DEFAULTS.joinWindowBeforeMin} minutes before the start time.
+                You can join from {cfg.joinWindowBeforeMin} minutes before the start time.
               </Text>
             )}
 
@@ -373,6 +449,7 @@ export default function StaffApplicationDetail() {
       <Stepper reached={reachedStep(app)} closed={closed} done={status === "hired"} />
 
       {renderStage()}
+      {renderNoShow()}
       {!!actionError && <Text style={styles.errorText}>{actionError}</Text>}
 
       <View style={styles.divider} />
@@ -460,6 +537,25 @@ export default function StaffApplicationDetail() {
         error={modalError}
         onClose={() => setModal(null)}
         onConfirm={() => run(() => jobAPI.reportNoShow(applicationId), "Could not send the report.", true)}
+      />
+
+      <ActionModal
+        visible={modal === "complaint"}
+        title={canDispute ? "Dispute this no-show" : "Raise a complaint"}
+        message={
+          canDispute
+            ? "Tell us what happened. Our team will review it and ask the hospital for their side."
+            : "Tell us what happened. Our team will look into it and ask the hospital for their side."
+        }
+        showNote
+        noteRequired
+        noteMax={TICKET_TEXT_MAX}
+        notePlaceholder="What happened?"
+        confirmLabel="Send"
+        loading={busy}
+        error={modalError}
+        onClose={() => setModal(null)}
+        onConfirm={(_, note) => sendComplaint(note)}
       />
 
       <ActionModal

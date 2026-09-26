@@ -990,6 +990,12 @@ export const jobAPI = {
     return response.data;
   },
 
+  // GET /api/interview/config - staff or hospital. Live interview rules (slot counts, windows, caps)
+  getInterviewConfig: async () => {
+    const response = await api.get('/api/interview/config');
+    return response.data;
+  },
+
   // PATCH .../interview/reschedule - Body: { slots, durationMinutes?, reason, reasonText? }
   reschedule: async (applicationId, payload) => {
     const response = await api.patch(`/api/applications/${applicationId}/interview/reschedule`, payload);
@@ -1041,6 +1047,21 @@ export const jobAPI = {
 
 };
 
+
+export const ticketAPI = {
+  // POST /api/tickets - staff or hospital. Body: { category, subjectType?, subjectId?, text }
+  // For subjectType INTERVIEW the server works out who it's against.
+  create: async (payload) => {
+    const response = await api.post('/api/tickets', payload);
+    return response.data;
+  },
+
+  // GET /api/tickets/mine?category=&status=&page=&limit=
+  getMine: async (params = {}) => {
+    const response = await api.get('/api/tickets/mine', { params });
+    return response.data;
+  },
+};
 
 export const documentAPI = {
 

@@ -24,6 +24,7 @@ interface Vacancy {
   location?: string;
   createdAt: string;
   deletedAt: string | null;
+  applicantCount?: number;
 }
 
 interface Pagination {
@@ -85,6 +86,7 @@ export default function JobPosting() {
         <Text style={[styles.headCell, { flex: 1.2 }]}>DATE CREATED</Text>
         <Text style={[styles.headCell, { flex: 1 }]}>EXPERIENCE</Text>
         <Text style={[styles.headCell, { flex: 1 }]}>SALARY</Text>
+        <Text style={[styles.headCell, { flex: 0.8 }]}>APPLICANTS</Text>
         <Text style={[styles.headCell, { flex: 0.8 }]}>STATUS</Text>
         <Text style={[styles.headCell, { flex: 0.7, textAlign: "right" }]}>ACTION</Text>
       </View>
@@ -97,6 +99,7 @@ export default function JobPosting() {
           <Text style={[styles.cell, { flex: 1.2 }]}>{formatDate(v.createdAt)}</Text>
           <Text style={[styles.cell, { flex: 1 }]} numberOfLines={1}>{v.experience || "—"}</Text>
           <Text style={[styles.cell, { flex: 1 }]} numberOfLines={1}>{v.salary || "—"}</Text>
+          <Text style={[styles.cell, { flex: 0.8 }]}>{v.applicantCount ?? "—"}</Text>
           <View style={{ flex: 0.8 }}>
             <OpenClosedPill closed={!!v.deletedAt} />
           </View>
@@ -128,6 +131,14 @@ export default function JobPosting() {
               <View style={styles.metaItem}>
                 <Ionicons name="cash-outline" size={13} color={COLORS.subText} />
                 <Text style={styles.metaText}>{v.salary}</Text>
+              </View>
+            )}
+            {v.applicantCount != null && (
+              <View style={styles.metaItem}>
+                <Ionicons name="people-outline" size={13} color={COLORS.subText} />
+                <Text style={styles.metaText}>
+                  {v.applicantCount} {v.applicantCount === 1 ? "applicant" : "applicants"}
+                </Text>
               </View>
             )}
             <View style={styles.metaItem}>

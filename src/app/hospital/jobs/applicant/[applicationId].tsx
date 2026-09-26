@@ -5,7 +5,6 @@ import { COLORS } from "@/constant/colors";
 import {
   ApplicationStatus,
   HOSPITAL_STATUS_LABELS,
-  INTERVIEW_DEFAULTS,
   RECRUITER_CHANGE_REASONS,
   REJECTION_REASONS,
   Slot,
@@ -15,9 +14,11 @@ import {
   formatDate,
   formatSlot,
   minutesSince,
+  reasonLabel,
   roleLabel,
   sameSlot,
 } from "@/constant/jobs";
+import { useInterviewConfig } from "@/hooks/useInterviewConfig";
 import { jobAPI } from "@/service/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
@@ -65,10 +66,10 @@ export default function ApplicantDetail() {
   const { applicationId } = useLocalSearchParams<{ applicationId: string }>();
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
+  const cfg = useInterviewConfig();
 
   const [app, setApp] = useState<any>(null);
-  // The hospital view has no interview block yet; action responses do, so
-  // keep the latest one we've seen.
+  // From the application view, or the latest action response.
   const [interview, setInterview] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -250,9 +251,9 @@ export default function ApplicantDetail() {
   const status: ApplicationStatus = app.status;
   const confirmedStart = interview?.confirmedSlot?.start;
   const sinceStart = minutesSince(confirmedStart);
-  const canConclude = sinceStart >= INTERVIEW_DEFAULTS.noShowGraceMin;
+  const canConclude = sinceStart >= cfg.noShowGraceMin;
   const started = sinceStart >= 0;
-  const reschedulesLeft = INTERVIEW_DEFAULTS.rescheduleCap - (interview?.rescheduleCount ?? 0);
+  const reschedulesLeft = cfg.rescheduleCap - (interview?.rescheduleCount ?? 0);
   const vacancyId = app.vacancy?._id ?? app.vacancy;
 
   const renderActions = () => {
@@ -288,13 +289,13 @@ export default function ApplicantDetail() {
         return (
           <View>
             <Text style={styles.panelHint}>
-              Offer {INTERVIEW_DEFAULTS.slotsPerOfferMin}–{INTERVIEW_DEFAULTS.slotsPerOfferMax} interview times. The candidate picks the ones that suit them, then you confirm one.
+              Offer {cfg.slotsPerOfferMin}–{cfg.slotsPerOfferMax} interview times. The candidate picks the ones that suit them, then you confirm one.
             </Text>
             <SlotBuilder slots={slots} duration={duration} onChange={(s, d) => { setSlots(s); setDuration(d); }} />
             <View style={[styles.btnRow, { marginTop: 16 }]}>
               <TouchableOpacity
-                style={[styles.primaryBtn, slots.length < INTERVIEW_DEFAULTS.slotsPerOfferMin && styles.disabled]}
-                disabled={busy || slots.length < INTERVIEW_DEFAULTS.slotsPerOfferMin}
+                style={[styles.primaryBtn, slots.length < cfg.slotsPerOfferMin && styles.disabled]}
+                disabled={busy || slots.length < cfg.slotsPerOfferMin}
                 onPress={() => run(() => jobAPI.offerSlots(applicationId, { slots, durationMinutes: duration }), "Could not offer slots.")}
               >
                 <Text style={styles.primaryText}>Offer Slots</Text>
@@ -444,7 +445,7 @@ export default function ApplicantDetail() {
               </>
             ) : started ? (
               <Text style={styles.muted}>
-                Interview in progress. Outcome and no-show options appear {INTERVIEW_DEFAULTS.noShowGraceMin} minutes after the start time.
+                Interview in progress. Outcome and no-show options appear {cfg.noShowGraceMin} minutes after the start time.
               </Text>
             ) : (
               <View style={styles.btnRow}>
@@ -480,10 +481,28 @@ export default function ApplicantDetail() {
         return <Text style={styles.panelHint}>Hired. Reach out using the contact details above to begin onboarding.</Text>;
 
       case "rejected":
-        return <Text style={styles.panelHint}>This application was closed as not selected.</Text>;
+        return (
+          <View>
+            <Text style={styles.panelHint}>
+              {app.rejectionReason
+                ? `Closed as not selected. Reason: ${reasonLabel(app.rejectionReason)}.`
+                : "This application was closed as not selected."}
+            </Text>
+            {!!app.rejectionReasonText && <Text style={styles.panelHint}>Note: {app.rejectionReasonText}</Text>}
+          </View>
+        );
 
       case "withdrawn":
-        return <Text style={styles.panelHint}>The candidate withdrew this application.</Text>;
+        return (
+          <View>
+            <Text style={styles.panelHint}>
+              {app.withdrawReason
+                ? `The candidate withdrew this application. Reason: ${reasonLabel(app.withdrawReason)}.`
+                : "The candidate withdrew this application."}
+            </Text>
+            {!!app.withdrawReasonText && <Text style={styles.panelHint}>Their note: {app.withdrawReasonText}</Text>}
+          </View>
+        );
 
       default:
         return null;

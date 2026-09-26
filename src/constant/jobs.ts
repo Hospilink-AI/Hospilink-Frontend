@@ -172,9 +172,8 @@ export const SLOT_DURATIONS: Option[] = [
   { label: '60 minutes', value: '60' },
 ];
 
-// Defaults of the admin-editable interview config. The backend has no
-// endpoint exposing the live values yet, so these only drive hints and
-// button timing - the server still enforces the real numbers.
+// Fallback for GET /api/interview/config (see hooks/useInterviewConfig).
+// Same values as the backend defaults. The server still enforces the real numbers.
 export const INTERVIEW_DEFAULTS = {
   slotsPerOfferMin: 3,
   slotsPerOfferMax: 8,
@@ -184,7 +183,10 @@ export const INTERVIEW_DEFAULTS = {
   rescheduleCap: 2,
   joinWindowBeforeMin: 10,
   joinWindowAfterMin: 60,
+  disputeWindowDays: 7,
 };
+
+export type InterviewConfig = typeof INTERVIEW_DEFAULTS;
 
 export type Slot = { start: string; end: string };
 
