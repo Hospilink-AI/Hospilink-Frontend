@@ -1048,6 +1048,45 @@ export const jobAPI = {
 };
 
 
+// Multipart POST for evidence files. files: [{ uri, name, mimeType }] from the document picker.
+const postMultipart = async (path, fields = {}, files = []) => {
+  const token = await getToken();
+  const formData = new FormData();
+  Object.entries(fields).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") formData.append(key, String(value));
+  });
+  for (const file of files) {
+    const type = file.mimeType ?? "application/octet-stream";
+    if (Platform.OS === "web") {
+      const blob = file.file ?? (await (await fetch(file.uri)).blob());
+      formData.append("files", new Blob([blob], { type }), file.name);
+    } else {
+      formData.append("files", { uri: file.uri, name: file.name, type });
+    }
+  }
+  const baseUrl = API_URL.endsWith("/") ? API_URL.slice(0, -1) : API_URL;
+  const res = await fetch(`${baseUrl}${path}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw { response: { status: res.status, data } };
+  return data;
+};
+
+export const chatbotAPI = {
+  // GET /api/chatbot/conversations/active - null when there is none
+  getActive: async () => {
+    const response = await api.get('/api/chatbot/conversations/active');
+    return response.data;
+  },
+
+  // POST /api/chatbot/message - multipart. Fields: text?, selectedButton?, conversationId?, language? (first message only)
+  // Returns { conversation } with the full message list
+  send: async (fields, files = []) => postMultipart('/api/chatbot/message', fields, files),
+};
+
 export const ticketAPI = {
   // POST /api/tickets - staff or hospital. Body: { category, subjectType?, subjectId?, text }
   // For subjectType INTERVIEW the server works out who it's against.
@@ -1059,6 +1098,228 @@ export const ticketAPI = {
   // GET /api/tickets/mine?category=&status=&page=&limit=
   getMine: async (params = {}) => {
     const response = await api.get('/api/tickets/mine', { params });
+    return response.data;
+  },
+
+  // GET /api/tickets/against-me?page=&limit=
+  getAgainstMe: async (params = {}) => {
+    const response = await api.get('/api/tickets/against-me', { params });
+    return response.data;
+  },
+
+  // GET /api/tickets/:id - raiser, respondent or admin
+  getById: async (ticketId) => {
+    const response = await api.get(`/api/tickets/${ticketId}`);
+    return response.data;
+  },
+
+  // PATCH /api/tickets/:id/withdraw - Body: { reason? }
+  withdraw: async (ticketId, reason) => {
+    const response = await api.patch(`/api/tickets/${ticketId}/withdraw`, reason ? { reason } : {});
+    return response.data;
+  },
+
+  // POST /api/tickets/:id/respond - respondent. Body: { text }
+  respond: async (ticketId, text) => {
+    const response = await api.post(`/api/tickets/${ticketId}/respond`, { text });
+    return response.data;
+  },
+
+  // POST /api/tickets/:id/appeal - Body: { reasonText }
+  appeal: async (ticketId, reasonText) => {
+    const response = await api.post(`/api/tickets/${ticketId}/appeal`, { reasonText });
+    return response.data;
+  },
+
+  // POST /api/tickets/:id/evidence - multipart, up to 5 files
+  addEvidence: async (ticketId, files) => postMultipart(`/api/tickets/${ticketId}/evidence`, {}, files),
+
+  // GET /api/tickets/:id/chat - own thread with the support agent
+  getChat: async (ticketId) => {
+    const response = await api.get(`/api/tickets/${ticketId}/chat`);
+    return response.data;
+  },
+
+  // POST /api/tickets/:id/chat - multipart. Fields: text?; files attach to the ticket as evidence
+  sendChat: async (ticketId, text, files = []) => postMultipart(`/api/tickets/${ticketId}/chat`, { text }, files),
+};
+
+export const feedbackAPI = {
+  // POST /api/support/feedback - Body: { text, area? }
+  submit: async (payload) => {
+    const response = await api.post('/api/support/feedback', payload);
+    return response.data;
+  },
+
+  // GET /api/support/feedback/mine
+  getMine: async () => {
+    const response = await api.get('/api/support/feedback/mine');
+    return response.data;
+  },
+};
+
+export const accountStandingAPI = {
+  // GET /api/account/pattern-flags - every flag on the caller's account
+  getFlags: async () => {
+    const response = await api.get('/api/account/pattern-flags');
+    return response.data;
+  },
+
+  // PATCH /api/account/suspension-proposals/:id/respond - Body: { text }
+  respondToProposal: async (flagId, text) => {
+    const response = await api.patch(`/api/account/suspension-proposals/${flagId}/respond`, { text });
+    return response.data;
+  },
+};
+
+export const adminTicketAPI = {
+  // GET /api/admin/tickets?status=&queue=&domain=&category=&priority=&page=&limit=
+  // Without status it leaves out NEW and TRIAGE; pass status: 'NEW' for unclaimed tickets.
+  getQueue: async (params = {}) => {
+    const response = await api.get('/api/admin/tickets', { params });
+    return response.data;
+  },
+
+  // GET /api/admin/tickets/triage - low-confidence bot tickets
+  getTriage: async (params = {}) => {
+    const response = await api.get('/api/admin/tickets/triage', { params });
+    return response.data;
+  },
+
+  // GET /api/admin/tickets/approval-queue - decisions waiting for a second admin
+  getApprovalQueue: async (params = {}) => {
+    const response = await api.get('/api/admin/tickets/approval-queue', { params });
+    return response.data;
+  },
+
+  // GET /api/tickets/:id - admin gets the full record
+  getById: async (ticketId) => {
+    const response = await api.get(`/api/tickets/${ticketId}`);
+    return response.data;
+  },
+
+  // PATCH /api/admin/tickets/:id/claim
+  claim: async (ticketId) => {
+    const response = await api.patch(`/api/admin/tickets/${ticketId}/claim`);
+    return response.data;
+  },
+
+  // PATCH /api/admin/tickets/:id/reassign - Body: { to, reason }
+  reassign: async (ticketId, to, reason) => {
+    const response = await api.patch(`/api/admin/tickets/${ticketId}/reassign`, { to, reason });
+    return response.data;
+  },
+
+  // PATCH /api/admin/tickets/:id/recategorize - Body: { category, reason }
+  recategorize: async (ticketId, category, reason) => {
+    const response = await api.patch(`/api/admin/tickets/${ticketId}/recategorize`, { category, reason });
+    return response.data;
+  },
+
+  // PATCH /api/admin/tickets/:id/priority-override - Body: { value, reason? } (reason required when lowering)
+  overridePriority: async (ticketId, value, reason) => {
+    const response = await api.patch(`/api/admin/tickets/${ticketId}/priority-override`, { value, ...(reason && { reason }) });
+    return response.data;
+  },
+
+  // PATCH /api/admin/tickets/:id/request-info - Body: { message }
+  requestInfo: async (ticketId, message) => {
+    const response = await api.patch(`/api/admin/tickets/${ticketId}/request-info`, { message });
+    return response.data;
+  },
+
+  // GET /api/admin/tickets/:id/chat?party=raiser|respondent
+  getChat: async (ticketId, party) => {
+    const response = await api.get(`/api/admin/tickets/${ticketId}/chat`, { params: party ? { party } : {} });
+    return response.data;
+  },
+
+  // POST /api/admin/tickets/:id/chat - multipart. Fields: text?, party?
+  sendChat: async (ticketId, text, party, files = []) =>
+    postMultipart(`/api/admin/tickets/${ticketId}/chat`, { text, party }, files),
+
+  // POST /api/admin/tickets/:id/decision
+  // Body: { resolutionOutcome, resolutionActions: [{ action, details? }], note?, evidenceReliedOn?: [evidenceId] }
+  decide: async (ticketId, payload) => {
+    const response = await api.post(`/api/admin/tickets/${ticketId}/decision`, payload);
+    return response.data;
+  },
+
+  // PATCH /api/admin/tickets/:id/approve - second admin signs off
+  approve: async (ticketId) => {
+    const response = await api.patch(`/api/admin/tickets/${ticketId}/approve`);
+    return response.data;
+  },
+
+  // PATCH /api/admin/tickets/:id/return-for-review - Body: { reason }
+  returnForReview: async (ticketId, reason) => {
+    const response = await api.patch(`/api/admin/tickets/${ticketId}/return-for-review`, { reason });
+    return response.data;
+  },
+};
+
+export const adminPatternAPI = {
+  // GET /api/admin/patterns?status=&raises=&page=&limit=
+  getPatterns: async (params = {}) => {
+    const response = await api.get('/api/admin/patterns', { params });
+    return response.data;
+  },
+
+  // GET /api/admin/patterns/:id
+  getPattern: async (flagId) => {
+    const response = await api.get(`/api/admin/patterns/${flagId}`);
+    return response.data;
+  },
+
+  // GET /api/admin/suspension-proposals?page=&limit=
+  getProposals: async (params = {}) => {
+    const response = await api.get('/api/admin/suspension-proposals', { params });
+    return response.data;
+  },
+
+  // PATCH /api/admin/suspension-proposals/:id/decide - Body: { decision: suspend | no_action, decisionReason }
+  decideProposal: async (flagId, decision, decisionReason) => {
+    const response = await api.patch(`/api/admin/suspension-proposals/${flagId}/decide`, { decision, decisionReason });
+    return response.data;
+  },
+};
+
+export const adminFeedbackAPI = {
+  // GET /api/admin/feedback?area=&sentiment=&page=&limit=
+  list: async (params = {}) => {
+    const response = await api.get('/api/admin/feedback', { params });
+    return response.data;
+  },
+
+  // PATCH /api/admin/feedback/:id/override-sentiment - Body: { sentiment }
+  overrideSentiment: async (feedbackId, sentiment) => {
+    const response = await api.patch(`/api/admin/feedback/${feedbackId}/override-sentiment`, { sentiment });
+    return response.data;
+  },
+};
+
+export const knowledgeBaseAPI = {
+  // GET /api/admin/knowledge-base?category=&isActive=&page=&limit=
+  list: async (params = {}) => {
+    const response = await api.get('/api/admin/knowledge-base', { params });
+    return response.data;
+  },
+
+  // POST /api/admin/knowledge-base - Body: { question, answer, category?, keywords? }
+  create: async (payload) => {
+    const response = await api.post('/api/admin/knowledge-base', payload);
+    return response.data;
+  },
+
+  // PATCH /api/admin/knowledge-base/:id - same body as create
+  update: async (articleId, payload) => {
+    const response = await api.patch(`/api/admin/knowledge-base/${articleId}`, payload);
+    return response.data;
+  },
+
+  // PATCH /api/admin/knowledge-base/:id/deactivate | /reactivate
+  setActive: async (articleId, active) => {
+    const response = await api.patch(`/api/admin/knowledge-base/${articleId}/${active ? 'reactivate' : 'deactivate'}`);
     return response.data;
   },
 };

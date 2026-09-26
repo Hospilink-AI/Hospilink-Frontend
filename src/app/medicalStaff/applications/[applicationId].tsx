@@ -16,6 +16,7 @@ import {
   roleLabel,
   sameSlot,
 } from "@/constant/jobs";
+import { OPEN_TICKET_STATUSES, TICKET_TEXT_MAX } from "@/constant/support";
 import { useInterviewConfig } from "@/hooks/useInterviewConfig";
 import { jobAPI, ticketAPI } from "@/service/api";
 import { Ionicons } from "@expo/vector-icons";
@@ -54,10 +55,6 @@ const reachedStep = (app: any) => {
 type ModalKind = null | "withdraw" | "cancel" | "rescheduleRequest" | "accept" | "decline" | "reportNoShow" | "complaint";
 
 const NO_SHOW_CATEGORY = "jobs.interview_no_show";
-const OPEN_TICKET_STATUSES = [
-  "NEW", "TRIAGE", "OPEN", "IN_REVIEW", "AWAITING_RAISER", "AWAITING_RESPONDENT", "PENDING_APPROVAL", "ESCALATED", "REOPENED",
-];
-const TICKET_TEXT_MAX = 1000;
 
 function Stepper({ reached, closed, done }: { reached: number; closed: boolean; done: boolean }) {
   return (
@@ -246,6 +243,14 @@ export default function StaffApplicationDetail() {
         {(canDispute || canComplain) && (
           <TouchableOpacity style={[styles.outlineBtn, { alignSelf: "flex-start" }]} onPress={() => openModal("complaint")}>
             <Text style={styles.outlineText}>{canDispute ? "Dispute No-Show" : "Raise a Complaint"}</Text>
+          </TouchableOpacity>
+        )}
+        {!!complaint?._id && (
+          <TouchableOpacity
+            style={[styles.outlineBtn, { alignSelf: "flex-start" }]}
+            onPress={() => router.push(`/medicalStaff/support/tickets/${complaint._id}` as any)}
+          >
+            <Text style={styles.outlineText}>View Complaint</Text>
           </TouchableOpacity>
         )}
       </View>

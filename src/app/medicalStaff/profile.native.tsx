@@ -480,7 +480,7 @@ export default function Profile() {
           <Row
             icon="chatbubble-ellipses-outline"
             label="Contact Support"
-            onPress={() => router.push("/auth/privacy-policy")}
+            onPress={() => router.push("/medicalStaff/support")}
             right={<Chevron />}
           />
           <Row

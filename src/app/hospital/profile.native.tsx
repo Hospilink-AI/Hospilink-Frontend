@@ -1925,9 +1925,7 @@ const Profile = () => {
               icon="chatbubble-outline"
               label="Contact Support"
               chevron
-              onPress={() =>
-                Alert.alert("Contact Support", "Coming soon")
-              }
+              onPress={() => router.push("/hospital/support")}
             />
             <SettingsRow
               icon="shield-outline"
