@@ -337,6 +337,10 @@ const NavConfig: NavConfigType = {
     { label: "Live Monitoring",      icon: "eye-outline",              route: "/admin/live-monitoring"      },
     { label: "Activity Logs",        icon: "reload-outline",           route: "/admin/activity-logs"        },
     { label: "Admin Management",     icon: "shield-outline",           route: "/admin/admin-logs", capability: "admin.view" },
+    { label: "Support Tickets",      icon: "chatbubbles-outline",      route: "/admin/tickets" as Href, capability: "ticket.view" },
+    { label: "Patterns",             icon: "analytics-outline",        route: "/admin/patterns" as Href, capability: "pattern.view" },
+    { label: "Feedback Board",       icon: "megaphone-outline",        route: "/admin/feedback" as Href, capability: "feedback.view" },
+    { label: "Knowledge Base",       icon: "book-outline",             route: "/admin/knowledge-base" as Href, capability: "knowledgeBase.manage" },
   ],
 };
 
