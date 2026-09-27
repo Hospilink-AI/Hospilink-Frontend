@@ -74,7 +74,8 @@ export default function TicketDetail({ base }: { base: string }) {
     inModal ? setModalError(null) : setActionError(null);
     try {
       const res = await fn();
-      if (res?.ticket && key !== "appeal") setTicket((prev: any) => ({ ...prev, ...res.ticket }));
+      // the respond call returns the unfiltered record, so reload the party view instead
+      if (res?.ticket && key !== "appeal" && key !== "reply") setTicket((prev: any) => ({ ...prev, ...res.ticket }));
       setModal(null);
       return res;
     } catch (err: any) {
@@ -180,7 +181,10 @@ export default function TicketDetail({ base }: { base: string }) {
                 disabled={!reply.trim() || !!busy}
                 onPress={async () => {
                   const res = await run("reply", () => ticketAPI.respond(ticket._id, reply.trim()), "Could not send your reply.");
-                  if (res) setReply("");
+                  if (res) {
+                    setReply("");
+                    load();
+                  }
                 }}
               >
                 {busy === "reply" ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>Send Reply</Text>}

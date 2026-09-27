@@ -59,7 +59,7 @@ const LiveMap: React.FC<LiveMapProps> = ({ hospital, doctors, rangeKm }) => {
               <Text style={styles.calloutName}>{doc.name}</Text>
               <Text style={styles.calloutSpecialty}>{doc.specialty}</Text>
               <Text style={styles.calloutDetail}>
-                ⭐ {doc.rating} · ₹{doc.consultationFee}
+                {doc.rating ? `⭐ ${doc.rating}` : "⭐ Unrated"} · ₹{doc.consultationFee}
               </Text>
               <Text style={styles.calloutDetail}>
                 📍 {doc.distanceKm.toFixed(1)} km away

@@ -47,6 +47,7 @@ export default function RaiseTicketForm({ base, role }: { base: string; role: "s
   const [domain, setDomain] = useState<TicketDomain | null>(preset?.domain ?? null);
   const [category, setCategory] = useState<TicketCategory | null>(preset ?? null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [subjectsError, setSubjectsError] = useState<string | null>(null);
   const [subjectsLoading, setSubjectsLoading] = useState(false);
   const [subjectId, setSubjectId] = useState<string | null>(params.subjectId ?? null);
   const [text, setText] = useState("");
@@ -70,6 +71,7 @@ export default function RaiseTicketForm({ base, role }: { base: string; role: "s
     }
     let active = true;
     setSubjectsLoading(true);
+    setSubjectsError(null);
     (async () => {
       try {
         if (subjectKind === "duty") {
@@ -100,8 +102,11 @@ export default function RaiseTicketForm({ base, role }: { base: string; role: "s
           }));
           if (active) setSubjects(list);
         }
-      } catch {
-        if (active) setSubjects([]);
+      } catch (err: any) {
+        if (active) {
+          setSubjects([]);
+          setSubjectsError(apiError(err, "Couldn't load the list. Try again later."));
+        }
       } finally {
         if (active) setSubjectsLoading(false);
       }
@@ -250,7 +255,7 @@ export default function RaiseTicketForm({ base, role }: { base: string; role: "s
               <ActivityIndicator color={COLORS.primary} style={{ alignSelf: "flex-start" }} />
             ) : subjects.length === 0 ? (
               <Text style={styles.muted}>
-                No recent {subjectKind === "duty" ? "shifts" : "applications"} found.
+                {subjectsError ?? `No recent ${subjectKind === "duty" ? "shifts" : "applications"} found.`}
               </Text>
             ) : (
               <View style={{ gap: 6 }}>

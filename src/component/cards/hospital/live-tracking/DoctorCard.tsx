@@ -58,7 +58,7 @@ const DoctorCard: React.FC<Props> = ({ doctor }) => {
         <View style={styles.statsRow}>
           <Text style={styles.stat}>🏅 {doctor.experience} yrs</Text>
           <Text style={styles.stat}>
-            ⭐ {doctor.rating} ({doctor.reviewCount})
+            {doctor.rating ? `⭐ ${doctor.rating} (${doctor.reviewCount})` : "⭐ Unrated"}
           </Text>
           <Text style={styles.stat}>📍 {doctor.distanceKm.toFixed(1)} km</Text>
         </View>
