@@ -1324,6 +1324,21 @@ export const knowledgeBaseAPI = {
   },
 };
 
+export const reviewAPI = {
+  // GET /api/reviews/hospital/:hospitalId - staff reviews of a hospital, only ones already revealed
+  // Returns { reviews: [{ rating, review, createdAt, medicalStaff: { fullName, jobRole }, duty? }] }
+  getForHospital: async (hospitalId) => {
+    const response = await api.get(`/api/reviews/hospital/${hospitalId}`);
+    return response.data;
+  },
+
+  // GET /api/reviews/staff/:staffId - hospital reviews of a staff member, only ones already revealed
+  getForStaff: async (staffId) => {
+    const response = await api.get(`/api/reviews/staff/${staffId}`);
+    return response.data;
+  },
+};
+
 export const documentAPI = {
 
   // ✅ GET — { success, documents: [{ documentId, documentType, verificationStatus, uploadedAt, updatedAt, url, fileName }], pagination }

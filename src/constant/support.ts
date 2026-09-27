@@ -283,31 +283,33 @@ export interface ResolutionAction {
   needsApproval: boolean;
   gated?: boolean;
   fields?: ActionField[];
+  // What the ticket must have for the action to apply (ticketConsequence.service.js asserts)
+  needs?: 'duty' | 'application' | 'respondent' | 'payment';
 }
 
 // Values and sign-off rules from backend/src/services/ticketConsequence.service.js
 export const RESOLUTION_ACTIONS: ResolutionAction[] = [
   { value: 'RECORD_ONLY', label: 'Record the decision only', needsApproval: false },
-  { value: 'CLOSE_DUTY_AT_STATED_TIME', label: 'Close the duty as completed', needsApproval: false, fields: ['correctedEndTime'] },
-  { value: 'SET_DUTY_STATUS', label: 'Change the duty status', needsApproval: false, fields: ['newStatus'] },
-  { value: 'UNLOCK_OTP', label: 'Unlock the duty OTP', needsApproval: false, fields: ['otpType'] },
-  { value: 'RESCHEDULE_INTERVIEW', label: 'Reschedule the interview', needsApproval: false, fields: ['slots'] },
-  { value: 'RECOMPUTE_MATCH_SCORE', label: 'Recalculate the match score', needsApproval: false },
+  { value: 'CLOSE_DUTY_AT_STATED_TIME', label: 'Close the duty as completed', needsApproval: false, fields: ['correctedEndTime'], needs: 'duty' },
+  { value: 'SET_DUTY_STATUS', label: 'Change the duty status', needsApproval: false, fields: ['newStatus'], needs: 'duty' },
+  { value: 'UNLOCK_OTP', label: 'Unlock the duty OTP', needsApproval: false, fields: ['otpType'], needs: 'duty' },
+  { value: 'RESCHEDULE_INTERVIEW', label: 'Reschedule the interview', needsApproval: false, fields: ['slots'], needs: 'application' },
+  { value: 'RECOMPUTE_MATCH_SCORE', label: 'Recalculate the match score', needsApproval: false, needs: 'application' },
   { value: 'CORRECT_PROFILE_FIELD', label: 'Correct a profile field', needsApproval: false, fields: ['field'] },
-  { value: 'APPLY_RATING_PENALTY', label: 'Apply a rating penalty', needsApproval: true },
+  { value: 'APPLY_RATING_PENALTY', label: 'Apply a rating penalty', needsApproval: true, needs: 'respondent' },
   { value: 'REVERSE_RATING_PENALTY', label: 'Reverse a rating penalty', needsApproval: true },
-  { value: 'SUPPRESS_REVIEW', label: 'Hide a review', needsApproval: true, fields: ['reviewId'] },
-  { value: 'REINSTATE_APPLICATION', label: 'Reinstate the application', needsApproval: true },
-  { value: 'REVOKE_APPLICATION', label: 'Revoke the application', needsApproval: true },
-  { value: 'ISSUE_WARNING', label: 'Issue a warning', needsApproval: true },
-  { value: 'FLAG_FOR_SUSPENSION', label: 'Flag for suspension', needsApproval: true },
-  { value: 'APPLY_PRECAUTIONARY_RESTRICTION', label: 'Apply a temporary restriction', needsApproval: true },
+  { value: 'SUPPRESS_REVIEW', label: 'Hide a review', needsApproval: true, fields: ['reviewId'], needs: 'respondent' },
+  { value: 'REINSTATE_APPLICATION', label: 'Reinstate the application', needsApproval: true, needs: 'application' },
+  { value: 'REVOKE_APPLICATION', label: 'Revoke the application', needsApproval: true, needs: 'application' },
+  { value: 'ISSUE_WARNING', label: 'Issue a warning', needsApproval: true, needs: 'respondent' },
+  { value: 'FLAG_FOR_SUSPENSION', label: 'Flag for suspension', needsApproval: true, needs: 'respondent' },
+  { value: 'APPLY_PRECAUTIONARY_RESTRICTION', label: 'Apply a temporary restriction', needsApproval: true, needs: 'respondent' },
   { value: 'RESTORE_ACCOUNT', label: 'Restore the account', needsApproval: true, fields: ['flagId'] },
-  { value: 'HOLD_PAYOUT', label: 'Hold payout', needsApproval: true, gated: true },
-  { value: 'RELEASE_PAYOUT', label: 'Release payout', needsApproval: true, gated: true },
-  { value: 'ADJUST_PAYOUT', label: 'Adjust payout', needsApproval: true, gated: true },
-  { value: 'RECOVER_FROM_FUTURE_PAYOUT', label: 'Recover from a future payout', needsApproval: true, gated: true },
-  { value: 'REFUND_HOSPITAL', label: 'Refund the hospital', needsApproval: true, gated: true },
+  { value: 'HOLD_PAYOUT', label: 'Hold payout', needsApproval: true, gated: true, needs: 'payment' },
+  { value: 'RELEASE_PAYOUT', label: 'Release payout', needsApproval: true, gated: true, needs: 'payment' },
+  { value: 'ADJUST_PAYOUT', label: 'Adjust payout', needsApproval: true, gated: true, needs: 'payment' },
+  { value: 'RECOVER_FROM_FUTURE_PAYOUT', label: 'Recover from a future payout', needsApproval: true, gated: true, needs: 'payment' },
+  { value: 'REFUND_HOSPITAL', label: 'Refund the hospital', needsApproval: true, gated: true, needs: 'payment' },
 ];
 
 export const actionLabel = (value?: string | null) =>

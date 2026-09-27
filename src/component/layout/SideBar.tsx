@@ -325,6 +325,7 @@ const NavConfig: NavConfigType = {
     { label: "Live Monitoring",icon: "eye-outline",    route: "/hospital/live-monitoring" },
     { label: "Duty History",   icon: "time-outline",   route: "/hospital/duty-history"   },
     { label: "Job Posting",    icon: "briefcase-outline", route: "/hospital/jobs" as Href },
+    { label: "Ratings",        icon: "star-outline",   route: "/hospital/rating" as Href },
     { label: "Profile",        icon: "person-outline", route: "/hospital/profile"        },
   ],
   admin: [

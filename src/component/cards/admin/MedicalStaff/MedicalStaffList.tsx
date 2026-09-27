@@ -1,5 +1,6 @@
 
 import { adminAPI } from '@/service/api';
+import RatingSummary from '@/component/rating/RatingSummary';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -1240,6 +1241,17 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
                       </View>
                     ))}
                   </View>
+                </View>
+
+                <View style={pm.section}>
+                  <Text style={pm.sectionLabel}>RATING</Text>
+                  <RatingSummary
+                    viewer="admin"
+                    effectiveRating={(staffDetails as any).effectiveRating}
+                    averageRating={(staffDetails as any).averageRating}
+                    totalRatings={(staffDetails as any).totalRatings}
+                    breakdown={(staffDetails as any).ratingBreakdown}
+                  />
                 </View>
 
                 <View style={pm.section}>

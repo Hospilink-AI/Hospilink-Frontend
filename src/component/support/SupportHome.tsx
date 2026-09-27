@@ -71,7 +71,7 @@ export default function SupportHome({ base }: { base: string }) {
         {entries.map((e) => (
           <TouchableOpacity
             key={e.title}
-            style={[styles.card, e.primary && styles.cardPrimary]}
+            style={[styles.card, isMobile && styles.cardMobile, e.primary && styles.cardPrimary]}
             activeOpacity={0.85}
             onPress={() => router.push(e.route as any)}
           >
@@ -107,6 +107,7 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 8,
   },
+  cardMobile: { flexBasis: "auto", flexGrow: 0 },
   cardPrimary: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   icon: {
     width: 42,

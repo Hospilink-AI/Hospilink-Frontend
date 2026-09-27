@@ -342,9 +342,9 @@ export default function AdminTicketDetail() {
         <Text style={styles.backText}>Back to tickets</Text>
       </TouchableOpacity>
 
-      <View style={[styles.layout, !isWide && { flexDirection: "column" }]}>
-        <View style={{ flex: 2 }}>{main}</View>
-        <View style={{ flex: 1 }}>{side}</View>
+      <View style={[styles.layout, !isWide && { flexDirection: "column", alignItems: "stretch" }]}>
+        <View style={isWide ? { flex: 2 } : undefined}>{main}</View>
+        <View style={isWide ? { flex: 1 } : undefined}>{side}</View>
       </View>
 
       <ActionModal

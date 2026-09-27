@@ -46,7 +46,15 @@ export default function DecisionPanel({ ticket, onDecided }: Props) {
   const toggleEvidence = (id: string) =>
     setRelied((prev) => (prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id]));
 
-  const chosen = RESOLUTION_ACTIONS.filter((a) => actions[a.value]);
+  const fits = (a: ResolutionAction) => {
+    if (a.needs === "duty") return ticket.subjectType === "DUTY" && !!ticket.subjectId;
+    if (a.needs === "application") return ["APPLICATION", "INTERVIEW"].includes(ticket.subjectType) && !!ticket.subjectId;
+    if (a.needs === "respondent") return !!ticket.raisedAgainst;
+    if (a.needs === "payment") return ticket.domain === "payment";
+    return true;
+  };
+  const available = RESOLUTION_ACTIONS.filter(fits);
+  const chosen = available.filter((a) => actions[a.value]);
   const needsApproval = chosen.some((a) => a.needsApproval) || ticket.category === "jobs.interview_no_show";
 
   const missing = chosen.find((a) => {
@@ -161,7 +169,7 @@ export default function DecisionPanel({ ticket, onDecided }: Props) {
 
       <Text style={styles.label}>Actions</Text>
       <View style={{ gap: 6 }}>
-        {RESOLUTION_ACTIONS.map((a) => {
+        {available.map((a) => {
           const on = !!actions[a.value];
           return (
             <View key={a.value} style={[styles.action, on && styles.actionOn]}>

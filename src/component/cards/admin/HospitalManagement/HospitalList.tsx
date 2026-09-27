@@ -1,4 +1,5 @@
 import { adminAPI } from '@/service/api';
+import RatingSummary from '@/component/rating/RatingSummary';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -1035,9 +1036,11 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject, 
   const [detailLoading, setDetailLoading] = useState(false);
   const [actionDecision, setActionDecision] = useState<'approved' | 'rejected' | 'suspended' | null>(null);
   const [detailError, setDetailError] = useState('');
+  const [rating, setRating] = useState<any>(null);
 
   useEffect(() => {
     if (visible && hospital?.id) {
+      setRating(null);
       setDetailData(null);
       setDetailError('');
       setDetailLoading(true);
@@ -1047,6 +1050,12 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject, 
         .then((res: any) => {
           const data = res?.data ?? res;
           setDetailData(mapHospitalDetail(data));
+          setRating({
+            effectiveRating: data?.effectiveRating,
+            averageRating: data?.averageRating,
+            totalRatings: data?.totalRatings,
+            breakdown: data?.ratingBreakdown,
+          });
         })
         .catch((err: any) => {
           const msg =
@@ -1174,6 +1183,19 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject, 
                     </View>
                   </View>
                 </View>
+
+                {!!rating && (
+                  <View style={rm.section}>
+                    <Text style={rm.sectionLabel}>RATING</Text>
+                    <RatingSummary
+                      viewer="admin"
+                      effectiveRating={rating.effectiveRating}
+                      averageRating={rating.averageRating}
+                      totalRatings={rating.totalRatings}
+                      breakdown={rating.breakdown}
+                    />
+                  </View>
+                )}
 
                 <View style={rm.section}>
                   <Text style={rm.sectionLabel}>LIST OF DOCUMENTS</Text>

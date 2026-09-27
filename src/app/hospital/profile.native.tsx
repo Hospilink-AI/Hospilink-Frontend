@@ -1914,6 +1914,12 @@ const Profile = () => {
           <Text style={mSt.sectionLabel}>SUPPORT</Text>
           <View style={mSt.card}>
             <SettingsRow
+              icon="star-outline"
+              label="Ratings & Reviews"
+              chevron
+              onPress={() => router.push("/hospital/rating" as any)}
+            />
+            <SettingsRow
               icon="help-circle-outline"
               label="Help Center"
               chevron
