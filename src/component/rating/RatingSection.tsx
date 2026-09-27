@@ -56,6 +56,7 @@ export default function RatingSection({ role }: { role: "hospital" | "staff" }) 
             averageRating={profile?.averageRating}
             totalRatings={profile?.totalRatings}
             breakdown={profile?.ratingBreakdown}
+            override={profile?.ratingOverride}
           />
 
           <View style={styles.divider} />

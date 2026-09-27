@@ -1142,6 +1142,12 @@ export const ticketAPI = {
 
   // POST /api/tickets/:id/chat - multipart. Fields: text?; files attach to the ticket as evidence
   sendChat: async (ticketId, text, files = []) => postMultipart(`/api/tickets/${ticketId}/chat`, { text }, files),
+
+  // GET /api/tickets/:id/evidence/:evidenceId -> { url } short-lived link (admins, and each side for its own files)
+  getEvidenceUrl: async (ticketId, evidenceId) => {
+    const response = await api.get(`/api/tickets/${ticketId}/evidence/${evidenceId}`);
+    return response.data;
+  },
 };
 
 export const feedbackAPI = {
@@ -1254,6 +1260,18 @@ export const adminTicketAPI = {
   // PATCH /api/admin/tickets/:id/return-for-review - Body: { reason }
   returnForReview: async (ticketId, reason) => {
     const response = await api.patch(`/api/admin/tickets/${ticketId}/return-for-review`, { reason });
+    return response.data;
+  },
+
+  // GET /api/admin/tickets/:id/conversation -> { conversation: { language, botCategory, botConfidence, messages } | null }
+  getConversation: async (ticketId) => {
+    const response = await api.get(`/api/admin/tickets/${ticketId}/conversation`);
+    return response.data;
+  },
+
+  // GET /api/admin/tickets/:id/history -> earlier tickets between the same two people
+  getHistory: async (ticketId) => {
+    const response = await api.get(`/api/admin/tickets/${ticketId}/history`);
     return response.data;
   },
 };

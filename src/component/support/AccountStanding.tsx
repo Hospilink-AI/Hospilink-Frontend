@@ -1,6 +1,13 @@
 import { COLORS } from "@/constant/colors";
 import { apiError, formatDate, formatTime } from "@/constant/jobs";
-import { FLAG_RAISES_LABELS, FLAG_STATUS_LABELS, PATTERN_TYPE_LABELS, TICKET_TEXT_MAX } from "@/constant/support";
+import {
+  FLAG_RAISES_LABELS,
+  FLAG_STATUS_LABELS,
+  OUTCOME_LABELS,
+  PATTERN_TYPE_LABELS,
+  TICKET_TEXT_MAX,
+  categoryLabel,
+} from "@/constant/support";
 import { accountStandingAPI } from "@/service/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -79,12 +86,13 @@ export default function AccountStanding({ base }: { base: string }) {
         </View>
       )}
 
-      {!loading && !error && flags.map((f) => <FlagCard key={f._id} flag={f} onUpdated={replace} />)}
+      {!loading && !error && flags.map((f) => <FlagCard key={f._id} flag={f} base={base} onUpdated={replace} />)}
     </ScrollView>
   );
 }
 
-function FlagCard({ flag, onUpdated }: { flag: any; onUpdated: (flag: any) => void }) {
+function FlagCard({ flag, base, onUpdated }: { flag: any; base: string; onUpdated: (flag: any) => void }) {
+  const router = useRouter();
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -93,6 +101,8 @@ function FlagCard({ flag, onUpdated }: { flag: any; onUpdated: (flag: any) => vo
   const response = proposal.partyResponse;
   const hasProposal = flag.raises === "suspension_proposal";
   const canReply = hasProposal && !response?.submittedAt && flag.status !== "decided";
+  // older servers send bare ids here; only list cases that came with details
+  const cases = (flag.casesRelied ?? []).filter((c: any) => c && typeof c === "object" && c.ticketId);
 
   const send = async () => {
     setSending(true);
@@ -120,6 +130,21 @@ function FlagCard({ flag, onUpdated }: { flag: any; onUpdated: (flag: any) => vo
         {flag.actualCount} in the last {flag.windowDays} days (the limit is {flag.thresholdCount}).
       </Text>
       <Text style={styles.muted}>{FLAG_RAISES_LABELS[flag.raises] ?? flag.raises} · Flagged {formatDate(flag.createdAt)}</Text>
+
+      {cases.length > 0 && (
+        <>
+          <Text style={styles.label}>Based on these cases</Text>
+          {cases.map((c: any) => (
+            <TouchableOpacity key={c._id} style={styles.caseRow} onPress={() => router.push(`${base}/tickets/${c._id}` as any)}>
+              <Text style={styles.caseText} numberOfLines={1}>
+                {categoryLabel(c.category)} · {c.ticketId} · {formatDate(c.createdAt)}
+                {c.resolutionOutcome ? ` · ${OUTCOME_LABELS[c.resolutionOutcome] ?? c.resolutionOutcome}` : ""}
+              </Text>
+              <Ionicons name="chevron-forward" size={14} color={COLORS.subText} />
+            </TouchableOpacity>
+          ))}
+        </>
+      )}
 
       {response?.submittedAt && (
         <>
@@ -175,6 +200,8 @@ const styles = StyleSheet.create({
   backText: { fontSize: 13, color: COLORS.subText },
   title: { fontSize: 22, fontWeight: "800", color: COLORS.text },
   muted: { fontSize: 13, color: COLORS.subText, lineHeight: 19 },
+  caseRow: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 4 },
+  caseText: { flex: 1, fontSize: 13, color: COLORS.primary, fontWeight: "600" },
   body: { fontSize: 14, color: COLORS.text, lineHeight: 20 },
   label: { fontSize: 12, fontWeight: "700", color: COLORS.subText, marginTop: 6 },
   state: { alignItems: "center", gap: 10, paddingVertical: 40 },

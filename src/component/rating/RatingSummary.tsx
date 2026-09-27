@@ -21,6 +21,8 @@ interface Props {
   breakdown?: RatingBreakdown | null;
   // "you" on the hospital's own screen, "they" for admin views
   viewer?: "self" | "admin";
+  // rating set by an admin (approved by a second admin); shown instead of the calculated one
+  override?: { value?: number; reason?: string; expiresAt?: string | null } | null;
 }
 
 const fmt = (n?: number | null) => (typeof n === "number" ? n.toFixed(1) : "—");
@@ -42,16 +44,20 @@ export function Stars({ value, size = 18 }: { value?: number | null; size?: numb
 }
 
 // Rating shown to others plus a "why is this my rating?" breakdown. Reused on every rating surface.
-export default function RatingSummary({ effectiveRating, averageRating, totalRatings, breakdown, viewer = "self" }: Props) {
+export default function RatingSummary({ effectiveRating, averageRating, totalRatings, breakdown, viewer = "self", override }: Props) {
   const [open, setOpen] = useState(false);
   const b = breakdown ?? {};
   const count = b.reviewCount ?? totalRatings ?? 0;
-  const shown = effectiveRating ?? b.dampedAverage ?? null;
+  const set =
+    override && typeof override.value === "number" && (!override.expiresAt || new Date(override.expiresAt) > new Date())
+      ? override
+      : null;
+  const shown = set ? set.value : effectiveRating ?? b.dampedAverage ?? null;
   const penalty = b.penaltyTotal ?? 0;
   const you = viewer === "self";
 
   // No reviews yet: show as unrated, not as the platform average the server starts from
-  if (count === 0) {
+  if (count === 0 && !set) {
     return (
       <View style={styles.wrap}>
         <View style={styles.top}>
@@ -76,10 +82,23 @@ export default function RatingSummary({ effectiveRating, averageRating, totalRat
         <View style={{ gap: 4 }}>
           <Stars value={shown} />
           <Text style={styles.muted}>
-            {count === 0 ? "No reviews yet" : `Based on ${count} review${count === 1 ? "" : "s"}`}
+            {set ? "Set by HospiLink" : count === 0 ? "No reviews yet" : `Based on ${count} review${count === 1 ? "" : "s"}`}
           </Text>
         </View>
       </View>
+
+      {!!set && (
+        <View style={styles.setBox}>
+          <Text style={styles.setText}>
+            {you ? "HospiLink has set your rating" : "Rating set by an admin"}
+            {set.expiresAt ? ` until ${new Date(set.expiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}` : ""}.
+            {set.reason ? ` Reason: ${set.reason}` : ""}
+          </Text>
+          {!you && typeof effectiveRating === "number" && effectiveRating !== set.value && (
+            <Text style={styles.muted}>Calculated rating: {fmt(effectiveRating)}</Text>
+          )}
+        </View>
+      )}
 
       {!!breakdown && (
         <TouchableOpacity style={styles.toggle} onPress={() => setOpen(!open)} activeOpacity={0.8}>
@@ -130,6 +149,8 @@ function Row({ label, value, strong, danger }: { label: string; value: string; s
 
 const styles = StyleSheet.create({
   wrap: { gap: 8 },
+  setBox: { backgroundColor: "#EFF6FF", borderRadius: 8, padding: 10, gap: 2 },
+  setText: { fontSize: 12, color: "#1E3A8A", lineHeight: 17 },
   top: { flexDirection: "row", alignItems: "center", gap: 14 },
   big: { fontSize: 36, fontWeight: "800", color: COLORS.text },
   unrated: { fontSize: 18, fontWeight: "800", color: COLORS.text },

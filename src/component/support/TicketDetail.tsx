@@ -1,4 +1,5 @@
 import ActionModal from "@/component/cards/jobs/ActionModal";
+import EvidenceList from "@/component/support/EvidenceList";
 import EvidencePicker from "@/component/support/EvidencePicker";
 import { TicketStatusPill } from "@/component/support/TicketList";
 import { COLORS } from "@/constant/colors";
@@ -218,17 +219,7 @@ export default function TicketDetail({ base }: { base: string }) {
 
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Evidence</Text>
-        {(ticket.evidence ?? []).length === 0 ? (
-          <Text style={styles.muted}>No files attached.</Text>
-        ) : (
-          (ticket.evidence ?? []).map((e: any) => (
-            <View key={e._id ?? e.s3Key} style={styles.fileRow}>
-              <Ionicons name={e.mimeType === "application/pdf" ? "document-text-outline" : "image-outline"} size={16} color={COLORS.subText} />
-              <Text style={styles.fileName} numberOfLines={1}>{e.originalFileName ?? "File"}</Text>
-              <Text style={styles.fileMeta}>{formatDate(e.uploadedAt)}</Text>
-            </View>
-          ))
-        )}
+        <EvidenceList ticketId={ticket._id} evidence={ticket.evidence ?? []} />
         {canAddEvidence && (
           <>
             <EvidencePicker files={files} onChange={setFiles} />

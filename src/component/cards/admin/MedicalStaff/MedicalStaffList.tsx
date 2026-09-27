@@ -1255,6 +1255,7 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
                     averageRating={(staffDetails as any).averageRating}
                     totalRatings={(staffDetails as any).totalRatings}
                     breakdown={(staffDetails as any).ratingBreakdown}
+                    override={(staffDetails as any).ratingOverride}
                   />
                   <RatingOverride
                     kind="staff"

@@ -1,4 +1,7 @@
+import CaseHistoryCard from "@/component/admin-support/CaseHistoryCard";
+import ConversationCard from "@/component/admin-support/ConversationCard";
 import DecisionPanel from "@/component/admin-support/DecisionPanel";
+import EvidenceList from "@/component/support/EvidenceList";
 import ProfilePeek, { PeekTarget } from "@/component/admin-support/ProfilePeek";
 import { PriorityPill } from "@/component/admin-support/TicketQueue";
 import ActionModal from "@/component/cards/jobs/ActionModal";
@@ -208,11 +211,16 @@ export default function AdminTicketDetail() {
           </View>
         )}
         {ticket.botCategory && ticket.botCategory !== ticket.category && (
-          <Text style={styles.muted}>Bot suggested: {categoryLabel(ticket.botCategory)}</Text>
+          <Text style={styles.muted}>
+            Bot suggested: {categoryLabel(ticket.botCategory)}
+            {typeof ticket.botConfidence === "number" ? ` (${Math.round(ticket.botConfidence * 100)}% sure)` : ""}
+          </Text>
         )}
         <Text style={styles.label}>What the user said</Text>
         <Text style={styles.body}>{ticket.statusHistory?.[0]?.reason ?? "—"}</Text>
       </View>
+
+      {ticket.source === "CHATBOT" && <ConversationCard ticketId={ticket._id} startOpen={ticket.status === "TRIAGE"} />}
 
       {(ctx.duty || ctx.application || ctx.payment) && (
         <View style={styles.card}>
@@ -352,16 +360,10 @@ export default function AdminTicketDetail() {
 
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Evidence</Text>
-        {(ticket.evidence ?? []).length === 0 ? (
-          <Text style={styles.muted}>No files.</Text>
-        ) : (
-          ticket.evidence.map((e: any) => (
-            <Text key={e._id ?? e.s3Key} style={styles.muted} numberOfLines={1}>
-              • {e.originalFileName ?? "File"} · from {e.suppliedBy} · {formatDate(e.uploadedAt)}
-            </Text>
-          ))
-        )}
+        <EvidenceList ticketId={ticket._id} evidence={ticket.evidence ?? []} showSupplier emptyText="No files." />
       </View>
+
+      {!!ticket.raisedAgainst && <CaseHistoryCard ticketId={ticket._id} />}
 
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>History</Text>

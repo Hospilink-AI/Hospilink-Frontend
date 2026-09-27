@@ -1058,6 +1058,7 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject, 
             averageRating: data?.averageRating,
             totalRatings: data?.totalRatings,
             breakdown: data?.ratingBreakdown,
+            override: data?.ratingOverride,
           });
         })
         .catch((err: any) => {
@@ -1196,6 +1197,7 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject, 
                       averageRating={rating.averageRating}
                       totalRatings={rating.totalRatings}
                       breakdown={rating.breakdown}
+                      override={rating.override}
                     />
                     <RatingOverride
                       kind="hospital"

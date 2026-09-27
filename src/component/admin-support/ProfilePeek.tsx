@@ -88,6 +88,7 @@ export default function ProfilePeek({ target, onClose }: { target: PeekTarget; o
                   averageRating={data.averageRating}
                   totalRatings={data.totalRatings}
                   breakdown={data.ratingBreakdown}
+                  override={data.ratingOverride}
                 />
                 <RatingOverride
                   kind={isHospital ? "hospital" : "staff"}
