@@ -12,6 +12,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { dutyAPI } from '../../../service/api';
+import AutoRelistCard from '@/component/autoRelist/AutoRelistCard';
 
 // ─── Types ────────────────────────────────────────────────
 interface DutyDetail {
@@ -382,6 +383,8 @@ function MobileLayout({ duty, dutyId, router }: { duty: DutyDetail; dutyId: stri
         </View>
       )}
 
+      <AutoRelistCard duty={duty} viewer="hospital" style={{ marginBottom: 12 }} />
+
       {/* ── Card 7: Status History ── */}
       {duty.statusHistory && duty.statusHistory.length > 0 && (
         <View style={mobileS.card}>
@@ -564,6 +567,8 @@ function DesktopLayout({ duty, dutyId, router }: { duty: DutyDetail; dutyId: str
               </View>
             </View>
           )}
+
+          <AutoRelistCard duty={duty} viewer="hospital" />
 
           {/* Status history */}
           {duty.statusHistory && duty.statusHistory.length > 0 && (

@@ -5,6 +5,7 @@ type Config = { icon: any; color: string; bg: string; label: string };
 const SUPPORT: Config = { icon: "chatbubbles-outline", color: "#2563eb", bg: "#dbeafe", label: "SUPPORT" };
 const STANDING: Config = { icon: "shield-outline", color: "#b45309", bg: "#fef3c7", label: "ACCOUNT" };
 const RATING: Config = { icon: "star-outline", color: "#7c3aed", bg: "#ede9fe", label: "RATING" };
+const RELIST: Config = { icon: "refresh-circle-outline", color: "#0369a1", bg: "#e0f2fe", label: "RE-POSTED" };
 
 const TITLES: Record<string, string> = {
   TICKET_CREATED: "Ticket received",
@@ -15,7 +16,17 @@ const TITLES: Record<string, string> = {
   TICKET_INFO_REQUESTED: "More information needed",
   TICKET_INFO_REQUEST_REMINDER: "More information needed",
   PATTERN_FLAG_RAISED: "Account notice",
+  DUTY_AUTO_RELISTED: "Duty re-posted",
+  DUTY_RELIST_CAP_REACHED: "Duty needs your input",
+  DUTY_RELIST_SECOND: "Duty re-posted twice",
+  DUTY_CANCELLED_BY_STAFF: "Staff member cancelled",
+  AUTO_RELIST_WATCHLIST: "Auto-relist watchlist",
+  AUTO_RELIST_SPEND_ALERT: "Auto-relist spend alert",
 };
+
+// auto-relist notification types (spec section 07); names assumed until the backend sends them
+const isRelist = (type: string) =>
+  type.startsWith("DUTY_AUTO_RELIST") || type.startsWith("DUTY_RELIST_") || type.startsWith("AUTO_RELIST_") || type === "DUTY_CANCELLED_BY_STAFF";
 
 const isTicket = (type: string) => type.startsWith("TICKET_");
 const isStanding = (type: string) =>
@@ -23,6 +34,7 @@ const isStanding = (type: string) =>
 
 export function supportNotificationConfig(type: string): Config | null {
   if (isTicket(type)) return SUPPORT;
+  if (isRelist(type)) return RELIST;
   if (isStanding(type)) return STANDING;
   if (type.startsWith("RATING_PENALTY_")) return RATING;
   return null;
@@ -40,6 +52,11 @@ export function notificationRoute(type: string, payload: any, pathname: string):
   const ticketId = payload?.ticket?.id ?? payload?.ticket?._id ?? payload?.ticketId ?? null;
   if (isTicket(type) && ticketId) {
     return base === "admin" ? `/admin/tickets/${ticketId}` : `/${base}/support/tickets/${ticketId}`;
+  }
+  const dutyId = payload?.duty?.id ?? payload?.duty?._id ?? payload?.dutyId ?? null;
+  if (isRelist(type)) {
+    if (base === "admin") return "/admin/auto-relist";
+    return dutyId ? `/${base}/dutyDetails/${dutyId}` : null;
   }
   if (base === "admin") return type === "PATTERN_FLAG_RAISED" ? "/admin/patterns" : null;
   if (isStanding(type) || type.startsWith("RATING_PENALTY_")) return `/${base}/support/standing`;

@@ -12,6 +12,8 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { dutyAPI } from '../../../service/api';
+import RelistBadges from '@/component/autoRelist/RelistBadges';
+import StaffCancelDuty from '@/component/autoRelist/StaffCancelDuty';
 
 // ─── Types ────────────────────────────────────────────────
 interface DutyDetail {
@@ -480,6 +482,7 @@ export default function DutyDetailsScreen() {
                 </View>
               )}
             </View>
+            <RelistBadges duty={duty} style={{ marginTop: 12 }} />
 
             {/* Review (if present) */}
             {duty.review && (
@@ -604,6 +607,12 @@ export default function DutyDetailsScreen() {
             )}
           </View>
         </View>
+
+        <StaffCancelDuty
+          duty={duty}
+          onCancelled={() => router.replace('/medicalStaff/dashboard')}
+          style={{ marginTop: 16 }}
+        />
 
         {/* Status history on mobile (below main content) */}
         {isMobile && duty.statusHistory && duty.statusHistory.length > 0 && (

@@ -217,6 +217,8 @@ export default function Dashboard() {
         }),
         tag: job.urgency?.toUpperCase() || 'MEDIUM',
         dutySubType: job.staffRole === 'rmo' ? job.dutySubType : undefined,
+        offeredRate: job.offeredRate,
+        autoRelist: job.autoRelist,
       }));
       setDuties(transformedDuties);
       setTotalJobs(response.totalJobs || 0);

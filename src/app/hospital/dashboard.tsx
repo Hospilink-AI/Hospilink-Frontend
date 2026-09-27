@@ -5,6 +5,7 @@ import { HospitalDashStatCards } from '@/component/cards/hospital/HospitalDashSt
 import { ActiveDutyTable } from '@/component/cards/hospital/HospitalDashActivityDutyTable';
 import { RightSidebarWidgets } from '@/component/cards/hospital/HospitalDashStaffDistributionTable';
 import { ActiveEmergencyRequests } from '@/component/cards/hospital/HospitalDashActiveEmergencyRequests';
+import FindingCoverPanel from '@/component/autoRelist/FindingCoverPanel';
 
 export default function Dashboard() {
   const { width } = useWindowDimensions();
@@ -14,6 +15,7 @@ export default function Dashboard() {
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <HospitalDashHeader />
       <HospitalDashStatCards isTablet={isTablet} />
+      <FindingCoverPanel />
       
       <View style={[styles.mainLayout, isTablet && styles.mainLayoutTablet]}>
         {/* Left Column (Main Tables) */}

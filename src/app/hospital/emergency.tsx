@@ -17,6 +17,8 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { dutyAPI } from '../../service/api';
+import AutoRelistOption from '@/component/autoRelist/AutoRelistOption';
+import { AUTO_RELIST_ENABLED, relistOf } from '@/constant/autoRelist';
 
 // ─── Types ────────────────────────────────────────────────
 type FormState = {
@@ -483,6 +485,7 @@ export default function CreateDutyScreen() {
   const { dutyId, mode } = useLocalSearchParams<{ dutyId: string; mode: string }>();
   const isEditMode = mode === 'edit';
 
+  const [autoRelist, setAutoRelist] = useState(true);
   const [form, setForm] = useState<FormState>({
     staffRole: '', urgencyLevel: 'emergency', startingDate: '', endingDate: '',
     startTime: '', endTime: '', overtimeDuty: false, offerRate: '', dutyDescription: '', staffCount: '', dutySubType: ''
@@ -537,6 +540,7 @@ export default function CreateDutyScreen() {
           staffCount: String(d.staff_count ?? d.staffCount ?? ''),
           dutySubType: d.duty_sub_type ?? d.dutySubType ?? '',
         });
+        setAutoRelist(relistOf(d)?.enabled ?? true);
       } catch (err: any) {
         setApiError(err?.response?.data?.message ?? err?.message ?? 'Failed to load duty details.');
       } finally {
@@ -572,6 +576,7 @@ export default function CreateDutyScreen() {
       urgency: form.urgencyLevel,
       description: form.dutyDescription,
       offered_rate: Number(form.offerRate),
+      ...(AUTO_RELIST_ENABLED && { auto_relist_enabled: autoRelist }),
       is_overnight_duty: form.overtimeDuty,
       staff_count: form.staffCount ? Number(form.staffCount) : undefined,
       ...(form.staffRole === 'rmo' && form.dutySubType
@@ -827,6 +832,12 @@ export default function CreateDutyScreen() {
                 keyboardType="decimal-pad"
                 error={errors.offerRate}
               />
+
+              {AUTO_RELIST_ENABLED && (
+                <View style={{ marginTop: 14 }}>
+                  <AutoRelistOption value={autoRelist} onChange={setAutoRelist} rate={form.offerRate} emergency />
+                </View>
+              )}
 
               <View style={{ height: 16 }} />
 

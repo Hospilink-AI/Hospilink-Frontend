@@ -18,6 +18,8 @@ import {
   View,
 } from 'react-native';
 import { adminAPI } from '../../service/api';
+import AutoRelistOption from '@/component/autoRelist/AutoRelistOption';
+import { AUTO_RELIST_ENABLED, relistOf } from '@/constant/autoRelist';
 
 // ─── Types ────────────────────────────────────────────────
 type FormState = {
@@ -802,6 +804,7 @@ export default function CreateDutyScreen() {
   const { dutyId, mode } = useLocalSearchParams<{ dutyId: string; mode: string }>();
   const isEditMode = mode === 'edit';
 
+  const [autoRelist, setAutoRelist] = useState(true);
   const [form, setForm] = useState<FormState>({
     hospitalId: '', hospitalName: '', staffRole: '', urgencyLevel: 'emergency',
     startingDate: '', endingDate: '', startTime: '', endTime: '',
@@ -865,6 +868,7 @@ const handleRoleChange = (val: string) => {
           staffCount: String(d.staff_count ?? d.staffCount ?? ''),
           dutySubType: d.duty_sub_type ?? d.dutySubType ?? '',
         });
+        setAutoRelist(relistOf(d)?.enabled ?? true);
       } catch (err: any) {
         Alert.alert(
           'Error',
@@ -898,6 +902,7 @@ const handleRoleChange = (val: string) => {
       urgency: form.urgencyLevel,
       description: form.dutyDescription.trim(),
       offered_rate: Number(form.offerRate),
+      ...(AUTO_RELIST_ENABLED && { auto_relist_enabled: autoRelist }),
       is_overnight_duty: form.overtimeDuty,
       staff_count: form.staffCount ? Number(form.staffCount) : undefined,
       ...(form.staffRole === 'rmo' && form.dutySubType
@@ -1131,6 +1136,12 @@ const handleRoleChange = (val: string) => {
                 keyboardType="decimal-pad"
               />
               <FieldError message={errors.offerRate} />
+
+              {AUTO_RELIST_ENABLED && (
+                <View style={{ marginTop: 14 }}>
+                  <AutoRelistOption value={autoRelist} onChange={setAutoRelist} rate={form.offerRate} emergency />
+                </View>
+              )}
 
               <View style={{ height: 14 }} />
 

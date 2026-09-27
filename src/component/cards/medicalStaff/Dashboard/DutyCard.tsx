@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { dutyAPI } from "../../../../service/api";
+import RelistBadges from "@/component/autoRelist/RelistBadges";
 
 interface Props {
   duty: {
@@ -21,6 +22,9 @@ interface Props {
     startTime?: string;
     endTime?: string;
     dutySubType?: string;
+    // raw fields for the auto-relist badges
+    offeredRate?: number;
+    autoRelist?: any;
   };
   onAccept: () => void;
   onPress: (id: string) => void; // ✅ Prop properly received
@@ -173,6 +177,7 @@ export default function DutyCard({ duty, onAccept, onPress, isMobile }: Props) {
         <InfoItem icon="card-outline" text={duty.price || 'N/A'} bold />
         <InfoItem icon="calendar-outline" text={duty.date || 'N/A'} />
       </View>
+      <RelistBadges duty={duty} style={{ marginTop: 10 }} />
 
       <View style={styles.divider} />
 

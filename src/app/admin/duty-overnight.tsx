@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { AUTO_RELIST_ENABLED } from '@/constant/autoRelist';
 import { useCapability } from '@/hooks/useCapability';
 import {
   ScrollView,
@@ -234,6 +235,7 @@ export default function DutyOvernight() {
   const [pendingLoc, setPendingLoc] = useState('All Hospital');
   const [appliedDate, setAppliedDate] = useState<DateFilterState>(initialDateState);
   const [appliedLoc, setAppliedLoc] = useState('All Hospital');
+  const [relistedOnly, setRelistedOnly] = useState(false);
 
   const [showDateModal, setShowDateModal] = useState(false);
 
@@ -302,6 +304,7 @@ export default function DutyOvernight() {
         if (appliedLoc !== 'All Hospital') {
           params.hospitalName = appliedLoc;
         }
+        if (relistedOnly) params.relisted = true;
 
         const res = await adminAPI.getDutyHistory(params);
 
@@ -329,7 +332,7 @@ export default function DutyOvernight() {
       }
     };
     fetchHistory();
-  }, [appliedDate, appliedLoc, currentPage]);
+  }, [appliedDate, appliedLoc, currentPage, relistedOnly]);
 
   const applyFilters = () => {
     setAppliedDate(pendingDate);
@@ -506,6 +509,16 @@ export default function DutyOvernight() {
             <Dropdown value={pendingLoc} options={hospitalOptions} onChange={setPendingLoc} flex={1} />
           </View>
 
+          {AUTO_RELIST_ENABLED && (
+            <TouchableOpacity
+              style={[styles.resetBtn, relistedOnly && { borderColor: '#2563EB', backgroundColor: '#EFF6FF' }]}
+              onPress={() => { setCurrentPage(1); setRelistedOnly(!relistedOnly); }}
+              activeOpacity={0.85}
+            >
+              <Ionicons name={relistedOnly ? 'checkbox' : 'square-outline'} size={13} color={relistedOnly ? '#2563EB' : '#64748b'} />
+              <Text style={[styles.resetBtnText, relistedOnly && { color: '#2563EB' }]}>Relisted only</Text>
+            </TouchableOpacity>
+          )}
           {isFiltered && (
             <TouchableOpacity style={styles.resetBtn} onPress={resetFilters} activeOpacity={0.85}>
               <Ionicons name="refresh-outline" size={13} color="#64748b" />

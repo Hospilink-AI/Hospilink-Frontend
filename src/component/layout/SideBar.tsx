@@ -295,6 +295,7 @@ import {
 import { authAPI } from "../../service/api";
 import { useCapability } from "@/hooks/useCapability";
 import { AdminCapability } from "@/constant/adminCapabilities";
+import { AUTO_RELIST_ENABLED } from "@/constant/autoRelist";
 
 type IoniconName = ComponentProps<typeof Ionicons>["name"];
 
@@ -341,6 +342,9 @@ const NavConfig: NavConfigType = {
     { label: "Patterns",             icon: "analytics-outline",        route: "/admin/patterns" as Href, capability: "pattern.view" },
     { label: "Feedback Board",       icon: "megaphone-outline",        route: "/admin/feedback" as Href, capability: "feedback.view" },
     { label: "Knowledge Base",       icon: "book-outline",             route: "/admin/knowledge-base" as Href, capability: "knowledgeBase.manage" },
+    ...(AUTO_RELIST_ENABLED
+      ? [{ label: "Auto-Relist", icon: "refresh-circle-outline" as IoniconName, route: "/admin/auto-relist" as Href, capability: "autoRelist.view" as AdminCapability }]
+      : []),
   ],
 };
 

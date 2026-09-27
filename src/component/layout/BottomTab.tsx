@@ -129,6 +129,7 @@ import {
 } from "react-native";
 import { authAPI } from "../../service/api";
 import { AdminCapability } from "@/constant/adminCapabilities";
+import { AUTO_RELIST_ENABLED } from "@/constant/autoRelist";
 import { useCapability } from "@/hooks/useCapability";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -174,6 +175,9 @@ const NavConfig: NavConfigType = {
     { label: "Duty Tracking", icon: "calendar-outline", route: "/admin/duty-overnight", capability: "duty.view" },
     { label: "Live Tracking", icon: "locate-outline", route: "/admin/live-tracking", capability: "duty.view" },
     { label: "Activity Logs", icon: "reload-outline", route: "/admin/activity-logs", capability: "activityLog.view" },
+    ...(AUTO_RELIST_ENABLED
+      ? [{ label: "Auto-Relist", icon: "refresh-circle-outline" as IoniconName, route: "/admin/auto-relist" as Href, capability: "autoRelist.view" as AdminCapability }]
+      : []),
   ],
 };
 
@@ -346,7 +350,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 6,
-    paddingHorizontal: 16,
+    paddingHorizontal: 4,
+    // share the width so a long admin menu still fits a phone screen
+    flex: 1,
+    minWidth: 0,
   },
   dot: {
     width: 5,
