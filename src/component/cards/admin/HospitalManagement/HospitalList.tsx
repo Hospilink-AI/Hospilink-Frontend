@@ -1,4 +1,7 @@
 import { adminAPI } from '@/service/api';
+import RatingOverride from '@/component/rating/RatingOverride';
+import { useCapability } from '@/hooks/useCapability';
+import RatingSummary from '@/component/rating/RatingSummary';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -1026,18 +1029,21 @@ interface HospitalReviewModalProps {
   onApprove: () => void;
   onReject: () => void;
   onSuspend: () => void;
+  canManage: boolean;
 }
 
-function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject, onSuspend }: HospitalReviewModalProps) {
+function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject, onSuspend, canManage }: HospitalReviewModalProps) {
   const [selectedDoc, setSelectedDoc] = useState<HospitalDocument | null>(null);
   const [docViewerVisible, setDocViewerVisible] = useState(false);
   const [detailData, setDetailData] = useState<Partial<Hospital> | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [actionDecision, setActionDecision] = useState<'approved' | 'rejected' | 'suspended' | null>(null);
   const [detailError, setDetailError] = useState('');
+  const [rating, setRating] = useState<any>(null);
 
   useEffect(() => {
     if (visible && hospital?.id) {
+      setRating(null);
       setDetailData(null);
       setDetailError('');
       setDetailLoading(true);
@@ -1047,6 +1053,13 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject, 
         .then((res: any) => {
           const data = res?.data ?? res;
           setDetailData(mapHospitalDetail(data));
+          setRating({
+            effectiveRating: data?.effectiveRating,
+            averageRating: data?.averageRating,
+            totalRatings: data?.totalRatings,
+            breakdown: data?.ratingBreakdown,
+            override: data?.ratingOverride,
+          });
         })
         .catch((err: any) => {
           const msg =
@@ -1175,6 +1188,26 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject, 
                   </View>
                 </View>
 
+                {!!rating && (
+                  <View style={rm.section}>
+                    <Text style={rm.sectionLabel}>RATING</Text>
+                    <RatingSummary
+                      viewer="admin"
+                      effectiveRating={rating.effectiveRating}
+                      averageRating={rating.averageRating}
+                      totalRatings={rating.totalRatings}
+                      breakdown={rating.breakdown}
+                      override={rating.override}
+                    />
+                    <RatingOverride
+                      kind="hospital"
+                      profileId={hospital.id}
+                      name={legalName}
+                      current={rating.totalRatings ? rating.effectiveRating : null}
+                    />
+                  </View>
+                )}
+
                 <View style={rm.section}>
                   <Text style={rm.sectionLabel}>LIST OF DOCUMENTS</Text>
 
@@ -1251,7 +1284,7 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject, 
                   )}
                 </View>
 
-                <View style={dv.footer}>
+                {canManage && <View style={dv.footer}>
                   {isRejected ? (
                     <TouchableOpacity
                       style={[dv.approveBtn, { flex: 1 }]}
@@ -1299,7 +1332,7 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject, 
                       </TouchableOpacity>
                     </>
                   )}
-                </View>
+                </View>}
               </ScrollView>
             )}
           </View>
@@ -1385,8 +1418,9 @@ interface ActionMenuProps {
   anchorY: number;
   anchorX: number;
   hospitalStatus: LicenseStatus;
+  canManage: boolean;
 }
-function ActionMenu({ visible, onClose, onReview, onVerify, onReject, anchorY, anchorX, hospitalStatus }: ActionMenuProps) {
+function ActionMenu({ visible, onClose, onReview, onVerify, onReject, anchorY, anchorX, hospitalStatus, canManage }: ActionMenuProps) {
   const MENU_WIDTH = 160;
   const screenWidth = Dimensions.get('window').width;
   const left = Math.max(8, anchorX - MENU_WIDTH + 30);
@@ -1403,7 +1437,7 @@ function ActionMenu({ visible, onClose, onReview, onVerify, onReject, anchorY, a
             <Text style={am.itemTxt}>Review</Text>
           </TouchableOpacity>
 
-          {!isVerified && (
+          {!isVerified && canManage && (
             <>
               <View style={am.sep} />
               <TouchableOpacity style={am.item} onPress={() => { onVerify(); onClose(); }} activeOpacity={0.75}>
@@ -1727,6 +1761,8 @@ const sc = StyleSheet.create({
 
 // ─── Main Export ──────────────────────────────────────────────────────────────
 export default function HospitalListSection() {
+  const { can } = useCapability();
+  const canManage = can('hospital.manage');
   // ── Draft filter state ────────────────────────────────────────────────────
   const [searchDraft, setSearchDraft] = useState('');
   const [statusDraft, setStatusDraft] = useState('All Statuses');
@@ -2219,6 +2255,7 @@ export default function HospitalListSection() {
         onReview={() => setReviewVisible(true)}
         onVerify={() => handleVerify(activeHospital)}
         onReject={() => handleReject(activeHospital)}
+        canManage={canManage}
       />
 
       {/* ── Hospital Review Modal ── */}
@@ -2229,6 +2266,7 @@ export default function HospitalListSection() {
         onApprove={() => handleVerify(activeHospital)}
         onReject={() => handleReject(activeHospital)}
         onSuspend={() => handleSuspend(activeHospital)}
+        canManage={canManage}
       />
 
       <RejectReasonModal

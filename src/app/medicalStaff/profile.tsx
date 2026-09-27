@@ -1,4 +1,5 @@
 import AvailabilityCard from "@/component/cards/medicalStaff/Profile/AvailabilityCard";
+import RatingSection from "@/component/rating/RatingSection";
 import EducationCard from "@/component/cards/medicalStaff/Profile/EducationCard";
 import LicensesCard from "@/component/cards/medicalStaff/Profile/LicensesCard";
 import ProfessionalSummary from "@/component/cards/medicalStaff/Profile/ProfessionalSummary";
@@ -258,6 +259,7 @@ export default function Profile() {
           {/* FIX: pass live education array */}
           <EducationCard items={displayEducation} onAdd={() => { }} />
           <LicensesCard items={licenses} onManage={() => { }} />
+          <RatingSection role="staff" />
         </View>
         <View style={[styles.rightCol, isMobile && styles.rightColMobile]}>
           <AvailabilityCard

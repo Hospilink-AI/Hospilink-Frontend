@@ -866,6 +866,506 @@ export const vacancyAPI = {
 
 };
 
+// Permanent jobs - hospital-posted vacancies, applications and interviews
+export const jobAPI = {
+
+  // ─── Vacancies ────────────────────────────────────────────
+
+  // POST /api/vacancy
+  // Body: { title, specialty, experience?, education?, skills?, location?, salary?, description }
+  createVacancy: async (payload) => {
+    const response = await api.post('/api/vacancy', payload);
+    return response.data;
+  },
+
+  // GET /api/vacancies/posted - hospital's own, including closed
+  getPostedVacancies: async (page = 1, limit = 10) => {
+    const response = await api.get('/api/vacancies/posted', { params: { page, limit } });
+    return response.data;
+  },
+
+  // GET /api/vacancies - match-sorted for staff
+  getVacancies: async (params = {}) => {
+    const { specialty, location, page = 1, limit = 10 } = params;
+    const response = await api.get('/api/vacancies', {
+      params: { page, limit, ...(specialty && { specialty }), ...(location && { location }) },
+    });
+    return response.data;
+  },
+
+  // GET /api/vacancies/:id
+  getVacancy: async (vacancyId) => {
+    const response = await api.get(`/api/vacancies/${vacancyId}`);
+    return response.data;
+  },
+
+  // PATCH /api/vacancies/:id - partial edit
+  updateVacancy: async (vacancyId, payload) => {
+    const response = await api.patch(`/api/vacancies/${vacancyId}`, payload);
+    return response.data;
+  },
+
+  // PATCH /api/vacancies/:id/close - 409 if an interview is confirmed
+  closeVacancy: async (vacancyId) => {
+    const response = await api.patch(`/api/vacancies/${vacancyId}/close`);
+    return response.data;
+  },
+
+  // ─── Applications ─────────────────────────────────────────
+
+  // POST /api/vacancies/:id/apply - no body, uses the resume on file
+  apply: async (vacancyId) => {
+    const response = await api.post(`/api/vacancies/${vacancyId}/apply`);
+    return response.data;
+  },
+
+  // GET /api/vacancies/:id/applications
+  getApplicants: async (vacancyId, params = {}) => {
+    const { status, page = 1, limit = 10 } = params;
+    const response = await api.get(`/api/vacancies/${vacancyId}/applications`, {
+      params: { page, limit, ...(status && { status }) },
+    });
+    return response.data;
+  },
+
+  // GET /api/applications/mine
+  getMyApplications: async (params = {}) => {
+    const { status, page = 1, limit = 10 } = params;
+    const response = await api.get('/api/applications/mine', {
+      params: { page, limit, ...(status && { status }) },
+    });
+    return response.data;
+  },
+
+  // GET /api/applications/:applicationId
+  getApplication: async (applicationId) => {
+    const response = await api.get(`/api/applications/${applicationId}`);
+    return response.data;
+  },
+
+  // GET /api/applications/:applicationId/resume - 422 if no masked preview
+  getResume: async (applicationId) => {
+    const response = await api.get(`/api/applications/${applicationId}/resume`);
+    return response.data;
+  },
+
+  // PATCH /api/applications/:applicationId/status
+  // Body: { status: under_review | shortlisted | rejected, reason?, reasonText? }
+  updateStatus: async (applicationId, payload) => {
+    const response = await api.patch(`/api/applications/${applicationId}/status`, payload);
+    return response.data;
+  },
+
+  // PATCH /api/applications/:applicationId/withdraw - Body: { reason, reasonText? }
+  withdraw: async (applicationId, payload) => {
+    const response = await api.patch(`/api/applications/${applicationId}/withdraw`, payload);
+    return response.data;
+  },
+
+  // ─── Interview ────────────────────────────────────────────
+
+  // POST .../interview/offer-slots - Body: { slots: [{ start, end }], durationMinutes? }
+  offerSlots: async (applicationId, payload) => {
+    const response = await api.post(`/api/applications/${applicationId}/interview/offer-slots`, payload);
+    return response.data;
+  },
+
+  // PATCH .../slots/select - Body: { picks: [{ start, end }] }
+  selectSlots: async (applicationId, picks) => {
+    const response = await api.patch(`/api/applications/${applicationId}/slots/select`, { picks });
+    return response.data;
+  },
+
+  // POST .../interview/confirm
+  // Body: { slotStart, slotEnd, meetingLink, interviewerName, interviewerDesignation }
+  // 409: { blockedSlot, remainingPicks, needsReoffer }
+  confirmInterview: async (applicationId, payload) => {
+    const response = await api.post(`/api/applications/${applicationId}/interview/confirm`, payload);
+    return response.data;
+  },
+
+  // PATCH .../interview/cancel-offer - Body: { reason, reasonText? }
+  cancelOffer: async (applicationId, payload) => {
+    const response = await api.patch(`/api/applications/${applicationId}/interview/cancel-offer`, payload);
+    return response.data;
+  },
+
+  // GET /api/interview/config - staff or hospital. Live interview rules (slot counts, windows, caps)
+  getInterviewConfig: async () => {
+    const response = await api.get('/api/interview/config');
+    return response.data;
+  },
+
+  // PATCH .../interview/reschedule - Body: { slots, durationMinutes?, reason, reasonText? }
+  reschedule: async (applicationId, payload) => {
+    const response = await api.patch(`/api/applications/${applicationId}/interview/reschedule`, payload);
+    return response.data;
+  },
+
+  // PATCH .../interview/cancel - staff or hospital. Body: { reason, reasonText? }
+  cancelInterview: async (applicationId, payload) => {
+    const response = await api.patch(`/api/applications/${applicationId}/interview/cancel`, payload);
+    return response.data;
+  },
+
+  // PATCH .../interview/reschedule-request - staff. Body: { reason, reasonText? }
+  requestReschedule: async (applicationId, payload) => {
+    const response = await api.patch(`/api/applications/${applicationId}/interview/reschedule-request`, payload);
+    return response.data;
+  },
+
+  // PATCH .../interview/meeting-link
+  // Body: { meetingLink, interviewerName?, interviewerDesignation? }
+  updateMeetingLink: async (applicationId, payload) => {
+    const response = await api.patch(`/api/applications/${applicationId}/interview/meeting-link`, payload);
+    return response.data;
+  },
+
+  // PATCH .../outcome - Body: { result: offer | reject, reason?, reasonText? }
+  recordOutcome: async (applicationId, payload) => {
+    const response = await api.patch(`/api/applications/${applicationId}/outcome`, payload);
+    return response.data;
+  },
+
+  // PATCH .../no-show/mark - hospital. Body: { reoffer, newSlots?, durationMinutes? }
+  markNoShow: async (applicationId, payload) => {
+    const response = await api.patch(`/api/applications/${applicationId}/no-show/mark`, payload);
+    return response.data;
+  },
+
+  // PATCH .../no-show/report - staff, no body
+  reportNoShow: async (applicationId) => {
+    const response = await api.patch(`/api/applications/${applicationId}/no-show/report`);
+    return response.data;
+  },
+
+  // PATCH .../offer/respond - Body: { accept }
+  respondToOffer: async (applicationId, accept) => {
+    const response = await api.patch(`/api/applications/${applicationId}/offer/respond`, { accept });
+    return response.data;
+  },
+
+};
+
+
+// Multipart POST for evidence files. files: [{ uri, name, mimeType }] from the document picker.
+const postMultipart = async (path, fields = {}, files = []) => {
+  const token = await getToken();
+  const formData = new FormData();
+  Object.entries(fields).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") formData.append(key, String(value));
+  });
+  for (const file of files) {
+    const type = file.mimeType ?? "application/octet-stream";
+    if (Platform.OS === "web") {
+      const blob = file.file ?? (await (await fetch(file.uri)).blob());
+      formData.append("files", new Blob([blob], { type }), file.name);
+    } else {
+      formData.append("files", { uri: file.uri, name: file.name, type });
+    }
+  }
+  const baseUrl = API_URL.endsWith("/") ? API_URL.slice(0, -1) : API_URL;
+  const res = await fetch(`${baseUrl}${path}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw { response: { status: res.status, data } };
+  return data;
+};
+
+export const chatbotAPI = {
+  // GET /api/chatbot/conversations/active - null when there is none
+  getActive: async () => {
+    const response = await api.get('/api/chatbot/conversations/active');
+    return response.data;
+  },
+
+  // POST /api/chatbot/message - multipart. Fields: text?, selectedButton?, conversationId?, language? (first message only)
+  // Returns { conversation } with the full message list
+  send: async (fields, files = []) => postMultipart('/api/chatbot/message', fields, files),
+};
+
+export const ticketAPI = {
+  // POST /api/tickets - staff or hospital. Body: { category, subjectType?, subjectId?, text }
+  // For subjectType INTERVIEW the server works out who it's against.
+  create: async (payload) => {
+    const response = await api.post('/api/tickets', payload);
+    return response.data;
+  },
+
+  // GET /api/tickets/mine?category=&status=&page=&limit=
+  getMine: async (params = {}) => {
+    const response = await api.get('/api/tickets/mine', { params });
+    return response.data;
+  },
+
+  // GET /api/tickets/against-me?page=&limit=
+  getAgainstMe: async (params = {}) => {
+    const response = await api.get('/api/tickets/against-me', { params });
+    return response.data;
+  },
+
+  // GET /api/tickets/:id - raiser, respondent or admin
+  getById: async (ticketId) => {
+    const response = await api.get(`/api/tickets/${ticketId}`);
+    return response.data;
+  },
+
+  // PATCH /api/tickets/:id/withdraw - Body: { reason? }
+  withdraw: async (ticketId, reason) => {
+    const response = await api.patch(`/api/tickets/${ticketId}/withdraw`, reason ? { reason } : {});
+    return response.data;
+  },
+
+  // POST /api/tickets/:id/respond - respondent. Body: { text }
+  respond: async (ticketId, text) => {
+    const response = await api.post(`/api/tickets/${ticketId}/respond`, { text });
+    return response.data;
+  },
+
+  // POST /api/tickets/:id/appeal - Body: { reasonText }
+  appeal: async (ticketId, reasonText) => {
+    const response = await api.post(`/api/tickets/${ticketId}/appeal`, { reasonText });
+    return response.data;
+  },
+
+  // POST /api/tickets/:id/evidence - multipart, up to 5 files
+  addEvidence: async (ticketId, files) => postMultipart(`/api/tickets/${ticketId}/evidence`, {}, files),
+
+  // GET /api/tickets/:id/chat - own thread with the support agent
+  getChat: async (ticketId) => {
+    const response = await api.get(`/api/tickets/${ticketId}/chat`);
+    return response.data;
+  },
+
+  // POST /api/tickets/:id/chat - multipart. Fields: text?; files attach to the ticket as evidence
+  sendChat: async (ticketId, text, files = []) => postMultipart(`/api/tickets/${ticketId}/chat`, { text }, files),
+
+  // GET /api/tickets/:id/evidence/:evidenceId -> { url } short-lived link (admins, and each side for its own files)
+  getEvidenceUrl: async (ticketId, evidenceId) => {
+    const response = await api.get(`/api/tickets/${ticketId}/evidence/${evidenceId}`);
+    return response.data;
+  },
+};
+
+export const feedbackAPI = {
+  // POST /api/support/feedback - Body: { text, area? }
+  submit: async (payload) => {
+    const response = await api.post('/api/support/feedback', payload);
+    return response.data;
+  },
+
+  // GET /api/support/feedback/mine
+  getMine: async () => {
+    const response = await api.get('/api/support/feedback/mine');
+    return response.data;
+  },
+};
+
+export const accountStandingAPI = {
+  // GET /api/account/pattern-flags - every flag on the caller's account
+  getFlags: async () => {
+    const response = await api.get('/api/account/pattern-flags');
+    return response.data;
+  },
+
+  // PATCH /api/account/suspension-proposals/:id/respond - Body: { text }
+  respondToProposal: async (flagId, text) => {
+    const response = await api.patch(`/api/account/suspension-proposals/${flagId}/respond`, { text });
+    return response.data;
+  },
+};
+
+export const adminTicketAPI = {
+  // GET /api/admin/tickets?status=&queue=&domain=&category=&priority=&page=&limit=
+  // Without status it leaves out NEW and TRIAGE; pass status: 'NEW' for unclaimed tickets.
+  getQueue: async (params = {}) => {
+    const response = await api.get('/api/admin/tickets', { params });
+    return response.data;
+  },
+
+  // GET /api/admin/tickets/triage - low-confidence bot tickets
+  getTriage: async (params = {}) => {
+    const response = await api.get('/api/admin/tickets/triage', { params });
+    return response.data;
+  },
+
+  // GET /api/admin/tickets/approval-queue - decisions waiting for a second admin
+  getApprovalQueue: async (params = {}) => {
+    const response = await api.get('/api/admin/tickets/approval-queue', { params });
+    return response.data;
+  },
+
+  // GET /api/tickets/:id - admin gets the full record
+  getById: async (ticketId) => {
+    const response = await api.get(`/api/tickets/${ticketId}`);
+    return response.data;
+  },
+
+  // PATCH /api/admin/tickets/:id/claim
+  claim: async (ticketId) => {
+    const response = await api.patch(`/api/admin/tickets/${ticketId}/claim`);
+    return response.data;
+  },
+
+  // PATCH /api/admin/tickets/:id/reassign - Body: { to, reason }
+  reassign: async (ticketId, to, reason) => {
+    const response = await api.patch(`/api/admin/tickets/${ticketId}/reassign`, { to, reason });
+    return response.data;
+  },
+
+  // PATCH /api/admin/tickets/:id/recategorize - Body: { category, reason }
+  recategorize: async (ticketId, category, reason) => {
+    const response = await api.patch(`/api/admin/tickets/${ticketId}/recategorize`, { category, reason });
+    return response.data;
+  },
+
+  // PATCH /api/admin/tickets/:id/priority-override - Body: { value, reason? } (reason required when lowering)
+  overridePriority: async (ticketId, value, reason) => {
+    const response = await api.patch(`/api/admin/tickets/${ticketId}/priority-override`, { value, ...(reason && { reason }) });
+    return response.data;
+  },
+
+  // PATCH /api/admin/tickets/:id/request-info - Body: { message }
+  requestInfo: async (ticketId, message) => {
+    const response = await api.patch(`/api/admin/tickets/${ticketId}/request-info`, { message });
+    return response.data;
+  },
+
+  // GET /api/admin/tickets/:id/chat?party=raiser|respondent
+  getChat: async (ticketId, party) => {
+    const response = await api.get(`/api/admin/tickets/${ticketId}/chat`, { params: party ? { party } : {} });
+    return response.data;
+  },
+
+  // POST /api/admin/tickets/:id/chat - multipart. Fields: text?, party?
+  sendChat: async (ticketId, text, party, files = []) =>
+    postMultipart(`/api/admin/tickets/${ticketId}/chat`, { text, party }, files),
+
+  // POST /api/admin/tickets/:id/decision
+  // Body: { resolutionOutcome, resolutionActions: [{ action, details? }], note?, evidenceReliedOn?: [evidenceId] }
+  decide: async (ticketId, payload) => {
+    const response = await api.post(`/api/admin/tickets/${ticketId}/decision`, payload);
+    return response.data;
+  },
+
+  // PATCH /api/admin/tickets/:id/approve - second admin signs off
+  approve: async (ticketId) => {
+    const response = await api.patch(`/api/admin/tickets/${ticketId}/approve`);
+    return response.data;
+  },
+
+  // PATCH /api/admin/tickets/:id/return-for-review - Body: { reason }
+  returnForReview: async (ticketId, reason) => {
+    const response = await api.patch(`/api/admin/tickets/${ticketId}/return-for-review`, { reason });
+    return response.data;
+  },
+
+  // GET /api/admin/tickets/:id/conversation -> { conversation: { language, botCategory, botConfidence, messages } | null }
+  getConversation: async (ticketId) => {
+    const response = await api.get(`/api/admin/tickets/${ticketId}/conversation`);
+    return response.data;
+  },
+
+  // GET /api/admin/tickets/:id/history -> earlier tickets between the same two people
+  getHistory: async (ticketId) => {
+    const response = await api.get(`/api/admin/tickets/${ticketId}/history`);
+    return response.data;
+  },
+};
+
+export const adminPatternAPI = {
+  // GET /api/admin/patterns?status=&raises=&page=&limit=
+  getPatterns: async (params = {}) => {
+    const response = await api.get('/api/admin/patterns', { params });
+    return response.data;
+  },
+
+  // GET /api/admin/patterns/:id
+  getPattern: async (flagId) => {
+    const response = await api.get(`/api/admin/patterns/${flagId}`);
+    return response.data;
+  },
+
+  // GET /api/admin/suspension-proposals?page=&limit=
+  getProposals: async (params = {}) => {
+    const response = await api.get('/api/admin/suspension-proposals', { params });
+    return response.data;
+  },
+
+  // PATCH /api/admin/suspension-proposals/:id/decide - Body: { decision: suspend | no_action, decisionReason }
+  decideProposal: async (flagId, decision, decisionReason) => {
+    const response = await api.patch(`/api/admin/suspension-proposals/${flagId}/decide`, { decision, decisionReason });
+    return response.data;
+  },
+};
+
+export const adminFeedbackAPI = {
+  // GET /api/admin/feedback?area=&sentiment=&page=&limit=
+  list: async (params = {}) => {
+    const response = await api.get('/api/admin/feedback', { params });
+    return response.data;
+  },
+
+  // PATCH /api/admin/feedback/:id/override-sentiment - Body: { sentiment }
+  overrideSentiment: async (feedbackId, sentiment) => {
+    const response = await api.patch(`/api/admin/feedback/${feedbackId}/override-sentiment`, { sentiment });
+    return response.data;
+  },
+};
+
+export const knowledgeBaseAPI = {
+  // GET /api/admin/knowledge-base?category=&isActive=&page=&limit=
+  list: async (params = {}) => {
+    const response = await api.get('/api/admin/knowledge-base', { params });
+    return response.data;
+  },
+
+  // POST /api/admin/knowledge-base - Body: { question, answer, category?, keywords? }
+  create: async (payload) => {
+    const response = await api.post('/api/admin/knowledge-base', payload);
+    return response.data;
+  },
+
+  // PATCH /api/admin/knowledge-base/:id - same body as create
+  update: async (articleId, payload) => {
+    const response = await api.patch(`/api/admin/knowledge-base/${articleId}`, payload);
+    return response.data;
+  },
+
+  // PATCH /api/admin/knowledge-base/:id/deactivate | /reactivate
+  setActive: async (articleId, active) => {
+    const response = await api.patch(`/api/admin/knowledge-base/${articleId}/${active ? 'reactivate' : 'deactivate'}`);
+    return response.data;
+  },
+};
+
+export const ratingOverrideAPI = {
+  // POST /api/admin/rating-overrides - proposed, not built yet (see Backend-Notes-27Sep.txt)
+  // Body: { profileType: 'hospital' | 'staff', profileId, value, reason, expiresAt? }
+  // Returns { ticket } in PENDING_APPROVAL; a second admin approves it like any other decision.
+  propose: async (payload) => {
+    const response = await api.post('/api/admin/rating-overrides', payload);
+    return response.data;
+  },
+};
+
+export const reviewAPI = {
+  // GET /api/reviews/hospital/:hospitalId - staff reviews of a hospital, only ones already revealed
+  // Returns { reviews: [{ rating, review, createdAt, medicalStaff: { fullName, jobRole }, duty? }] }
+  getForHospital: async (hospitalId) => {
+    const response = await api.get(`/api/reviews/hospital/${hospitalId}`);
+    return response.data;
+  },
+
+  // GET /api/reviews/staff/:staffId - hospital reviews of a staff member, only ones already revealed
+  getForStaff: async (staffId) => {
+    const response = await api.get(`/api/reviews/staff/${staffId}`);
+    return response.data;
+  },
+};
 
 export const documentAPI = {
 
@@ -1382,7 +1882,76 @@ export const adminAPI = {
   getHospitalManagementStats: async () => {
     const response = await api.get('/api/admin/hospitals/stats')
     return response.data
-  }
+  },
+
+  // ─── Admin Management (Admin Logs page) APIs ──────────────────────────────
+
+  // GET /api/admin/admin-list
+  getAdminList: async (params = {}) => {
+    const response = await api.get('/api/admin/admin-list', { params });
+    return response.data;
+  },
+
+  // GET /api/admin/admin-detail/:adminId
+  getAdminDetail: async (adminId) => {
+    const response = await api.get(`/api/admin/admin-detail/${adminId}`);
+    return response.data;
+  },
+
+  // POST /api/admin/create-admin
+  // Body: { name, email, password, adminSubRole }
+  createAdmin: async (payload) => {
+    const response = await api.post('/api/admin/create-admin', payload);
+    return response.data;
+  },
+
+  // DELETE /api/admin/deactivate-admin/:adminId
+  deactivateAdmin: async (adminId) => {
+    const response = await api.delete(`/api/admin/deactivate-admin/${adminId}`);
+    return response.data;
+  },
+
+  // PATCH /api/admin/activate-admin/:adminId
+  activateAdmin: async (adminId) => {
+    const response = await api.patch(`/api/admin/activate-admin/${adminId}`);
+    return response.data;
+  },
+
+  // GET /api/admin/profile
+  // Returns: { success, data: { id, name, email, role, adminSubRole } }
+  getProfile: async () => {
+    const response = await api.get('/api/admin/profile');
+    return response.data;
+  },
+
+  // ─── Update Admin Role - two-step, OTP confirmed ──────────────────────────
+  // All three share one rate limit: 3 requests per 15 minutes combined.
+
+  // Step 1 - PATCH /api/admin/update-admin-role/:adminId
+  // Body: { adminSubRole: 'super_admin' | 'operations_manager' | 'tech_support' }
+  // Stages the change and emails a 6-digit OTP to the ACTING admin, not the target.
+  // Returns: { success, message, data: { targetAdminId, targetName, targetEmail, requestedSubRole } }
+  initiateRoleChange: async (adminId, adminSubRole) => {
+    const response = await api.patch(`/api/admin/update-admin-role/${adminId}`, { adminSubRole });
+    return response.data;
+  },
+
+  // Step 2 - POST /api/admin/update-admin-role/verify-otp
+  // Body: { otp } only - the staged change is held server-side against the acting
+  // admin, so the target id is not resent. Applies the change and drops the
+  // target's session immediately.
+  // OTP is valid ~10 minutes; 5 failed attempts discard the staged change and
+  // the flow must restart from step 1.
+  verifyRoleChangeOtp: async (otp) => {
+    const response = await api.post('/api/admin/update-admin-role/verify-otp', { otp });
+    return response.data;
+  },
+
+  // POST /api/admin/update-admin-role/resend-otp - no body
+  resendRoleChangeOtp: async () => {
+    const response = await api.post('/api/admin/update-admin-role/resend-otp');
+    return response.data;
+  },
 
 }
 

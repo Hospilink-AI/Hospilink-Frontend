@@ -2,7 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { fcmService } from '@/service/fcm';
-import { notificationAPI } from '@/service/api';
+import { adminAPI, notificationAPI } from '@/service/api';
+import { AdminSubRole } from '@/constant/adminCapabilities';
 
 type User = {
   id: string;
@@ -10,6 +11,7 @@ type User = {
   email?: string;
   name?: string;
   isEmailVerified?: boolean;
+  adminSubRole?: AdminSubRole;
 };
 
 type AuthContextType = {
@@ -32,6 +34,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   
 
+  // older admin sessions don't have adminSubRole stored, fetch it from profile
+  const backfillAdminSubRole = async (stored: User): Promise<User> => {
+    if (stored.role !== 'admin' || stored.adminSubRole) return stored;
+    try {
+      const res = await adminAPI.getProfile();
+      const adminSubRole = res?.data?.adminSubRole;
+      if (!adminSubRole) return stored;
+
+      const patched = { ...stored, adminSubRole };
+      const serialised = JSON.stringify(patched);
+      if (Platform.OS === 'web') {
+        localStorage.setItem('hospilink_user', serialised);
+      } else {
+        await AsyncStorage.setItem('hospilink_user', serialised);
+      }
+      return patched;
+    } catch {
+      return stored;
+    }
+  };
+
   useEffect(() => {
     const load = async () => {
       const t = Platform.OS === 'web'
@@ -42,8 +65,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         : await AsyncStorage.getItem('hospilink_user');
 
       setToken(t);
-      setUser(u ? JSON.parse(u) : null);
-      
+
+      const stored: User | null = u ? JSON.parse(u) : null;
+      setUser(stored && t ? await backfillAdminSubRole(stored) : stored);
+
       setIsLoading(false);
     };
     load();

@@ -270,6 +270,8 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HEADER_CONTENT_HEIGHT } from "@/constant/layout";
 import NotificationPopup from "./Notification";
+import { adminSubRoleLabel } from "@/constant/adminCapabilities";
+import { useCapability } from "@/hooks/useCapability";
 
 // ─── Dynamic greeting ────────────────────────────────────
 const getGreeting = () => {
@@ -288,6 +290,7 @@ const getGreetingIcon = (): React.ComponentProps<typeof Ionicons>["name"] => {
 
 export default function Header() {
   const pathname = usePathname();
+  const { subRole } = useCapability();
   const role = pathname.startsWith("/admin")
     ? "admin"
     : pathname.startsWith("/hospital")
@@ -342,7 +345,14 @@ export default function Header() {
           </View>
           <View>
             <Text style={styles.adminTitle}>Hospilink+</Text>
-            <Text style={styles.adminSubtitle}>Admin Portal</Text>
+            <View style={styles.adminSubRow}>
+              <Text style={styles.adminSubtitle}>Admin Portal</Text>
+              {!!subRole && (
+                <View style={styles.roleBadge}>
+                  <Text style={styles.roleBadgeText}>{adminSubRoleLabel(subRole)}</Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
       ) : (
@@ -577,4 +587,7 @@ const styles = StyleSheet.create({
   },
   adminTitle: { fontSize: 14, fontWeight: "700", color: "#2563EB" },
   adminSubtitle: { fontSize: 11, color: "#6B7280", fontWeight: "400" },
+  adminSubRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  roleBadge: { backgroundColor: "#EFF6FF", borderRadius: 999, paddingHorizontal: 7, paddingVertical: 1 },
+  roleBadgeText: { fontSize: 10, fontWeight: "700", color: COLORS.primary },
 });

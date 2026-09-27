@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useCapability } from '@/hooks/useCapability';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
   ScrollView, Image, Platform, Pressable, ActivityIndicator
@@ -135,6 +136,7 @@ const getInitialsColor = (name: string) => {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function RecentRequests() {
+  const canManage = useCapability().can('duty.manage');
   const [requests, setRequests] = useState<EmergencyRequest[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -438,13 +440,15 @@ export default function RecentRequests() {
                           </View>
                           <Ionicons name="checkmark-circle" size={18} color="#10B981" />
                         </View>
-                      ) : (
+                      ) : canManage ? (
                         <TouchableOpacity
                           style={styles.assignBtn}
                           onPress={() => togglePopup(index)}
                         >
                           <Text style={styles.assignText}>Assign</Text>
                         </TouchableOpacity>
+                      ) : (
+                        <Text style={styles.assignedLabel}>Not assigned</Text>
                       )}
                     </View>
 

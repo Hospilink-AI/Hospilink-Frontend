@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, Platform, View } from "react-native";
 import { useAuth } from "@/context/AuthContext";
+import { adminLandingRoute } from "@/constant/adminCapabilities";
 import { profileAPI } from "@/service/api";
 
 export default function Index() {
@@ -55,7 +56,7 @@ export default function Index() {
         else if (!documentsUploaded) router.replace("/profile/upload-document");
         else router.replace("/hospital/dashboard");
       } else if (role === "admin") {
-        router.replace("/admin/dashboard");
+        router.replace(adminLandingRoute(user?.adminSubRole) as any);
       } else {
         router.replace("/profile/medical-staff");
       }

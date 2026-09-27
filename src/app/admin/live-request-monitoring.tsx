@@ -4,6 +4,7 @@ import { decodePolyline } from '@/utils/polylineDecoderA';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
+import { useCapability } from '@/hooks/useCapability';
 import {
     ActivityIndicator,
     Modal,
@@ -298,6 +299,7 @@ const WebMap = ({ staffLocation, hospitalLocation, routePolylines, status, isSat
 
 // ─── Main Component ───
 export default function LiveRequestMonitoring() {
+  const canManage = useCapability().can('duty.manage');
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isWide = width >= 1024;
@@ -650,6 +652,7 @@ if (error || !data) {
             <View style={styles.badgeHighPriority}>
               <Text style={styles.badgeHighPriorityText}>High Priority</Text>
             </View>
+            {canManage && <>
             <TouchableOpacity
               style={styles.btnAdmin}
               activeOpacity={0.8}
@@ -674,6 +677,7 @@ if (error || !data) {
                 {isDutyCompleted ? 'Duty Ended' : 'End Duty'}
               </Text>
             </TouchableOpacity>
+            </>}
           </View>
         </View>
       </View>

@@ -663,6 +663,7 @@
 
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useCapability } from '@/hooks/useCapability';
 import {
   View,
   Text,
@@ -818,6 +819,7 @@ const Avatar = ({ initials }: { initials: string }) => (
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function LiveMonitoring() {
+  const canExport = useCapability().can('duty.export');
   const router     = useRouter();
   const { width }  = useWindowDimensions();
   const isWide     = width >= 900;
@@ -1061,7 +1063,7 @@ export default function LiveMonitoring() {
             </TouchableOpacity>
           )}
 
-          <View style={styles.filterControl}>
+          {canExport && <View style={styles.filterControl}>
             <Text style={styles.filterControlLabel}> </Text>
             <TouchableOpacity
               style={[styles.exportBtn, exporting && { opacity: 0.7 }]}
@@ -1074,7 +1076,7 @@ export default function LiveMonitoring() {
                 : <Ionicons name="download-outline" size={15} color="#fff" />}
               <Text style={styles.exportBtnText}>{exporting ? 'Exporting…' : 'Export'}</Text>
             </TouchableOpacity>
-          </View>
+          </View>}
         </View>
       </View>
 

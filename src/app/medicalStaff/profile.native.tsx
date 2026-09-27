@@ -1,4 +1,5 @@
 import ProfileHeader from "@/component/cards/medicalStaff/Profile/ProfileHeader";
+import RatingSection from "@/component/rating/RatingSection";
 import ToggleSwitch from "@/component/common/ToggleSwitch";
 import { COLORS } from "@/constant/colors";
 import { useAuth } from "@/context/AuthContext";
@@ -468,6 +469,8 @@ export default function Profile() {
           />
         </View>
 
+        <RatingSection role="staff" />
+
         {/* ── SUPPORT ── */}
         <SectionTitle>SUPPORT</SectionTitle>
         <View style={styles.group}>
@@ -480,7 +483,7 @@ export default function Profile() {
           <Row
             icon="chatbubble-ellipses-outline"
             label="Contact Support"
-            onPress={() => router.push("/auth/privacy-policy")}
+            onPress={() => router.push("/medicalStaff/support")}
             right={<Chevron />}
           />
           <Row

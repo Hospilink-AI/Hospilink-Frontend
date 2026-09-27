@@ -1,4 +1,5 @@
 import * as DocumentPicker from "expo-document-picker";
+import RatingSection from "@/component/rating/RatingSection";
 import * as ImagePicker from "expo-image-picker";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -1015,6 +1016,8 @@ const Profile = () => {
             </Text>
           </View>
         )}
+
+        <RatingSection role="hospital" />
 
         {/* ── Departments & Services ── */}
         <View style={gSt.sectionCard}>
