@@ -1,4 +1,5 @@
 import ActionModal from "@/component/cards/jobs/ActionModal";
+import { FilterButton, SelectSheet } from "@/component/common/FilterSheet";
 import { MatchBadge, OpenClosedPill, StatusPill } from "@/component/cards/jobs/Badges";
 import { COLORS } from "@/constant/colors";
 import {
@@ -57,6 +58,7 @@ export default function VacancyDetail() {
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [pagination, setPagination] = useState<any>(null);
   const [status, setStatus] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
   const statusRef = useRef("");
   const [page, setPage] = useState(1);
   const [closeout, setCloseout] = useState<{ hired: number; remaining: number } | null>(null);
@@ -155,7 +157,7 @@ export default function VacancyDetail() {
     }
   };
 
-  const openApplicant = (id: string) => router.push(`/hospital/jobs/applicant/${id}` as any);
+  const openApplicant = (id: string) => router.push(`/hospital/vacancies/applicant/${id}` as any);
 
   if (loading) {
     return (
@@ -181,7 +183,7 @@ export default function VacancyDetail() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={[styles.content, isMobile && { padding: 16 }]}>
-      <TouchableOpacity style={styles.back} onPress={() => router.push("/hospital/jobs" as any)}>
+      <TouchableOpacity style={styles.back} onPress={() => router.push("/hospital/vacancies" as any)}>
         <Ionicons name="arrow-back" size={16} color={COLORS.subText} />
         <Text style={styles.backText}>Back to Vacancies</Text>
       </TouchableOpacity>
@@ -198,7 +200,7 @@ export default function VacancyDetail() {
 
       <View style={styles.card}>
         <View style={[styles.detailRow, isMobile && { flexDirection: "column", gap: 14 }]}>
-          <View style={{ flex: 2 }}>
+          <View style={isMobile ? undefined : { flex: 2 }}>
             <View style={styles.titleRow}>
               <Text style={styles.title}>{vacancy.title}</Text>
               <OpenClosedPill closed={closed} />
@@ -215,7 +217,7 @@ export default function VacancyDetail() {
               </View>
             )}
           </View>
-          <View style={[styles.meta, !isMobile && styles.metaDivider]}>
+          <View style={[styles.meta, isMobile ? { flex: 0 } : styles.metaDivider]}>
             <Text style={styles.metaLine}>Posted: <Text style={styles.metaValue}>{formatDate(vacancy.createdAt)}</Text></Text>
             <Text style={styles.metaLine}>Experience: <Text style={styles.metaValue}>{vacancy.experience || "—"}</Text></Text>
             <Text style={styles.metaLine}>Education: <Text style={styles.metaValue}>{vacancy.education || "—"}</Text></Text>
@@ -231,7 +233,7 @@ export default function VacancyDetail() {
           <View style={styles.actions}>
             <TouchableOpacity
               style={styles.outlineBtn}
-              onPress={() => router.push(`/hospital/jobs/create?id=${vacancyId}` as any)}
+              onPress={() => router.push(`/hospital/vacancies/create?id=${vacancyId}` as any)}
             >
               <Ionicons name="create-outline" size={16} color={COLORS.primary} />
               <Text style={styles.outlineText}>Edit</Text>
@@ -263,6 +265,23 @@ export default function VacancyDetail() {
         </View>
       ) : (
         <>
+          {isMobile ? (
+            <View style={styles.filters}>
+              <FilterButton
+                label="Status"
+                value={HOSPITAL_STATUS_FILTERS.find((f) => f.value === status)?.label ?? "All"}
+                onPress={() => setFilterOpen(true)}
+              />
+              <SelectSheet
+                visible={filterOpen}
+                title="Filter applicants"
+                options={HOSPITAL_STATUS_FILTERS}
+                value={status}
+                onSelect={changeFilter}
+                onClose={() => setFilterOpen(false)}
+              />
+            </View>
+          ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
             {HOSPITAL_STATUS_FILTERS.map((f) => {
               const active = status === f.value;
@@ -277,6 +296,7 @@ export default function VacancyDetail() {
               );
             })}
           </ScrollView>
+          )}
 
           {listLoading ? (
             <View style={styles.stateBox}>

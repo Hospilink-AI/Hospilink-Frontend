@@ -1,6 +1,7 @@
 import { useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { adminLandingRoute } from '@/constant/adminCapabilities';
 
 export function useProtectedRoute(allowedRole: 'staff' | 'hospital' | 'admin') {
     const { user, token, isLoading } = useAuth();
@@ -24,7 +25,7 @@ export function useProtectedRoute(allowedRole: 'staff' | 'hospital' | 'admin') {
             const roleRoutes = {
                 staff: '/medicalStaff/dashboard',
                 hospital: '/hospital/dashboard',
-                admin: '/admin/dashboard',
+                admin: adminLandingRoute(user.adminSubRole),
             };
             //   router.replace(roleRoutes[user.role]);
             const destination = roleRoutes[user.role] ?? '/auth/login';

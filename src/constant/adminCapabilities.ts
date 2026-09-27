@@ -85,3 +85,36 @@ export function hasCapability(
   const granted = ADMIN_CAPABILITIES[subRole as Exclude<AdminSubRole, 'super_admin'>];
   return granted ? granted.includes(capability) : false;
 }
+
+// Route guard for admin pages. Pages not listed are open to every admin.
+const ADMIN_ROUTE_CAPABILITIES: [string, AdminCapability][] = [
+  ['/admin/dashboard', 'dashboard.view'],
+  ['/admin/admin-logs', 'admin.view'],
+  ['/admin/hospital-management', 'hospital.view'],
+  ['/admin/medical-staff', 'staff.view'],
+  ['/admin/document-verification', 'document.view'],
+  ['/admin/create-duty', 'duty.manage'],
+  ['/admin/emergency', 'duty.manage'],
+  ['/admin/emergency-request-all', 'duty.view'],
+  ['/admin/active-emergency-request', 'duty.view'],
+  ['/admin/duty-overnight', 'duty.view'],
+  ['/admin/live-tracking', 'duty.view'],
+  ['/admin/live-monitoring', 'duty.view'],
+  ['/admin/live-request-monitoring', 'duty.view'],
+  ['/admin/activity-logs', 'activityLog.view'],
+  ['/admin/tickets', 'ticket.view'],
+  ['/admin/patterns', 'pattern.view'],
+  ['/admin/feedback', 'feedback.view'],
+  ['/admin/knowledge-base', 'knowledgeBase.manage'],
+];
+
+export function adminRouteCapability(pathname: string): AdminCapability | null {
+  const hit = ADMIN_ROUTE_CAPABILITIES.find(([route]) => pathname === route || pathname.startsWith(route + '/'));
+  return hit ? hit[1] : null;
+}
+
+// Where an admin lands after login. Tech Support has no dashboard.
+export function adminLandingRoute(subRole?: string | null): string {
+  if (!subRole) return '/admin/dashboard';
+  return hasCapability(subRole, 'dashboard.view') ? '/admin/dashboard' : '/admin/tickets';
+}

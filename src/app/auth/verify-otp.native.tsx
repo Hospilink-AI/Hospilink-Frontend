@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import {adminAPI , authAPI  } from "../../service/api";
 import { useAuth } from "@/context/AuthContext";
+import { adminLandingRoute } from "@/constant/adminCapabilities";
 
 export default function VerifyOtp() {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -143,7 +144,7 @@ const routeAfterVerify = () => {
           }
           setSession(response.token, response.user);
         }
-        router.replace("/admin/dashboard");
+        router.replace(adminLandingRoute(response?.user?.adminSubRole) as any);
         return;
       }
 

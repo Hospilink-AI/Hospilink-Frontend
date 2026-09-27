@@ -50,6 +50,25 @@ export default function RatingSummary({ effectiveRating, averageRating, totalRat
   const penalty = b.penaltyTotal ?? 0;
   const you = viewer === "self";
 
+  // No reviews yet: show as unrated, not as the platform average the server starts from
+  if (count === 0) {
+    return (
+      <View style={styles.wrap}>
+        <View style={styles.top}>
+          <View style={styles.unratedIcon}>
+            <Ionicons name="star-outline" size={22} color={COLORS.subText} />
+          </View>
+          <View style={{ gap: 2, flexShrink: 1 }}>
+            <Text style={styles.unrated}>Unrated</Text>
+            <Text style={styles.muted}>
+              {you ? "Your rating appears after your first review." : "No reviews yet."}
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.wrap}>
       <View style={styles.top}>
@@ -113,6 +132,8 @@ const styles = StyleSheet.create({
   wrap: { gap: 8 },
   top: { flexDirection: "row", alignItems: "center", gap: 14 },
   big: { fontSize: 36, fontWeight: "800", color: COLORS.text },
+  unrated: { fontSize: 18, fontWeight: "800", color: COLORS.text },
+  unratedIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#F1F5F9", alignItems: "center", justifyContent: "center" },
   muted: { fontSize: 13, color: COLORS.subText },
   toggle: { flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start" },
   toggleText: { fontSize: 13, fontWeight: "600", color: COLORS.primary },

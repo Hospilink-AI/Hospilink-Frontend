@@ -1,4 +1,5 @@
 import { StatusPill } from "@/component/cards/jobs/Badges";
+import { FilterButton, SelectSheet } from "@/component/common/FilterSheet";
 import { COLORS } from "@/constant/colors";
 import {
   ApplicationStatus,
@@ -11,13 +12,16 @@ import { jobAPI } from "@/service/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useRef, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
 
 // Statuses where the candidate has something to do.
 const NEEDS_ACTION: ApplicationStatus[] = ["slots_offered", "offered"];
 
 export default function MyApplications() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
+  const [filterOpen, setFilterOpen] = useState(false);
   const [items, setItems] = useState<any[]>([]);
   const [status, setStatus] = useState("");
   const statusRef = useRef("");
@@ -64,6 +68,23 @@ export default function MyApplications() {
 
       <Text style={styles.title}>My Applications</Text>
 
+      {isMobile ? (
+        <View style={styles.filters}>
+          <FilterButton
+            label="Status"
+            value={STAFF_STATUS_FILTERS.find((f) => f.value === status)?.label ?? "All"}
+            onPress={() => setFilterOpen(true)}
+          />
+          <SelectSheet
+            visible={filterOpen}
+            title="Filter applications"
+            options={STAFF_STATUS_FILTERS}
+            value={status}
+            onSelect={changeFilter}
+            onClose={() => setFilterOpen(false)}
+          />
+        </View>
+      ) : (
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
         {STAFF_STATUS_FILTERS.map((f) => {
           const active = status === f.value;
@@ -78,6 +99,7 @@ export default function MyApplications() {
           );
         })}
       </ScrollView>
+      )}
 
       {loading ? (
         <View style={styles.state}>
@@ -125,7 +147,7 @@ export default function MyApplications() {
                   <View style={styles.actionHint}>
                     <Ionicons name="alert-circle" size={14} color="#D97706" />
                     <Text style={styles.actionHintText}>
-                      {s === "offered" ? "Respond to your job offer" : "Pick your interview times"}
+                      {s === "offered" ? "Respond to your offer" : "Pick your interview times"}
                     </Text>
                   </View>
                 )}

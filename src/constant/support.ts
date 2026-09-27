@@ -12,7 +12,7 @@ export const TICKET_DOMAINS: { value: TicketDomain; label: string; icon: string 
   { value: 'duty', label: 'Duty & shifts', icon: 'medkit-outline' },
   { value: 'payment', label: 'Payment', icon: 'cash-outline' },
   { value: 'safety', label: 'Safety', icon: 'warning-outline' },
-  { value: 'jobs', label: 'Jobs & interviews', icon: 'briefcase-outline' },
+  { value: 'jobs', label: 'Vacancies & interviews', icon: 'briefcase-outline' },
   { value: 'account', label: 'Account & profile', icon: 'person-outline' },
   { value: 'platform', label: 'App problem', icon: 'phone-portrait-outline' },
   { value: 'data', label: 'My data', icon: 'lock-closed-outline' },
@@ -71,8 +71,8 @@ export const TICKET_CATEGORIES: TicketCategory[] = [
   c('jobs.interview_no_show', "Interview no-show", 'ADJUDICATED', 'INTERVIEW', ['Screenshot of the confirmed interview time', 'Any messages about the no-show']),
   c('jobs.ai_score_challenge', 'Question my match score', 'INVESTIGATED', 'APPLICATION', ["Screenshot of the score you're disputing", 'What you believe is inaccurate about it']),
   c('jobs.parsed_data_incorrect', 'My resume details were read wrongly', 'ACTIONED', 'NONE', ['Screenshot of the incorrect field(s)', 'The correct information']),
-  c('jobs.listing_misleading', 'Misleading job listing', 'ADJUDICATED', 'VACANCY', ['Screenshot of the original listing', "What you found didn't match"]),
-  c('jobs.offer_reneged', 'Job offer withdrawn after I accepted', 'ADJUDICATED', 'APPLICATION', ['Screenshot of the offer', 'Any messages about it being withdrawn']),
+  c('jobs.listing_misleading', 'Misleading vacancy listing', 'ADJUDICATED', 'VACANCY', ['Screenshot of the original listing', "What you found didn't match"]),
+  c('jobs.offer_reneged', 'Offer withdrawn after I accepted', 'ADJUDICATED', 'APPLICATION', ['Screenshot of the offer', 'Any messages about it being withdrawn']),
 
   c('account.verification_delay', 'Verification is taking too long', 'ACTIONED', 'NONE'),
   c('account.verification_rejected', 'Challenge a verification rejection', 'ADJUDICATED', 'NONE', ['The rejection notice/message you received', 'The document that was rejected']),
@@ -162,7 +162,7 @@ export const splitButton = (button: string) => {
 // Opening quick replies - same strings as the bot's own (backend/src/utils/botCopy.js domain* keys),
 // so a tap is classified exactly like the bot's quick-reply buttons.
 export const BOT_STARTERS: Record<string, string[]> = {
-  en: ["It's about a shift", "It's about payment", "It's a safety concern", "It's about a job application", "It's about my account", "It's about the app itself", "It's about my data", 'Something else'],
+  en: ["It's about a shift", "It's about payment", "It's a safety concern", "It's about a vacancy application", "It's about my account", "It's about the app itself", "It's about my data", 'Something else'],
   hi: ['यह शिफ्ट के बारे में है', 'यह भुगतान के बारे में है', 'यह सुरक्षा से जुड़ा मामला है', 'यह नौकरी के आवेदन के बारे में है', 'यह मेरे खाते के बारे में है', 'यह ऐप से जुड़ी बात है', 'यह मेरे डेटा के बारे में है', 'कुछ और'],
   mr: ['हे शिफ्टबद्दल आहे', 'हे पेमेंटबद्दल आहे', 'ही सुरक्षेशी संबंधित बाब आहे', 'हे नोकरीच्या अर्जाबद्दल आहे', 'हे माझ्या खात्याबद्दल आहे', 'हे अ‍ॅपशी संबंधित आहे', 'हे माझ्या डेटाबद्दल आहे', 'आणखी काही'],
 };
@@ -185,7 +185,7 @@ export const FEEDBACK_AREAS: Option[] = [
   { label: 'OTP', value: 'otp' },
   { label: 'Notifications', value: 'notifications' },
   { label: 'Payments', value: 'payments' },
-  { label: 'Jobs', value: 'jobs' },
+  { label: 'Vacancies', value: 'jobs' },
   { label: 'App speed & crashes', value: 'app_performance' },
   { label: 'Something else', value: 'other' },
 ];
@@ -284,7 +284,11 @@ export interface ResolutionAction {
   gated?: boolean;
   fields?: ActionField[];
   // What the ticket must have for the action to apply (ticketConsequence.service.js asserts)
-  needs?: 'duty' | 'application' | 'respondent' | 'payment';
+  needs?: 'duty' | 'application' | 'respondent' | 'payment' | 'appeal';
+  // Only these ticket categories (backend/src/utils/rating.constants.js)
+  categories?: string[];
+  // Recorded by the server but has no effect yet, so not offered
+  hidden?: boolean;
 }
 
 // Values and sign-off rules from backend/src/services/ticketConsequence.service.js
@@ -296,20 +300,22 @@ export const RESOLUTION_ACTIONS: ResolutionAction[] = [
   { value: 'RESCHEDULE_INTERVIEW', label: 'Reschedule the interview', needsApproval: false, fields: ['slots'], needs: 'application' },
   { value: 'RECOMPUTE_MATCH_SCORE', label: 'Recalculate the match score', needsApproval: false, needs: 'application' },
   { value: 'CORRECT_PROFILE_FIELD', label: 'Correct a profile field', needsApproval: false, fields: ['field'] },
-  { value: 'APPLY_RATING_PENALTY', label: 'Apply a rating penalty', needsApproval: true, needs: 'respondent' },
-  { value: 'REVERSE_RATING_PENALTY', label: 'Reverse a rating penalty', needsApproval: true },
+  { value: 'APPLY_RATING_PENALTY', label: 'Apply a rating penalty', needsApproval: true, needs: 'respondent', categories: ['duty.late_arrival', 'duty.no_show_staff', 'duty.no_show_hospital', 'duty.conduct_staff', 'duty.conduct_hospital', 'jobs.interview_no_show'] },
+  { value: 'REVERSE_RATING_PENALTY', label: 'Reverse a rating penalty', needsApproval: true, needs: 'appeal' },
   { value: 'SUPPRESS_REVIEW', label: 'Hide a review', needsApproval: true, fields: ['reviewId'], needs: 'respondent' },
   { value: 'REINSTATE_APPLICATION', label: 'Reinstate the application', needsApproval: true, needs: 'application' },
   { value: 'REVOKE_APPLICATION', label: 'Revoke the application', needsApproval: true, needs: 'application' },
   { value: 'ISSUE_WARNING', label: 'Issue a warning', needsApproval: true, needs: 'respondent' },
   { value: 'FLAG_FOR_SUSPENSION', label: 'Flag for suspension', needsApproval: true, needs: 'respondent' },
-  { value: 'APPLY_PRECAUTIONARY_RESTRICTION', label: 'Apply a temporary restriction', needsApproval: true, needs: 'respondent' },
+  { value: 'APPLY_PRECAUTIONARY_RESTRICTION', label: 'Apply a temporary restriction', needsApproval: true, needs: 'respondent', hidden: true },
   { value: 'RESTORE_ACCOUNT', label: 'Restore the account', needsApproval: true, fields: ['flagId'] },
-  { value: 'HOLD_PAYOUT', label: 'Hold payout', needsApproval: true, gated: true, needs: 'payment' },
-  { value: 'RELEASE_PAYOUT', label: 'Release payout', needsApproval: true, gated: true, needs: 'payment' },
-  { value: 'ADJUST_PAYOUT', label: 'Adjust payout', needsApproval: true, gated: true, needs: 'payment' },
-  { value: 'RECOVER_FROM_FUTURE_PAYOUT', label: 'Recover from a future payout', needsApproval: true, gated: true, needs: 'payment' },
-  { value: 'REFUND_HOSPITAL', label: 'Refund the hospital', needsApproval: true, gated: true, needs: 'payment' },
+  // raised from Adjust rating on a profile, not from a ticket decision
+  { value: 'SET_RATING_OVERRIDE', label: 'Set the rating by hand', needsApproval: true, hidden: true },
+  { value: 'HOLD_PAYOUT', label: 'Hold payout', needsApproval: true, gated: true, needs: 'payment', hidden: true },
+  { value: 'RELEASE_PAYOUT', label: 'Release payout', needsApproval: true, gated: true, needs: 'payment', hidden: true },
+  { value: 'ADJUST_PAYOUT', label: 'Adjust payout', needsApproval: true, gated: true, needs: 'payment', hidden: true },
+  { value: 'RECOVER_FROM_FUTURE_PAYOUT', label: 'Recover from a future payout', needsApproval: true, gated: true, needs: 'payment', hidden: true },
+  { value: 'REFUND_HOSPITAL', label: 'Refund the hospital', needsApproval: true, gated: true, needs: 'payment', hidden: true },
 ];
 
 export const actionLabel = (value?: string | null) =>
@@ -338,3 +344,53 @@ export const KB_CATEGORIES: Option[] = [
   ...TICKET_DOMAINS.map((d) => ({ label: d.label, value: d.value })),
   { label: 'General', value: 'general' },
 ];
+
+// Chat screen text in the conversation's language. Hindi/Marathi need a native speaker's review,
+// same as backend/src/utils/botCopy.js.
+export const CHAT_UI: Record<string, Record<string, string>> = {
+  en: {
+    subtitle: "Tell us what happened and we'll raise a ticket",
+    typing: 'Typing…',
+    newChat: 'New chat',
+    welcome: 'Hi! What do you need help with? Pick a topic below or type your message.',
+    sentAttachment: 'Sent attachment',
+    formNeeded: 'This one needs a few more details than the chat can take.',
+    raiseTicket: 'Raise a Ticket',
+    startNew: 'Start a New Chat',
+    closed: 'This conversation is closed.',
+    viewTicket: 'View Ticket',
+    placeholder: 'Type your message',
+    attach: 'Attach files',
+    addMore: 'Add more files',
+  },
+  hi: {
+    subtitle: 'बताइए क्या हुआ, हम टिकट बना देंगे',
+    typing: 'लिख रहे हैं…',
+    newChat: 'नई चैट',
+    welcome: 'नमस्ते! आपको किस बारे में मदद चाहिए? नीचे कोई विषय चुनें या अपना संदेश लिखें।',
+    sentAttachment: 'फ़ाइल भेजी गई',
+    formNeeded: 'इसके लिए चैट से ज़्यादा जानकारी चाहिए।',
+    raiseTicket: 'टिकट बनाएं',
+    startNew: 'नई चैट शुरू करें',
+    closed: 'यह बातचीत बंद हो गई है।',
+    viewTicket: 'टिकट देखें',
+    placeholder: 'अपना संदेश लिखें',
+    attach: 'फ़ाइल जोड़ें',
+    addMore: 'और फ़ाइलें जोड़ें',
+  },
+  mr: {
+    subtitle: 'काय झाले ते सांगा, आम्ही तिकीट तयार करू',
+    typing: 'लिहित आहे…',
+    newChat: 'नवीन चॅट',
+    welcome: 'नमस्कार! तुम्हाला कशाबद्दल मदत हवी आहे? खालील विषय निवडा किंवा तुमचा संदेश लिहा.',
+    sentAttachment: 'फाइल पाठवली',
+    formNeeded: 'यासाठी चॅटपेक्षा अधिक माहिती लागेल.',
+    raiseTicket: 'तिकीट तयार करा',
+    startNew: 'नवीन चॅट सुरू करा',
+    closed: 'हे संभाषण बंद झाले आहे.',
+    viewTicket: 'तिकीट पहा',
+    placeholder: 'तुमचा संदेश लिहा',
+    attach: 'फाइल जोडा',
+    addMore: 'आणखी फाइल जोडा',
+  },
+};

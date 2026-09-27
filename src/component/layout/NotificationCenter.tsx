@@ -12,6 +12,8 @@ import {
 } from "react-native";
 import { adminAPI } from "@/service/api";
 import { useSocket } from "../../context/SocketContext";
+import { usePathname, useRouter } from "expo-router";
+import { notificationRoute, notificationTitle, supportNotificationConfig } from "@/constant/notificationLinks";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // ─── Constants ────────────────────────────────────────────────────
@@ -188,6 +190,16 @@ export default function NotificationsCenterScreen() {
   const [error, setError] = useState<string | null>(null);
   const [markingAll, setMarkingAll] = useState(false);
   const [pendingRead, setPendingRead] = useState<Set<string>>(new Set());
+
+  // support notifications open the ticket / account standing page
+  const router = useRouter();
+  const pathname = usePathname();
+  const openItem = (item: Notification) => {
+    handleMarkRead(item._id);
+    const route = notificationRoute(item.type, item.payload, pathname);
+    if (!route) return;
+    router.push(route as any);
+  };
   const [activeTab, setActiveTab] = useState<TabKey>("all");
   const [bannerVisible, setBannerVisible] = useState(true);
   const [bannerTimer, setBannerTimer] = useState(292); // ~4:52
@@ -590,11 +602,11 @@ export default function NotificationsCenterScreen() {
               bounces={false}
             >
               {filteredNotifications.map((item) => {
-                const config = TYPE_CONFIG[item.type] ?? FALLBACK_CONFIG;
+                const config = TYPE_CONFIG[item.type] ?? supportNotificationConfig(item.type) ?? FALLBACK_CONFIG;
                 const isPending = pendingRead.has(item._id);
                 const hospital =
                   item.payload.hospital?.name ??
-                  item.type.replace(/_/g, " ");
+                  notificationTitle(item.type);
 
                 return (
                   <TouchableOpacity
@@ -603,7 +615,7 @@ export default function NotificationsCenterScreen() {
                       styles.notifItem,
                       !item.isRead && styles.notifItemUnread,
                     ]}
-                    onPress={() => handleMarkRead(item._id)}
+                    onPress={() => openItem(item)}
                     activeOpacity={0.75}
                     disabled={isPending}
                   >
@@ -740,7 +752,7 @@ export default function NotificationsCenterScreen() {
               <Text style={styles.cardTitle}>BY TYPE</Text>
               <View style={{ gap: 8 }}>
                 {typeBreakdown.map(([type, count]) => {
-                  const cfg = TYPE_CONFIG[type] ?? FALLBACK_CONFIG;
+                  const cfg = TYPE_CONFIG[type] ?? supportNotificationConfig(type) ?? FALLBACK_CONFIG;
                   return (
                     <View key={type} style={styles.typeRow}>
                       <View

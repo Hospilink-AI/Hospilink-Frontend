@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { adminAPI } from '../../../../service/api';
+import { useCapability } from '@/hooks/useCapability';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface ExtractedData {
@@ -376,6 +377,7 @@ interface DocModalProps {
 
 // ─── Document Viewer Modal ────────────────────────────────────────────────────
 function DocumentViewerModal({ visible, item, onClose, onVerified, onRejected }: DocModalProps) {
+  const { can } = useCapability();
   const [decision, setDecision] = useState<'verified' | 'rejected' | null>(null);
   const [showRejectInput, setShowRejectInput] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -598,7 +600,7 @@ function DocumentViewerModal({ visible, item, onClose, onVerified, onRejected }:
               </ScrollView>
 
               {/* ── Footer Buttons ── */}
-              {!showRejectInput && (
+              {!showRejectInput && can('document.manage') && (
                 <View style={dm.footer}>
                   <TouchableOpacity
                     style={dm.rejectBtn}

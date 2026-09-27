@@ -1,4 +1,5 @@
 import DecisionPanel from "@/component/admin-support/DecisionPanel";
+import ProfilePeek, { PeekTarget } from "@/component/admin-support/ProfilePeek";
 import { PriorityPill } from "@/component/admin-support/TicketQueue";
 import ActionModal from "@/component/cards/jobs/ActionModal";
 import EvidencePicker from "@/component/support/EvidencePicker";
@@ -63,6 +64,7 @@ export default function AdminTicketDetail() {
   const [newDomain, setNewDomain] = useState<string | null>(null);
   const [newCategory, setNewCategory] = useState<string | null>(null);
   const [newPriority, setNewPriority] = useState<string | null>(null);
+  const [peek, setPeek] = useState<PeekTarget>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -146,6 +148,37 @@ export default function AdminTicketDetail() {
   const priority = ticket.priorityOverride?.value || ticket.priority;
   const ctx = ticket.linkedContext ?? {};
   const statement = ticket.respondentStatement;
+  // Profile ids come from the linked duty/application; the ticket itself only has account ids.
+  const hospitalProfileId = idOf(ctx.duty?.hospital) ?? idOf(ctx.application?.hospitalId);
+  const staffProfileId = idOf(ctx.duty?.assignedTo) ?? idOf(ctx.application?.staff);
+  // server may send profileId on the party itself; otherwise use the linked duty/application
+  const profileFor = (p: any): PeekTarget => {
+    const kind = p?.role === "hospital" ? "hospital" : p?.role === "staff" ? "staff" : null;
+    const id = p?.profileId ?? (kind === "hospital" ? hospitalProfileId : kind === "staff" ? staffProfileId : null);
+    return kind && id ? { kind, profileId: String(id) } : null;
+  };
+  const party = (label: string, p: any) => {
+    const target = profileFor(p);
+    return (
+      <View style={styles.partyRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.small}>{label}</Text>
+          <Text style={styles.body}>
+            {p?.name ? `${p.name} · ` : ""}
+            {p?.role === "hospital" ? "Hospital" : p?.role === "staff" ? "Medical staff" : p?.role ?? "—"}
+          </Text>
+        </View>
+        {target ? (
+          <TouchableOpacity style={styles.profileBtn} onPress={() => setPeek(target)}>
+            <Ionicons name={target.kind === "hospital" ? "business-outline" : "person-outline"} size={14} color={COLORS.primary} />
+            <Text style={styles.profileBtnText}>View profile</Text>
+          </TouchableOpacity>
+        ) : (
+          <Text style={styles.small}>No linked profile</Text>
+        )}
+      </View>
+    );
+  };
 
   const main = (
     <View style={{ gap: 12 }}>
@@ -163,7 +196,17 @@ export default function AdminTicketDetail() {
           {ticket.source === "CHATBOT" ? "Chatbot" : ticket.source === "IN_APP_FORM" ? "Form" : ticket.source}
           {ticket.language && ticket.language !== "en" ? ` · ${ticket.language.toUpperCase()}` : ""}
         </Text>
-        {ticket.appealOf && <Text style={styles.warn}>This is an appeal. Someone other than the original decider must decide it.</Text>}
+        {ticket.appealOf && (
+          <View style={{ gap: 4 }}>
+            <Text style={styles.warn}>This is an appeal. Someone other than the original decider must decide it.</Text>
+            <TouchableOpacity onPress={() => router.push(`/admin/tickets/${idOf(ticket.appealOf)}` as any)} style={styles.inlineLink}>
+              <Ionicons name="return-up-back-outline" size={14} color={COLORS.primary} />
+              <Text style={styles.inlineLinkText}>
+                Open the original case{ticket.appealOf?.ticketId ? ` (${ticket.appealOf.ticketId})` : ""}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
         {ticket.botCategory && ticket.botCategory !== ticket.category && (
           <Text style={styles.muted}>Bot suggested: {categoryLabel(ticket.botCategory)}</Text>
         )}
@@ -303,8 +346,8 @@ export default function AdminTicketDetail() {
 
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>People</Text>
-        <Text style={styles.muted}>Raised by {ticket.raisedBy?.role} {shortId(ticket.raisedBy?.user)}</Text>
-        {ticket.raisedAgainst && <Text style={styles.muted}>About {ticket.raisedAgainst.role} {shortId(ticket.raisedAgainst.user)}</Text>}
+        {party("Raised by", ticket.raisedBy)}
+        {!!ticket.raisedAgainst && party("About", ticket.raisedAgainst)}
       </View>
 
       <View style={styles.card}>
@@ -346,6 +389,8 @@ export default function AdminTicketDetail() {
         <View style={isWide ? { flex: 2 } : undefined}>{main}</View>
         <View style={isWide ? { flex: 1 } : undefined}>{side}</View>
       </View>
+
+      <ProfilePeek target={peek} onClose={() => setPeek(null)} />
 
       <ActionModal
         visible={modal === "requestInfo"}
@@ -580,6 +625,8 @@ function AdminChat({ ticket, canSend }: { ticket: any; canSend: boolean }) {
 }
 
 const styles = StyleSheet.create({
+  inlineLink: { flexDirection: "row", alignItems: "center", gap: 5, alignSelf: "flex-start" },
+  inlineLinkText: { fontSize: 13, fontWeight: "700", color: COLORS.primary },
   container: { flex: 1, backgroundColor: COLORS.background },
   center: { alignItems: "center", justifyContent: "center" },
   content: { padding: 24, paddingBottom: 48, gap: 12 },
@@ -605,6 +652,9 @@ const styles = StyleSheet.create({
   outlineText: { color: COLORS.text, fontSize: 13, fontWeight: "600" },
   disabled: { opacity: 0.5 },
   linkBtn: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 4 },
+  partyRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 4 },
+  profileBtn: { flexDirection: "row", alignItems: "center", gap: 5, borderWidth: 1, borderColor: COLORS.border, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
+  profileBtnText: { fontSize: 12, fontWeight: "700", color: COLORS.primary },
   linkText: { fontSize: 13, color: COLORS.primary, fontWeight: "600" },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   chip: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5 },

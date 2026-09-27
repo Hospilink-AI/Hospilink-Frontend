@@ -71,7 +71,7 @@
 //   //       setJobs(json.data.jobs);
 //   //       setPagination(json.data.pagination);
 //   //     } else {
-//   //       setError("Failed to load jobs.");
+//   //       setError("Failed to load vacancies.");
 //   //     }
 //   //   } catch (e: unknown) {
 //   //     const err = e as { response?: { data?: { message?: string } } };
@@ -205,7 +205,7 @@
 //                 <Text style={styles.paginationMetaBold}>{startItem}–{endItem}</Text>
 //                 {" of "}
 //                 <Text style={styles.paginationMetaBold}>{pagination.totalItems}</Text>
-//                 {" jobs"}
+//                 {" vacancies"}
 //               </Text>
 //               <Text style={styles.paginationMetaText}>
 //                 {"Page "}
@@ -220,7 +220,7 @@
 //           {loading && (
 //             <View style={styles.loadingWrap}>
 //               <ActivityIndicator size="large" color={COLORS.primary} />
-//               <Text style={styles.loadingText}>{"Loading jobs..."}</Text>
+//               <Text style={styles.loadingText}>{"Loading vacancies..."}</Text>
 //             </View>
 //           )}
 
@@ -239,7 +239,7 @@
 //           {!loading && !error && jobs.length === 0 && (
 //             <View style={styles.emptyWrap}>
 //               <Ionicons name="search-outline" size={40} color={COLORS.subText} />
-//               <Text style={styles.emptyTitle}>{"No jobs found"}</Text>
+//               <Text style={styles.emptyTitle}>{"No vacancies found"}</Text>
 //               <Text style={styles.emptyText}>{"Try adjusting your search or filters"}</Text>
 //             </View>
 //           )}
@@ -305,7 +305,7 @@
 //               <View style={[styles.actionIconWrap, { backgroundColor: "#EEF2FF" }]}>
 //                 <Ionicons name="search-outline" size={28} color={COLORS.primary} />
 //               </View>
-//               <Text style={styles.actionTitle}>Advanced Job Search</Text>
+//               <Text style={styles.actionTitle}>Advanced Vacancy Search</Text>
 //               <Text style={styles.actionSub}>Find specific roles across 2,000+ facilities</Text>
 //             </TouchableOpacity>
 
@@ -322,7 +322,7 @@
 //                 <Ionicons name="notifications-outline" size={28} color="#D97706" />
 //               </View>
 //               <Text style={styles.actionTitle}>Alert Settings</Text>
-//               <Text style={styles.actionSub}>Get instant mobile notifications for new jobs</Text>
+//               <Text style={styles.actionSub}>Get instant mobile notifications for new vacancies</Text>
 //             </TouchableOpacity>
 //           </View>
 //         </ScrollView>
@@ -435,6 +435,7 @@
 
 
 import PermanentVacancyCard from "@/component/cards/jobs/PermanentVacancyCard";
+import { BottomSheet, FilterButton } from "@/component/common/FilterSheet";
 import QuickFilters, { QuickFilterValues } from "@/component/cards/medicalStaff/Vacancies/QuickFilters";
 import VacancyJobCard, { JobItem } from "@/component/cards/medicalStaff/Vacancies/VacancyJobCard";
 import VacancyStatCard from "@/component/cards/medicalStaff/Vacancies/VacancyStatCard";
@@ -491,6 +492,8 @@ export default function Vacancies() {
   // Active filters (set by QuickFilters)
   const [activeRole, setActiveRole] = useState("");
   const [activeLocation, setActiveLocation] = useState("");
+  const [appliedFilters, setAppliedFilters] = useState<QuickFilterValues | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // ── Dynamic Stats ──
   const dynamicStats = [...vacancyStats];
@@ -513,7 +516,7 @@ export default function Vacancies() {
         setJobs(json.data.jobs);
         setPagination(json.data.pagination);
       } else {
-        setError("Failed to load jobs.");
+        setError("Failed to load vacancies.");
       }
     } catch (e: unknown) {
       const err = e as { response?: { data?: { message?: string } } };
@@ -530,6 +533,8 @@ export default function Vacancies() {
 
   // ── QuickFilters Apply Handler ──
   const handleFilterApply = (filters: QuickFilterValues) => {
+    setAppliedFilters(filters);
+    setFiltersOpen(false);
     setActiveRole(filters.role);
     setActiveLocation(filters.location);
     fetchJobs(1, filters.role, filters.location);
@@ -662,7 +667,7 @@ export default function Vacancies() {
             </Text>
             {" of "}
             <Text style={styles.paginationMetaBold}>{pagination.totalItems}</Text>
-            {" jobs"}
+            {" vacancies"}
           </Text>
           <Text style={styles.paginationMetaText}>
             {"Page "}
@@ -677,7 +682,7 @@ export default function Vacancies() {
       {loading && (
         <View style={styles.loadingWrap}>
           <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.loadingText}>Loading jobs...</Text>
+          <Text style={styles.loadingText}>Loading vacancies...</Text>
         </View>
       )}
 
@@ -699,7 +704,7 @@ export default function Vacancies() {
       {!loading && !error && jobs.length === 0 && permanentVisible.length === 0 && (
         <View style={styles.emptyWrap}>
           <Ionicons name="search-outline" size={40} color={COLORS.subText} />
-          <Text style={styles.emptyTitle}>No jobs found</Text>
+          <Text style={styles.emptyTitle}>No vacancies found</Text>
           <Text style={styles.emptyText}>Try adjusting your search or filters</Text>
         </View>
       )}
@@ -712,7 +717,7 @@ export default function Vacancies() {
               key={v._id}
               vacancy={v}
               applicationStatus={permanent.statusByVacancy[v._id]}
-              onPress={() => router.push(`/medicalStaff/jobs/${v._id}` as any)}
+              onPress={() => router.push(`/medicalStaff/vacancy/${v._id}` as any)}
             />
           ))}
           {jobs.map((job) => (
@@ -789,7 +794,7 @@ export default function Vacancies() {
           <View style={[styles.actionIconWrap, { backgroundColor: "#EEF2FF" }]}>
             <Ionicons name="search-outline" size={28} color={COLORS.primary} />
           </View>
-          <Text style={styles.actionTitle}>Advanced Job Search</Text>
+          <Text style={styles.actionTitle}>Advanced Vacancy Search</Text>
           <Text style={styles.actionSub}>Find specific roles across 2,000+ facilities</Text>
         </TouchableOpacity>
 
@@ -806,7 +811,7 @@ export default function Vacancies() {
             <Ionicons name="notifications-outline" size={28} color="#D97706" />
           </View>
           <Text style={styles.actionTitle}>Alert Settings</Text>
-          <Text style={styles.actionSub}>Get instant mobile notifications for new jobs</Text>
+          <Text style={styles.actionSub}>Get instant mobile notifications for new vacancies</Text>
         </TouchableOpacity>
       </View>
     </>
@@ -827,10 +832,17 @@ export default function Vacancies() {
           {/* Stats */}
           <View style={styles.fixedTopMobile}>{renderStats()}</View>
 
-          {/* Quick Filters */}
+          {/* Filters open in a bottom sheet on phones */}
           <View style={styles.mobileFiltersWrap}>
-            <QuickFilters onApply={handleFilterApply} />
+            <FilterButton
+              label="Filters"
+              count={[activeRole, activeLocation].filter(Boolean).length}
+              onPress={() => setFiltersOpen(true)}
+            />
           </View>
+          <BottomSheet visible={filtersOpen} title="Filters" onClose={() => setFiltersOpen(false)}>
+            <QuickFilters onApply={handleFilterApply} initial={appliedFilters ?? undefined} bare />
+          </BottomSheet>
 
           {/* Job List + Pagination + Actions */}
           <View style={styles.mobileJobsWrap}>{renderJobListContent()}</View>

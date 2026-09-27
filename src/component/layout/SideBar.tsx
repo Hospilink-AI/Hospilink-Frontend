@@ -324,19 +324,18 @@ const NavConfig: NavConfigType = {
     { label: "Live Tracking",  icon: "locate-outline", route: "/hospital/live-tracking"  },
     { label: "Live Monitoring",icon: "eye-outline",    route: "/hospital/live-monitoring" },
     { label: "Duty History",   icon: "time-outline",   route: "/hospital/duty-history"   },
-    { label: "Job Posting",    icon: "briefcase-outline", route: "/hospital/jobs" as Href },
-    { label: "Ratings",        icon: "star-outline",   route: "/hospital/rating" as Href },
+    { label: "Vacancy Posting", icon: "briefcase-outline", route: "/hospital/vacancies" as Href },
     { label: "Profile",        icon: "person-outline", route: "/hospital/profile"        },
   ],
   admin: [
-    { label: "Dashboard",            icon: "grid-outline",             route: "/admin/dashboard"             },
-    { label: "Hospital Management",  icon: "business-outline",         route: "/admin/hospital-management"  },
-    { label: "Medical Staff",        icon: "people-outline",           route: "/admin/medical-staff"        },
-    { label: "Document Verification",icon: "shield-checkmark-outline", route: "/admin/document-verification"},
-    { label: "Duty Tracking",        icon: "calendar-outline",         route: "/admin/duty-overnight"       },
-    { label: "Live Tracking",        icon: "locate-outline",           route: "/admin/live-tracking"        },
-    { label: "Live Monitoring",      icon: "eye-outline",              route: "/admin/live-monitoring"      },
-    { label: "Activity Logs",        icon: "reload-outline",           route: "/admin/activity-logs"        },
+    { label: "Dashboard",            icon: "grid-outline",             route: "/admin/dashboard", capability: "dashboard.view" },
+    { label: "Hospital Management",  icon: "business-outline",         route: "/admin/hospital-management", capability: "hospital.view" },
+    { label: "Medical Staff",        icon: "people-outline",           route: "/admin/medical-staff", capability: "staff.view" },
+    { label: "Document Verification",icon: "shield-checkmark-outline", route: "/admin/document-verification", capability: "document.view" },
+    { label: "Duty Tracking",        icon: "calendar-outline",         route: "/admin/duty-overnight", capability: "duty.view" },
+    { label: "Live Tracking",        icon: "locate-outline",           route: "/admin/live-tracking", capability: "duty.view" },
+    { label: "Live Monitoring",      icon: "eye-outline",              route: "/admin/live-monitoring", capability: "duty.view" },
+    { label: "Activity Logs",        icon: "reload-outline",           route: "/admin/activity-logs", capability: "activityLog.view" },
     { label: "Admin Management",     icon: "shield-outline",           route: "/admin/admin-logs", capability: "admin.view" },
     { label: "Support Tickets",      icon: "chatbubbles-outline",      route: "/admin/tickets" as Href, capability: "ticket.view" },
     { label: "Patterns",             icon: "analytics-outline",        route: "/admin/patterns" as Href, capability: "pattern.view" },
@@ -361,6 +360,7 @@ export default function Sidebar() {
   const router   = useRouter();
   const pathname = usePathname();
   const menus    = useNavItems();
+  const { can }  = useCapability();
 
   const isAdmin = pathname.startsWith("/admin");
   const role    = isAdmin
@@ -429,7 +429,7 @@ export default function Sidebar() {
 
       {/* ── Bottom section ── */}
       <View style={styles.bottomSection}>
-        {isAdmin && (
+        {isAdmin && can("duty.manage") && (
           <TouchableOpacity
             style={styles.emergencyButton}
             activeOpacity={0.8}

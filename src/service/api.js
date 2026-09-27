@@ -1324,6 +1324,16 @@ export const knowledgeBaseAPI = {
   },
 };
 
+export const ratingOverrideAPI = {
+  // POST /api/admin/rating-overrides - proposed, not built yet (see Backend-Notes-27Sep.txt)
+  // Body: { profileType: 'hospital' | 'staff', profileId, value, reason, expiresAt? }
+  // Returns { ticket } in PENDING_APPROVAL; a second admin approves it like any other decision.
+  propose: async (payload) => {
+    const response = await api.post('/api/admin/rating-overrides', payload);
+    return response.data;
+  },
+};
+
 export const reviewAPI = {
   // GET /api/reviews/hospital/:hospitalId - staff reviews of a hospital, only ones already revealed
   // Returns { reviews: [{ rating, review, createdAt, medicalStaff: { fullName, jobRole }, duty? }] }

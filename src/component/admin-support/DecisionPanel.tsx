@@ -31,6 +31,7 @@ export default function DecisionPanel({ ticket, onDecided }: Props) {
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reviewing, setReviewing] = useState(false);
 
   const toggleAction = (a: ResolutionAction) =>
     setActions((prev) => {
@@ -47,6 +48,9 @@ export default function DecisionPanel({ ticket, onDecided }: Props) {
     setRelied((prev) => (prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id]));
 
   const fits = (a: ResolutionAction) => {
+    if (a.hidden) return false;
+    if (a.categories && !a.categories.includes(ticket.category)) return false;
+    if (a.needs === "appeal") return !!ticket.appealOf;
     if (a.needs === "duty") return ticket.subjectType === "DUTY" && !!ticket.subjectId;
     if (a.needs === "application") return ["APPLICATION", "INTERVIEW"].includes(ticket.subjectType) && !!ticket.subjectId;
     if (a.needs === "respondent") return !!ticket.raisedAgainst;
@@ -220,9 +224,40 @@ export default function DecisionPanel({ ticket, onDecided }: Props) {
       {!!missing && <Text style={styles.fieldHint}>Fill in the details for “{missing.label}”.</Text>}
       {!!error && <Text style={styles.error}>{error}</Text>}
 
-      <TouchableOpacity style={[styles.primaryBtn, !canSubmit && { opacity: 0.5 }]} disabled={!canSubmit} onPress={submit}>
-        {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>{needsApproval ? "Propose Decision" : "Record Decision"}</Text>}
-      </TouchableOpacity>
+      {!reviewing ? (
+        <TouchableOpacity style={[styles.primaryBtn, !canSubmit && { opacity: 0.5 }]} disabled={!canSubmit} onPress={() => setReviewing(true)}>
+          <Text style={styles.primaryText}>Review Decision</Text>
+        </TouchableOpacity>
+      ) : (
+        <View style={styles.preview}>
+          <Text style={styles.previewTitle}>What both sides will be told</Text>
+          <Text style={styles.previewText}>Outcome: {OUTCOME_LABELS[outcome ?? ""] ?? outcome}</Text>
+          {chosen.filter((a) => a.value !== "RECORD_ONLY").length > 0 && (
+            <Text style={styles.previewText}>
+              What happens: {chosen.filter((a) => a.value !== "RECORD_ONLY").map((a) => a.label).join(", ")}
+            </Text>
+          )}
+          {!!note.trim() && <Text style={styles.previewText}>Note: {note.trim()}</Text>}
+          {relied.length > 0 && (
+            <Text style={styles.previewText}>
+              Evidence relied on:{" "}
+              {(ticket.evidence ?? []).filter((e: any) => relied.includes(e._id)).map((e: any) => e.originalFileName ?? "File").join(", ")}
+            </Text>
+          )}
+          <Text style={styles.fieldHint}>
+            The person who raised it{ticket.raisedAgainst ? " and the other side" : ""} get this in HospiLink's standard wording.
+            {needsApproval ? " It is sent only after a second admin approves." : ""}
+          </Text>
+          <View style={styles.row}>
+            <TouchableOpacity style={styles.ghostBtn} onPress={() => setReviewing(false)} disabled={saving}>
+              <Text style={styles.ghostText}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.primaryBtn, { marginTop: 0 }, saving && { opacity: 0.6 }]} disabled={saving} onPress={submit}>
+              {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>{needsApproval ? "Propose Decision" : "Record Decision"}</Text>}
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -250,4 +285,9 @@ const styles = StyleSheet.create({
   error: { fontSize: 13, color: COLORS.red },
   primaryBtn: { alignSelf: "flex-start", backgroundColor: COLORS.primary, borderRadius: 8, paddingHorizontal: 18, paddingVertical: 11, minWidth: 160, alignItems: "center", marginTop: 6 },
   primaryText: { color: "#fff", fontSize: 13, fontWeight: "700" },
+  preview: { borderWidth: 1, borderColor: COLORS.primary, backgroundColor: "#F8FBFF", borderRadius: 10, padding: 12, gap: 6, marginTop: 6 },
+  previewTitle: { fontSize: 13, fontWeight: "800", color: COLORS.text },
+  previewText: { fontSize: 13, color: COLORS.text, lineHeight: 19 },
+  ghostBtn: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 11, alignItems: "center", backgroundColor: COLORS.white },
+  ghostText: { fontSize: 13, fontWeight: "700", color: COLORS.text },
 });

@@ -1,7 +1,7 @@
 import EvidencePicker from "@/component/support/EvidencePicker";
 import { COLORS } from "@/constant/colors";
 import { apiError, formatDate, formatTime } from "@/constant/jobs";
-import { BOT_STARTERS, CHAT_LANGUAGES, PickedFile, TICKET_TEXT_MAX, splitButton } from "@/constant/support";
+import { BOT_STARTERS, CHAT_LANGUAGES, CHAT_UI, PickedFile, TICKET_TEXT_MAX, splitButton } from "@/constant/support";
 import { chatbotAPI } from "@/service/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -111,6 +111,7 @@ export default function ChatbotScreen({ base }: { base: string }) {
   const awaitingEvidence = isActive && !!conversation?.ticket;
   const chatLanguage = conversation?.language ?? language;
   const starters = BOT_STARTERS[chatLanguage] ?? BOT_STARTERS.en;
+  const ui = CHAT_UI[chatLanguage] ?? CHAT_UI.en;
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
@@ -123,11 +124,11 @@ export default function ChatbotScreen({ base }: { base: string }) {
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>HospiLink Support</Text>
-          <Text style={styles.subtitle}>{sending ? "Typing…" : "Tell us what happened and we'll raise a ticket"}</Text>
+          <Text style={styles.subtitle}>{sending ? ui.typing : ui.subtitle}</Text>
         </View>
         {conversation && conversation.status === "active" && conversation._id !== "" && (
           <TouchableOpacity onPress={startOver} style={styles.newChat}>
-            <Text style={styles.newChatText}>New chat</Text>
+            <Text style={styles.newChatText}>{ui.newChat}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -142,7 +143,7 @@ export default function ChatbotScreen({ base }: { base: string }) {
           <View style={styles.welcome}>
             <View style={[styles.bubble, styles.botBubble]}>
               <Text style={styles.botText}>
-                Hi! What do you need help with? Pick a topic below or type your message.
+                {ui.welcome}
               </Text>
             </View>
             <Text style={styles.langLabel}>Chat in</Text>
@@ -169,7 +170,7 @@ export default function ChatbotScreen({ base }: { base: string }) {
               {showDate && !!m.at && <Text style={styles.dateSep}>{formatDate(m.at)}</Text>}
               <View style={[styles.bubble, mine ? styles.userBubble : styles.botBubble]}>
                 {!!shown && <Text style={mine ? styles.userText : styles.botText}>{shown}</Text>}
-                {mine && !shown && <Text style={styles.userText}>Sent attachment</Text>}
+                {mine && !shown && <Text style={styles.userText}>{ui.sentAttachment}</Text>}
                 {!!m.at && <Text style={[styles.time, mine && { color: "#DBEAFE" }]}>{formatTime(m.at)}</Text>}
               </View>
             </View>
@@ -204,13 +205,13 @@ export default function ChatbotScreen({ base }: { base: string }) {
 
         {conversation?.status === "abandoned" && (
           <View style={styles.endCard}>
-            <Text style={styles.endText}>This one needs a few more details than the chat can take.</Text>
+            <Text style={styles.endText}>{ui.formNeeded}</Text>
             <View style={styles.endRow}>
               <TouchableOpacity style={styles.primaryBtn} onPress={() => router.push(`${base}/new` as any)}>
-                <Text style={styles.primaryText}>Raise a Ticket</Text>
+                <Text style={styles.primaryText}>{ui.raiseTicket}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.outlineBtn} onPress={startOver}>
-                <Text style={styles.outlineText}>Start a New Chat</Text>
+                <Text style={styles.outlineText}>{ui.startNew}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -218,15 +219,15 @@ export default function ChatbotScreen({ base }: { base: string }) {
 
         {conversation?.status === "completed" && (
           <View style={styles.endCard}>
-            <Text style={styles.endText}>This conversation is closed.</Text>
+            <Text style={styles.endText}>{ui.closed}</Text>
             <View style={styles.endRow}>
               {!!conversation.ticket && (
                 <TouchableOpacity style={styles.primaryBtn} onPress={() => router.push(`${base}/tickets/${conversation.ticket}` as any)}>
-                  <Text style={styles.primaryText}>View Ticket</Text>
+                  <Text style={styles.primaryText}>{ui.viewTicket}</Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity style={styles.outlineBtn} onPress={startOver}>
-                <Text style={styles.outlineText}>Start a New Chat</Text>
+                <Text style={styles.outlineText}>{ui.startNew}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -237,13 +238,15 @@ export default function ChatbotScreen({ base }: { base: string }) {
 
       {isActive && (
         <View style={styles.composer}>
-          {awaitingEvidence && <EvidencePicker files={files} onChange={setFiles} compact />}
+          {awaitingEvidence && (
+            <EvidencePicker files={files} onChange={setFiles} compact labels={{ attach: ui.attach, addMore: ui.addMore }} />
+          )}
           <View style={styles.inputRow}>
             <TextInput
               style={styles.input}
               value={text}
               onChangeText={(t) => setText(t.slice(0, TICKET_TEXT_MAX))}
-              placeholder="Type your message"
+              placeholder={ui.placeholder}
               placeholderTextColor="#9CA3AF"
               multiline
               editable={!sending}

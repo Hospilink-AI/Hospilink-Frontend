@@ -1,4 +1,5 @@
 import * as DocumentPicker from "expo-document-picker";
+import RatingSection from "@/component/rating/RatingSection";
 import * as ImagePicker from "expo-image-picker";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -1910,15 +1911,11 @@ const Profile = () => {
             />
           </View>
 
+          <RatingSection role="hospital" />
+
           {/* ── SUPPORT ── */}
           <Text style={mSt.sectionLabel}>SUPPORT</Text>
           <View style={mSt.card}>
-            <SettingsRow
-              icon="star-outline"
-              label="Ratings & Reviews"
-              chevron
-              onPress={() => router.push("/hospital/rating" as any)}
-            />
             <SettingsRow
               icon="help-circle-outline"
               label="Help Center"

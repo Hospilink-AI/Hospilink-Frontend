@@ -95,7 +95,7 @@ export default function RaiseTicketForm({ base, role }: { base: string; role: "s
           const list = (res?.data ?? []).map((a: any) => ({
             // A listing complaint is about the vacancy itself, everything else about the application.
             id: category?.subject === "VACANCY" ? a.vacancy?._id ?? a.vacancy : a._id,
-            label: a.vacancy?.title ?? "Job application",
+            label: a.vacancy?.title ?? "Vacancy application",
             sub: `${a.hospitalId?.hospitalLegalName ?? "Hospital"} · Applied ${formatDate(a.appliedAt ?? a.createdAt)}`,
           }));
           if (active) setSubjects(list);

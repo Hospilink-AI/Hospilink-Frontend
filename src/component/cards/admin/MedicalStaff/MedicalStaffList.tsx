@@ -1,5 +1,7 @@
 
 import { adminAPI } from '@/service/api';
+import RatingOverride from '@/component/rating/RatingOverride';
+import { useCapability } from '@/hooks/useCapability';
 import RatingSummary from '@/component/rating/RatingSummary';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -978,6 +980,8 @@ interface StaffProfileModalProps {
 }
 
 function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfileModalProps) {
+  const { can } = useCapability();
+  const canManage = can('staff.manage');
   const [loading, setLoading] = useState(false);
   const [staffDetails, setStaffDetails] = useState<StaffDetails | null>(null);
   const [decision, setDecision] = useState<'approved' | 'rejected' | 'suspended' | null>(null);
@@ -1252,6 +1256,12 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
                     totalRatings={(staffDetails as any).totalRatings}
                     breakdown={(staffDetails as any).ratingBreakdown}
                   />
+                  <RatingOverride
+                    kind="staff"
+                    profileId={(staffDetails as any).id ?? (staffDetails as any)._id}
+                    name={(staffDetails as any).fullName}
+                    current={(staffDetails as any).totalRatings ? (staffDetails as any).effectiveRating : null}
+                  />
                 </View>
 
                 <View style={pm.section}>
@@ -1308,7 +1318,7 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
               </ScrollView>
             )}
 
-            {!decision && (
+            {!decision && canManage && (
               <View style={pm.footer}>
 
                 {actionError ? (
@@ -1460,12 +1470,14 @@ interface ActionMenuProps {
   verificationStatus: VerificationStatus;
 }
 function ActionMenu({ visible, onClose, onReview, onVerify, onReject, anchorY, anchorX, verificationStatus }: ActionMenuProps) {
+  const { can } = useCapability();
+  const canManage = can('staff.manage');
   const MENU_WIDTH = 160;
   const screenWidth = Dimensions.get('window').width;
   const left = Math.max(8, anchorX - MENU_WIDTH + 30);
 
-  const showVerify = verificationStatus !== 'verified';
-  const showReject = verificationStatus !== 'rejected'
+  const showVerify = canManage && verificationStatus !== 'verified';
+  const showReject = canManage && verificationStatus !== 'rejected'
     && verificationStatus !== 'verified'
     && verificationStatus !== 'auto-verified';
 

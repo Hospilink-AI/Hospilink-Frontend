@@ -288,7 +288,7 @@ export default function Vacancies() {
         setJobs((json.data.jobs as JobItem[]).map(mapJob));
         setPagination(json.data.pagination);
       } else {
-        setError("Failed to load jobs.");
+        setError("Failed to load vacancies.");
       }
     } catch (e: unknown) {
       const err = e as { response?: { data?: { message?: string } } };
@@ -435,7 +435,7 @@ export default function Vacancies() {
           {loading && (
             <View style={styles.stateWrap}>
               <ActivityIndicator size="large" color={COLORS.primary} />
-              <Text style={styles.stateText}>Loading jobs...</Text>
+              <Text style={styles.stateText}>Loading vacancies...</Text>
             </View>
           )}
 
@@ -452,7 +452,7 @@ export default function Vacancies() {
           {!loading && !error && visibleJobs.length === 0 && permanentVisible.length === 0 && (
             <View style={styles.stateWrap}>
               <Ionicons name="search-outline" size={40} color={COLORS.subText} />
-              <Text style={styles.emptyTitle}>No jobs found</Text>
+              <Text style={styles.emptyTitle}>No vacancies found</Text>
               <Text style={styles.stateText}>Try adjusting your search or filters</Text>
             </View>
           )}
@@ -463,7 +463,7 @@ export default function Vacancies() {
                 key={v._id}
                 vacancy={v}
                 applicationStatus={permanent.statusByVacancy[v._id]}
-                onPress={() => router.push(`/medicalStaff/jobs/${v._id}` as any)}
+                onPress={() => router.push(`/medicalStaff/vacancy/${v._id}` as any)}
               />
             ))}
 

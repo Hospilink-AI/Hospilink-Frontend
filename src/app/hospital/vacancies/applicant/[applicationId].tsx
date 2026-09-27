@@ -513,7 +513,7 @@ export default function ApplicantDetail() {
     <ScrollView style={styles.container} contentContainerStyle={[styles.content, isMobile && { padding: 16 }]}>
       <TouchableOpacity
         style={styles.back}
-        onPress={() => (vacancyId ? router.push(`/hospital/jobs/${vacancyId}` as any) : router.back())}
+        onPress={() => (vacancyId ? router.push(`/hospital/vacancies/${vacancyId}` as any) : router.back())}
       >
         <Ionicons name="arrow-back" size={16} color={COLORS.subText} />
         <Text style={styles.backText}>Back to applicants</Text>
@@ -656,7 +656,7 @@ export default function ApplicantDetail() {
 
       <ActionModal
         visible={modal === "rescind"}
-        title="Withdraw the job offer"
+        title="Withdraw the offer"
         message="The candidate will be told they weren't selected."
         reasons={REJECTION_REASONS}
         confirmLabel="Withdraw Offer"
@@ -792,7 +792,7 @@ export default function ApplicantDetail() {
       <ActionModal
         visible={modal === "outcome"}
         title="Record interview outcome"
-        message={outcome === "offer" ? "The candidate will receive a job offer to accept or decline." : undefined}
+        message={outcome === "offer" ? "The candidate will receive an offer for this vacancy to accept or decline." : undefined}
         reasons={outcome === "reject" ? REJECTION_REASONS : undefined}
         showNote={outcome === "reject"}
         confirmLabel={outcome === "offer" ? "Send Offer" : "Reject"}

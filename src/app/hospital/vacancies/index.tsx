@@ -77,7 +77,7 @@ export default function JobPosting() {
     }, [load])
   );
 
-  const openVacancy = (id: string) => router.push(`/hospital/jobs/${id}` as any);
+  const openVacancy = (id: string) => router.push(`/hospital/vacancies/${id}` as any);
 
   const renderTable = () => (
     <View style={styles.tableCard}>
@@ -155,11 +155,11 @@ export default function JobPosting() {
     <ScrollView style={styles.container} contentContainerStyle={[styles.content, isMobile && { padding: 16 }]}>
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>Job Posting</Text>
+          <Text style={styles.title}>Vacancy Posting</Text>
           <Text style={styles.subtitle}>Permanent roles your hospital is hiring for.</Text>
         </View>
         {verified && (
-          <TouchableOpacity style={styles.createBtn} onPress={() => router.push("/hospital/jobs/create" as any)}>
+          <TouchableOpacity style={styles.createBtn} onPress={() => router.push("/hospital/vacancies/create" as any)}>
             <Ionicons name="add" size={18} color="#fff" />
             {!isMobile && <Text style={styles.createText}>Create Vacancy</Text>}
           </TouchableOpacity>

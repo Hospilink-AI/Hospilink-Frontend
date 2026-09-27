@@ -9,10 +9,11 @@ interface Props {
   files: PickedFile[];
   onChange: (files: PickedFile[]) => void;
   compact?: boolean;
+  labels?: { attach: string; addMore: string };
 }
 
 // Picks JPG/PNG/PDF evidence, up to 5 files, 10 MB each.
-export default function EvidencePicker({ files, onChange, compact }: Props) {
+export default function EvidencePicker({ files, onChange, compact, labels }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const pick = async () => {
@@ -54,7 +55,7 @@ export default function EvidencePicker({ files, onChange, compact }: Props) {
       {files.length < EVIDENCE_MAX_FILES && (
         <TouchableOpacity style={[styles.addBtn, compact && styles.addBtnCompact]} onPress={pick} activeOpacity={0.8}>
           <Ionicons name="attach-outline" size={16} color={COLORS.primary} />
-          <Text style={styles.addText}>{files.length ? "Add more files" : "Attach files"}</Text>
+          <Text style={styles.addText}>{files.length ? labels?.addMore ?? "Add more files" : labels?.attach ?? "Attach files"}</Text>
         </TouchableOpacity>
       )}
       {!compact && <Text style={styles.hint}>JPG, PNG or PDF. Up to 5 files, 10 MB each.</Text>}

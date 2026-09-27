@@ -378,7 +378,7 @@ export default function StaffApplicationDetail() {
         return (
           <View style={[styles.section, styles.offerSection]}>
             <Ionicons name="ribbon-outline" size={26} color="#059669" />
-            <Text style={styles.sectionTitle}>You've received a job offer</Text>
+            <Text style={styles.sectionTitle}>You've received an offer</Text>
             <Text style={styles.muted}>
               {hospitalName} would like to hire you as {vacancy.title ?? "this role"}. Accepting shares your phone number and email with them so they can begin onboarding.
             </Text>
@@ -565,7 +565,7 @@ export default function StaffApplicationDetail() {
 
       <ActionModal
         visible={modal === "accept"}
-        title="Accept this job offer?"
+        title="Accept this offer?"
         message={`Your phone number and email will be shared with ${hospitalName} straight away. This can't be undone.`}
         confirmLabel="Yes, Accept Offer"
         loading={busy}
@@ -576,7 +576,7 @@ export default function StaffApplicationDetail() {
 
       <ActionModal
         visible={modal === "decline"}
-        title="Decline this job offer?"
+        title="Decline this offer?"
         message="Your application will be withdrawn. This can't be undone."
         confirmLabel="Decline Offer"
         tone="danger"

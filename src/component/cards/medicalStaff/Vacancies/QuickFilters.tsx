@@ -34,10 +34,14 @@ const DEFAULT_FILTERS: FilterState = {
 
 interface Props {
   onApply: (filters: QuickFilterValues) => void;
+  // starting values, e.g. the filters already applied
+  initial?: Partial<FilterState>;
+  // no card or title, for use inside a bottom sheet
+  bare?: boolean;
 }
 
-export default function QuickFilters({ onApply }: Props) {
-  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+export default function QuickFilters({ onApply, initial, bare }: Props) {
+  const [filters, setFilters] = useState<FilterState>({ ...DEFAULT_FILTERS, ...initial });
 
   const set = (key: keyof FilterState, value: any) =>
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -68,9 +72,9 @@ export default function QuickFilters({ onApply }: Props) {
   const increaseDistance = () => set("distance", Math.min(MAX_DISTANCE, filters.distance + 5));
 
   return (
-    <View style={styles.container}>
+    <View style={bare ? undefined : styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>{"Quick Filters"}</Text>
+        <Text style={styles.title}>{bare ? "" : "Quick Filters"}</Text>
         <TouchableOpacity onPress={reset}>
           <Text style={styles.reset}>{"RESET"}</Text>
         </TouchableOpacity>

@@ -13,6 +13,8 @@ import {
 import { COLORS } from "@/constant/colors";
 import { adminAPI } from "@/service/api";
 import { useSocket } from "../../context/SocketContext";
+import { usePathname, useRouter } from "expo-router";
+import { notificationRoute, notificationTitle, supportNotificationConfig } from "@/constant/notificationLinks";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import NotificationsCenterScreen from "./NotificationCenter";
@@ -130,6 +132,17 @@ export default function NotificationPopup({
   const [error, setError] = useState<string | null>(null);
   const [markingAll, setMarkingAll] = useState(false);
   const [pendingRead, setPendingRead] = useState<Set<string>>(new Set());
+
+  // support notifications open the ticket / account standing page
+  const router = useRouter();
+  const pathname = usePathname();
+  const openItem = (item: Notification) => {
+    handleMarkRead(item._id);
+    const route = notificationRoute(item.type, item.payload, pathname);
+    if (!route) return;
+    onClose?.();
+    router.push(route as any);
+  };
 
   // ── Stable ref so parent re-renders never cause stale effect ─
   const onUnreadCountChangeRef = useRef(onUnreadCountChange);
@@ -348,13 +361,13 @@ export default function NotificationPopup({
                 bounces={false}                   // ← prevents overscroll closing on iOS
               >
                 {notifications.map((item) => {
-                  const config = TYPE_CONFIG[item.type] ?? FALLBACK_CONFIG;
+                  const config = TYPE_CONFIG[item.type] ?? supportNotificationConfig(item.type) ?? FALLBACK_CONFIG;
                   const isPending = pendingRead.has(item._id);
                   return (
                     <TouchableOpacity
                       key={item._id}
                       style={[styles.notificationItem, !item.isRead && styles.unreadItem]}
-                      onPress={() => handleMarkRead(item._id)}
+                      onPress={() => openItem(item)}
                       activeOpacity={0.75}
                       disabled={isPending}
                     >
@@ -373,7 +386,7 @@ export default function NotificationPopup({
                           <Text style={styles.timeText}>{formatTime(item.createdAt)}</Text>
                         </View>
                         <Text style={styles.itemTitle} numberOfLines={1}>
-                          {item.payload.hospital?.name ?? item.type.replace(/_/g, " ")}
+                          {item.payload.hospital?.name ?? notificationTitle(item.type)}
                         </Text>
                         <Text style={styles.itemDesc} numberOfLines={2}>
                           {item.payload.message}
@@ -474,13 +487,13 @@ export default function NotificationPopup({
         ) : (
           <ScrollView style={styles.listArea} showsVerticalScrollIndicator={false} nestedScrollEnabled={true} >
             {notifications.map((item) => {
-              const config = TYPE_CONFIG[item.type] ?? FALLBACK_CONFIG;
+              const config = TYPE_CONFIG[item.type] ?? supportNotificationConfig(item.type) ?? FALLBACK_CONFIG;
               const isPending = pendingRead.has(item._id);
               return (
                 <TouchableOpacity
                   key={item._id}
                   style={[styles.notificationItem, !item.isRead && styles.unreadItem]}
-                  onPress={() => handleMarkRead(item._id)}
+                  onPress={() => openItem(item)}
                   activeOpacity={0.75}
                   disabled={isPending}
                 >
@@ -505,7 +518,7 @@ export default function NotificationPopup({
                     </View>
 
                     <Text style={styles.itemTitle} numberOfLines={1}>
-                      {item.payload.hospital?.name ?? item.type.replace(/_/g, " ")}
+                      {item.payload.hospital?.name ?? notificationTitle(item.type)}
                     </Text>
 
                     <Text style={styles.itemDesc} numberOfLines={2}>

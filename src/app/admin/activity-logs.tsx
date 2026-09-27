@@ -2372,6 +2372,7 @@
 
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useCapability } from '@/hooks/useCapability';
 import {
   ScrollView,
   StyleSheet,
@@ -2724,6 +2725,7 @@ function DateFilterModal({ visible, onClose, onConfirm }: {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function ActivityLogs() {
+  const canExport = useCapability().can('activityLog.export');
   const { width, height } = useWindowDimensions();
 
   // Breakpoints
@@ -2990,6 +2992,7 @@ export default function ActivityLogs() {
               </TouchableOpacity>
             </View>
           )}
+          {canExport && (
           <TouchableOpacity
             style={[styles.exportBtn, exporting && { opacity: 0.7 }]}
             activeOpacity={0.85}
@@ -3001,6 +3004,7 @@ export default function ActivityLogs() {
               : <Ionicons name="download-outline" size={14} color="#fff" />}
             <Text style={styles.exportBtnText}>{exporting ? 'Exporting...' : 'Export Logs'}</Text>
           </TouchableOpacity>
+          )}
         </View>
 
         {/* ── Main Card (fills remaining height) ── */}

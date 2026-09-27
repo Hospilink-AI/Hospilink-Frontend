@@ -93,7 +93,7 @@ export default function CreateVacancy() {
 
   const validate = () => {
     const next: typeof errors = {};
-    if (!form.title.trim()) next.title = "Job title is required";
+    if (!form.title.trim()) next.title = "Vacancy title is required";
     if (!form.specialty) next.specialty = "Pick a specialty";
     if (!form.description.trim()) next.description = "Description is required";
     if (!useHospitalAddress && !form.location.trim() && !isEdit) next.location = "Enter a location or use your hospital's address";
@@ -143,7 +143,7 @@ export default function CreateVacancy() {
         router.back();
       } else {
         const res = await jobAPI.createVacancy(buildPayload());
-        router.replace(`/hospital/jobs/${res.vacancy._id}` as any);
+        router.replace(`/hospital/vacancies/${res.vacancy._id}` as any);
       }
     } catch (err: any) {
       setSubmitError(apiError(err, isEdit ? "Could not save changes." : "Could not create the vacancy."));
@@ -156,9 +156,9 @@ export default function CreateVacancy() {
     key: keyof FormState,
     label: string,
     placeholder: string,
-    opts: { required?: boolean; multiline?: boolean; maxLength?: number } = {}
+    opts: { required?: boolean; multiline?: boolean; maxLength?: number; block?: boolean } = {}
   ) => (
-    <View style={styles.field}>
+    <View style={[styles.field, (isMobile || opts.block) && styles.fieldBlock]}>
       <Text style={styles.label}>
         {label}
         {opts.required && <Text style={{ color: COLORS.red }}> *</Text>}
@@ -188,7 +188,7 @@ export default function CreateVacancy() {
     <ScrollView style={styles.container} contentContainerStyle={[styles.content, isMobile && { padding: 16 }]}>
       <TouchableOpacity style={styles.back} onPress={() => router.back()}>
         <Ionicons name="arrow-back" size={16} color={COLORS.subText} />
-        <Text style={styles.backText}>Back to job posting</Text>
+        <Text style={styles.backText}>Back to vacancy posting</Text>
       </TouchableOpacity>
 
       <Text style={styles.title}>{isEdit ? "Edit Vacancy" : "Create Vacancy"}</Text>
@@ -198,9 +198,9 @@ export default function CreateVacancy() {
 
       <View style={styles.card}>
         <View style={[styles.grid, isMobile && styles.gridMobile]}>
-          {field("title", "Job Title", "e.g. Senior Emergency Nurse", { required: true, maxLength: 200 })}
+          {field("title", "Vacancy Title", "e.g. Senior Emergency Nurse", { required: true, maxLength: 200 })}
 
-          <View style={styles.field}>
+          <View style={[styles.field, isMobile && styles.fieldBlock]}>
             <Text style={styles.label}>
               Specialty<Text style={{ color: COLORS.red }}> *</Text>
             </Text>
@@ -233,14 +233,15 @@ export default function CreateVacancy() {
             onValueChange={setUseHospitalAddress}
             trackColor={{ true: COLORS.primary, false: COLORS.border }}
           />
-          <Text style={styles.addressText}>Use my hospital's address as the job location</Text>
+          <Text style={styles.addressText}>Use my hospital's address as the vacancy location</Text>
         </View>
-        {!useHospitalAddress && field("location", "Location", "e.g. Kothrud, Pune", { maxLength: 200 })}
+        {!useHospitalAddress && field("location", "Location", "e.g. Kothrud, Pune", { maxLength: 200, block: true })}
 
         {field("description", "Description", "Describe the role, shifts and responsibilities", {
           required: true,
           multiline: true,
           maxLength: DESCRIPTION_MAX,
+          block: true,
         })}
         <Text style={styles.counter}>
           {form.description.length} / {DESCRIPTION_MAX}
@@ -284,6 +285,8 @@ const styles = StyleSheet.create({
   grid: { flexDirection: "row", flexWrap: "wrap", columnGap: 24 },
   gridMobile: { flexDirection: "column" },
   field: { flexGrow: 1, flexBasis: "45%", minWidth: 240, marginBottom: 14 },
+  // Full width, natural height - for stacked layouts where flexBasis would set the height
+  fieldBlock: { flexGrow: 0, flexBasis: "auto", minWidth: 0, width: "100%" },
   label: { fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 },
   input: {
     borderWidth: 1,

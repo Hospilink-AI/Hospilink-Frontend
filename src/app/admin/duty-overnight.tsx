@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useCapability } from '@/hooks/useCapability';
 import {
   ScrollView,
   StyleSheet,
@@ -202,6 +203,7 @@ function ErrorBox({ message, onRetry }: { message: string; onRetry?: () => void 
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function DutyOvernight() {
+  const canExport = useCapability().can('duty.export');
   const { width } = useWindowDimensions();
   const isWide = width >= 900;
   const ITEMS_PER_ROW = isWide ? 3 : 1;
@@ -480,10 +482,12 @@ export default function DutyOvernight() {
       <View style={[styles.historyCard, { zIndex: 10 }]}>
         <View style={styles.historyHeader}>
           <Text style={styles.historyTitle}>Duty History</Text>
-          <TouchableOpacity style={styles.exportBtn} onPress={handleExport} activeOpacity={0.85}>
-            <Ionicons name="download-outline" size={14} color="#374151" />
-            <Text style={styles.exportBtnText}>Export Report</Text>
-          </TouchableOpacity>
+          {canExport && (
+            <TouchableOpacity style={styles.exportBtn} onPress={handleExport} activeOpacity={0.85}>
+              <Ionicons name="download-outline" size={14} color="#374151" />
+              <Text style={styles.exportBtnText}>Export Report</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={[styles.filterRow, !isWide && styles.filterRowWrap, { zIndex: 100 }]}>
