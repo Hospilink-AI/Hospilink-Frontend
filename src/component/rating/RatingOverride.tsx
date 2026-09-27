@@ -9,6 +9,8 @@ import React, { useState } from "react";
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 const STEPS = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+// off until POST /api/admin/rating-overrides exists on the server
+const OVERRIDE_ENABLED = false;
 
 interface Props {
   kind: "hospital" | "staff";
@@ -29,7 +31,7 @@ export default function RatingOverride({ kind, profileId, name, current }: Props
   const [done, setDone] = useState<string | null>(null);
 
   // Rating changes need Operations level or above
-  if (!can(kind === "hospital" ? "hospital.manage" : "staff.manage")) return null;
+  if (!OVERRIDE_ENABLED || !can(kind === "hospital" ? "hospital.manage" : "staff.manage")) return null;
 
   const reset = () => {
     setValue(null);
