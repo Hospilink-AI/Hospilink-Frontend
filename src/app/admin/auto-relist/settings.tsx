@@ -3,7 +3,7 @@ import AutoRelistSettings from "@/component/autoRelist/AutoRelistSettings";
 
 export default function AdminAutoRelistSettingsPage() {
   return (
-    <CapabilityGate capability="autoRelist.configure">
+    <CapabilityGate capability="autoRelist.config.manage">
       <AutoRelistSettings />
     </CapabilityGate>
   );

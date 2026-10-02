@@ -5,6 +5,8 @@ import {
   COVER_STATE_LABELS,
   cancelReasonLabel,
   countdown,
+  entryTime,
+  fromCoverRow,
   minutesToStart,
   relistOf,
   rupees,
@@ -52,7 +54,7 @@ export default function FindingCoverPanel() {
   const { width } = useWindowDimensions();
   const wide = width >= 1024;
   const [duties, setDuties] = useState<any[]>([]);
-  const [mtd, setMtd] = useState<{ relisted?: number; refilled?: number; extraPaid?: number } | null>(null);
+  const [mtd, setMtd] = useState<{ dutiesRelisted?: number; dutiesRefilled?: number; extraPaid?: number } | null>(null);
   const [, tick] = useState(0);
   const [action, setAction] = useState<Action>(null);
   const [rate, setRate] = useState("");
@@ -63,13 +65,17 @@ export default function FindingCoverPanel() {
     if (!AUTO_RELIST_ENABLED) return;
     try {
       const res = await autoRelistAPI.getFindingCover();
-      const list = [...(res?.duties ?? res?.data ?? [])].sort(
-        (x, y) => (minutesToStart(x) ?? Infinity) - (minutesToStart(y) ?? Infinity)
+      const list = (res?.duties ?? []).map(fromCoverRow).sort(
+        (x: any, y: any) => (minutesToStart(x) ?? Infinity) - (minutesToStart(y) ?? Infinity)
       );
       setDuties(list);
-      setMtd(res?.monthToDate ?? null);
     } catch {
       setDuties([]);
+    }
+    try {
+      const m = await autoRelistAPI.getMonthToDate();
+      setMtd(m ?? null);
+    } catch {
       setMtd(null);
     }
   }, []);
@@ -106,7 +112,8 @@ export default function FindingCoverPanel() {
         const n = Number(rate);
         const current = Number(d.offeredRate ?? 0);
         if (!n || n <= current) throw new Error(`Enter a rate above ${rupees(current)}.`);
-        await autoRelistAPI.raiseRate(idOf(d), n);
+        // standard duty edit; the server allows it until 30 minutes before start
+        await dutyAPI.updatePublishedDuty(idOf(d), { offered_rate: n });
       } else if (action.kind === "off") {
         await autoRelistAPI.setEnabled(idOf(d), false);
       } else {
@@ -145,12 +152,13 @@ export default function FindingCoverPanel() {
         const hist = a.history ?? [];
         const last = hist[hist.length - 1];
         const first = hist[0];
-        const state = COVER_STATE_LABELS[coverState(d)];
+        const state = COVER_STATE_LABELS[coverState(d)] ?? COVER_STATE_LABELS.finding_cover;
         const mins = minutesToStart(d);
         const origUrgency = first?.urgencyBefore;
         const boosted = !!a.rateBoostApplied && typeof a.originalOfferedRate === "number";
         const dateText = d.date ? new Date(d.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "";
-        const actionable = d.status === "available";
+        const stateKey = coverState(d);
+        const actionable = ["finding_cover", "needs_input", "needs_your_input"].includes(stateKey);
 
         const cells = {
           duty: (
@@ -167,8 +175,8 @@ export default function FindingCoverPanel() {
           ),
           relisted: (
             <Text style={styles.cell}>
-              {a.relistCount ?? 0}×{last?.at ? `\n` : ""}
-              {last?.at ? <Text style={styles.muted}>last {ago(last.at)}</Text> : null}
+              {a.relistCount ?? 0}×{entryTime(last) ? `\n` : ""}
+              {entryTime(last) ? <Text style={styles.muted}>last {ago(entryTime(last))}</Text> : null}
             </Text>
           ),
           reason: <Text style={styles.cell}>{cancelReasonLabel(last?.reason)}</Text>,
@@ -237,8 +245,8 @@ export default function FindingCoverPanel() {
       {!!mtd && (
         <View style={styles.mtd}>
           <Text style={styles.mtdText}>
-            This month: <Text style={styles.strong}>{mtd.relisted ?? 0}</Text> duties re-posted,{" "}
-            <Text style={styles.strong}>{mtd.refilled ?? 0}</Text> re-filled, for{" "}
+            This month: <Text style={styles.strong}>{mtd.dutiesRelisted ?? 0}</Text> duties re-posted,{" "}
+            <Text style={styles.strong}>{mtd.dutiesRefilled ?? 0}</Text> re-filled, for{" "}
             <Text style={styles.strong}>{rupees(mtd.extraPaid ?? 0)}</Text> extra paid in late-cover rates.
           </Text>
         </View>

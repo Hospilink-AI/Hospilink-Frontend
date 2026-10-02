@@ -343,7 +343,7 @@ const NavConfig: NavConfigType = {
     { label: "Feedback Board",       icon: "megaphone-outline",        route: "/admin/feedback" as Href, capability: "feedback.view" },
     { label: "Knowledge Base",       icon: "book-outline",             route: "/admin/knowledge-base" as Href, capability: "knowledgeBase.manage" },
     ...(AUTO_RELIST_ENABLED
-      ? [{ label: "Auto-Relist", icon: "refresh-circle-outline" as IoniconName, route: "/admin/auto-relist" as Href, capability: "autoRelist.view" as AdminCapability }]
+      ? [{ label: "Auto-Relist", icon: "refresh-circle-outline" as IoniconName, route: "/admin/auto-relist" as Href, capability: "autoRelist.analytics.view" as AdminCapability }]
       : []),
   ],
 };

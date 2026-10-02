@@ -16,7 +16,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { dutyAPI } from '../../service/api';
+import { autoRelistAPI, dutyAPI } from '../../service/api';
 import AutoRelistOption from '@/component/autoRelist/AutoRelistOption';
 import { AUTO_RELIST_ENABLED, relistOf } from '@/constant/autoRelist';
 
@@ -506,6 +506,7 @@ export default function CreateDutyScreen() {
   const isEditMode = mode === 'edit';
 
   const [autoRelist, setAutoRelist] = useState(true);
+  const [loadedAutoRelist, setLoadedAutoRelist] = useState<boolean | null>(null);
   const [form, setForm] = useState<FormState>({
     staffRole: '', urgencyLevel: 'medium', startingDate: '', endingDate: '',
     startTime: '', endTime: '', overtimeDuty: false, offerRate: '', dutyDescription: '', staffCount: '', dutySubType: '',
@@ -590,6 +591,7 @@ export default function CreateDutyScreen() {
           dutySubType: d.duty_sub_type ?? d.dutySubType ?? '',
         });
         setAutoRelist(relistOf(d)?.enabled ?? true);
+        setLoadedAutoRelist(relistOf(d)?.enabled ?? true);
       } catch (err: any) {
         setApiError(err?.response?.data?.message ?? err?.message ?? 'Failed to load duty details.');
       } finally {
@@ -617,7 +619,7 @@ export default function CreateDutyScreen() {
       urgency: form.urgencyLevel,
       description: form.dutyDescription,
       offered_rate: Number(form.offerRate),
-      ...(AUTO_RELIST_ENABLED && { auto_relist_enabled: autoRelist }),
+      ...(AUTO_RELIST_ENABLED && !isEditMode && { auto_relist_enabled: autoRelist }),
       is_overnight_duty: form.overtimeDuty,
       staff_count: form.staffCount ? Number(form.staffCount) : undefined,
       ...(form.staffRole === 'rmo' && form.dutySubType
@@ -629,6 +631,9 @@ export default function CreateDutyScreen() {
       setPublishing(true);
       if (isEditMode && dutyId) {
         await dutyAPI.updatePublishedDuty(dutyId, payload);
+        if (AUTO_RELIST_ENABLED && autoRelist !== loadedAutoRelist) {
+          await autoRelistAPI.setEnabled(dutyId, autoRelist);
+        }
         showToast('Duty updated successfully!');
         setTimeout(() => router.push('/hospital/dashboard'), 1800);
       } else {

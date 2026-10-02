@@ -2,8 +2,7 @@ import CaseHistoryCard from "@/component/admin-support/CaseHistoryCard";
 import ConversationCard from "@/component/admin-support/ConversationCard";
 import DecisionPanel from "@/component/admin-support/DecisionPanel";
 import EvidenceList from "@/component/support/EvidenceList";
-import AutoRelistCard from "@/component/autoRelist/AutoRelistCard";
-import { relistOf } from "@/constant/autoRelist";
+import RelistHistoryCard from "@/component/autoRelist/RelistHistoryCard";
 import ProfilePeek, { PeekTarget } from "@/component/admin-support/ProfilePeek";
 import { PriorityPill } from "@/component/admin-support/TicketQueue";
 import ActionModal from "@/component/cards/jobs/ActionModal";
@@ -248,8 +247,8 @@ export default function AdminTicketDetail() {
       )}
 
       {/* why a duty's rate or urgency changed; Tech Support sees it read-only, only here */}
-      {!!relistOf(ctx.duty) && (
-        <AutoRelistCard duty={ctx.duty} viewer={can("autoRelist.act") ? "admin" : "readonly"} />
+      {!!ctx.duty && can("autoRelist.history.view") && (
+        <RelistHistoryCard dutyId={idOf(ctx.duty)} ticketId={ticket._id} />
       )}
 
       {ticket.raisedAgainst && (

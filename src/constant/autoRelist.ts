@@ -36,8 +36,10 @@ export type AutoRelist = {
 };
 
 export type RelistEntry = {
+  timestamp?: string;
   at?: string;
   cancelledBy?: string | { _id?: string; name?: string };
+  cancelledByName?: string;
   reason?: string;
   reasonText?: string;
   minutesBeforeStart?: number;
@@ -94,8 +96,39 @@ export const COVER_STATE_LABELS: Record<string, { label: string; bg: string; tex
   covered: { label: "Covered", bg: "#ECFDF5", text: "#047857" },
   finding_cover: { label: "Finding cover", bg: "#EFF6FF", text: "#1D4ED8" },
   needs_input: { label: "Needs your input", bg: "#FFFBEB", text: "#B45309" },
+  needs_your_input: { label: "Needs your input", bg: "#FFFBEB", text: "#B45309" },
   not_covered: { label: "Not covered", bg: "#FEF2F2", text: "#B91C1C" },
 };
+
+export const entryTime = (h?: RelistEntry | null) => h?.timestamp ?? h?.at;
+
+// Finding-cover rows come flat from the server; shape them like a duty so the same helpers work.
+export function fromCoverRow(r: any): any {
+  return {
+    _id: r.dutyId ?? r._id,
+    staffRole: r.staffRole,
+    date: r.date,
+    startTime: r.startTime,
+    endTime: r.endTime,
+    urgency: r.urgency,
+    offeredRate: r.rate ?? r.offeredRate,
+    coverState: r.state,
+    autoRelist: {
+      relistCount: r.relistCount ?? 0,
+      rateBoostApplied: !!r.rateBoosted,
+      originalOfferedRate: r.originalRate ?? null,
+      history: [
+        {
+          timestamp: r.lastCancelledAt,
+          reason: r.reason,
+          reasonText: r.reasonText,
+          urgencyBefore: r.originalUrgency,
+          urgencyAfter: r.urgency,
+        },
+      ],
+    },
+  };
+}
 
 // Minutes from now until the duty starts (date is the day, startTime "HH:mm").
 export function minutesToStart(duty: any): number | null {

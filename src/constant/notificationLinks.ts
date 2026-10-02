@@ -16,17 +16,15 @@ const TITLES: Record<string, string> = {
   TICKET_INFO_REQUESTED: "More information needed",
   TICKET_INFO_REQUEST_REMINDER: "More information needed",
   PATTERN_FLAG_RAISED: "Account notice",
-  DUTY_AUTO_RELISTED: "Duty re-posted",
+  DUTY_RELISTED: "Duty re-posted",
   DUTY_RELIST_CAP_REACHED: "Duty needs your input",
-  DUTY_RELIST_SECOND: "Duty re-posted twice",
   DUTY_CANCELLED_BY_STAFF: "Staff member cancelled",
-  AUTO_RELIST_WATCHLIST: "Auto-relist watchlist",
-  AUTO_RELIST_SPEND_ALERT: "Auto-relist spend alert",
+  STAFF_CANCELLATION_WATCHLIST: "Auto-relist watchlist",
 };
 
-// auto-relist notification types (spec section 07); names assumed until the backend sends them
+// auto-relist notification types (Notification model enum)
 const isRelist = (type: string) =>
-  type.startsWith("DUTY_AUTO_RELIST") || type.startsWith("DUTY_RELIST_") || type.startsWith("AUTO_RELIST_") || type === "DUTY_CANCELLED_BY_STAFF";
+  ["DUTY_RELISTED", "DUTY_RELIST_CAP_REACHED", "DUTY_CANCELLED_BY_STAFF", "STAFF_CANCELLATION_WATCHLIST"].includes(type);
 
 const isTicket = (type: string) => type.startsWith("TICKET_");
 const isStanding = (type: string) =>

@@ -1342,87 +1342,98 @@ export const knowledgeBaseAPI = {
   },
 };
 
-// Auto-relist. The backend team is building these; the routes below are the assumed contract
-// (field names from the Auto-Relist spec). The screens stay hidden until EXPO_PUBLIC_AUTO_RELIST=on.
+// Auto-relist (backend PR #105). Screens stay hidden until EXPO_PUBLIC_AUTO_RELIST=on.
 export const autoRelistAPI = {
   // Hospital ----------------------------------------------------------------
-  // PATCH /api/duties/:id/auto-relist - Body: { enabled }. Allowed while available or assigned.
+  // PATCH /api/duties/:id/auto-relist - Body: { enabled }. Available or assigned duties only.
   setEnabled: async (dutyId, enabled) => {
     const response = await api.patch(`/api/duties/${dutyId}/auto-relist`, { enabled });
     return response.data;
   },
 
-  // PATCH /api/duties/:id/rate - Body: { offeredRate }. Hospital raises the rate by hand.
-  raiseRate: async (dutyId, offeredRate) => {
-    const response = await api.patch(`/api/duties/${dutyId}/rate`, { offeredRate });
-    return response.data;
-  },
-
-  // GET /api/duties/auto-relist/finding-cover
-  // -> { duties: [duty + autoRelist + coverState], monthToDate: { relisted, refilled, extraPaid } }
+  // GET /api/duties/auto-relist/finding-cover -> { duties: [{ dutyId, staffRole, date, startTime, endTime, relistCount,
+  //   lastCancelledAt, reason, reasonText, urgency, originalUrgency, rate, originalRate, rateBoosted, state }] }
   getFindingCover: async () => {
     const response = await api.get('/api/duties/auto-relist/finding-cover');
     return response.data;
   },
 
+  // GET /api/duties/auto-relist/month-to-date -> { dutiesRelisted, dutiesRefilled, extraPaid }
+  getMonthToDate: async () => {
+    const response = await api.get('/api/duties/auto-relist/month-to-date');
+    return response.data;
+  },
+
   // Staff -------------------------------------------------------------------
-  // PATCH /api/duties/:id/cancel - staff branch. Body: { reason, reasonText? }
+  // PATCH /api/duties/:id/cancel - Body: { reason, reasonText? }
   // reason: emergency | illness | scheduling_conflict | transportation_issue | other_staff
   cancelAsStaff: async (dutyId, reason, reasonText) => {
     const response = await api.patch(`/api/duties/${dutyId}/cancel`, { reason, ...(reasonText && { reasonText }) });
     return response.data;
   },
 
-  // Admin -------------------------------------------------------------------
-  // GET /api/admin/auto-relist/health (SA + Ops)
-  // -> { relists: { today, last7, last30, trend: [{ date, count }] },
-  //      refill: { boosted: { rate, count }, unboosted: { rate, count } },
-  //      control: { featureOn: { rate, count }, featureOff: { rate, count } },
-  //      medianRefillMinutes, byReason: [{ reason, count }] }   (every rate / share is a 0-1 fraction)
-  getHealth: async () => {
-    const response = await api.get('/api/admin/auto-relist/health');
+  // Admin (every rate is a 0-1 fraction, or null when there is nothing to divide by) --------------
+  // GET /api/admin/auto-relist/tiles -> { relists: { today, last7Days, last30Days },
+  //   refillRate: { boosted, unboosted }, controlComparison: { featureOn, featureOff }  (each { filled, total, rate }),
+  //   medianTimeToRefillMinutes, byReason: { reason: count } }
+  getTiles: async () => {
+    const response = await api.get('/api/admin/auto-relist/tiles');
     return response.data;
   },
 
-  // GET /api/admin/auto-relist/spend (Super Admin only) -> { total, perHospital: [{ hospitalId, name, amount, share }] }
+  // GET /api/admin/auto-relist/trend?days= -> { series: [{ date, relistsCount, refilledCount, extraPaid }] }
+  getTrend: async (days = 30) => {
+    const response = await api.get('/api/admin/auto-relist/trend', { params: { days } });
+    return response.data;
+  },
+
+  // GET /api/admin/auto-relist/boost-spend (Super Admin) -> { platformTotal, perHospital: [{ hospitalName, extraPaid }] }
   getSpend: async () => {
-    const response = await api.get('/api/admin/auto-relist/spend');
+    const response = await api.get('/api/admin/auto-relist/boost-spend');
     return response.data;
   },
 
-  // GET /api/admin/auto-relist/cap-reached -> { duties: [duty + hospital + autoRelist] }
+  // GET /api/admin/auto-relist/cap-reached -> { duties: [{ dutyId, hospitalName, staffRole, date, startTime, endTime, urgency, rate, relistCount }] }
   getCapReached: async () => {
     const response = await api.get('/api/admin/auto-relist/cap-reached');
     return response.data;
   },
 
-  // GET /api/admin/auto-relist/watchlists
-  // -> { staff: [{ staffId, name, count }], pairs: [{ hospitalName, cancelledBy, acceptedBy, count }],
-  //      hospitals: [{ hospitalId, name, relistRate, platformRate }] }
-  getWatchlists: async () => {
-    const response = await api.get('/api/admin/auto-relist/watchlists');
+  // GET /api/admin/auto-relist/staff-watchlist -> { staff: [{ fullName, jobRole, lateCancellationCount }] }
+  getStaffWatchlist: async () => {
+    const response = await api.get('/api/admin/auto-relist/staff-watchlist');
     return response.data;
   },
 
-  // PATCH /api/admin/duties/:id/auto-relist - Body: { enabled, reason } (acting on behalf of the hospital)
-  adminSetEnabled: async (dutyId, enabled, reason) => {
-    const response = await api.patch(`/api/admin/duties/${dutyId}/auto-relist`, { enabled, reason });
+  // GET /api/admin/auto-relist/pair-watchlist -> { pairs: [{ hospitalName, cancelledByName, acceptedByName, recurrenceCount }] }
+  getPairWatchlist: async () => {
+    const response = await api.get('/api/admin/auto-relist/pair-watchlist');
     return response.data;
   },
 
-  // PATCH /api/admin/duties/:id/rate - Body: { offeredRate, reason }
-  adminRaiseRate: async (dutyId, offeredRate, reason) => {
-    const response = await api.patch(`/api/admin/duties/${dutyId}/rate`, { offeredRate, reason });
+  // GET /api/admin/auto-relist/hospital-watchlist -> { hospitals: [{ hospitalName, relists, totalDuties, relistRate, platformAverageRate }] }
+  getHospitalWatchlist: async () => {
+    const response = await api.get('/api/admin/auto-relist/hospital-watchlist');
     return response.data;
   },
 
-  // GET / PATCH /api/admin/auto-relist/settings (PATCH Super Admin only) - section 09 values
-  getSettings: async () => {
-    const response = await api.get('/api/admin/auto-relist/settings');
+  // GET /api/admin/auto-relist/duties/:dutyId/history?ticketId= (Tech Support must pass the open ticket)
+  // -> { dutyId, staffRole, relistCount, rateBoostApplied, history: [{ timestamp, cancelledByName, reason, reasonText,
+  //      minutesBeforeStart, urgencyBefore, urgencyAfter, rateBefore, rateAfter }] }
+  getDutyHistory: async (dutyId, ticketId) => {
+    const response = await api.get(`/api/admin/auto-relist/duties/${dutyId}/history`, { params: ticketId ? { ticketId } : {} });
     return response.data;
   },
-  updateSettings: async (settings) => {
-    const response = await api.patch('/api/admin/auto-relist/settings', settings);
+
+  // GET /api/admin/auto-relist/config (Super Admin) -> { config: [{ key, value, history }] }
+  getConfig: async () => {
+    const response = await api.get('/api/admin/auto-relist/config');
+    return response.data;
+  },
+
+  // PATCH /api/admin/auto-relist/config - one key at a time. Body: { key, value, effectiveFrom? }
+  updateConfig: async (key, value) => {
+    const response = await api.patch('/api/admin/auto-relist/config', { key, value });
     return response.data;
   },
 };

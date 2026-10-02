@@ -176,7 +176,7 @@ const NavConfig: NavConfigType = {
     { label: "Live Tracking", icon: "locate-outline", route: "/admin/live-tracking", capability: "duty.view" },
     { label: "Activity Logs", icon: "reload-outline", route: "/admin/activity-logs", capability: "activityLog.view" },
     ...(AUTO_RELIST_ENABLED
-      ? [{ label: "Auto-Relist", icon: "refresh-circle-outline" as IoniconName, route: "/admin/auto-relist" as Href, capability: "autoRelist.view" as AdminCapability }]
+      ? [{ label: "Auto-Relist", icon: "refresh-circle-outline" as IoniconName, route: "/admin/auto-relist" as Href, capability: "autoRelist.analytics.view" as AdminCapability }]
       : []),
   ],
 };

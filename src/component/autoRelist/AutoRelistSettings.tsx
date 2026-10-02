@@ -14,13 +14,32 @@ type Settings = {
   ratePercent: number;
   relistCap: number;
   repeatPushMinutes: number[];
-  radiusSteps: number;
+  radiusKm: number;
+  staffWindowDays: number;
   staffWatchlistCount: number;
   pairWatchlistCount: number;
   hospitalWatchlistMultiple: number;
 };
 
-const DEFAULTS: Settings = { ...AUTO_RELIST_DEFAULTS, defaultOn: true, radiusSteps: 1 };
+const DEFAULTS: Settings = { ...AUTO_RELIST_DEFAULTS, defaultOn: true, radiusKm: 75, staffWindowDays: 30 };
+
+// our field -> server key (SystemConfig autoRelist.*). ratePercent is stored as a fraction (0.10).
+const KEYS: Record<keyof Settings, string> = {
+  defaultOn: "autoRelist.featureDefaultEnabled",
+  lateBandMinutes: "autoRelist.lateCancellationBandMinutes",
+  staffCutoffMinutes: "autoRelist.staffCancelCutoffMinutes",
+  ratePercent: "autoRelist.rateBoostFraction",
+  relistCap: "autoRelist.relistCap",
+  repeatPushMinutes: "autoRelist.repeatPushScheduleMinutes",
+  radiusKm: "autoRelist.notificationRadiusKm",
+  staffWindowDays: "autoRelist.staffWatchlistWindowDays",
+  staffWatchlistCount: "autoRelist.staffWatchlistThresholdCount",
+  pairWatchlistCount: "autoRelist.pairWatchlistThresholdCount",
+  hospitalWatchlistMultiple: "autoRelist.hospitalWatchlistMultiplier",
+};
+
+const toServer = (k: keyof Settings, v: any) => (k === "ratePercent" ? Math.round(Number(v)) / 100 : v);
+const fromServer = (k: keyof Settings, v: any) => (k === "ratePercent" ? Math.round(Number(v) * 100) : v);
 
 type NumKey = Exclude<keyof Settings, "defaultOn" | "repeatPushMinutes">;
 
@@ -29,7 +48,8 @@ const FIELDS: { key: NumKey; label: string; unit: string; min: number; max: numb
   { key: "staffCutoffMinutes", label: "Staff cancellation cutoff", unit: "minutes before start", min: 5, max: 120, help: "Inside this it is a no-show, not a cancellation." },
   { key: "ratePercent", label: "Rate rise", unit: "percent, once per duty", min: 1, max: 50 },
   { key: "relistCap", label: "Relist cap", unit: "relists per duty", min: 1, max: 10 },
-  { key: "radiusSteps", label: "Notification radius on relist", unit: "steps wider than the original", min: 0, max: 5 },
+  { key: "radiusKm", label: "Notification radius on relist", unit: "km (new duties use 50 km)", min: 5, max: 300 },
+  { key: "staffWindowDays", label: "Staff watchlist window", unit: "days", min: 7, max: 180 },
   { key: "staffWatchlistCount", label: "Staff watchlist", unit: "late cancellations in 30 days (more than)", min: 1, max: 20 },
   { key: "pairWatchlistCount", label: "Pair watchlist", unit: "recurrences of the same pair", min: 2, max: 50 },
   { key: "hospitalWatchlistMultiple", label: "Hospital watchlist", unit: "× the platform relist rate", min: 1, max: 10 },
@@ -63,12 +83,16 @@ export default function AutoRelistSettings() {
     if (!AUTO_RELIST_ENABLED) return;
     (async () => {
       try {
-        const res = await autoRelistAPI.getSettings();
-        const v = { ...DEFAULTS, ...(res?.settings ?? res?.data ?? {}) };
+        const res = await autoRelistAPI.getConfig();
+        const byKey = new Map((res?.config ?? []).map((row: any) => [row.key, row.value]));
+        const v: Settings = { ...DEFAULTS };
+        (Object.keys(KEYS) as (keyof Settings)[]).forEach((k) => {
+          if (byKey.has(KEYS[k])) (v as any)[k] = fromServer(k, byKey.get(KEYS[k]));
+        });
         setValues(v);
         setText(toText(v));
       } catch (err: any) {
-        setMissing(err?.response?.status === 404);
+        setMissing(true);
         setText(toText(DEFAULTS));
       } finally {
         setLoading(false);
@@ -113,13 +137,30 @@ export default function AutoRelistSettings() {
       return;
     }
     next.repeatPushMinutes = pushes.sort((a, b) => a - b);
+    // the server takes one key per request; send only what changed
+    const changed = (Object.keys(KEYS) as (keyof Settings)[]).filter(
+      (k) => JSON.stringify(next[k]) !== JSON.stringify(values[k])
+    );
+    if (changed.length === 0) {
+      setSaved(true);
+      return;
+    }
     setSaving(true);
+    const done: Settings = { ...values };
     try {
-      await autoRelistAPI.updateSettings(next);
+      for (const k of changed) {
+        await autoRelistAPI.updateConfig(KEYS[k], toServer(k, next[k]));
+        (done as any)[k] = next[k];
+      }
       setValues(next);
       setSaved(true);
     } catch (err: any) {
-      setError(err?.response?.status === 404 ? "Saving isn't available yet. The server side is still being built." : apiError(err, "Could not save."));
+      setValues(done);
+      setError(
+        err?.response?.status === 404
+          ? "Saving isn't available yet."
+          : apiError(err, "Could not save.") + (changed.length > 1 ? " Settings before this one were saved." : "")
+      );
     } finally {
       setSaving(false);
     }
@@ -133,7 +174,7 @@ export default function AutoRelistSettings() {
       </TouchableOpacity>
       <Text style={styles.title}>Auto-Relist Settings</Text>
       <Text style={styles.muted}>Changes apply to cancellations from now on. Duties already re-posted keep what was applied.</Text>
-      {missing && <Text style={styles.warn}>Showing the default values. The server side is still being built.</Text>}
+      {missing && <Text style={styles.warn}>Couldn't load the current values, so these are the defaults. Saving still updates the server.</Text>}
 
       {loading ? (
         <ActivityIndicator color={COLORS.primary} style={{ marginTop: 24 }} />

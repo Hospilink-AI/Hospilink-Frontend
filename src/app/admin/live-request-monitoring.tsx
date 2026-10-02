@@ -5,8 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { useCapability } from '@/hooks/useCapability';
-import AutoRelistCard from '@/component/autoRelist/AutoRelistCard';
-import { relistOf } from '@/constant/autoRelist';
+import RelistHistoryCard from '@/component/autoRelist/RelistHistoryCard';
 import {
     ActivityIndicator,
     Modal,
@@ -302,8 +301,7 @@ const WebMap = ({ staffLocation, hospitalLocation, routePolylines, status, isSat
 // ─── Main Component ───
 export default function LiveRequestMonitoring() {
   const canManage = useCapability().can('duty.manage');
-  const canRelist = useCapability().can('autoRelist.view');
-  const canRelistAct = useCapability().can('autoRelist.act');
+  const canRelist = useCapability().can('autoRelist.analytics.view');
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isWide = width >= 1024;
@@ -896,9 +894,7 @@ if (error || !data) {
 
       </View>
 
-      {!!relistOf(data?.duty) && canRelist && (
-        <AutoRelistCard duty={data?.duty} viewer={canRelistAct ? "admin" : "readonly"} style={{ marginBottom: 16 }} />
-      )}
+      {canRelist && <RelistHistoryCard dutyId={dutyId as string} style={{ marginBottom: 16 }} />}
 
       {/* ─── BOTTOM ROW: Live Activity Log ─── */}
       <View style={styles.bottomSection}>

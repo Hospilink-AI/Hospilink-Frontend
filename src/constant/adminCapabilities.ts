@@ -18,8 +18,8 @@ export type AdminCapability =
   | 'ticket.view' | 'ticket.claim' | 'ticket.decide' | 'ticket.approve'
   | 'pattern.view' | 'suspension.decide'
   | 'feedback.view'
-  // auto-relist (spec section 07): not in the backend map yet, the server enforces its own check
-  | 'autoRelist.view' | 'autoRelist.act' | 'autoRelist.spend' | 'autoRelist.configure';
+  | 'autoRelist.analytics.view' | 'autoRelist.history.view' | 'autoRelist.manage'
+  | 'autoRelist.spend.view' | 'autoRelist.config.manage';
 
 // super_admin has every capability (see hasCapability)
 const ADMIN_CAPABILITIES: Record<
@@ -51,8 +51,9 @@ const ADMIN_CAPABILITIES: Record<
     'pattern.view',
     'suspension.decide',
     'feedback.view',
-    'autoRelist.view',
-    'autoRelist.act',
+    'autoRelist.analytics.view',
+    'autoRelist.history.view',
+    'autoRelist.manage',
   ],
   tech_support: [
     'hospital.view',
@@ -64,6 +65,8 @@ const ADMIN_CAPABILITIES: Record<
     'ticket.claim',
     'ticket.decide',
     'feedback.view',
+    // only from inside an open ticket about the duty (checked by the server)
+    'autoRelist.history.view',
   ],
 };
 
@@ -110,8 +113,8 @@ const ADMIN_ROUTE_CAPABILITIES: [string, AdminCapability][] = [
   ['/admin/patterns', 'pattern.view'],
   ['/admin/feedback', 'feedback.view'],
   ['/admin/knowledge-base', 'knowledgeBase.manage'],
-  ['/admin/auto-relist/settings', 'autoRelist.configure'],
-  ['/admin/auto-relist', 'autoRelist.view'],
+  ['/admin/auto-relist/settings', 'autoRelist.config.manage'],
+  ['/admin/auto-relist', 'autoRelist.analytics.view'],
 ];
 
 export function adminRouteCapability(pathname: string): AdminCapability | null {

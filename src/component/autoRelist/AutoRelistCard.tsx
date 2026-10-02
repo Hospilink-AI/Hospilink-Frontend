@@ -2,6 +2,7 @@ import {
   AUTO_RELIST_DEFAULTS,
   AUTO_RELIST_ENABLED,
   cancelReasonLabel,
+  entryTime,
   relistOf,
   rupees,
   urgencyLabel,
@@ -11,7 +12,7 @@ import { apiError } from "@/constant/jobs";
 import { autoRelistAPI } from "@/service/api";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
-import { ActivityIndicator, StyleProp, StyleSheet, Switch, Text, TextInput, View, ViewStyle } from "react-native";
+import { ActivityIndicator, StyleProp, StyleSheet, Switch, Text, View, ViewStyle } from "react-native";
 
 type Viewer = "hospital" | "admin" | "readonly";
 
@@ -32,10 +33,9 @@ const when = (iso?: string) =>
 // Auto-relist state on a duty: on/off, how often it was re-posted, whether the rate rise was used, and the history.
 export default function AutoRelistCard({ duty, viewer, onUpdated, style }: Props) {
   const a = relistOf(duty) ?? {};
-  const [enabled, setEnabled] = useState<boolean>(a.enabled ?? false);
+  const [enabled, setEnabled] = useState<boolean | undefined>(a.enabled);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [reason, setReason] = useState("");
 
   if (!AUTO_RELIST_ENABLED || !duty) return null;
 
@@ -43,25 +43,18 @@ export default function AutoRelistCard({ duty, viewer, onUpdated, style }: Props
   const count = a.relistCount ?? 0;
   const cap = AUTO_RELIST_DEFAULTS.relistCap;
   const history = a.history ?? [];
-  const canToggle = viewer !== "readonly" && EDITABLE_STATUSES.includes(duty.status);
+  // only the hospital can switch it; there is no admin route for this yet
+  const canToggle = viewer === "hospital" && EDITABLE_STATUSES.includes(duty.status);
   const current = duty.offeredRate ?? duty.offered_rate;
 
   const toggle = async (next: boolean) => {
-    if (viewer === "admin" && !reason.trim()) {
-      setError("Add a reason first. The hospital sees it.");
-      return;
-    }
     setSaving(true);
     setError(null);
     const prev = enabled;
     setEnabled(next);
     try {
-      const res =
-        viewer === "admin"
-          ? await autoRelistAPI.adminSetEnabled(dutyId, next, reason.trim())
-          : await autoRelistAPI.setEnabled(dutyId, next);
-      if (res?.duty) onUpdated?.(res.duty);
-      setReason("");
+      const res = await autoRelistAPI.setEnabled(dutyId, next);
+      if (res?.data?.autoRelist) onUpdated?.({ ...duty, autoRelist: { ...a, ...res.data.autoRelist } });
     } catch (err: any) {
       setEnabled(prev);
       setError(
@@ -84,36 +77,33 @@ export default function AutoRelistCard({ duty, viewer, onUpdated, style }: Props
             <ActivityIndicator color={COLORS.primary} />
           ) : (
             <Switch
-              value={enabled}
+              value={!!enabled}
               onValueChange={toggle}
               trackColor={{ true: "#93C5FD", false: "#CBD5E1" }}
               thumbColor={enabled ? COLORS.primary : "#F8FAFC"}
               {...({ activeThumbColor: COLORS.primary, activeTrackColor: "#93C5FD" } as any)}
             />
           )
-        ) : (
+        ) : typeof enabled === "boolean" ? (
           <View style={[styles.pill, enabled ? styles.pillOn : styles.pillOff]}>
             <Text style={[styles.pillText, { color: enabled ? "#047857" : COLORS.subText }]}>{enabled ? "On" : "Off"}</Text>
           </View>
-        )}
+        ) : null}
       </View>
 
-      {viewer === "admin" && canToggle && (
-        <TextInput
-          style={styles.input}
-          value={reason}
-          onChangeText={setReason}
-          placeholder="Reason, if you change this for the hospital"
-          placeholderTextColor="#9CA3AF"
-        />
-      )}
       {!!error && <Text style={styles.error}>{error}</Text>}
 
       <View style={styles.stats}>
         <Stat label="Times re-posted" value={`${count} of ${cap}`} warn={count >= cap} />
         <Stat
           label="Late-cover rate rise"
-          value={a.rateBoostApplied ? `Used · ${rupees(a.originalOfferedRate)} → ${rupees(current)}` : "Not used"}
+          value={
+            a.rateBoostApplied
+              ? typeof a.originalOfferedRate === "number" && typeof current === "number"
+                ? `Used · ${rupees(a.originalOfferedRate)} → ${rupees(current)}`
+                : "Used"
+              : "Not used"
+          }
         />
       </View>
 
@@ -141,7 +131,8 @@ export default function AutoRelistCard({ duty, viewer, onUpdated, style }: Props
               <Ionicons name="refresh-circle-outline" size={16} color={COLORS.primary} />
               <View style={{ flex: 1, gap: 2 }}>
                 <Text style={styles.entryTitle}>
-                  {when(h.at)} · {cancelReasonLabel(h.reason)}
+                  {when(entryTime(h))} · {cancelReasonLabel(h.reason)}
+                  {viewer !== "hospital" && h.cancelledByName ? ` · by ${h.cancelledByName}` : ""}
                   {typeof h.minutesBeforeStart === "number" ? ` · ${h.minutesBeforeStart} min before start` : ""}
                 </Text>
                 {!!h.reasonText && <Text style={styles.muted}>“{h.reasonText}”</Text>}
@@ -184,7 +175,6 @@ const styles = StyleSheet.create({
   pillText: { fontSize: 12, fontWeight: "700" },
   warn: { fontSize: 12, color: "#B45309", backgroundColor: "#FFFBEB", borderRadius: 8, padding: 8, lineHeight: 17 },
   error: { fontSize: 12, color: COLORS.red },
-  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontSize: 13, color: COLORS.text },
   entry: { flexDirection: "row", gap: 8, alignItems: "flex-start" },
   entryTitle: { fontSize: 13, fontWeight: "600", color: COLORS.text },
 });

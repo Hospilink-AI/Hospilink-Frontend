@@ -1,11 +1,9 @@
-import ActionModal from "@/component/cards/jobs/ActionModal";
 import {
   AUTO_RELIST_DEFAULTS,
   AUTO_RELIST_ENABLED,
   cancelReasonLabel,
   countdown,
   minutesToStart,
-  relistOf,
   rupees,
   urgencyLabel,
 } from "@/constant/autoRelist";
@@ -16,12 +14,12 @@ import { autoRelistAPI } from "@/service/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
 
 type Tab = "overview" | "cap" | "watch" | "spend";
 type Load<T> = { data: T | null; state: "loading" | "ok" | "missing" | "error"; message?: string };
 
-// rates and shares come as 0-1 fractions
+// rates and shares come as 0-1 fractions (null when there is nothing to divide by)
 const pct = (v?: number | null) => (typeof v === "number" ? `${Math.round(v * 100)}%` : "—");
 const num = (v?: number | null) => (typeof v === "number" ? v.toLocaleString("en-IN") : "—");
 
@@ -36,6 +34,16 @@ async function fetchInto<T>(fn: () => Promise<any>, pick: (r: any) => T, set: (l
   }
 }
 
+// all three watchlists load together; one failing shows as an error for the tab
+async function loadWatchlists() {
+  const [staff, pairs, hospitals] = await Promise.all([
+    autoRelistAPI.getStaffWatchlist(),
+    autoRelistAPI.getPairWatchlist(),
+    autoRelistAPI.getHospitalWatchlist(),
+  ]);
+  return { staff: staff?.staff ?? [], pairs: pairs?.pairs ?? [], hospitals: hospitals?.hospitals ?? [] };
+}
+
 // Super Admin + Operations: is auto-relist working, what needs a person, and who might be gaming it.
 // Spend is a separate endpoint shown to Super Admin only (spec section 07).
 export default function AutoRelistAdmin() {
@@ -43,29 +51,26 @@ export default function AutoRelistAdmin() {
   const { can } = useCapability();
   const { width } = useWindowDimensions();
   const isMobile = width < 900;
-  const canSpend = can("autoRelist.spend");
-  const canAct = can("autoRelist.act");
+  const canSpend = can("autoRelist.spend.view");
 
   const [tab, setTab] = useState<Tab>("overview");
-  const [health, setHealth] = useState<Load<any>>({ data: null, state: "loading" });
+  const [tiles, setTiles] = useState<Load<any>>({ data: null, state: "loading" });
+  const [trend, setTrend] = useState<any[]>([]);
   const [cap, setCap] = useState<Load<any[]>>({ data: null, state: "loading" });
   const [watch, setWatch] = useState<Load<any>>({ data: null, state: "loading" });
   const [spend, setSpend] = useState<Load<any>>({ data: null, state: "loading" });
 
-  const [action, setAction] = useState<null | { kind: "off" | "rate"; duty: any }>(null);
-  const [rate, setRate] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
-
-  const loadCap = () => fetchInto(() => autoRelistAPI.getCapReached(), (r) => r?.duties ?? r?.data ?? [], setCap);
-
   useFocusEffect(
     useCallback(() => {
       if (!AUTO_RELIST_ENABLED) return;
-      fetchInto(() => autoRelistAPI.getHealth(), (r) => r?.health ?? r?.data ?? r, setHealth);
-      loadCap();
-      fetchInto(() => autoRelistAPI.getWatchlists(), (r) => r?.watchlists ?? r?.data ?? r, setWatch);
-      if (canSpend) fetchInto(() => autoRelistAPI.getSpend(), (r) => r?.spend ?? r?.data ?? r, setSpend);
+      fetchInto(() => autoRelistAPI.getTiles(), (r) => r, setTiles);
+      autoRelistAPI
+        .getTrend(30)
+        .then((r: any) => setTrend(r?.series ?? []))
+        .catch(() => setTrend([]));
+      fetchInto(() => autoRelistAPI.getCapReached(), (r) => r?.duties ?? [], setCap);
+      fetchInto(loadWatchlists, (r) => r, setWatch);
+      if (canSpend) fetchInto(() => autoRelistAPI.getSpend(), (r) => r, setSpend);
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [canSpend])
   );
@@ -85,37 +90,13 @@ export default function AutoRelistAdmin() {
     ...(canSpend ? ([["spend", "Spend"]] as [Tab, string][]) : []),
   ];
 
-  const idOf = (d: any) => d._id ?? d.id ?? d.dutyId;
-
-  const confirm = async (_reason: string, note: string) => {
-    if (!action) return;
-    if (!note.trim()) {
-      setActionError("Add a reason. The hospital sees it.");
-      return;
-    }
-    setBusy(true);
-    setActionError(null);
-    try {
-      if (action.kind === "off") {
-        await autoRelistAPI.adminSetEnabled(idOf(action.duty), false, note.trim());
-      } else {
-        const n = Number(rate);
-        const current = Number(action.duty.offeredRate ?? 0);
-        if (!n || n <= current) throw new Error(`Enter a rate above ${rupees(current)}.`);
-        await autoRelistAPI.adminRaiseRate(idOf(action.duty), n, note.trim());
-      }
-      setAction(null);
-      loadCap();
-    } catch (err: any) {
-      setActionError(err?.response ? apiError(err, "That didn't work.") : err?.message ?? "That didn't work.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const h = health.data ?? {};
+  const h = tiles.data ?? {};
   const w = watch.data ?? {};
   const s = spend.data ?? {};
+  const byReason: { reason: string; count: number }[] = Object.entries(h.byReason ?? {})
+    .map(([reason, count]) => ({ reason, count: Number(count) || 0 }))
+    .sort((a, b) => b.count - a.count);
+  const spendTotal = Number(s.platformTotal ?? 0);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={[styles.content, isMobile && { padding: 16 }]}>
@@ -124,7 +105,7 @@ export default function AutoRelistAdmin() {
           <Text style={styles.title}>Auto-Relist</Text>
           <Text style={styles.subtitle}>Cancelled duties that went back on the board: is it working, and what needs a person.</Text>
         </View>
-        {can("autoRelist.configure") && (
+        {can("autoRelist.config.manage") && (
           <TouchableOpacity style={styles.ghostBtn} onPress={() => router.push("/admin/auto-relist/settings" as any)}>
             <Ionicons name="settings-outline" size={15} color={COLORS.primary} />
             <Text style={styles.ghostText}>Settings</Text>
@@ -141,37 +122,43 @@ export default function AutoRelistAdmin() {
       </View>
 
       {tab === "overview" && (
-        <Section load={health}>
+        <Section load={tiles}>
           <View style={styles.tiles}>
-            <Tile label="Relists" value={num(h.relists?.today)} sub={`today · ${num(h.relists?.last7)} in 7 days · ${num(h.relists?.last30)} in 30 days`}>
-              <Trend points={h.relists?.trend ?? []} />
+            <Tile label="Relists" value={num(h.relists?.today)} sub={`today · ${num(h.relists?.last7Days)} in 7 days · ${num(h.relists?.last30Days)} in 30 days`}>
+              <Trend points={trend.map((p) => ({ date: p.date, count: p.relistsCount }))} />
             </Tile>
             <Tile
               label="Re-filled before the cutoff"
-              value={pct(h.refill?.boosted?.rate)}
-              sub={`with the rate rise · ${pct(h.refill?.unboosted?.rate)} without`}
+              value={pct(h.refillRate?.boosted?.rate)}
+              sub={`with the rate rise · ${pct(h.refillRate?.unboosted?.rate)} without`}
               note={
-                typeof h.refill?.boosted?.rate === "number" && typeof h.refill?.unboosted?.rate === "number" && h.refill.boosted.rate <= h.refill.unboosted.rate
+                typeof h.refillRate?.boosted?.rate === "number" &&
+                typeof h.refillRate?.unboosted?.rate === "number" &&
+                h.refillRate.boosted.rate <= h.refillRate.unboosted.rate
                   ? "The rate rise isn't doing better than no rise."
                   : undefined
               }
             />
             <Tile
               label="Feature on vs off"
-              value={pct(h.control?.featureOn?.rate)}
-              sub={`of cancelled duties filled with it on · ${pct(h.control?.featureOff?.rate)} with it off`}
+              value={pct(h.controlComparison?.featureOn?.rate)}
+              sub={`of cancelled duties filled with it on · ${pct(h.controlComparison?.featureOff?.rate)} with it off`}
             />
-            <Tile label="Time to re-fill" value={typeof h.medianRefillMinutes === "number" ? `${h.medianRefillMinutes} min` : "—"} sub="median, from re-post to accepted" />
+            <Tile
+              label="Time to re-fill"
+              value={typeof h.medianTimeToRefillMinutes === "number" ? `${Math.round(h.medianTimeToRefillMinutes)} min` : "—"}
+              sub="median, from re-post to accepted"
+            />
           </View>
 
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Cancellations by reason</Text>
-            {(h.byReason ?? []).length === 0 ? (
+            {byReason.length === 0 ? (
               <Text style={styles.muted}>None yet.</Text>
             ) : (
               (() => {
-                const max = Math.max(...h.byReason.map((r: any) => r.count || 0), 1);
-                return h.byReason.map((r: any) => (
+                const max = Math.max(...byReason.map((r) => r.count), 1);
+                return byReason.map((r) => (
                   <View key={r.reason} style={styles.barRow}>
                     <Text style={styles.barLabel} numberOfLines={1}>{cancelReasonLabel(r.reason)}</Text>
                     <View style={styles.barTrack}>
@@ -194,43 +181,25 @@ export default function AutoRelistAdmin() {
           {(cap.data ?? []).length === 0 ? (
             <Empty text="Nothing needs a person right now." />
           ) : (
-            (cap.data ?? []).map((d) => {
-              const a = relistOf(d) ?? {};
-              const last = (a.history ?? [])[(a.history ?? []).length - 1];
-              return (
-                <View key={idOf(d)} style={styles.card}>
-                  <View style={styles.rowBetween}>
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={styles.cardTitle}>{roleLabel(d.staffRole)} · {d.hospital?.hospitalLegalName ?? d.hospitalName ?? "Hospital"}</Text>
-                      <Text style={styles.muted}>
-                        {d.date ? new Date(d.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : ""} · {d.startTime} ·{" "}
-                        <Text style={{ color: "#B45309", fontWeight: "700" }}>{countdown(minutesToStart(d))}</Text>
-                      </Text>
-                      <Text style={styles.muted}>
-                        Re-posted {a.relistCount ?? 0}× · last reason: {cancelReasonLabel(last?.reason)} · {urgencyLabel(d.urgency)} · {rupees(d.offeredRate)}/hr
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={styles.actions}>
-                    <TouchableOpacity style={styles.smallBtn} onPress={() => router.push(`/admin/live-request-monitoring?dutyId=${idOf(d)}` as any)}>
-                      <Text style={styles.smallBtnText}>Open Duty</Text>
-                    </TouchableOpacity>
-                    {canAct && (
-                      <>
-                        <TouchableOpacity style={styles.smallBtn} onPress={() => { setActionError(null); setRate(""); setAction({ kind: "rate", duty: d }); }}>
-                          <Text style={styles.smallBtnText}>Raise Rate</Text>
-                        </TouchableOpacity>
-                        {a.enabled !== false && (
-                          <TouchableOpacity style={styles.smallBtn} onPress={() => { setActionError(null); setAction({ kind: "off", duty: d }); }}>
-                            <Text style={styles.smallBtnText}>Turn Off Re-posting</Text>
-                          </TouchableOpacity>
-                        )}
-                      </>
-                    )}
-                  </View>
+            (cap.data ?? []).map((d) => (
+              <View key={d.dutyId} style={styles.card}>
+                <Text style={styles.cardTitle}>
+                  {roleLabel(d.staffRole)} · {d.hospitalName ?? "Hospital"}
+                </Text>
+                <Text style={styles.muted}>
+                  {d.date ? new Date(d.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : ""} · {d.startTime} ·{" "}
+                  <Text style={{ color: "#B45309", fontWeight: "700" }}>{countdown(minutesToStart(d))}</Text>
+                </Text>
+                <Text style={styles.muted}>
+                  Re-posted {d.relistCount ?? 0}× · {urgencyLabel(d.urgency)} · {rupees(d.rate)}/hr
+                </Text>
+                <View style={styles.actions}>
+                  <TouchableOpacity style={styles.smallBtn} onPress={() => router.push(`/admin/live-request-monitoring?dutyId=${d.dutyId}` as any)}>
+                    <Text style={styles.smallBtnText}>Open Duty</Text>
+                  </TouchableOpacity>
                 </View>
-              );
-            })
+              </View>
+            ))
           )}
         </Section>
       )}
@@ -241,17 +210,26 @@ export default function AutoRelistAdmin() {
           <ListCard
             title="Staff"
             sub={`More than ${AUTO_RELIST_DEFAULTS.staffWatchlistCount} late cancellations in 30 days`}
-            rows={(w.staff ?? []).map((x: any) => [x.name ?? "Staff", `${num(x.count)} late cancellations`])}
+            rows={(w.staff ?? []).map((x: any) => [
+              `${x.fullName ?? "Staff"}${x.jobRole ? ` · ${roleLabel(x.jobRole)}` : ""}`,
+              `${num(x.lateCancellationCount)} late cancellations`,
+            ])}
           />
           <ListCard
             title="Pairs"
             sub={`Same cancel-then-accept pair at one hospital, ${AUTO_RELIST_DEFAULTS.pairWatchlistCount}+ times`}
-            rows={(w.pairs ?? []).map((x: any) => [`${x.cancelledBy ?? "?"} → ${x.acceptedBy ?? "?"}`, `${x.hospitalName ?? ""} · ${num(x.count)}×`])}
+            rows={(w.pairs ?? []).map((x: any) => [
+              `${x.cancelledByName ?? "?"} → ${x.acceptedByName ?? "?"}`,
+              `${x.hospitalName ?? ""} · ${num(x.recurrenceCount)}×`,
+            ])}
           />
           <ListCard
             title="Hospitals"
             sub={`Relist rate above ${AUTO_RELIST_DEFAULTS.hospitalWatchlistMultiple}× the platform average`}
-            rows={(w.hospitals ?? []).map((x: any) => [x.name ?? "Hospital", `${pct(x.relistRate)} vs ${pct(x.platformRate)} average`])}
+            rows={(w.hospitals ?? []).map((x: any) => [
+              x.hospitalName ?? "Hospital",
+              `${pct(x.relistRate)} vs ${pct(x.platformAverageRate)} average · ${num(x.relists)} of ${num(x.totalDuties)} duties`,
+            ])}
           />
         </Section>
       )}
@@ -259,51 +237,18 @@ export default function AutoRelistAdmin() {
       {tab === "spend" && canSpend && (
         <Section load={spend}>
           <View style={styles.tiles}>
-            <Tile label="Extra paid through the rate rise" value={rupees(s.total ?? 0)} sub="platform total, this month" />
+            <Tile label="Extra paid through the rate rise" value={rupees(spendTotal)} sub="platform total" />
           </View>
           <ListCard
             title="By hospital"
             sub="Only paid when a boosted duty was actually re-filled"
-            rows={(s.perHospital ?? []).map((x: any) => [x.name ?? "Hospital", `${rupees(x.amount)}${typeof x.share === "number" ? ` · ${pct(x.share)} of total` : ""}`])}
+            rows={(s.perHospital ?? []).map((x: any) => [
+              x.hospitalName ?? "Hospital",
+              `${rupees(x.extraPaid)}${spendTotal > 0 ? ` · ${pct((x.extraPaid || 0) / spendTotal)} of total` : ""}`,
+            ])}
           />
         </Section>
       )}
-
-      <ActionModal
-        visible={action?.kind === "off"}
-        title="Turn off re-posting for this duty?"
-        message="You're changing this on the hospital's behalf. Your reason is shown to them."
-        showNote
-        noteRequired
-        notePlaceholder="Reason"
-        confirmLabel="Turn Off"
-        loading={busy}
-        error={actionError}
-        onClose={() => setAction(null)}
-        onConfirm={confirm}
-      />
-      <ActionModal
-        visible={action?.kind === "rate"}
-        title="Raise the rate"
-        message={action ? `Now ${rupees(action.duty.offeredRate)} per hour. You're raising it on the hospital's behalf; your reason is shown to them.` : undefined}
-        showNote
-        noteRequired
-        notePlaceholder="Reason"
-        confirmLabel="Raise Rate"
-        loading={busy}
-        error={actionError}
-        onClose={() => setAction(null)}
-        onConfirm={confirm}
-      >
-        <TextInput
-          style={styles.input}
-          value={rate}
-          onChangeText={(t) => { setRate(t.replace(/[^0-9]/g, "")); setActionError(null); }}
-          placeholder="New rate per hour (₹)"
-          placeholderTextColor="#9CA3AF"
-          keyboardType="number-pad"
-        />
-      </ActionModal>
     </ScrollView>
   );
 }

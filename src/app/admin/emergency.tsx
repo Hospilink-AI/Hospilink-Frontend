@@ -902,7 +902,7 @@ const handleRoleChange = (val: string) => {
       urgency: form.urgencyLevel,
       description: form.dutyDescription.trim(),
       offered_rate: Number(form.offerRate),
-      ...(AUTO_RELIST_ENABLED && { auto_relist_enabled: autoRelist }),
+      ...(AUTO_RELIST_ENABLED && !isEditMode && { auto_relist_enabled: autoRelist }),
       is_overnight_duty: form.overtimeDuty,
       staff_count: form.staffCount ? Number(form.staffCount) : undefined,
       ...(form.staffRole === 'rmo' && form.dutySubType
@@ -1137,7 +1137,7 @@ const handleRoleChange = (val: string) => {
               />
               <FieldError message={errors.offerRate} />
 
-              {AUTO_RELIST_ENABLED && (
+              {AUTO_RELIST_ENABLED && !isEditMode && (
                 <View style={{ marginTop: 14 }}>
                   <AutoRelistOption value={autoRelist} onChange={setAutoRelist} rate={form.offerRate} emergency />
                 </View>
