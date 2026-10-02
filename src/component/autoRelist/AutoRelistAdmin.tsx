@@ -1,3 +1,4 @@
+import ActionModal from "@/component/cards/jobs/ActionModal";
 import {
   AUTO_RELIST_DEFAULTS,
   AUTO_RELIST_ENABLED,
@@ -53,7 +54,12 @@ export default function AutoRelistAdmin() {
   const isMobile = width < 900;
   const canSpend = can("autoRelist.spend.view");
 
+  const canManage = can("autoRelist.manage");
   const [tab, setTab] = useState<Tab>("overview");
+  const [offFor, setOffFor] = useState<any>(null);
+  const [turnedOff, setTurnedOff] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [offError, setOffError] = useState<string | null>(null);
   const [tiles, setTiles] = useState<Load<any>>({ data: null, state: "loading" });
   const [trend, setTrend] = useState<any[]>([]);
   const [cap, setCap] = useState<Load<any[]>>({ data: null, state: "loading" });
@@ -97,6 +103,25 @@ export default function AutoRelistAdmin() {
     .map(([reason, count]) => ({ reason, count: Number(count) || 0 }))
     .sort((a, b) => b.count - a.count);
   const spendTotal = Number(s.platformTotal ?? 0);
+
+  const turnOff = async (_reason: string, note: string) => {
+    if (!offFor) return;
+    if (!note.trim()) {
+      setOffError("Add a reason. The hospital sees it.");
+      return;
+    }
+    setBusy(true);
+    setOffError(null);
+    try {
+      await autoRelistAPI.adminSetEnabled(offFor.dutyId, false, note.trim());
+      setTurnedOff((prev) => [...prev, String(offFor.dutyId)]);
+      setOffFor(null);
+    } catch (err: any) {
+      setOffError(apiError(err, "Could not turn it off."));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={[styles.content, isMobile && { padding: 16 }]}>
@@ -197,6 +222,14 @@ export default function AutoRelistAdmin() {
                   <TouchableOpacity style={styles.smallBtn} onPress={() => router.push(`/admin/live-request-monitoring?dutyId=${d.dutyId}` as any)}>
                     <Text style={styles.smallBtnText}>Open Duty</Text>
                   </TouchableOpacity>
+                  {canManage &&
+                    (turnedOff.includes(String(d.dutyId)) ? (
+                      <Text style={styles.doneText}>Re-posting turned off</Text>
+                    ) : (
+                      <TouchableOpacity style={styles.smallBtn} onPress={() => { setOffError(null); setOffFor(d); }}>
+                        <Text style={styles.smallBtnText}>Turn Off Re-posting</Text>
+                      </TouchableOpacity>
+                    ))}
                 </View>
               </View>
             ))
@@ -249,6 +282,19 @@ export default function AutoRelistAdmin() {
           />
         </Section>
       )}
+      <ActionModal
+        visible={!!offFor}
+        title="Turn off re-posting for this duty?"
+        message="You're changing this on the hospital's behalf. They're told, with your reason. It stays on the board."
+        showNote
+        noteRequired
+        notePlaceholder="Reason"
+        confirmLabel="Turn Off"
+        loading={busy}
+        error={offError}
+        onClose={() => setOffFor(null)}
+        onConfirm={turnOff}
+      />
     </ScrollView>
   );
 }
@@ -348,6 +394,7 @@ const styles = StyleSheet.create({
   actions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 },
   smallBtn: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7 },
   smallBtnText: { fontSize: 12, fontWeight: "700", color: COLORS.primary },
+  doneText: { fontSize: 12, fontWeight: "700", color: "#047857", alignSelf: "center" },
   listRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 6, borderTopWidth: 1, borderTopColor: "#F1F5F9" },
   listMain: { flex: 1, fontSize: 13, color: COLORS.text, fontWeight: "600" },
   listSide: { fontSize: 12, color: COLORS.subText },

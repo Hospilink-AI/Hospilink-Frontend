@@ -1425,6 +1425,13 @@ export const autoRelistAPI = {
     return response.data;
   },
 
+  // PATCH /api/admin/duties/:id/auto-relist - Super Admin / Ops on the hospital's behalf. Body: { enabled, reason }
+  // The hospital is notified with the reason.
+  adminSetEnabled: async (dutyId, enabled, reason) => {
+    const response = await api.patch(`/api/admin/duties/${dutyId}/auto-relist`, { enabled, reason });
+    return response.data;
+  },
+
   // GET /api/admin/auto-relist/config (Super Admin) -> { config: [{ key, value, history }] }
   getConfig: async () => {
     const response = await api.get('/api/admin/auto-relist/config');
