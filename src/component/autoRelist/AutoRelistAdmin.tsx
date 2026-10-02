@@ -11,11 +11,11 @@ import {
 import { COLORS } from "@/constant/colors";
 import { apiError, roleLabel } from "@/constant/jobs";
 import { useCapability } from "@/hooks/useCapability";
-import { autoRelistAPI } from "@/service/api";
+import { adminAPI, autoRelistAPI } from "@/service/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from "react-native";
 
 type Tab = "overview" | "cap" | "watch" | "spend";
 type Load<T> = { data: T | null; state: "loading" | "ok" | "missing" | "error"; message?: string };
@@ -60,6 +60,11 @@ export default function AutoRelistAdmin() {
   const [turnedOff, setTurnedOff] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [offError, setOffError] = useState<string | null>(null);
+  const [rateFor, setRateFor] = useState<any>(null);
+  const [rate, setRate] = useState("");
+  const [rateError, setRateError] = useState<string | null>(null);
+  const [newRates, setNewRates] = useState<Record<string, number>>({});
+  const canEditDuty = can("duty.manage");
   const [tiles, setTiles] = useState<Load<any>>({ data: null, state: "loading" });
   const [trend, setTrend] = useState<any[]>([]);
   const [cap, setCap] = useState<Load<any[]>>({ data: null, state: "loading" });
@@ -103,6 +108,27 @@ export default function AutoRelistAdmin() {
     .map(([reason, count]) => ({ reason, count: Number(count) || 0 }))
     .sort((a, b) => b.count - a.count);
   const spendTotal = Number(s.platformTotal ?? 0);
+
+  const raiseRate = async () => {
+    if (!rateFor) return;
+    const n = Number(rate);
+    const current = Number(newRates[String(rateFor.dutyId)] ?? rateFor.rate ?? 0);
+    if (!n || n <= current) {
+      setRateError(`Enter a rate above ${rupees(current)}.`);
+      return;
+    }
+    setBusy(true);
+    setRateError(null);
+    try {
+      await adminAPI.updatePublishedDuty(rateFor.dutyId, { offered_rate: n });
+      setNewRates((prev) => ({ ...prev, [String(rateFor.dutyId)]: n }));
+      setRateFor(null);
+    } catch (err: any) {
+      setRateError(err?.response?.status === 404 ? "Raising the rate from here isn't available yet." : apiError(err, "Could not raise the rate."));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const turnOff = async (_reason: string, note: string) => {
     if (!offFor) return;
@@ -216,12 +242,17 @@ export default function AutoRelistAdmin() {
                   <Text style={{ color: "#B45309", fontWeight: "700" }}>{countdown(minutesToStart(d))}</Text>
                 </Text>
                 <Text style={styles.muted}>
-                  Re-posted {d.relistCount ?? 0}× · {urgencyLabel(d.urgency)} · {rupees(d.rate)}/hr
+                  Re-posted {d.relistCount ?? 0}× · {urgencyLabel(d.urgency)} · {rupees(newRates[String(d.dutyId)] ?? d.rate)}/hr
                 </Text>
                 <View style={styles.actions}>
                   <TouchableOpacity style={styles.smallBtn} onPress={() => router.push(`/admin/live-request-monitoring?dutyId=${d.dutyId}` as any)}>
                     <Text style={styles.smallBtnText}>Open Duty</Text>
                   </TouchableOpacity>
+                  {canEditDuty && (
+                    <TouchableOpacity style={styles.smallBtn} onPress={() => { setRateError(null); setRate(""); setRateFor(d); }}>
+                      <Text style={styles.smallBtnText}>Raise Rate</Text>
+                    </TouchableOpacity>
+                  )}
                   {canManage &&
                     (turnedOff.includes(String(d.dutyId)) ? (
                       <Text style={styles.doneText}>Re-posting turned off</Text>
@@ -282,6 +313,29 @@ export default function AutoRelistAdmin() {
           />
         </Section>
       )}
+      <ActionModal
+        visible={!!rateFor}
+        title="Raise the rate"
+        message={
+          rateFor
+            ? `Now ${rupees(newRates[String(rateFor.dutyId)] ?? rateFor.rate)} per hour. Staff see the new rate straight away, and the hospital is told.`
+            : undefined
+        }
+        confirmLabel="Raise Rate"
+        loading={busy}
+        error={rateError}
+        onClose={() => setRateFor(null)}
+        onConfirm={raiseRate}
+      >
+        <TextInput
+          style={styles.input}
+          value={rate}
+          onChangeText={(t) => { setRate(t.replace(/[^0-9]/g, "")); setRateError(null); }}
+          placeholder="New rate per hour (₹)"
+          placeholderTextColor="#9CA3AF"
+          keyboardType="number-pad"
+        />
+      </ActionModal>
       <ActionModal
         visible={!!offFor}
         title="Turn off re-posting for this duty?"

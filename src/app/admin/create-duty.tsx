@@ -931,7 +931,9 @@ export default function CreateDutyScreen() {
     try {
       setPublishing(true);
       if (isEditMode && dutyId) {
-        await adminAPI.updatePublishedDuty(dutyId, payload);
+        // an edit can't move the duty to another hospital or change how many were created
+        const { hospital_id, staff_count, ...editPayload } = payload as any;
+        await adminAPI.updatePublishedDuty(dutyId, editPayload);
         showToast('Duty updated successfully!');
         setTimeout(() => router.back(), 1800);
       } else {
