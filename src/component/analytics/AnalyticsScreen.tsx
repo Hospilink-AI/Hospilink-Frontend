@@ -8,20 +8,27 @@ import {
   shortDate,
   updatedAt,
 } from "@/constant/analytics";
+import { useCapability } from "@/hooks/useCapability";
+import { analyticsAPI } from "@/service/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import { ChartCard } from "./Charts";
 import FilterBar from "./FilterBar";
 import KpiTile from "./KpiTile";
+import { saveExport } from "./exportFile";
 import { FALLBACK_SECTIONS, useCatalogue, useSection } from "./useAnalytics";
 
 const PARAMS = ["section", "from", "to", "granularity", "staffRole", "urgency", "city"] as const;
 
+// Sections whose data isn't about duties, so the role/priority/city filters don't apply
+const NO_DUTY_FILTERS = new Set(["recruitment"]);
+
 // Super Admin analytics: section tabs, one filter bar for all of them, tiles and charts. Filters live in the URL.
 export default function AnalyticsScreen() {
   const router = useRouter();
+  const { can } = useCapability();
   const { width } = useWindowDimensions();
   const compact = width < 768;
   const raw = useLocalSearchParams<Record<string, string>>();
@@ -85,6 +92,14 @@ export default function AnalyticsScreen() {
               <Ionicons name="refresh" size={16} color={COLORS.subText} />
             </TouchableOpacity>
           )}
+          {live && can("analytics.export") && (
+            <ExportMenu
+              compact={compact}
+              section={current.key}
+              params={filters}
+              fileBase={`hospilink-${current.key}-${data?.period.from ?? "period"}-to-${data?.period.to ?? "now"}`}
+            />
+          )}
           <TouchableOpacity style={s.linkBtn} onPress={() => router.push("/admin/analytics/kpis" as any)}>
             <Ionicons name="list-outline" size={15} color={COLORS.primary} />
             <Text style={s.linkText}>What we track</Text>
@@ -119,7 +134,7 @@ export default function AnalyticsScreen() {
         <ComingSoon section={current} kpis={(catalogue?.kpis ?? []).filter((k) => k.section === current?.key)} />
       ) : (
         <>
-          <FilterBar filters={filters} onChange={setParams} compact={compact} />
+          <FilterBar filters={filters} onChange={setParams} compact={compact} dutyFiltersOff={NO_DUTY_FILTERS.has(current.key)} />
 
           {error ? (
             <View style={s.errorBox}>
@@ -172,6 +187,70 @@ export default function AnalyticsScreen() {
   );
 }
 
+function ExportMenu({
+  section,
+  params,
+  fileBase,
+  compact,
+}: {
+  section: string;
+  params: Filters;
+  fileBase: string;
+  // on phones the button sits at the left, so the menu opens to the right
+  compact?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState<"csv" | "xlsx" | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const run = async (format: "csv" | "xlsx") => {
+    setBusy(format);
+    setError(null);
+    try {
+      const clean = Object.fromEntries(Object.entries(params).filter(([, v]) => v));
+      const blob = await analyticsAPI.exportSection(section, format, clean);
+      await saveExport(blob, `${fileBase}.${format}`, format);
+      setOpen(false);
+    } catch (err: any) {
+      const status = err?.response?.status;
+      setError(
+        status === 403
+          ? "Only Super Admins can export."
+          : status === 404
+            ? "Export isn't available on this server yet."
+            : "Export failed. Please try again."
+      );
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <View>
+      <TouchableOpacity style={s.linkBtn} onPress={() => setOpen((o) => !o)} accessibilityLabel="Export">
+        <Ionicons name="download-outline" size={15} color={COLORS.primary} />
+        <Text style={s.linkText}>Export</Text>
+      </TouchableOpacity>
+      {open && (
+        <View style={[s.menu, compact && { right: undefined, left: 0 }]}>
+          {(["csv", "xlsx"] as const).map((f) => (
+            <TouchableOpacity key={f} style={s.menuItem} disabled={!!busy} onPress={() => run(f)}>
+              {busy === f ? (
+                <ActivityIndicator size="small" color={COLORS.primary} />
+              ) : (
+                <Ionicons name="document-outline" size={14} color={COLORS.subText} />
+              )}
+              <Text style={s.menuText}>{f === "csv" ? "CSV" : "Excel (one sheet per chart)"}</Text>
+            </TouchableOpacity>
+          ))}
+          <Text style={s.menuNote}>Uses the filters on screen.</Text>
+          {!!error && <Text style={s.menuError}>{error}</Text>}
+        </View>
+      )}
+    </View>
+  );
+}
+
 function ComingSoon({ section, kpis }: { section?: SectionInfo; kpis: KpiInfo[] }) {
   return (
     <View style={s.soonCard}>
@@ -196,13 +275,34 @@ const s = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
   muted: { fontSize: 12, color: COLORS.subText, lineHeight: 17 },
   warn: { fontSize: 12, color: "#92400E" },
-  titleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" },
+  titleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap", zIndex: 10 },
   title: { fontSize: 22, fontWeight: "800", color: COLORS.text },
   sub: { fontSize: 12, color: COLORS.subText, marginTop: 2 },
   titleActions: { flexDirection: "row", alignItems: "center", gap: 8 },
   iconBtn: { width: 34, height: 34, borderRadius: 8, borderWidth: 1, borderColor: COLORS.border, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.white },
   linkBtn: { flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: COLORS.white },
   linkText: { fontSize: 13, fontWeight: "600", color: COLORS.primary },
+  menu: {
+    position: "absolute",
+    top: 40,
+    right: 0,
+    zIndex: 20,
+    width: 230,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 10,
+    padding: 6,
+    shadowColor: "#0F172A",
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  menuItem: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 8, paddingVertical: 9, borderRadius: 6 },
+  menuText: { fontSize: 13, color: COLORS.text },
+  menuNote: { fontSize: 11, color: COLORS.subText, paddingHorizontal: 8, paddingTop: 2 },
+  menuError: { fontSize: 12, color: COLORS.red, paddingHorizontal: 8, paddingTop: 4 },
 
   tabs: { gap: 6, paddingVertical: 2 },
   tab: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 999, borderWidth: 1, borderColor: COLORS.border, paddingHorizontal: 14, paddingVertical: 8, backgroundColor: COLORS.white },

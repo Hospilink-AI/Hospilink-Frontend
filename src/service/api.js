@@ -1487,6 +1487,15 @@ export const analyticsAPI = {
     const response = await api.get(`/api/admin/analytics/${section}`, { params });
     return response.data;
   },
+
+  // GET /api/admin/analytics/export?section=&format=csv|xlsx + the same filters (Super Admin) -> file
+  exportSection: async (section, format, params = {}) => {
+    const response = await api.get('/api/admin/analytics/export', {
+      params: { ...params, section, format },
+      responseType: 'blob',
+    });
+    return response.data;
+  },
 };
 
 export const ratingOverrideAPI = {

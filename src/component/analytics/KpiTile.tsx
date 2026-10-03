@@ -1,5 +1,5 @@
 import { COLORS } from "@/constant/colors";
-import { deltaSign, deltaText, deltaTone, formatValue, KpiInfo, shortDate, Tile, TONE_COLORS } from "@/constant/analytics";
+import { deltaSign, deltaText, deltaTone, formatValue, KpiInfo, shortDate, Tile, tileUnit, TONE_COLORS } from "@/constant/analytics";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -22,6 +22,9 @@ export default function KpiTile({
   const sign = deltaSign(tile);
   const tone = deltaTone(tile);
   const hero = !!tile.northStar;
+  const unit = tileUnit(tile);
+  // "as of now" figures have nothing to compare with
+  const comparable = tile.previous !== null && tile.previous !== undefined;
 
   return (
     <View style={[s.tile, hero && s.hero]}>
@@ -53,29 +56,31 @@ export default function KpiTile({
       {open && !!info && <Text style={s.definition}>{info.definition}</Text>}
 
       <Text style={[s.value, hero && s.heroValue]} numberOfLines={1} adjustsFontSizeToFit>
-        {formatValue(tile.value, tile.unit)}
+        {formatValue(tile.value, unit)}
       </Text>
 
-      <View style={s.deltaRow}>
-        {delta ? (
-          <>
-            <Ionicons
-              name={sign > 0 ? "arrow-up" : sign < 0 ? "arrow-down" : "remove"}
-              size={13}
-              color={TONE_COLORS[tone]}
-            />
-            <Text style={[s.delta, { color: TONE_COLORS[tone] }]}>{delta}</Text>
-          </>
-        ) : (
-          <Text style={s.muted}>No earlier figure</Text>
-        )}
-        {!!compare && (
-          <Text style={s.muted} numberOfLines={1}>
-            vs {shortDate(compare.from)} – {shortDate(compare.to)}
-            {tile.previous !== null ? ` (${formatValue(tile.previous, tile.unit)})` : ""}
-          </Text>
-        )}
-      </View>
+      {comparable && (
+        <View style={s.deltaRow}>
+          {delta ? (
+            <>
+              <Ionicons
+                name={sign > 0 ? "arrow-up" : sign < 0 ? "arrow-down" : "remove"}
+                size={13}
+                color={TONE_COLORS[tone]}
+              />
+              <Text style={[s.delta, { color: TONE_COLORS[tone] }]}>{delta}</Text>
+            </>
+          ) : (
+            <Text style={s.muted}>No change to show</Text>
+          )}
+          {!!compare && (
+            <Text style={s.muted} numberOfLines={1}>
+              vs {shortDate(compare.from)} – {shortDate(compare.to)}
+              {` (${formatValue(tile.previous, unit)})`}
+            </Text>
+          )}
+        </View>
+      )}
       {tile.isProjected && !!tile.source && <Text style={s.source}>Source: {tile.source.replace(/_/g, " ")}</Text>}
     </View>
   );

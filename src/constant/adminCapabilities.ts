@@ -21,7 +21,7 @@ export type AdminCapability =
   | 'autoRelist.analytics.view' | 'autoRelist.history.view' | 'autoRelist.manage'
   | 'autoRelist.spend.view' | 'autoRelist.config.manage'
   | 'calendar.config.manage'
-  | 'analytics.view';
+  | 'analytics.view' | 'analytics.export';
 
 // super_admin has every capability (see hasCapability)
 const ADMIN_CAPABILITIES: Record<

@@ -19,10 +19,13 @@ export default function FilterBar({
   filters,
   onChange,
   compact,
+  dutyFiltersOff,
 }: {
   filters: Filters;
   onChange: (next: Partial<Filters>) => void;
   compact: boolean;
+  // role / priority / city don't apply to this section
+  dutyFiltersOff?: boolean;
 }) {
   const [sheet, setSheet] = useState(false);
   // the period shows on the button itself
@@ -46,19 +49,29 @@ export default function FilterBar({
             </TouchableOpacity>
           }
         >
-          <Controls filters={filters} onChange={onChange} stacked />
+          <Controls filters={filters} onChange={onChange} stacked dutyFiltersOff={dutyFiltersOff} />
         </BottomSheet>
       </>
     );
   }
   return (
     <View style={s.bar}>
-      <Controls filters={filters} onChange={onChange} />
+      <Controls filters={filters} onChange={onChange} dutyFiltersOff={dutyFiltersOff} />
     </View>
   );
 }
 
-function Controls({ filters, onChange, stacked }: { filters: Filters; onChange: (n: Partial<Filters>) => void; stacked?: boolean }) {
+function Controls({
+  filters,
+  onChange,
+  stacked,
+  dutyFiltersOff,
+}: {
+  filters: Filters;
+  onChange: (n: Partial<Filters>) => void;
+  stacked?: boolean;
+  dutyFiltersOff?: boolean;
+}) {
   const [picking, setPicking] = useState<"role" | "urgency" | null>(null);
   const [custom, setCustom] = useState(false);
   const [city, setCity] = useState(filters.city ?? "");
@@ -120,7 +133,7 @@ function Controls({ filters, onChange, stacked }: { filters: Filters; onChange: 
         </View>
       </View>
 
-      <View style={[s.group, s.selects]}>
+      <View style={[s.group, s.selects, dutyFiltersOff && s.off]} pointerEvents={dutyFiltersOff ? "none" : "auto"}>
         <SelectButton label={filters.staffRole ? roleLabel(filters.staffRole) : "All roles"} on={!!filters.staffRole} onPress={() => setPicking("role")} />
         <SelectButton label={filters.urgency ? URGENCY_LABELS[filters.urgency] : "All priorities"} on={!!filters.urgency} onPress={() => setPicking("urgency")} />
         <View style={[s.cityBox, !!filters.city && s.selectOn]}>
@@ -143,6 +156,8 @@ function Controls({ filters, onChange, stacked }: { filters: Filters; onChange: 
           )}
         </View>
       </View>
+
+      {dutyFiltersOff && <Text style={[s.muted, s.offNote]}>Role, priority and city don't apply to this section.</Text>}
 
       <SelectSheet
         visible={picking === "role"}
@@ -196,6 +211,8 @@ const s = StyleSheet.create({
   range: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
   dateBox: { minWidth: 150 },
   muted: { fontSize: 12, color: COLORS.subText },
+  off: { opacity: 0.4 },
+  offNote: { alignSelf: "flex-end", paddingBottom: 8 },
   error: { fontSize: 12, color: COLORS.red },
   selects: { flexDirection: "row", flexWrap: "wrap", gap: 8, alignSelf: "flex-end" },
   select: { flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, maxWidth: 220 },

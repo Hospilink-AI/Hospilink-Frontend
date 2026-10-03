@@ -103,13 +103,14 @@ export function ChartCard({ chart, granularity, kpis }: { chart: Chart; granular
     body = isSeries ? (
       <BarChart rows={data} fields={group.fields} unit={group.unit} label={(r) => bucketLabel(r.bucket, granularity)} />
     ) : (
-      <HBars rows={data} fields={group.fields} unit={group.unit} label={(r) => r.label ?? categoryLabel("key", r.key)} />
+      <HBars rows={data} fields={group.fields} unit={group.unit} label={(r) => r.label ?? (r.stars !== undefined ? categoryLabel("stars", r.stars) : categoryLabel("key", r.key))} />
     );
   else if (chart.type === "stackedBar" && group)
     body = <BarChart rows={data} fields={group.fields} unit={group.unit} label={(r) => bucketLabel(r.bucket, granularity)} stacked />;
   else if (chart.type === "donut") body = <Donut rows={(chart.rows ?? []) as { key: string; count: number }[]} />;
   else if (chart.type === "funnel") body = <Funnel stages={chart.stages ?? []} tracked={chart.dutiesTracked} />;
   else if (chart.type === "heatmap") body = <Heatmap chart={chart} />;
+  else if (chart.type === "cohort") body = <Cohort rows={(chart.rows ?? []) as CohortRow[]} />;
   else body = <ChartTable chart={chart} granularity={granularity} />;
 
   const tableOnly = chart.type === "table" || special;
@@ -145,6 +146,7 @@ export function ChartCard({ chart, granularity, kpis }: { chart: Chart; granular
 function isEmpty(chart: Chart) {
   if (chart.type === "heatmap") return !(chart.cells ?? []).some((r) => r.some((v) => v > 0));
   if (chart.type === "funnel") return !(chart.stages ?? []).some((st) => st.value > 0);
+  if (chart.type === "cohort") return !(chart.rows ?? []).some((r) => r.size > 0);
   const data = chart.series ?? chart.rows ?? [];
   if (!data.length) return true;
   if (chart.type === "table") return false;
@@ -606,6 +608,51 @@ function Heatmap({ chart }: { chart: Chart }) {
   );
 }
 
+// ─── Cohort retention (triangle heatmap) ────────────────────────────────────
+type CohortRow = { cohort: string; size: number; retention: (number | null)[] };
+
+function Cohort({ rows }: { rows: CohortRow[] }) {
+  const months = Math.max(0, ...rows.map((r) => r.retention?.length ?? 0));
+  const shade = (v: number) => {
+    const i = Math.min(BLUE_RAMP.length - 1, Math.round(v * (BLUE_RAMP.length - 1)));
+    return { bg: BLUE_RAMP[i], ink: i >= 6 ? "#FFFFFF" : COLORS.text };
+  };
+  return (
+    <View style={{ gap: 6 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator>
+        <View>
+          <View style={s.cohortRow}>
+            <Text style={[s.cohortHead, s.cohortLabel]}>Started</Text>
+            <Text style={[s.cohortHead, s.cohortSize]}>Size</Text>
+            {Array.from({ length: months }, (_, i) => (
+              <Text key={i} style={[s.cohortHead, s.cohortCell]}>
+                {i === 0 ? "M0" : `+${i}`}
+              </Text>
+            ))}
+          </View>
+          {rows.map((r) => (
+            <View key={r.cohort} style={s.cohortRow}>
+              <Text style={[s.cohortText, s.cohortLabel]}>{categoryLabel("cohort", r.cohort)}</Text>
+              <Text style={[s.cohortText, s.cohortSize]}>{r.size.toLocaleString("en-IN")}</Text>
+              {Array.from({ length: months }, (_, i) => {
+                const v = r.retention?.[i];
+                if (v === null || v === undefined) return <View key={i} style={[s.cohortCell, s.cohortBlank]} />;
+                const c = shade(v);
+                return (
+                  <View key={i} style={[s.cohortCell, s.cohortFill, { backgroundColor: c.bg }]}>
+                    <Text style={[s.cohortPct, { color: c.ink }]}>{Math.round(v * 100)}%</Text>
+                  </View>
+                );
+              })}
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+      <Text style={s.note}>Share of each starting month still active in the months after. Blank means no data yet.</Text>
+    </View>
+  );
+}
+
 // ─── Tables ─────────────────────────────────────────────────────────────────
 export function ChartTable({ chart, granularity }: { chart: Chart; granularity?: string }) {
   let columns: string[] = [];
@@ -614,6 +661,10 @@ export function ChartTable({ chart, granularity }: { chart: Chart; granularity?:
   if (chart.type === "heatmap") {
     columns = ["day", ...(chart.xLabels ?? [])];
     rows = (chart.yLabels ?? []).map((d, r) => ({ day: d, ...Object.fromEntries((chart.xLabels ?? []).map((h, c) => [h, chart.cells?.[r]?.[c] ?? 0])) }));
+  } else if (chart.type === "cohort") {
+    const width = Math.max(0, ...(chart.rows ?? []).map((r) => (r.retention ?? []).length));
+    columns = ["cohort", "size", ...Array.from({ length: width }, (_, i) => `m${i}`)];
+    rows = (chart.rows ?? []).map((r) => ({ cohort: r.cohort, size: r.size, ...Object.fromEntries((r.retention ?? []).map((v: number | null, i: number) => [`m${i}`, v])) }));
   } else if (chart.type === "funnel") {
     columns = ["label", "value"];
     rows = chart.stages ?? [];
@@ -631,9 +682,11 @@ export function ChartTable({ chart, granularity }: { chart: Chart; granularity?:
     if (col === "day" || (chart.type === "heatmap" && typeof v === "number")) return typeof v === "number" ? v.toLocaleString("en-IN") : v;
     if (TEXT_FIELDS.has(col)) return col === "label" ? String(v ?? "—") : categoryLabel(col, v);
     if (chart.type === "funnel" && col === "value") return formatValue(v, "count");
+    if (chart.type === "cohort" && /^m\d+$/.test(col)) return formatValue(v, "ratio");
     return formatValue(v, fieldUnit(col));
   };
-  const head = (col: string) => (col === "bucket" ? "Period" : col === "day" ? "" : chart.type === "heatmap" ? col.slice(0, 2) : fieldLabel(col));
+  const head = (col: string) =>
+    col === "bucket" ? "Period" : col === "day" ? "" : chart.type === "heatmap" ? col.slice(0, 2) : chart.type === "cohort" && /^m\d+$/.test(col) ? `Month ${col.slice(1)}` : fieldLabel(col);
 
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator>
@@ -738,6 +791,16 @@ const s = StyleSheet.create({
   funnelValue: { fontSize: 12, fontWeight: "700", color: COLORS.text },
   funnelTrack: { height: 14, borderRadius: 4, backgroundColor: "#F1F5F9", overflow: "hidden" },
   funnelBar: { height: 14, borderTopRightRadius: 4, borderBottomRightRadius: 4 },
+
+  cohortRow: { flexDirection: "row", alignItems: "center", gap: 2, marginBottom: 2 },
+  cohortHead: { fontSize: 10, fontWeight: "700", color: COLORS.subText, textAlign: "center" },
+  cohortText: { fontSize: 11, color: COLORS.text },
+  cohortLabel: { width: 76, textAlign: "left" },
+  cohortSize: { width: 40, textAlign: "right", paddingRight: 6 },
+  cohortCell: { width: 42, height: 26 },
+  cohortFill: { borderRadius: 3, alignItems: "center", justifyContent: "center" },
+  cohortBlank: { backgroundColor: "transparent" },
+  cohortPct: { fontSize: 10, fontWeight: "700" },
 
   tr: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
   trHead: { borderBottomColor: COLORS.border },

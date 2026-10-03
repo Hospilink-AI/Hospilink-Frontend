@@ -3,7 +3,8 @@
 // Hidden until the backend is live. Turn on with EXPO_PUBLIC_ANALYTICS=on.
 import { cancelReasonLabel, URGENCY_LABELS } from "@/constant/autoRelist";
 import { addDays, addMonths, startOfMonth, todayKey } from "@/constant/dutyCalendar";
-import { roleLabel } from "@/constant/jobs";
+import { JOB_ROLES, roleLabel } from "@/constant/jobs";
+import { categoryLabel as ticketCategoryLabel, domainLabel, FEEDBACK_AREAS, TICKET_CATEGORIES, TICKET_DOMAINS } from "@/constant/support";
 
 export const ANALYTICS_ENABLED = process.env.EXPO_PUBLIC_ANALYTICS === "on";
 
@@ -29,7 +30,7 @@ export type Tile = {
 
 export type Chart = {
   key: string;
-  type: "line" | "bar" | "stackedBar" | "table" | "donut" | "funnel" | "heatmap";
+  type: "line" | "bar" | "stackedBar" | "table" | "donut" | "funnel" | "heatmap" | "cohort";
   title: string;
   series?: Record<string, any>[];
   rows?: Record<string, any>[];
@@ -38,6 +39,7 @@ export type Chart = {
   xLabels?: string[];
   yLabels?: string[];
   cells?: number[][];
+  monthsBack?: number;
 };
 
 export type SectionData = {
@@ -148,9 +150,13 @@ export function axisValue(value: number, unit: Unit): string {
   return IN(value, a < 10 ? 1 : 0);
 }
 
+// The server marks these "ratio" but they are plain numbers (2.4 duties per staff), not shares
+const PLAIN_NUMBER_TILES = new Set(["utilisation", "dutiesPerHospital", "applicationsPerVacancy", "complaintsPer100"]);
+export const tileUnit = (tile: Tile): Unit => (PLAIN_NUMBER_TILES.has(tile.key) ? "number" : tile.unit);
+
 // Tile change. Rates show percentage points (60% -> 66% is +6 pts, not +10%).
 export function deltaText(tile: Tile): string | null {
-  if (tile.unit === "ratio") {
+  if (tileUnit(tile) === "ratio") {
     if (tile.value === null || tile.previous === null) return null;
     const pts = (tile.value - tile.previous) * 100;
     return `${pts >= 0 ? "+" : ""}${IN(pts, 1)} pts`;
@@ -160,7 +166,7 @@ export function deltaText(tile: Tile): string | null {
 }
 
 export function deltaSign(tile: Tile): number {
-  if (tile.unit === "ratio") {
+  if (tileUnit(tile) === "ratio") {
     if (tile.value === null || tile.previous === null) return 0;
     return Math.sign(tile.value - tile.previous);
   }
@@ -172,8 +178,13 @@ const LOWER_IS_BETTER = new Set([
   "medianTimeToFill", "p90TimeToFill", "expiredRate", "relistedShare", "openTickets",
   "medianStartDelay", "noShowRate", "staffCancellationRate", "lateStaffCancellationShare",
   "hospitalCancellationRate", "otpLockRate", "adminOverrideRate", "confirmationDwell", "boostSpend",
+  "staffTimeToVerify", "hospitalTimeToVerify", "timeToFirstPost", "timeToFirstFill", "churnedStaff",
+  "complaintsPer100", "penaltiesApplied", "suppressedReviews", "patternFlags", "suspensions",
+  "openBacklog", "resolutionTime", "appealRate", "overturnRate", "timeToHire", "candidateNoShowRate",
+  "hospitalNoShowRate", "rescheduleRate", "failedLogins", "securityEvents", "documentVerifyTime",
+  "documentBacklog", "shortageCities", "demandWithoutSupply", "topCityShare",
 ]);
-const NEUTRAL = new Set(["emergencyPremium", "averageHourlyRate", "averageDutyValue", "takeRate"]);
+const NEUTRAL = new Set(["emergencyPremium", "averageHourlyRate", "averageDutyValue", "takeRate", "tickets", "penaltiesReversed"]);
 
 export function deltaTone(tile: Tile): "good" | "bad" | "neutral" {
   const s = deltaSign(tile);
@@ -230,7 +241,7 @@ const FIELD_LABELS: Record<string, string> = {
   dutiesPerAvailableStaff: "Open duties per available staff",
   averageHourlyRate: "Average hourly rate",
   medianHourlyRate: "Median hourly rate",
-  name: "Hospital",
+  name: "Name",
   city: "City",
   share: "Share of GMV",
   count: "Count",
@@ -240,6 +251,43 @@ const FIELD_LABELS: Record<string, string> = {
   key: "Type",
   value: "Value",
   availability: "Status",
+  signups: "Signups",
+  verified: "Verified",
+  available: "Available",
+  staffReviews: "Hospitals rating staff",
+  hospitalReviews: "Staff rating hospitals",
+  raised: "Raised",
+  closed: "Closed",
+  positive: "Positive",
+  neutral: "Neutral",
+  negative: "Negative",
+  severe: "Severe",
+  applications: "Applications",
+  hired: "Hired",
+  users: "Users",
+  stars: "Stars",
+  jobRole: "Role",
+  state: "State",
+  earned: "Earned",
+  lastPostedOn: "Last posted",
+  daysQuiet: "Days quiet",
+  tier: "Match tier",
+  shortlistRate: "Shortlisted",
+  hireRate: "Hired",
+  type: "Type",
+  sent: "Sent",
+  read: "Opened",
+  readRate: "Open rate",
+  area: "Area",
+  negativeShare: "Negative share",
+  convertedToTicket: "Became a ticket",
+  partyRole: "About",
+  raises: "Flag",
+  result: "Result",
+  documentType: "Document",
+  cities: "Cities",
+  cohort: "Cohort",
+  size: "Size",
 };
 
 export const fieldLabel = (f: string) =>
@@ -258,6 +306,14 @@ const FIELD_UNITS: Record<string, Unit> = {
   averageHourlyRate: "inr",
   medianHourlyRate: "inr",
   dutiesPerAvailableStaff: "number",
+  earned: "inr",
+  daysQuiet: "days",
+  shortlistRate: "ratio",
+  hireRate: "ratio",
+  readRate: "ratio",
+  negativeShare: "ratio",
+  autoVerifiedShare: "ratio",
+  medianHoursToVerify: "hours",
 };
 
 export const fieldUnit = (f: string): Unit => FIELD_UNITS[f] ?? "count";
@@ -281,20 +337,35 @@ const CATEGORY_LABELS: Record<string, string> = {
   other_hospital: "Something else",
 };
 
+const TIER_LABELS: Record<string, string> = { exact: "Exact match", related: "Related role", unscored: "Not scored" };
+const isRole = (v: string) => JOB_ROLES.some((r) => r.value === v);
+const humanize = (v: string) => v.replace(/[_.]/g, " ").toLowerCase().replace(/^./, (c) => c.toUpperCase());
+
 export function categoryLabel(field: string, value: any): string {
   if (value === null || value === undefined || value === "") return "—";
   const v = String(value);
-  if (field === "staffRole") return roleLabel(v);
+  if (field === "staffRole" || field === "jobRole" || isRole(v)) return roleLabel(v);
   if (field === "urgency") return URGENCY_LABELS[v] ?? v;
+  if (field === "stars") return `${v} ★`;
+  if (field === "tier") return TIER_LABELS[v] ?? humanize(v);
+  if (field === "area") return FEEDBACK_AREAS.find((a) => a.value === v)?.label ?? humanize(v);
+  if (field === "cohort") return new Date(`${v}-01T00:00:00Z`).toLocaleDateString("en-IN", { timeZone: "UTC", month: "short", year: "numeric" });
   if (CATEGORY_LABELS[v]) return CATEGORY_LABELS[v];
-  if (field === "key") return cancelReasonLabel(v).replace(/^./, (c) => c.toUpperCase());
+  if (TICKET_CATEGORIES.some((c) => c.value === v)) return ticketCategoryLabel(v);
+  if (TICKET_DOMAINS.some((d) => d.value === v)) return domainLabel(v);
+  if (field === "key") return cancelReasonLabel(v) === v ? humanize(v) : cancelReasonLabel(v).replace(/^./, (c) => c.toUpperCase());
+  if (["type", "documentType", "partyRole", "raises", "result", "role"].includes(field)) return humanize(v);
   return v;
 }
 
 // Fields that name the row rather than measure it
-export const TEXT_FIELDS = new Set(["staffRole", "urgency", "name", "city", "label", "key", "band", "hospitalId", "availability"]);
+export const TEXT_FIELDS = new Set([
+  "staffRole", "urgency", "name", "city", "label", "key", "band", "hospitalId", "availability",
+  "stars", "jobRole", "state", "lastPostedOn", "tier", "type", "area", "partyRole", "raises", "result",
+  "documentType", "staffId", "adminId", "role", "cohort",
+]);
 // Never shown
-export const HIDDEN_FIELDS = new Set(["band", "hospitalId"]);
+export const HIDDEN_FIELDS = new Set(["band", "hospitalId", "staffId", "adminId"]);
 
 // ─── Chart colours ──────────────────────────────────────────────────────────
 // Categorical slots in fixed order (validated on the white surface: CVD and normal-vision pass;
