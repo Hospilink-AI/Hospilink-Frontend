@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { io, Socket } from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import { useAuth } from './AuthContext';
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 const SOCKET_URL = API_URL
@@ -18,8 +19,18 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const socketRef = useRef<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [socket, setSocket] = useState<Socket | null>(null);
+  // logging in doesn't reload the app, so connect when the session token appears (and drop it on logout)
+  const { token: sessionToken } = useAuth();
 
   useEffect(() => {
+    if (!sessionToken) {
+      socketRef.current?.disconnect();
+      socketRef.current = null;
+      setSocket(null);
+      setIsConnected(false);
+      return;
+    }
+
     const connect = async () => {
       // Try multiple token keys
       let token = await AsyncStorage.getItem('authToken');
@@ -75,8 +86,9 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       console.log('🔌 [SocketContext] Disconnecting socket...');
       socketRef.current?.disconnect();
+      socketRef.current = null;
     };
-  }, []);
+  }, [sessionToken]);
 
   return (
     <SocketContext.Provider value={{ socket, isConnected }}>

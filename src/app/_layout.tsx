@@ -4,6 +4,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider } from '@/context/AuthContext';
 import { SocketProvider } from "@/context/SocketContext";
 import { NotificationProvider } from "@/context/NotificationContext";
+import { InAppNotificationsProvider } from "@/context/InAppNotificationsContext";
 
 export default function RootLayout() {
   const { width } = useWindowDimensions();
@@ -25,8 +26,9 @@ export default function RootLayout() {
           backgroundColor: "#dce6f5",   // match light theme page bg
         }}
       >
-        <SocketProvider>
-          <AuthProvider>
+        <AuthProvider>
+          <SocketProvider>
+            <InAppNotificationsProvider>
             {/* <NotificationProvider> */}
               <Stack
                 screenOptions={{
@@ -35,8 +37,9 @@ export default function RootLayout() {
                 }}
               />
             {/* </NotificationProvider> */}
-          </AuthProvider>
-        </SocketProvider>
+            </InAppNotificationsProvider>
+          </SocketProvider>
+        </AuthProvider>
       </View>
     </SafeAreaProvider>
   );

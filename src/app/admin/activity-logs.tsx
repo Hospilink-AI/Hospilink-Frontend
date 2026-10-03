@@ -2438,9 +2438,13 @@ type DateMode = 'last7' | 'single' | 'range';
 const getInitials = (name: string): string =>
   name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 
+// settings keys, export names and similar are kept as details.targetRef instead of a target id
+const showValue = (v: any) => (v === null || v === undefined ? '—' : typeof v === 'object' ? JSON.stringify(v) : String(v));
+
 const buildDescription = (raw: RawLog): string => {
   const d = raw.details || {};
-  const target = raw.target?.name || '';
+  const target = raw.target?.name || d.targetRef || '';
+  const from = raw.ipAddress ? ` from ${raw.ipAddress}` : '';
   const role = d.staffRole ? String(d.staffRole).replace(/_/g, ' ') : '';
   switch (raw.action) {
     case 'DUTY_CREATED': return `Created ${target} for ${role} from ${d.startTime} to ${d.endTime} (${d.urgency} urgency).`;
@@ -2455,9 +2459,9 @@ const buildDescription = (raw: RawLog): string => {
     case 'DUTY_MARKED_INCOMPLETE': return `${target} marked as incomplete.`;
     case 'DUTY_AUTO_COMPLETED': return `${target} was automatically completed by the system.`;
     case 'USER_REGISTERED': return `New user registered.`;
-    case 'USER_LOGIN': return `User logged in successfully from ${raw.ipAddress}.`;
+    case 'USER_LOGIN': return `User logged in successfully${from}.`;
     case 'USER_LOGOUT': return `User logged out.`;
-    case 'USER_LOGIN_FAILED': return `Login attempt failed from ${raw.ipAddress}.`;
+    case 'USER_LOGIN_FAILED': return `Sign-in failed${d.email ? ` for ${d.email}` : ''}${from}.`;
     case 'PROFILE_CREATED': return `User profile created.`;
     case 'PROFILE_UPDATED': return `User profile information updated.`;
     case 'PASSWORD_CHANGED': return `Account password changed.`;
@@ -2472,21 +2476,65 @@ const buildDescription = (raw: RawLog): string => {
     case 'DOCUMENT_RESUBMITTED': return `Document "${target}" resubmitted for review.`;
     case 'REVIEW_SUBMITTED': return `Review submitted for ${target}.`;
     case 'REVIEW_RECEIVED': return `Review received on ${target}.`;
-    case 'ADMIN_LOGIN': return `Admin logged in from ${raw.ipAddress}.`;
+    case 'ADMIN_LOGIN': return `Admin signed in${from}.`;
     case 'USER_APPROVED': return `User account approved.`;
     case 'USER_REJECTED': return `User account rejected.`;
     case 'DOCUMENT_VERIFIED_BY_ADMIN': return `Document "${target}" verified by admin.`;
     case 'DOCUMENT_REJECTED_BY_ADMIN': return `Document "${target}" rejected by admin.`;
-    case 'SYSTEM_SETTINGS_CHANGED': return `System settings were modified.`;
+    case 'SYSTEM_SETTINGS_CHANGED': return d.key ? `Setting ${d.key} changed to ${showValue(d.value)}${d.effectiveFrom ? ` from ${d.effectiveFrom}` : ''}.` : `System settings were modified.`;
     case 'BULK_ACTION_PERFORMED': return `Bulk action performed on ${target}.`;
-    case 'SUSPICIOUS_LOGIN_ATTEMPT': return `Suspicious login detected from ${raw.ipAddress}.`;
-    case 'MULTIPLE_FAILED_LOGINS': return `Multiple failed login attempts from ${raw.ipAddress}.`;
-    case 'IP_BLOCKED': return `IP address ${raw.ipAddress} was blocked.`;
+    case 'SUSPICIOUS_LOGIN_ATTEMPT': return `Suspicious sign-in detected${from}.`;
+    case 'MULTIPLE_FAILED_LOGINS': return `${d.count ?? 'Repeated'} failed sign-ins${d.email ? ` for ${d.email}` : ''}${from}.`;
+    case 'IP_BLOCKED': return `IP address ${raw.ipAddress || ''} was blocked.`;
     case 'SESSION_EXPIRED': return `User session expired.`;
     case 'UNAUTHORIZED_ACCESS_ATTEMPT': return `Unauthorized access attempt detected.`;
-    case 'CRON_JOB_EXECUTED': return `Scheduled cron job executed.`;
+    case 'CRON_JOB_EXECUTED': return `Scheduled job ran${d.job || d.jobName ? `: ${d.job || d.jobName}` : ''}${typeof d.count === 'number' ? ` (${d.count})` : ''}.`;
+    // duties
+    case 'DUTY_PENDING_CONFIRMATION': return `${target} is waiting for the hospital to confirm completion.`;
+    case 'DUTY_STATUS_OVERRIDDEN': return `${target} status changed by an admin${d.newStatus ? ` to ${d.newStatus}` : ''}${d.reason ? `: ${d.reason}` : ''}.`;
+    case 'DUTY_OTP_UNLOCKED': return `${d.otpType ? `${d.otpType} ` : ''}OTP unlocked on ${target}${d.reason ? `: ${d.reason}` : ''}.`;
+    case 'DUTY_ASSIGNED_BY_ADMIN': return `Staff assigned to ${target} by an admin.`;
+    case 'DUTY_ESCALATED_TO_CRITICAL': return `${target} escalated: starting soon and still unfilled.`;
+    case 'EMERGENCY_DUTY_ADMIN_NOTIFIED': return `Admins alerted about emergency ${target}.`;
+    case 'DUTY_AUTO_RELISTED': return `${target} re-posted after a staff cancellation.`;
+    case 'DUTY_URGENCY_ESCALATED': return `${target} urgency raised on re-posting.`;
+    case 'DUTY_RATE_BOOSTED': return `${target} rate raised after a late cancellation.`;
+    case 'DUTY_RELIST_CAP_REACHED': return `${target} reached the re-post limit and needs a person.`;
+    // admins and platform
+    case 'ADMIN_CREATED': return `Admin account created${target ? `: ${target}` : ''}.`;
+    case 'ADMIN_ROLE_CHANGED': return `Admin role changed${target ? ` for ${target}` : ''}${d.newRole ? ` to ${String(d.newRole).replace(/_/g, ' ')}` : ''}.`;
+    case 'ADMIN_DEACTIVATED': return `Admin account deactivated${target ? `: ${target}` : ''}.`;
+    case 'ADMIN_ACTIVATED': return `Admin account reactivated${target ? `: ${target}` : ''}.`;
+    case 'DATA_EXPORTED': return `Exported ${target || 'data'}${d.format ? ` (${String(d.format).toUpperCase()})` : ''}.`;
+    case 'USER_SESSIONS_FLUSHED': return `Signed out all sessions${target ? ` for ${target}` : ''}.`;
+    case 'KNOWLEDGE_BASE_CHANGED': return `Knowledge base article ${d.change || 'changed'}${target ? `: ${target}` : ''}.`;
+    case 'FEEDBACK_SENTIMENT_OVERRIDDEN': return `Feedback sentiment changed${d.sentiment ? ` to ${String(d.sentiment).toLowerCase().replace(/_/g, ' ')}` : ''}.`;
+    case 'AVAILABILITY_CHANGED': return `Availability updated${d.change ? ` (${String(d.change).replace(/_/g, ' ')})` : ''}.`;
+    case 'LOCATION_CONSENT_CHANGED': return `Location sharing ${d.granted === false ? 'turned off' : d.granted === true ? 'turned on' : 'changed'}.`;
+    case 'SUSPENSION_PROPOSAL_RESPONDED': return `Replied to a suspension proposal.`;
+    // recruitment
+    case 'VACANCY_CREATED': return `Vacancy created${target ? `: ${target}` : ''}.`;
+    case 'VACANCY_EDITED': return `Vacancy edited${target ? `: ${target}` : ''}.`;
+    case 'VACANCY_CLOSED': return `Vacancy closed${target ? `: ${target}` : ''}.`;
+    case 'APPLICATION_SUBMITTED': return `Application submitted${target ? ` for ${target}` : ''}.`;
+    case 'APPLICATION_STATUS_CHANGED': return `Application ${d.newStatus ? `moved to ${String(d.newStatus).replace(/_/g, ' ')}` : 'updated'}${target ? ` (${target})` : ''}.`;
+    case 'APPLICATION_WITHDRAWN': return `Application withdrawn${target ? ` (${target})` : ''}.`;
+    case 'INTERVIEW_SLOTS_OFFERED': return `Interview times offered${target ? ` (${target})` : ''}.`;
+    case 'INTERVIEW_SLOTS_SELECTED': return `Candidate picked interview times${target ? ` (${target})` : ''}.`;
+    case 'INTERVIEW_CONFIRMED': return `Interview confirmed${target ? ` (${target})` : ''}.`;
+    case 'INTERVIEW_RESCHEDULED': return `Interview rescheduled${target ? ` (${target})` : ''}.`;
+    case 'INTERVIEW_RESCHEDULE_REQUESTED': return `Interview reschedule requested${target ? ` (${target})` : ''}.`;
+    case 'INTERVIEW_CANCELLED': return `Interview cancelled${target ? ` (${target})` : ''}.`;
+    case 'INTERVIEW_LINK_CHANGED': return `Interview link changed${target ? ` (${target})` : ''}.`;
+    case 'INTERVIEW_OUTCOME_RECORDED': return `Interview outcome recorded${d.outcome ? `: ${String(d.outcome).replace(/_/g, ' ')}` : ''}.`;
+    case 'INTERVIEW_NO_SHOW_MARKED': return `Candidate marked as a no-show${target ? ` (${target})` : ''}.`;
+    case 'INTERVIEW_NO_SHOW_REPORTED': return `Hospital no-show reported${target ? ` (${target})` : ''}.`;
+    case 'JOB_OFFER_RESPONDED': return `Job offer ${d.accepted === true ? 'accepted' : d.accepted === false ? 'declined' : 'answered'}${target ? ` (${target})` : ''}.`;
     case 'SYSTEM_ERROR': return `System error encountered. Check server logs.`;
-    default: return `${raw.action.replace(/_/g, ' ')} — ${target}`.trim();
+    default: {
+      const words = raw.action.replace(/_/g, ' ').toLowerCase();
+      return `${words.charAt(0).toUpperCase()}${words.slice(1)}${target ? ` — ${target}` : ''}.`;
+    }
   }
 };
 
@@ -2496,9 +2544,9 @@ const transformLog = (raw: RawLog): ActivityLog => {
     id: raw._id,
     date: ts.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     time: ts.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-    initials: getInitials(raw.actor.name),
-    name: raw.actor.name,
-    role: raw.actor.role,
+    initials: getInitials(raw.actor?.name || 'System'),
+    name: raw.actor?.name || 'System',
+    role: raw.actor?.role || 'system',
     description: buildDescription(raw),
     location: raw.location,
     status: raw.status,
@@ -2546,20 +2594,38 @@ const buildParams = ({
 const PRESET_DATE_OPTIONS = ['Last 7 Days', 'Today'];
 const ACTION_OPTIONS = [
   'All Actions',
-  'DUTY_CREATED', 'DUTY_ACCEPTED', 'DUTY_STARTED', 'DUTY_IN_PROGRESS', 'DUTY_COMPLETED',
-  'DUTY_CANCELLED', 'DUTY_EDITED', 'DUTY_EXPIRED', 'EMERGENCY_DUTY_CREATED',
-  'DUTY_MARKED_INCOMPLETE', 'DUTY_AUTO_COMPLETED',
-  'USER_REGISTERED', 'USER_LOGIN', 'USER_LOGOUT', 'USER_LOGIN_FAILED',
-  'PROFILE_CREATED', 'PROFILE_UPDATED', 'PASSWORD_CHANGED', 'PASSWORD_RESET_REQUESTED',
-  'EMAIL_VERIFIED', 'ACCOUNT_SUSPENDED', 'ACCOUNT_ACTIVATED',
+  // duties
+  'DUTY_CREATED', 'EMERGENCY_DUTY_CREATED', 'DUTY_ACCEPTED', 'DUTY_ASSIGNED_BY_ADMIN', 'DUTY_STARTED', 'DUTY_IN_PROGRESS',
+  'DUTY_PENDING_CONFIRMATION', 'DUTY_COMPLETED', 'DUTY_AUTO_COMPLETED', 'DUTY_CANCELLED', 'DUTY_EDITED', 'DUTY_EXPIRED',
+  'DUTY_MARKED_INCOMPLETE', 'DUTY_STATUS_OVERRIDDEN', 'DUTY_OTP_UNLOCKED', 'DUTY_ESCALATED_TO_CRITICAL',
+  'EMERGENCY_DUTY_ADMIN_NOTIFIED', 'DUTY_AUTO_RELISTED', 'DUTY_URGENCY_ESCALATED', 'DUTY_RATE_BOOSTED', 'DUTY_RELIST_CAP_REACHED',
+  // users
+  'USER_REGISTERED', 'USER_LOGIN', 'USER_LOGOUT', 'USER_LOGIN_FAILED', 'PROFILE_CREATED', 'PROFILE_UPDATED',
+  'PASSWORD_CHANGED', 'PASSWORD_RESET_REQUESTED', 'EMAIL_VERIFIED', 'ACCOUNT_SUSPENDED', 'ACCOUNT_ACTIVATED',
+  'AVAILABILITY_CHANGED', 'LOCATION_CONSENT_CHANGED',
+  // documents and reviews
   'DOCUMENT_UPLOADED', 'DOCUMENT_VERIFIED', 'DOCUMENT_REJECTED', 'DOCUMENT_DELETED', 'DOCUMENT_RESUBMITTED',
   'REVIEW_SUBMITTED', 'REVIEW_RECEIVED',
-  'ADMIN_LOGIN', 'USER_APPROVED', 'USER_REJECTED', 'DOCUMENT_VERIFIED_BY_ADMIN',
-  'DOCUMENT_REJECTED_BY_ADMIN', 'SYSTEM_SETTINGS_CHANGED', 'BULK_ACTION_PERFORMED',
-  'SUSPICIOUS_LOGIN_ATTEMPT', 'MULTIPLE_FAILED_LOGINS', 'IP_BLOCKED', 'SESSION_EXPIRED',
-  'UNAUTHORIZED_ACCESS_ATTEMPT', 'CRON_JOB_EXECUTED', 'SYSTEM_ERROR',
+  // admin
+  'ADMIN_LOGIN', 'ADMIN_CREATED', 'ADMIN_ROLE_CHANGED', 'ADMIN_DEACTIVATED', 'ADMIN_ACTIVATED', 'USER_APPROVED', 'USER_REJECTED',
+  'DOCUMENT_VERIFIED_BY_ADMIN', 'DOCUMENT_REJECTED_BY_ADMIN', 'SYSTEM_SETTINGS_CHANGED', 'BULK_ACTION_PERFORMED',
+  'KNOWLEDGE_BASE_CHANGED', 'FEEDBACK_SENTIMENT_OVERRIDDEN',
+  // security and system
+  'SUSPICIOUS_LOGIN_ATTEMPT', 'MULTIPLE_FAILED_LOGINS', 'IP_BLOCKED', 'SESSION_EXPIRED', 'UNAUTHORIZED_ACCESS_ATTEMPT',
+  'DATA_EXPORTED', 'USER_SESSIONS_FLUSHED', 'CRON_JOB_EXECUTED', 'SYSTEM_ERROR',
+  // support
+  'TICKET_CREATED', 'TICKET_CLAIMED', 'TICKET_REASSIGNED', 'TICKET_RECATEGORIZED', 'TICKET_PRIORITY_OVERRIDDEN',
+  'TICKET_WITHDRAWN', 'TICKET_RESPONDENT_NOTIFIED', 'TICKET_RESPONDED', 'TICKET_RESPONSE_LAPSED', 'TICKET_DECIDED',
+  'TICKET_APPROVED', 'TICKET_RETURNED_FOR_REVIEW', 'TICKET_APPEALED', 'TICKET_INFO_REQUESTED', 'TICKET_AUTO_CLOSED',
+  'TICKET_CLAIM_TIMEOUT', 'TICKET_CHAT_MESSAGE', 'TICKET_EVIDENCE_ADDED', 'PATTERN_FLAG_RAISED', 'SUSPENSION_PROPOSED',
+  'SUSPENSION_DECIDED', 'SUSPENSION_PROPOSAL_RESPONDED',
+  // recruitment
+  'VACANCY_CREATED', 'VACANCY_EDITED', 'VACANCY_CLOSED', 'APPLICATION_SUBMITTED', 'APPLICATION_STATUS_CHANGED',
+  'APPLICATION_WITHDRAWN', 'INTERVIEW_SLOTS_OFFERED', 'INTERVIEW_SLOTS_SELECTED', 'INTERVIEW_CONFIRMED',
+  'INTERVIEW_RESCHEDULED', 'INTERVIEW_RESCHEDULE_REQUESTED', 'INTERVIEW_CANCELLED', 'INTERVIEW_LINK_CHANGED',
+  'INTERVIEW_OUTCOME_RECORDED', 'INTERVIEW_NO_SHOW_MARKED', 'INTERVIEW_NO_SHOW_REPORTED', 'JOB_OFFER_RESPONDED',
 ];
-const DEPT_OPTIONS = ['All Departments', 'DUTY', 'USER', 'DOCUMENT', 'REVIEW', 'ADMIN', 'SECURITY', 'SYSTEM'];
+const DEPT_OPTIONS = ['All Departments', 'DUTY', 'USER', 'DOCUMENT', 'REVIEW', 'ADMIN', 'SECURITY', 'SYSTEM', 'SUPPORT', 'RECRUITMENT'];
 const STATUS_OPTIONS = ['All Statuses', 'SUCCESS', 'FAILED', 'CRITICAL', 'WARNING'];
 
 // Fallback page size used only for the initial pagination state, before the

@@ -208,7 +208,8 @@ export type FillStep = {
   key:
     | "posted" | "offered" | "viewed" | "unfilled_15min" | "unfilled_critical" | "relisted" | "accepted" | "expired" | "cancelled"
     // staged offers and invites
-    | "offer_widened" | "offer_opened_fully" | "escalated_to_admins" | "invite_sent" | "opened_to_radius" | "opened_to_city";
+    | "offer_widened" | "offer_opened_fully" | "escalated_to_admins" | "invite_sent" | "invite_opened_to_others"
+    | "opened_to_radius" | "opened_to_city";
   at?: string | null;
   count?: number | null;
   staff?: { name?: string; profilePicture?: string | null } | null;
@@ -216,6 +217,8 @@ export type FillStep = {
   mode?: "radius" | "city" | "invite";
   radiusKm?: number | null;
   currentRadiusKm?: number | null;
+  // invite_opened_to_others
+  openedTo?: "radius" | "city";
 };
 
 const n = (count?: number | null) => (typeof count === "number" ? String(count) : "—");
@@ -240,7 +243,11 @@ export function fillStepText(step: FillStep): string {
     case "escalated_to_admins":
       return "Starting within the hour and still open. HospiLink team alerted";
     case "invite_sent":
-      return `Invitation sent to ${n(step.count)} ${step.count === 1 ? "doctor" : "doctors"}`;
+      return `Invited ${n(step.count)} ${step.count === 1 ? "doctor" : "doctors"}`;
+    case "invite_opened_to_others":
+      return step.openedTo === "city"
+        ? `No invitee accepted. Opened to doctors across the city${typeof step.count === "number" ? `, ${step.count} told` : ""}`
+        : `No invitee accepted. Opened to doctors within ${n(step.radiusKm)} km${typeof step.count === "number" ? `, ${step.count} told` : ""}`;
     case "opened_to_radius":
       return `No invitee accepted. Opened to nearby doctors${typeof step.radiusKm === "number" ? ` within ${step.radiusKm} km` : ""}`;
     case "opened_to_city":
