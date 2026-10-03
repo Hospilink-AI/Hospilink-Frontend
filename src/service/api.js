@@ -729,11 +729,13 @@ export const dutyAPI = {
   //   return response.data;
   // },
 
-  getNearbyStaff: async (radius = 5, role = '') => {
+  getNearbyStaff: async (radius = 5, role = '', date) => {
     let url = `/api/profile/nearby-staff?radius=${radius}`;
     if (role && role !== '') {
       url += `&role=${role}`;
     }
+    // date=YYYY-MM-DD adds availabilityOnDate (free/busy/unknown) to each staff entry
+    if (date) url += `&date=${date}`;
     const response = await api.get(url);
     return response.data; // returns { success, cached, data: { hospital, staff } }
   },
@@ -1498,6 +1500,54 @@ export const analyticsAPI = {
   },
 };
 
+export const inviteAPI = {
+  // GET /api/duties/invite-candidates?role=&date=&start_time=&end_time= (hospital)
+  // -> { favourites, workedWithYou, nearby }: cards { staffId, name, jobRole, city, experience, profilePicture,
+  //    effectiveRating, isAvailable, isFavourite, dutiesWithYou, lastDutyWithYou, distanceKm, hasClash, availabilityOnDate, freeForShift }
+  getCandidates: async (params) => {
+    const response = await api.get('/api/duties/invite-candidates', { params });
+    return response.data;
+  },
+
+  // GET /api/hospital/favourites -> { favourites: [card] }
+  getFavourites: async () => {
+    const response = await api.get('/api/hospital/favourites');
+    return response.data;
+  },
+
+  // POST / DELETE /api/hospital/favourites/:staffId (verified doctors, up to 200)
+  addFavourite: async (staffId) => {
+    const response = await api.post(`/api/hospital/favourites/${staffId}`);
+    return response.data;
+  },
+
+  removeFavourite: async (staffId) => {
+    const response = await api.delete(`/api/hospital/favourites/${staffId}`);
+    return response.data;
+  },
+};
+
+export const availabilityAPI = {
+  // GET /api/staff/availability?from=&to= (up to 100 days)
+  // -> { weekly, validUntil, exceptions, days: [{ date, status: free|busy|unknown, from, to, source }] }
+  get: async (from, to) => {
+    const response = await api.get('/api/staff/availability', { params: { from, to } });
+    return response.data;
+  },
+
+  // PUT /api/staff/availability/weekly - { weekly: [{ day: 0-6 (0 = Sunday), from?, to? }] }, valid 8 weeks
+  saveWeekly: async (weekly) => {
+    const response = await api.put('/api/staff/availability/weekly', { weekly });
+    return response.data;
+  },
+
+  // PUT /api/staff/availability/dates - { dates: [{ date, status: free|busy|clear, from?, to? }] }
+  saveDates: async (dates) => {
+    const response = await api.put('/api/staff/availability/dates', { dates });
+    return response.data;
+  },
+};
+
 export const ratingOverrideAPI = {
   // POST /api/admin/rating-overrides - proposed, not built yet (see Backend-Notes-27Sep.txt)
   // Body: { profileType: 'hospital' | 'staff', profileId, value, reason, expiresAt? }
@@ -1825,9 +1875,10 @@ export const adminAPI = {
   //   return response.data;
   // },
 
-  getNearbyStaff: async (hospitalId, radius, role) => {
+  getNearbyStaff: async (hospitalId, radius, role, date) => {
     const params = { hospital_id: hospitalId, radius };
     if (role && role !== '') params.role = role;
+    if (date) params.date = date;
 
     console.log('Sending params:', params);
     const response = await api.get('/api/admin/nearby-staff', { params });

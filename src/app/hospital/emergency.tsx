@@ -19,6 +19,8 @@ import {
 import { autoRelistAPI, dutyAPI } from '../../service/api';
 import AutoRelistOption from '@/component/autoRelist/AutoRelistOption';
 import { AUTO_RELIST_ENABLED, relistOf } from '@/constant/autoRelist';
+import InviteSection, { inviteFields } from '@/component/dutyInvites/InviteSection';
+import { InviteCard } from '@/constant/dutyInvites';
 
 // ─── Types ────────────────────────────────────────────────
 type FormState = {
@@ -486,6 +488,8 @@ export default function CreateDutyScreen() {
   const isEditMode = mode === 'edit';
 
   const [autoRelist, setAutoRelist] = useState(true);
+  const [invitees, setInvitees] = useState<InviteCard[]>([]);
+  const [openAfter, setOpenAfter] = useState(true);
   const [loadedAutoRelist, setLoadedAutoRelist] = useState<boolean | null>(null);
   const [form, setForm] = useState<FormState>({
     staffRole: '', urgencyLevel: 'emergency', startingDate: '', endingDate: '',
@@ -579,6 +583,7 @@ export default function CreateDutyScreen() {
       description: form.dutyDescription,
       offered_rate: Number(form.offerRate),
       ...(AUTO_RELIST_ENABLED && !isEditMode && { auto_relist_enabled: autoRelist }),
+      ...(!isEditMode && inviteFields(invitees, openAfter)),
       is_overnight_duty: form.overtimeDuty,
       staff_count: form.staffCount ? Number(form.staffCount) : undefined,
       ...(form.staffRole === 'rmo' && form.dutySubType
@@ -841,6 +846,23 @@ export default function CreateDutyScreen() {
               {AUTO_RELIST_ENABLED && (
                 <View style={{ marginTop: 14 }}>
                   <AutoRelistOption value={autoRelist} onChange={setAutoRelist} rate={form.offerRate} emergency />
+                </View>
+              )}
+
+              {!isEditMode && (
+                <View style={{ marginTop: 14 }}>
+                  <InviteSection
+                    source={{ kind: 'hospital' }}
+                    role={form.staffRole}
+                    date={form.startingDate ? toAPIDate(form.startingDate) : undefined}
+                    startTime={form.startTime || undefined}
+                    endTime={form.endTime || undefined}
+                    invitees={invitees}
+                    onInvitees={setInvitees}
+                    openAfter={openAfter}
+                    onOpenAfter={setOpenAfter}
+                    emergency
+                  />
                 </View>
               )}
 

@@ -252,6 +252,8 @@
 
 import React, { useEffect, useState } from 'react';
 import {
+  ScrollView,
+  Pressable,
   ActivityIndicator,
   Dimensions,
   FlatList,
@@ -268,6 +270,10 @@ import { dutyAPI } from '../../service/api';
 import { DoctorWithDistance, Hospital, RangeKm } from '../../types/duty';
 import { adaptStaffToDoctor, jitterDuplicates } from '../../utils/distanceDecoder';
 import LiveMapView, { DoctorPin, HospitalPin } from '../../component/cards/hospital/live-tracking/LiveMapView';
+import MapInviteBar from '@/component/dutyInvites/MapInviteBar';
+import { DoctorRow } from '@/component/dutyInvites/InvitePicker';
+import { cardFromNearby, DUTY_INVITES_ENABLED, InviteCard, MAX_INVITEES } from '@/constant/dutyInvites';
+import { todayKey } from '@/constant/dutyCalendar';
 
 // ── Roles ──────────────────────────────────────────────────────────────────────
 const ROLES = [
@@ -294,7 +300,7 @@ const ROLES = [
 
 // ── Cache ──────────────────────────────────────────────────────────────────────
 const cache: {
-  data: { hospital: Hospital; doctors: DoctorWithDistance[] } | null;
+  data: { hospital: Hospital; doctors: DoctorWithDistance[]; raw: any[] } | null;
   range: RangeKm | null;
   role: string | null;
   fetching: boolean;
@@ -394,12 +400,18 @@ export default function MapScreen() {
   const [error,         setError]         = useState<string | null>(null);
   const [refreshKey,    setRefreshKey]    = useState(0);
   const [isSatellite,   setIsSatellite]   = useState(false);
+  // duty invites: pick doctors under the map, then post a duty for them
+  const [raw,           setRaw]           = useState<any[]>([]);
+  const [picked,        setPicked]        = useState<InviteCard[]>([]);
+  const [inviteNote,    setInviteNote]    = useState<string | null>(null);
+  const [showPick,      setShowPick]      = useState(false);
 
   useEffect(() => {
     if (cache.fetching) return;
     if (cache.range === selectedRange && cache.role === selectedRole && cache.data) {
       setHospital(cache.data.hospital);
       setDoctors(cache.data.doctors);
+      setRaw(cache.data.raw);
       setLoading(false);
       return;
     }
@@ -411,7 +423,7 @@ export default function MapScreen() {
 
     (async () => {
       try {
-        const res  = await dutyAPI.getNearbyStaff(selectedRange, selectedRole);
+        const res  = await dutyAPI.getNearbyStaff(selectedRange, selectedRole, DUTY_INVITES_ENABLED ? todayKey() : undefined);
         if (cancelled) return;
         const data = res.data;
 
@@ -428,11 +440,12 @@ export default function MapScreen() {
           data.staff.map(adaptStaffToDoctor),
         ) as DoctorWithDistance[];
 
-        cache.data  = { hospital: hospitalData, doctors: doctorsData };
+        cache.data  = { hospital: hospitalData, doctors: doctorsData, raw: data.staff };
         cache.range = selectedRange;
         cache.role  = selectedRole;
         setHospital(hospitalData);
         setDoctors(doctorsData);
+        setRaw(data.staff);
       } catch {
         if (!cancelled) setError('Failed to load nearby staff. Please try again.');
       } finally {
@@ -455,6 +468,13 @@ export default function MapScreen() {
   };
 
   const availableCount = doctors.filter(d => d.available).length;
+
+  const togglePick = (card: InviteCard) => {
+    setInviteNote(null);
+    if (picked.some(c => c.staffId === card.staffId)) setPicked(p => p.filter(c => c.staffId !== card.staffId));
+    else if (picked.length >= MAX_INVITEES) setInviteNote(`You can invite up to ${MAX_INVITEES} doctors.`);
+    else setPicked(p => [...p, card]);
+  };
 
   const hospitalPin: HospitalPin | null = hospital
     ? { name: hospital.name, location: hospital.location } : null;
@@ -561,6 +581,34 @@ export default function MapScreen() {
       </View>
 
       {error && <Text style={styles.errorText}>{error}</Text>}
+
+      {DUTY_INVITES_ENABLED && raw.length > 0 && (
+        <View style={styles.pickBox}>
+          <Pressable style={styles.pickHead} onPress={() => setShowPick(v => !v)} accessibilityState={{ expanded: showPick }}>
+            <Text style={styles.pickTitle}>Pick doctors to invite</Text>
+            <Text style={styles.pickToggle}>{showPick ? 'Hide' : `Show ${raw.length}`}</Text>
+          </Pressable>
+          {showPick && (
+            <ScrollView style={{ maxHeight: 320 }} contentContainerStyle={{ gap: 6 }}>
+              {raw.map((st: any) => {
+                const card = cardFromNearby(st);
+                return (
+                  <DoctorRow
+                    key={card.staffId}
+                    card={card}
+                    on={picked.some(c => c.staffId === card.staffId)}
+                    onPress={() => togglePick(card)}
+                    heart
+                    onError={setInviteNote}
+                  />
+                );
+              })}
+            </ScrollView>
+          )}
+          {!!inviteNote && <Text style={styles.pickNote}>{inviteNote}</Text>}
+          <MapInviteBar picked={picked} onClear={() => setPicked([])} />
+        </View>
+      )}
     </View>
   );
 }
@@ -568,6 +616,11 @@ export default function MapScreen() {
 // ── Styles ─────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   screen:    { flex: 1, backgroundColor: '#F5F7FA' },
+  pickBox:   { padding: 12, gap: 8, backgroundColor: '#FFFFFF' },
+  pickHead:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  pickTitle: { fontSize: 14, fontWeight: '800', color: '#1E293B' },
+  pickToggle:{ fontSize: 13, fontWeight: '600', color: '#2563EB' },
+  pickNote:  { fontSize: 12, color: '#92400E' },
   mapWrapper: { width: '100%', position: 'relative', overflow: 'hidden' },
 
   // ── Controls overlay — hugs top-right corner ──

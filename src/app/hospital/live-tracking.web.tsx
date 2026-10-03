@@ -10,6 +10,10 @@ import RangeDropdown from '../../component/cards/hospital/live-tracking/RangeDro
 import { dutyAPI } from '../../service/api';
 import { DoctorWithDistance, Hospital, NearbyStaffResponse, RangeKm } from '../../types/duty';
 import { adaptStaffToDoctor, jitterDuplicates } from '../../utils/distanceDecoder';
+import MapInviteBar from '@/component/dutyInvites/MapInviteBar';
+import { cardFromNearby, DUTY_INVITES_ENABLED, InviteCard, MAX_INVITEES } from '@/constant/dutyInvites';
+import { todayKey } from '@/constant/dutyCalendar';
+import { inviteAPI } from '../../service/api';
 
 const LiveMap = React.lazy(
   () => import('../../component/cards/hospital/live-tracking/LiveMap.web')
@@ -17,7 +21,7 @@ const LiveMap = React.lazy(
 
 // Module-level cache — survives Strict Mode remounts
 const cache: {
-  data: { hospital: Hospital; doctors: DoctorWithDistance[] } | null;
+  data: { hospital: Hospital; doctors: DoctorWithDistance[]; raw: any[] } | null;
   range: RangeKm | null;
   fetching: boolean;
 } = { data: null, range: null, fetching: false };
@@ -31,6 +35,12 @@ export default function MapScreen() {
   const [error, setError] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);//this
   const [isSatellite, setIsSatellite] = useState(false);
+  // duty invites: doctors picked on the map, favourites, availability on a chosen day
+  const [raw, setRaw] = useState<any[]>([]);
+  const [picked, setPicked] = useState<InviteCard[]>([]);
+  const [favourites, setFavourites] = useState<Record<string, boolean>>({});
+  const [availDate, setAvailDate] = useState(todayKey());
+  const [inviteNote, setInviteNote] = useState<string | null>(null);
 
   const ROLES = [
     { label: 'All Roles', value: '' },
@@ -66,6 +76,7 @@ export default function MapScreen() {
     if (cache.range === selectedRange && cache.data) {
       setHospital(cache.data.hospital);
       setDoctors(cache.data.doctors);
+      setRaw(cache.data.raw);
       setLoading(false);
       return;
     }
@@ -79,7 +90,7 @@ export default function MapScreen() {
       try {
         // const data: NearbyStaffResponse = await dutyAPI.getNearbyStaff(selectedRange);
         // if (cancelled) return;
-        const res = await dutyAPI.getNearbyStaff(selectedRange, selectedRole); // ✅ pass role
+        const res = await dutyAPI.getNearbyStaff(selectedRange, selectedRole, DUTY_INVITES_ENABLED ? availDate : undefined); // ✅ pass role
         if (cancelled) return;
 
         const data = res.data;
@@ -110,11 +121,12 @@ export default function MapScreen() {
   data.staff.map(adaptStaffToDoctor)
 ) as DoctorWithDistance[]; // ✅ explicit cast
 
-        cache.data = { hospital: hospitalData, doctors: doctorsData };
+        cache.data = { hospital: hospitalData, doctors: doctorsData, raw: data.staff };
         cache.range = selectedRange;
 
         setHospital(hospitalData);
         setDoctors(doctorsData);
+        setRaw(data.staff);
       } catch (err) {
         if (cancelled) return;
         setError('Failed to load nearby staff. Please try again.');
@@ -130,7 +142,32 @@ export default function MapScreen() {
       cancelled = true;
       cache.fetching = false;
     };
-  }, [selectedRange, selectedRole, refreshTrigger]);
+  }, [selectedRange, selectedRole, refreshTrigger, availDate]);
+
+  useEffect(() => {
+    setFavourites(Object.fromEntries(raw.map((s: any) => [String(s.id), !!s.isFavourite])));
+  }, [raw]);
+
+  const togglePick = (id: string) => {
+    setInviteNote(null);
+    const s = raw.find((x: any) => String(x.id) === id);
+    if (!s) return;
+    if (picked.some((c) => c.staffId === id)) setPicked((p) => p.filter((c) => c.staffId !== id));
+    else if (picked.length >= MAX_INVITEES) setInviteNote(`You can invite up to ${MAX_INVITEES} doctors.`);
+    else setPicked((p) => [...p, { ...cardFromNearby(s), isFavourite: favourites[id] }]);
+  };
+
+  const toggleFavourite = async (id: string) => {
+    const next = !favourites[id];
+    setFavourites((f) => ({ ...f, [id]: next }));
+    try {
+      if (next) await inviteAPI.addFavourite(id);
+      else await inviteAPI.removeFavourite(id);
+    } catch (err: any) {
+      setFavourites((f) => ({ ...f, [id]: !next }));
+      setInviteNote(err?.response?.data?.message ?? "Couldn't update favourites.");
+    }
+  };
 
   const availableCount = doctors.filter((d) => d.available).length;
 
@@ -168,6 +205,24 @@ export default function MapScreen() {
             </select>
           </View>
           <RangeDropdown selectedRange={selectedRange} onRangeChange={setSelectedRange} />
+          {DUTY_INVITES_ENABLED && (
+            <View style={styles.dateBox}>
+              <Text style={styles.dateLabel}>Availability on</Text>
+              <input
+                type="date"
+                aria-label="Availability on"
+                value={availDate}
+                min={todayKey()}
+                onChange={(e: any) => {
+                  if (!e.target.value) return;
+                  cache.data = null;
+                  cache.range = null;
+                  setAvailDate(e.target.value);
+                }}
+                style={{ padding: '6px 8px', borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 13 }}
+              />
+            </View>
+          )}
         </View>
         {loading && (
           <View style={styles.loadingOverlay}>
@@ -178,7 +233,26 @@ export default function MapScreen() {
 
         {hospital ? (
           <Suspense fallback={<View style={styles.mapLoading} />}>
-            <LiveMap hospital={hospital} doctors={doctors} rangeKm={selectedRange} onRefresh={handleRefresh} isSatellite={isSatellite} onToggleSatellite={() => setIsSatellite(v => !v)} />
+            <LiveMap
+              hospital={hospital}
+              doctors={doctors}
+              rangeKm={selectedRange}
+              onRefresh={handleRefresh}
+              isSatellite={isSatellite}
+              onToggleSatellite={() => setIsSatellite(v => !v)}
+              invite={
+                DUTY_INVITES_ENABLED
+                  ? {
+                      pickedIds: picked.map((c) => c.staffId),
+                      onTogglePick: togglePick,
+                      favourites,
+                      onToggleFavourite: toggleFavourite,
+                      availability: Object.fromEntries(raw.map((s: any) => [String(s.id), s.availabilityOnDate])),
+                      dateLabel: availDate === todayKey() ? 'today' : availDate,
+                    }
+                  : undefined
+              }
+            />
           </Suspense>
         ) : !loading ? (
           <View style={styles.mapLoading}>
@@ -186,7 +260,12 @@ export default function MapScreen() {
           </View>
         ) : null}
 
-        {hospital && (
+        {DUTY_INVITES_ENABLED && picked.length > 0 ? (
+          <View style={styles.floatingBar}>
+            <MapInviteBar picked={picked} onClear={() => setPicked([])} />
+            {!!inviteNote && <Text style={styles.inviteNote}>{inviteNote}</Text>}
+          </View>
+        ) : hospital && (
           <View style={styles.floatingBar}>
             <View style={styles.floatingBarInner}>
               <View style={styles.hospitalIconBox}>
@@ -282,6 +361,9 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
   roleDropdownWrapper: { marginBottom: 4, minWidth: 180 },
+  dateBox: { marginTop: 8, backgroundColor: '#fff', borderRadius: 8, padding: 6, gap: 4, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' } as any,
+  dateLabel: { fontSize: 11, fontWeight: '700', color: '#374151' },
+  inviteNote: { marginTop: 6, color: '#92400E', backgroundColor: '#FFFBEB', borderRadius: 8, padding: 6, fontSize: 12 },
   hospitalEmoji: { fontSize: 20 },
   hospitalTextBox: { flex: 1 },
   hospitalName: { fontSize: 13, fontWeight: '700', color: '#FFFFFF', letterSpacing: 0.2 },

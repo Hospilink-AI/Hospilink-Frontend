@@ -12,6 +12,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { dutyAPI } from '../../../service/api';
+import { dutyErrorMessage } from '@/constant/dutyInvites';
 import RelistBadges from '@/component/autoRelist/RelistBadges';
 import StaffCancelDuty from '@/component/autoRelist/StaffCancelDuty';
 
@@ -336,7 +337,7 @@ export default function DutyDetailsScreen() {
         console.log("DUTY hospital.location:", JSON.stringify(d?.hospital?.location));
         setDuty(d);
       } catch (err: any) {
-        setError(err?.response?.data?.message ?? err?.message ?? 'Failed to load duty details.');
+        setError(dutyErrorMessage(err, 'Failed to load duty details.'));
       } finally {
         setLoading(false);
       }

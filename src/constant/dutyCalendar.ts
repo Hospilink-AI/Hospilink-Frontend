@@ -205,10 +205,17 @@ export const SUB_TYPE_LABELS: Record<string, string> = { ward: "Ward", icu: "ICU
 
 // ─── Fill tracker ───────────────────────────────────────────────────────────
 export type FillStep = {
-  key: "posted" | "offered" | "viewed" | "unfilled_15min" | "unfilled_critical" | "relisted" | "accepted" | "expired" | "cancelled";
+  key:
+    | "posted" | "offered" | "viewed" | "unfilled_15min" | "unfilled_critical" | "relisted" | "accepted" | "expired" | "cancelled"
+    // staged offers and invites
+    | "offer_widened" | "offer_opened_fully" | "escalated_to_admins" | "invite_sent" | "opened_to_radius" | "opened_to_city";
   at?: string | null;
   count?: number | null;
   staff?: { name?: string; profilePicture?: string | null } | null;
+  // offered step: radius (rings), city (emergencies) or invite
+  mode?: "radius" | "city" | "invite";
+  radiusKm?: number | null;
+  currentRadiusKm?: number | null;
 };
 
 const n = (count?: number | null) => (typeof count === "number" ? String(count) : "—");
@@ -218,7 +225,26 @@ export function fillStepText(step: FillStep): string {
     case "posted":
       return "You posted the duty";
     case "offered":
+      if (step.mode === "invite") return `Sent to ${n(step.count)} invited ${step.count === 1 ? "doctor" : "doctors"}`;
+      if (step.mode === "city") return `Offered to ${n(step.count)} staff across the city`;
+      if (step.mode === "radius") {
+        const ring = typeof step.radiusKm === "number" ? ` within ${step.radiusKm} km` : "";
+        const now = typeof step.currentRadiusKm === "number" && step.currentRadiusKm !== step.radiusKm ? `, now ${step.currentRadiusKm} km` : "";
+        return `Offered to ${n(step.count)} staff${ring}${now}`;
+      }
       return `Offered to ${n(step.count)} staff in range`;
+    case "offer_widened":
+      return `Widened to ${n(step.radiusKm)} km, ${n(step.count)} more told`;
+    case "offer_opened_fully":
+      return `Open to everyone in range${typeof step.radiusKm === "number" ? ` (${step.radiusKm} km)` : ""}`;
+    case "escalated_to_admins":
+      return "Starting within the hour and still open. HospiLink team alerted";
+    case "invite_sent":
+      return `Invitation sent to ${n(step.count)} ${step.count === 1 ? "doctor" : "doctors"}`;
+    case "opened_to_radius":
+      return `No invitee accepted. Opened to nearby doctors${typeof step.radiusKm === "number" ? ` within ${step.radiusKm} km` : ""}`;
+    case "opened_to_city":
+      return "No invitee accepted. Opened to doctors across the city";
     case "viewed":
       return `Viewed by ${n(step.count)}`;
     case "unfilled_15min":

@@ -1,4 +1,6 @@
 import AutoRelistOption from "@/component/autoRelist/AutoRelistOption";
+import InviteSection, { inviteFields } from "@/component/dutyInvites/InviteSection";
+import { InviteCard } from "@/constant/dutyInvites";
 import DateTimeField from "@/component/common/DateTimeField";
 import { SelectSheet } from "@/component/common/FilterSheet";
 import { AUTO_RELIST_ENABLED } from "@/constant/autoRelist";
@@ -42,6 +44,8 @@ export default function CreateDutyCard({
   const [urgency, setUrgency] = useState("medium");
   const [notes, setNotes] = useState("");
   const [autoRelist, setAutoRelist] = useState(true);
+  const [invitees, setInvitees] = useState<InviteCard[]>([]);
+  const [openAfter, setOpenAfter] = useState(true);
   const [picking, setPicking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
@@ -78,6 +82,7 @@ export default function CreateDutyCard({
         staff_count: count,
         ...(role === "rmo" && { duty_sub_type: subType }),
         ...(AUTO_RELIST_ENABLED && { auto_relist_enabled: autoRelist }),
+        ...inviteFields(invitees, openAfter),
       });
       onPosted(count);
     } catch (err: any) {
@@ -183,6 +188,18 @@ export default function CreateDutyCard({
         placeholderTextColor="#94A3B8"
       />
 
+      <InviteSection
+        source={{ kind: "hospital" }}
+        role={role}
+        date={date}
+        startTime={startText || undefined}
+        endTime={endText || undefined}
+        invitees={invitees}
+        onInvitees={setInvitees}
+        openAfter={openAfter}
+        onOpenAfter={setOpenAfter}
+      />
+
       {AUTO_RELIST_ENABLED && <AutoRelistOption value={autoRelist} onChange={setAutoRelist} rate={rate} />}
 
       {!!error && <Text style={styles.error}>{error}</Text>}
@@ -194,7 +211,7 @@ export default function CreateDutyCard({
           <Text style={styles.postText}>{count > 1 ? `Post ${count} duties` : "Post duty"}</Text>
         )}
       </TouchableOpacity>
-      {count > 1 && <Text style={styles.hint}>Nearby staff get one notification for all {count}.</Text>}
+      {count > 1 && !invitees.length && <Text style={styles.hint}>Nearby staff get one notification for all {count}.</Text>}
 
       <SelectSheet
         visible={picking}

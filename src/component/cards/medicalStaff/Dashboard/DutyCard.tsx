@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { dutyAPI } from "../../../../service/api";
 import RelistBadges from "@/component/autoRelist/RelistBadges";
+import { dutyErrorMessage } from "@/constant/dutyInvites";
 
 interface Props {
   duty: {
@@ -82,7 +83,7 @@ export default function DutyCard({ duty, onAccept, onPress, isMobile }: Props) {
       setDutyStatus('assigned');
       onAccept();
     } catch (err: any) {
-      alert(err?.response?.data?.message || "Failed to accept duty.");
+      alert(dutyErrorMessage(err, "Failed to accept duty."));
     } finally {
       setAccepting(false);
     }

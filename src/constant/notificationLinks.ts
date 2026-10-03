@@ -6,6 +6,8 @@ const SUPPORT: Config = { icon: "chatbubbles-outline", color: "#2563eb", bg: "#d
 const STANDING: Config = { icon: "shield-outline", color: "#b45309", bg: "#fef3c7", label: "ACCOUNT" };
 const RATING: Config = { icon: "star-outline", color: "#7c3aed", bg: "#ede9fe", label: "RATING" };
 const RELIST: Config = { icon: "refresh-circle-outline", color: "#0369a1", bg: "#e0f2fe", label: "RE-POSTED" };
+const INVITE: Config = { icon: "mail-unread-outline", color: "#047857", bg: "#d1fae5", label: "INVITED" };
+const AVAILABILITY: Config = { icon: "calendar-outline", color: "#b45309", bg: "#fef3c7", label: "AVAILABILITY" };
 
 const TITLES: Record<string, string> = {
   TICKET_CREATED: "Ticket received",
@@ -20,6 +22,8 @@ const TITLES: Record<string, string> = {
   DUTY_RELIST_CAP_REACHED: "Duty needs your input",
   DUTY_CANCELLED_BY_STAFF: "Staff member cancelled",
   STAFF_CANCELLATION_WATCHLIST: "Auto-relist watchlist",
+  DUTY_INVITE: "Duty invitation",
+  AVAILABILITY_EXPIRING: "Update your availability",
 };
 
 // auto-relist notification types (Notification model enum)
@@ -31,6 +35,8 @@ const isStanding = (type: string) =>
   type === "PATTERN_FLAG_RAISED" || type.startsWith("SUSPENSION_") || type.startsWith("WARNING_");
 
 export function supportNotificationConfig(type: string): Config | null {
+  if (type === "DUTY_INVITE") return INVITE;
+  if (type === "AVAILABILITY_EXPIRING") return AVAILABILITY;
   if (isTicket(type)) return SUPPORT;
   if (isRelist(type)) return RELIST;
   if (isStanding(type)) return STANDING;
@@ -56,6 +62,11 @@ export function notificationRoute(type: string, payload: any, pathname: string):
     if (base === "admin") return "/admin/auto-relist";
     return dutyId ? `/${base}/dutyDetails/${dutyId}` : null;
   }
+  // a hospital's invite, or a staged offer reaching the doctor: open the duty
+  if ((type === "DUTY_INVITE" || type === "NEW_DUTY_OFFER") && base === "medicalStaff") {
+    return dutyId ? `/medicalStaff/dutyDetails/${dutyId}` : null;
+  }
+  if (type === "AVAILABILITY_EXPIRING" && base === "medicalStaff") return "/medicalStaff/calendar?mode=availability&edit=weekly";
   if (base === "admin") return type === "PATTERN_FLAG_RAISED" ? "/admin/patterns" : null;
   if (isStanding(type) || type.startsWith("RATING_PENALTY_")) return `/${base}/support/standing`;
   return null;
