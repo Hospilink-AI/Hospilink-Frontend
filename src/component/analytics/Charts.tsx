@@ -515,8 +515,8 @@ function Donut({ rows }: { rows: { key: string; count: number }[] }) {
 // ─── Funnel ─────────────────────────────────────────────────────────────────
 function Funnel({ stages, tracked }: { stages: { key: string; label: string; value: number }[]; tracked?: number }) {
   const max = Math.max(1, ...stages.map((st) => st.value));
-  // ordinal blue steps, lightest no paler than step 250
-  const ramp = [BLUE_RAMP[9], BLUE_RAMP[7], BLUE_RAMP[5], BLUE_RAMP[3]];
+  // ordinal blue steps from dark to light, spread over however many stages; lightest no paler than step 250
+  const step = (i: number) => BLUE_RAMP[Math.round(10 - (stages.length > 1 ? (i * 7) / (stages.length - 1) : 0))];
   return (
     <View style={{ gap: 10 }}>
       {stages.map((st, i) => (
@@ -526,7 +526,7 @@ function Funnel({ stages, tracked }: { stages: { key: string; label: string; val
             <Text style={s.funnelValue}>{st.value.toLocaleString("en-IN")}</Text>
           </View>
           <View style={s.funnelTrack}>
-            <View style={[s.funnelBar, { width: `${Math.max(1, (st.value / max) * 100)}%`, backgroundColor: ramp[i % ramp.length] }]} />
+            <View style={[s.funnelBar, { width: `${Math.max(1, (st.value / max) * 100)}%`, backgroundColor: step(i) }]} />
           </View>
         </View>
       ))}
