@@ -25,13 +25,15 @@ import { apiError, roleLabel } from "@/constant/jobs";
 import { useCalendarCounts } from "@/hooks/useCalendarCounts";
 import { dutyCalendarAPI } from "@/service/api";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import AvailabilityView from "@/component/dutyInvites/AvailabilityView";
+import { DUTY_INVITES_ENABLED } from "@/constant/dutyInvites";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import { CalendarHeader, CountBadge, Dots, Legend, MonthGrid, Notice, useSwipe } from "./CalendarParts";
 import ScheduleWeek, { MyDuty } from "./ScheduleWeek";
 
-type Mode = "open" | "mine";
+type Mode = "open" | "mine" | "availability";
 type View_ = "month" | "week";
 
 // Same shape the dashboard gives DutyCard
@@ -53,11 +55,13 @@ const toCard = (job: any) => ({
 // Doctor duty calendar: open duties near me (count per date), or my own schedule. Never both at once.
 export default function DoctorCalendar() {
   const router = useRouter();
+  // the availability reminder links to ?mode=availability&edit=weekly
+  const params = useLocalSearchParams<{ mode?: string; edit?: string }>();
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
   const today = todayKey();
 
-  const [mode, setMode] = useState<Mode>("open");
+  const [mode, setMode] = useState<Mode>(DUTY_INVITES_ENABLED && params.mode === "availability" ? "availability" : "open");
   const [view, setView] = useState<View_>("month");
   const [anchor, setAnchor] = useState(today);
   // open duties: nothing is fetched until a date is tapped (that list calls Maps)
@@ -88,7 +92,7 @@ export default function DoctorCalendar() {
   const { rows, settings, openCountsAvailable, loading, error, refresh } = useCalendarCounts<StaffDayRow>(
     visible,
     expand,
-    DUTY_CALENDAR_ENABLED
+    DUTY_CALENDAR_ENABLED && mode !== "availability"
   );
 
   useEffect(() => {
@@ -174,7 +178,7 @@ export default function DoctorCalendar() {
         <Text style={styles.pageTitle}>Duty Calendar</Text>
 
         <View style={styles.toggle}>
-          {(["open", "mine"] as Mode[]).map((m) => (
+          {((DUTY_INVITES_ENABLED ? ["open", "mine", "availability"] : ["open", "mine"]) as Mode[]).map((m) => (
             <TouchableOpacity
               key={m}
               style={[styles.toggleBtn, mode === m && styles.toggleOn]}
@@ -182,12 +186,16 @@ export default function DoctorCalendar() {
               accessibilityState={{ selected: mode === m }}
             >
               <Text style={[styles.toggleText, mode === m && styles.toggleTextOn]}>
-                {m === "open" ? "Open duties" : "My schedule"}
+                {m === "open" ? "Open duties" : m === "mine" ? "My schedule" : "Availability"}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
+        {mode === "availability" ? (
+          <AvailabilityView openWeekly={params.edit === "weekly"} />
+        ) : (
+        <>
         <View style={styles.card} {...swipe}>
           <CalendarHeader
             title={monthTitle(isWeek ? addDays(week, 3) : month)}
@@ -273,6 +281,8 @@ export default function DoctorCalendar() {
               </>
             )}
           </>
+        )}
+        </>
         )}
       </ScrollView>
       {toast && <Toast message={toast} />}

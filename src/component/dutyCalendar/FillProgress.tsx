@@ -69,7 +69,7 @@ export default function FillProgress({
           {(steps ?? []).map((step, i) => {
             const last = i === (steps ?? []).length - 1;
             const isCurrent = last && !finished;
-            const bad = step.key === "expired" || step.key === "cancelled" || step.key === "unfilled_critical";
+            const bad = ["expired", "cancelled", "unfilled_critical", "escalated_to_admins"].includes(step.key);
             const color = step.key === "accepted" ? COLORS.green : bad ? COLORS.red : isCurrent ? COLORS.primary : "#94A3B8";
             return (
               <View key={`${step.key}-${i}`} style={styles.step}>

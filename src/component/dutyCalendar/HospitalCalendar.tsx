@@ -19,7 +19,9 @@ import {
 } from "@/constant/dutyCalendar";
 import { apiError, roleLabel } from "@/constant/jobs";
 import { useCalendarCounts } from "@/hooks/useCalendarCounts";
-import { dutyCalendarAPI } from "@/service/api";
+import { dutyCalendarAPI, inviteAPI } from "@/service/api";
+import FavouriteHeart from "@/component/dutyInvites/FavouriteHeart";
+import { DUTY_INVITES_ENABLED } from "@/constant/dutyInvites";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -82,6 +84,23 @@ export default function HospitalCalendar() {
   const [dayError, setDayError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [favourites, setFavourites] = useState<Set<string>>(new Set());
+
+  // which assigned doctors are this hospital's favourites (the day list doesn't say)
+  useEffect(() => {
+    if (!DUTY_CALENDAR_ENABLED || !DUTY_INVITES_ENABLED) return;
+    inviteAPI
+      .getFavourites()
+      .then((res: any) => setFavourites(new Set((res?.favourites ?? []).map((c: any) => String(c.staffId)))))
+      .catch(() => {});
+  }, []);
+  const setFavourite = (id: string, on: boolean) =>
+    setFavourites((f) => {
+      const next = new Set(f);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
 
   // settings come back with the counts; the week start can change after the first call
   const [weekStartSetting, setWeekStartSetting] = useState<"monday" | "sunday">("monday");
@@ -250,6 +269,8 @@ export default function HospitalCalendar() {
                 group={g}
                 date={selected}
                 onOpenDuty={(id) => router.push(`/hospital/dutyDetails/${id}` as any)}
+                favourites={favourites}
+                onFavourite={setFavourite}
               />
             ))}
 
@@ -271,7 +292,19 @@ export default function HospitalCalendar() {
   );
 }
 
-function GroupCard({ group, date, onOpenDuty }: { group: Group; date: string; onOpenDuty: (id: string) => void }) {
+function GroupCard({
+  group,
+  date,
+  onOpenDuty,
+  favourites,
+  onFavourite,
+}: {
+  group: Group;
+  date: string;
+  onOpenDuty: (id: string) => void;
+  favourites: Set<string>;
+  onFavourite: (id: string, on: boolean) => void;
+}) {
   const [open, setOpen] = useState(true);
   const pct = group.slots ? Math.round((group.filled / group.slots) * 100) : 0;
   const sub = group.dutySubType ? SUB_TYPE_LABELS[group.dutySubType] ?? group.dutySubType : null;
@@ -315,7 +348,14 @@ function GroupCard({ group, date, onOpenDuty }: { group: Group; date: string; on
       {open && (
         <View style={styles.slots}>
           {group.duties.map((d) => (
-            <SlotRow key={d.dutyId} duty={d} showTracker={!group.continuation} onOpen={() => onOpenDuty(d.dutyId)} />
+            <SlotRow
+              key={d.dutyId}
+              duty={d}
+              showTracker={!group.continuation}
+              onOpen={() => onOpenDuty(d.dutyId)}
+              favourite={!!d.staff && favourites.has(String(d.staff.id))}
+              onFavourite={onFavourite}
+            />
           ))}
         </View>
       )}
@@ -323,7 +363,19 @@ function GroupCard({ group, date, onOpenDuty }: { group: Group; date: string; on
   );
 }
 
-function SlotRow({ duty, showTracker, onOpen }: { duty: SlotDuty; showTracker: boolean; onOpen: () => void }) {
+function SlotRow({
+  duty,
+  showTracker,
+  onOpen,
+  favourite,
+  onFavourite,
+}: {
+  duty: SlotDuty;
+  showTracker: boolean;
+  onOpen: () => void;
+  favourite: boolean;
+  onFavourite: (id: string, on: boolean) => void;
+}) {
   const [tracking, setTracking] = useState(false);
   const st = dutyStatus(duty.status);
   const s = duty.staff;
@@ -396,6 +448,7 @@ function SlotRow({ duty, showTracker, onOpen }: { duty: SlotDuty; showTracker: b
           )}
         </View>
       </View>
+      <FavouriteHeart staffId={String(s.id)} value={favourite} onChange={(v) => onFavourite(String(s.id), v)} size={18} />
       <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
     </TouchableOpacity>
   );

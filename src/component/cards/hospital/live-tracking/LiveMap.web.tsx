@@ -35,10 +35,10 @@ const hospitalIcon = L.divIcon({
   popupAnchor: [0, -40],
 });
 
-const makeDoctorIcon = (available: boolean) =>
+const makeDoctorIcon = (available: boolean, picked = false) =>
   L.divIcon({
     className: '',
-    html: `<div style="background:${available ? '#43A047' : '#FB8C00'};
+    html: `<div style="background:${picked ? '#2563EB' : available ? '#43A047' : '#FB8C00'};
       border-radius:50% 50% 50% 0;width:30px;height:30px;transform:rotate(-45deg);
       border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);
       display:flex;align-items:center;justify-content:center;">
@@ -56,7 +56,34 @@ interface LiveMapProps {
    onRefresh: () => void;   // this
    isSatellite: boolean;  
    onToggleSatellite: () => void;
+  // picking doctors to invite (duty invites)
+  invite?: {
+    pickedIds: string[];
+    onTogglePick: (doctorId: string) => void;
+    favourites: Record<string, boolean>;
+    onToggleFavourite: (doctorId: string) => void;
+    availability: Record<string, string | undefined>;
+    dateLabel?: string;
+  };
 }
+
+const AVAILABILITY_TEXT: Record<string, { text: string; color: string }> = {
+  free: { text: 'Free that day', color: '#047857' },
+  busy: { text: 'Marked busy that day', color: '#475569' },
+};
+
+const popupButton = (on: boolean): React.CSSProperties => ({
+  marginTop: 8,
+  marginRight: 6,
+  padding: '6px 10px',
+  borderRadius: 6,
+  border: `1px solid ${on ? '#2563EB' : '#CBD5E1'}`,
+  background: on ? '#2563EB' : '#fff',
+  color: on ? '#fff' : '#1E293B',
+  fontWeight: 600,
+  fontSize: 12,
+  cursor: 'pointer',
+});
 
 // ── Refresh Control — sits below +/- zoom buttons ──
 interface RefreshControlProps {
@@ -117,7 +144,7 @@ const RefreshControl: React.FC<RefreshControlProps> = ({ onRefresh }) => {
 
 
 
-const LiveMap: React.FC<LiveMapProps> = ({ hospital, doctors, rangeKm, onRefresh, isSatellite, onToggleSatellite }) => {
+const LiveMap: React.FC<LiveMapProps> = ({ hospital, doctors, rangeKm, onRefresh, isSatellite, onToggleSatellite, invite }) => {
 
     console.log({
     MapContainer,
@@ -171,7 +198,7 @@ const LiveMap: React.FC<LiveMapProps> = ({ hospital, doctors, rangeKm, onRefresh
         <Marker
           key={doc.id}
           position={[doc.location.latitude, doc.location.longitude]}
-          icon={makeDoctorIcon(doc.available)}
+          icon={makeDoctorIcon(doc.available, !!invite?.pickedIds.includes(doc.id))}
         >
           <Popup>
             <strong>{doc.name}</strong><br />
@@ -183,6 +210,32 @@ const LiveMap: React.FC<LiveMapProps> = ({ hospital, doctors, rangeKm, onRefresh
             📞 {doc.phone}<br />
             📧 {doc.email} <br />
             <small style={{ color: '#777' }}>{doc.location.address}</small>
+            {invite && (
+              <div>
+                {AVAILABILITY_TEXT[invite.availability[doc.id] ?? ''] && (
+                  <div style={{ marginTop: 6, fontWeight: 600, color: AVAILABILITY_TEXT[invite.availability[doc.id]!].color }}>
+                    {AVAILABILITY_TEXT[invite.availability[doc.id]!].text}
+                    {invite.dateLabel ? ` (${invite.dateLabel})` : ''}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  aria-label={invite.pickedIds.includes(doc.id) ? `Remove ${doc.name} from invite` : `Invite ${doc.name}`}
+                  style={popupButton(invite.pickedIds.includes(doc.id))}
+                  onClick={() => invite.onTogglePick(doc.id)}
+                >
+                  {invite.pickedIds.includes(doc.id) ? '✓ Picked to invite' : '+ Invite to a duty'}
+                </button>
+                <button
+                  type="button"
+                  aria-label={invite.favourites[doc.id] ? 'Remove from favourites' : 'Add to favourites'}
+                  style={popupButton(false)}
+                  onClick={() => invite.onToggleFavourite(doc.id)}
+                >
+                  {invite.favourites[doc.id] ? '♥ Favourite' : '♡ Favourite'}
+                </button>
+              </div>
+            )}
           </Popup>
         </Marker>
       ))}
