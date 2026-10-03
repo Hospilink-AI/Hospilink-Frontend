@@ -470,10 +470,6 @@ export default function AuthScreen() {
                 )}
               </TouchableOpacity>
             </View>
-
-            <View>
-              <Text style={styles.copyright}>© Developed and Managed by Rasika & Co.</Text>
-            </View>
           </View>
         </View>
       </View>

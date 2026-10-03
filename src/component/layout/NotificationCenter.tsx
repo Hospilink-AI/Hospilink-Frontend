@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
   Alert,
+  useWindowDimensions,
 } from "react-native";
 import { adminAPI } from "@/service/api";
 import { useSocket } from "../../context/SocketContext";
@@ -181,6 +182,9 @@ const formatTime = (iso: string): string => {
 
 export default function NotificationsCenterScreen() {
   const { socket } = useSocket();
+  // phones: header stacks, list takes the full width, summary sidebar is left out
+  const { width } = useWindowDimensions();
+  const isPhone = width < 768;
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -243,13 +247,16 @@ export default function NotificationsCenterScreen() {
     (n) => n.type === "NEW_DUTY_OFFER"
   ).length;
 
-  const typeBreakdown = Object.entries(
-    notifications.reduce<Record<string, number>>((acc, n) => {
-      acc[n.type] = (acc[n.type] || 0) + 1;
+  // grouped by the badge people see, so two ticket types don't show as two "SUPPORT" rows
+  const typeBreakdown = Object.values(
+    notifications.reduce<Record<string, { label: string; color: string; count: number }>>((acc, n) => {
+      const cfg = TYPE_CONFIG[n.type] ?? supportNotificationConfig(n.type) ?? FALLBACK_CONFIG;
+      acc[cfg.label] = acc[cfg.label] ?? { label: cfg.label, color: cfg.color, count: 0 };
+      acc[cfg.label].count += 1;
       return acc;
     }, {})
   )
-    .sort((a, b) => b[1] - a[1])
+    .sort((a, b) => b.count - a.count)
     .slice(0, 5);
 
   // ── fetchNotifications ───────────────────────────────────────
@@ -463,9 +470,9 @@ export default function NotificationsCenterScreen() {
   ];
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, isPhone && { paddingHorizontal: 12 }]}>
       {/* ── Header ── */}
-      <View style={styles.header}>
+      <View style={[styles.header, isPhone && { flexDirection: "column", gap: 12 }]}>
         <View style={styles.headerLeft}>
           <Text style={styles.headerTitle}>Notifications Center</Text>
           <Text style={styles.headerSub}>
@@ -518,7 +525,7 @@ export default function NotificationsCenterScreen() {
               <View style={styles.bannerLeft}>
                 <View style={styles.bannerTag}>
                   <Ionicons
-                    name="alert-triangle-outline" as any
+                    name="warning-outline" as any
                     size={11}
                     color="#fff"
                   />
@@ -715,6 +722,7 @@ export default function NotificationsCenterScreen() {
         </View>
 
         {/* ── Sidebar ── */}
+        {!isPhone && (
         <View style={styles.sideCol}>
           {/* Activity Summary */}
           <View style={styles.card}>
@@ -731,45 +739,23 @@ export default function NotificationsCenterScreen() {
             </View>
           </View>
 
-          {/* Availability Score */}
-          <View style={styles.availCard}>
-            <Text style={styles.availLabel}>AVAILABILITY SCORE</Text>
-            <View style={styles.availNumRow}>
-              <Text style={styles.availNum}>98%</Text>
-              <Text style={styles.availChange}>+2% from last week</Text>
-            </View>
-            <View style={styles.availBar}>
-              <View style={[styles.availBarFill, { width: "98%" }]} />
-            </View>
-            <Text style={styles.availNote}>
-              Excellent! You are in the top 5% of responders this month.
-            </Text>
-          </View>
-
           {/* Type breakdown */}
           {typeBreakdown.length > 0 && (
             <View style={styles.card}>
               <Text style={styles.cardTitle}>BY TYPE</Text>
               <View style={{ gap: 8 }}>
-                {typeBreakdown.map(([type, count]) => {
-                  const cfg = TYPE_CONFIG[type] ?? supportNotificationConfig(type) ?? FALLBACK_CONFIG;
-                  return (
-                    <View key={type} style={styles.typeRow}>
-                      <View
-                        style={[
-                          styles.typeDot,
-                          { backgroundColor: cfg.color },
-                        ]}
-                      />
-                      <Text style={styles.typeLabel}>{cfg.label}</Text>
-                      <Text style={styles.typeCount}>{count}</Text>
-                    </View>
-                  );
-                })}
+                {typeBreakdown.map((t) => (
+                  <View key={t.label} style={styles.typeRow}>
+                    <View style={[styles.typeDot, { backgroundColor: t.color }]} />
+                    <Text style={styles.typeLabel}>{t.label}</Text>
+                    <Text style={styles.typeCount}>{t.count}</Text>
+                  </View>
+                ))}
               </View>
             </View>
           )}
         </View>
+        )}
       </View>
     </View>
   );

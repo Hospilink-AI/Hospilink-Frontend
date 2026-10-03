@@ -517,7 +517,6 @@ const styles = StyleSheet.create({
 //         {/* Footer */}
 //         <View style={styles.footer}>
 //           <Text style={styles.footerSecure}>SECURE END-TO-END ENCRYPTION</Text>
-//           <Text style={styles.footerCopy}>© Developed and Managed by Rasika & Co.</Text>
 //         </View>
 //       </View>
 //     </KeyboardAvoidingView>

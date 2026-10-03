@@ -1,19 +1,23 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Alert } from 'react-native';
+import { useRouter } from 'expo-router';
+import { adminAPI } from '@/service/api';
 import { SafeAreaView } from 'react-native';
 
 import MedicalStaffList from '@/component/cards/admin/MedicalStaff/MedicalStaffList';
 import StatCards from '@/component/cards/admin/MedicalStaff/StatCards';
 import VerificationAlertCard from '@/component/cards/admin/MedicalStaff/VerificationAlertCard';
 
-const STATS = {
-  totalStaff: 1284,
-  pendingVerification: 42,
-  approvedClinicians: 1210,
-  onDuty: 156,
-};
-
 export default function MedicalStaff() {
+  const router = useRouter();
+  const [pending, setPending] = useState(0);
+
+  useEffect(() => {
+    adminAPI
+      .getMedicalStaffStats()
+      .then((res: any) => setPending(Number(res?.data?.pendingVerification) || 0))
+      .catch(() => setPending(0));
+  }, []);
   return (
     <SafeAreaView style={s.safe}>
       <ScrollView style={s.screen} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
@@ -23,15 +27,7 @@ export default function MedicalStaff() {
 
         <MedicalStaffList />
 
-        <VerificationAlertCard
-          pendingCount={STATS.pendingVerification}
-          onReviewQueue={() =>
-            Alert.alert('Review Queue', `${STATS.pendingVerification} specialists awaiting verification.`, [
-              { text: 'Start Review' },
-              { text: 'Cancel', style: 'cancel' },
-            ])
-          }
-        />
+        <VerificationAlertCard pendingCount={pending} onReviewQueue={() => router.push('/admin/document-verification' as any)} />
       </ScrollView>
     </SafeAreaView>
   );

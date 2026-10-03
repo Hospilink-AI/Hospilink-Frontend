@@ -394,3 +394,27 @@ export const CHAT_UI: Record<string, Record<string, string>> = {
     addMore: 'आणखी फाइल जोडा',
   },
 };
+
+// Grievance officer (disputes spec: must be shown in the app). The client supplies the details;
+// set EXPO_PUBLIC_GRIEVANCE_OFFICER to a JSON object, e.g.
+// {"name":"","designation":"","email":"","phone":"","address":"","acknowledgeWithin":"","resolveWithin":""}
+// Nothing is shown until at least name and email are filled.
+export type GrievanceOfficer = {
+  name?: string;
+  designation?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  acknowledgeWithin?: string;
+  resolveWithin?: string;
+};
+
+export const GRIEVANCE_OFFICER: GrievanceOfficer | null = (() => {
+  try {
+    const raw = process.env.EXPO_PUBLIC_GRIEVANCE_OFFICER;
+    const g = raw ? (JSON.parse(raw) as GrievanceOfficer) : null;
+    return g?.name?.trim() && g?.email?.trim() ? g : null;
+  } catch {
+    return null;
+  }
+})();

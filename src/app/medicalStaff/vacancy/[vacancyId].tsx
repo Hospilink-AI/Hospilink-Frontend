@@ -170,7 +170,11 @@ export default function StaffVacancyDetail() {
             <TouchableOpacity style={[styles.applyBtn, applying && { opacity: 0.6 }]} onPress={handleApply} disabled={applying}>
               {applying ? <ActivityIndicator color="#fff" /> : <Text style={styles.applyText}>Apply</Text>}
             </TouchableOpacity>
-            <Text style={styles.hint}>We'll send the resume already on your profile.</Text>
+            <Text style={styles.hint}>
+              {applying
+                ? "Sending your application. This can take a few seconds."
+                : "We'll send the resume already on your profile."}
+            </Text>
           </>
         )}
 

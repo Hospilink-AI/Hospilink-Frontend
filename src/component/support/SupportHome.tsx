@@ -1,3 +1,4 @@
+import GrievanceOfficerCard from "@/component/support/GrievanceOfficerCard";
 import { COLORS } from "@/constant/colors";
 import { chatbotAPI } from "@/service/api";
 import { Ionicons } from "@expo/vector-icons";
@@ -87,6 +88,7 @@ export default function SupportHome({ base }: { base: string }) {
           </TouchableOpacity>
         ))}
       </View>
+      <GrievanceOfficerCard />
     </ScrollView>
   );
 }

@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'expo-router';
+import { adminAPI } from '@/service/api';
 import {
   View,
   Text,
@@ -67,24 +69,16 @@ const card = StyleSheet.create({
   actionLabel: { fontSize: 12, fontWeight: '600' },
 });
 
+// Only cards backed by real numbers. ("Expiring Licenses" had no data source.)
 const CARDS: StatCardProps[] = [
   {
     icon:        '📋',
     iconBg:      '#EFF6FF',
     label:       'Verification Queue',
-    value:       '12',
+    value:       '—',
     description: 'Hospitals awaiting document audit',
     actionLabel: 'Review Queue →',
     actionColor: '#2563EB',
-  },
-  {
-    icon:        '⚠️',
-    iconBg:      '#FFFBEB',
-    label:       'Expiring Licenses',
-    value:       '05',
-    description: 'Facilities with licenses expiring within 30 days',
-    actionLabel: 'Send Notifications 🔔',
-    actionColor: '#D97706',
   },
   // {
   //   icon:        '⚡',
@@ -100,9 +94,29 @@ const CARDS: StatCardProps[] = [
 export default function StatCards() {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
+  const router = useRouter();
+  const [pending, setPending] = useState<number | null>(null);
+
+  useEffect(() => {
+    adminAPI
+      .getHospitalManagementStats()
+      .then((res: any) => setPending(Number((res?.data ?? res)?.pendingVerification) || 0))
+      .catch(() => setPending(null));
+  }, []);
+
+  const cards = CARDS.map((c) =>
+    c.label === 'Verification Queue'
+      ? {
+          ...c,
+          value: pending === null ? '—' : String(pending).padStart(2, '0'),
+          onAction: () => router.push('/admin/document-verification' as any),
+        }
+      : c
+  );
+
   return (
     <View style={[s.row, isMobile && s.rowMobile]}>
-      {CARDS.map((c, i) => (
+      {cards.map((c, i) => (
         <StatCard key={i} {...c} />
       ))}
     </View>

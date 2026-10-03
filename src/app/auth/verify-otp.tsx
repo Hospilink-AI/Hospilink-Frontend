@@ -240,7 +240,9 @@ export default function VerifyOtp() {
         error?.message ??
         '';
 
-      if (message.toLowerCase().includes('expired')) {
+      if (message.toLowerCase().includes('invalid') && message.toLowerCase().includes('expired')) {
+        setOtpError('✗ That OTP is wrong or has expired. Check it, or request a new one.');
+      } else if (message.toLowerCase().includes('expired')) {
         setOtpError('⏱ Your OTP has expired. Please request a new one.');
       } else if (
         message.toLowerCase().includes('invalid') ||
@@ -423,9 +425,6 @@ export default function VerifyOtp() {
 
       </ScrollView>
 
-      <Text style={styles.footer}>
-        © Developed and Managed by Rasika & Co.
-      </Text>
 
     </View>
   );

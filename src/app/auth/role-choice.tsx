@@ -75,9 +75,6 @@ export default function WelcomeChoiceScreen() {
 
         <View style={{ flex: 1 }} />
 
-        <Text style={styles.footerCopy}>
-          © Developed and Managed by Rasika & Co.
-        </Text>
       </ScrollView>
     </SafeAreaView>
   );

@@ -313,21 +313,6 @@ export default function NotificationsCenterScreen() {
           </View>
         </View>
 
-        {/* ── Availability Score ── */}
-        <View style={styles.availCard}>
-          <Text style={styles.availLabel}>AVAILABILITY SCORE</Text>
-          <View style={styles.availNumRow}>
-            <Text style={styles.availNum}>98%</Text>
-            <Text style={styles.availChange}>+2% from last week</Text>
-          </View>
-          <View style={styles.availBar}>
-            <View style={[styles.availBarFill, { width: "98%" }]} />
-          </View>
-          <Text style={styles.availNote}>
-            Excellent! You are in the top 5% of responders this month.
-          </Text>
-        </View>
-
         {/* ── Action buttons ── */}
         <View style={styles.actionsRow}>
           <TouchableOpacity

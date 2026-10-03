@@ -12,6 +12,7 @@ import {
   educationText,
   experienceText,
   formatDate,
+  formatTime,
   formatSlot,
   minutesSince,
   reasonLabel,
@@ -319,7 +320,7 @@ export default function ApplicantDetail() {
               </View>
             )}
             {!!interview?.offer?.expiresAt && (
-              <Text style={styles.muted}>The offer lapses on {formatDate(interview.offer.expiresAt)} if no time is picked.</Text>
+              <Text style={styles.muted}>The offer lapses on {formatDate(interview.offer.expiresAt)}, {formatTime(interview.offer.expiresAt)} if no time is picked.</Text>
             )}
             <View style={[styles.btnRow, { marginTop: 12 }]}>
               <TouchableOpacity style={styles.dangerOutline} onPress={() => openModal("cancelOffer")}>
@@ -635,6 +636,7 @@ export default function ApplicantDetail() {
           {renderActions()}
           {!!actionError && <Text style={styles.errorText}>{actionError}</Text>}
           {busy && !modal && <ActivityIndicator style={{ marginTop: 10 }} color={COLORS.primary} />}
+          {busy && !modal && <Text style={styles.muted}>This can take a few seconds.</Text>}
         </View>
       </View>
 

@@ -19,7 +19,8 @@ interface Props {
 export default function VerificationAlertCard({
   pendingCount,
   onReviewQueue,
-  inviteLink = 'hospilink.com/invite/staff-x23k',
+  // no invite link exists yet; the on-boarding panel shows only when one is passed in
+  inviteLink,
 }: Props) {
   const [dismissed, setDismissed] = useState(false);
   const [copied, setCopied]       = useState(false);
@@ -33,6 +34,9 @@ export default function VerificationAlertCard({
   };
   
   const router = useRouter();
+
+  // nothing waiting, nothing to show
+  if (!pendingCount) return null;
 
   return (
     <View style={styles.wrapper}>
@@ -76,6 +80,7 @@ export default function VerificationAlertCard({
           </View>
 
           {/* RIGHT — Onboarding Card */}
+          {!!inviteLink && (
           <View style={[styles.onboardingCard, isTablet && styles.onboardingCardTablet]}>
             <Text style={styles.onboardingTitle}>Staff On-Boarding</Text>
             <Text style={styles.onboardingSubtitle}>
@@ -95,6 +100,7 @@ export default function VerificationAlertCard({
               </Text>
             </TouchableOpacity>
           </View>
+          )}
 
         </View>
       ) : (

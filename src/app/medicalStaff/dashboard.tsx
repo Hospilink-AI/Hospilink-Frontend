@@ -237,10 +237,10 @@ export default function Dashboard() {
         console.log(response.data)
         // setEarnings(response.data);
         setEarnings({
-          totalEarnings: response.data.totalEarnings,
-          completedDutiesCount: response.data.completedDutiesCount,
-          averagePerDuty: response.data.averagePerDuty,
-          growth: response.data.growth,
+          totalEarnings: response.data.totalEarnings ?? 0,
+          completedDutiesCount: response.data.completedDutiesCount ?? 0,
+          averagePerDuty: response.data.averagePerDuty ?? 0,
+          growth: response.data.growth ?? { percent: 0, trend: "neutral", label: "+0%" },
         });
       }
     } catch (err: any) {

@@ -846,7 +846,7 @@ if (error || !data) {
             <View style={styles.ratingRow}>
               <Ionicons name="star" size={14} color="#F59E0B" />
               <Text style={styles.ratingText}>
-                {staff.avgRating > 0 ? staff.avgRating : '0'}
+                {staff.avgRating && staff.avgRating > 0 ? staff.avgRating.toFixed(1) : 'New'}
               </Text>
             </View>
 

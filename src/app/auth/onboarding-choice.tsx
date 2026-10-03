@@ -54,9 +54,6 @@ export default function OnboardingChoiceScreen() {
         </View>
       </View>
 
-      <Text style={styles.footerCopy}>
-        © Developed and Managed by Rasika & Co.
-      </Text>
     </SafeAreaView>
   );
 }

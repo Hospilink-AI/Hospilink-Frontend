@@ -71,9 +71,6 @@ export default function WelcomeChoiceScreen() {
         </Text>
       </View>
 
-      <Text style={styles.footerCopy}>
-        © Developed and Managed by Rasika & Co.
-      </Text>
     </SafeAreaView>
   );
 }

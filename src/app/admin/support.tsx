@@ -194,12 +194,6 @@ export default function SupportScreen() {
         </View>
 
         {/* ── Footer ── */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            {/* © 2026 Hospilink Medical Systems. All rights reserved. */}
-             © Developed and Managed by Rasika & Co.
-          </Text>
-        </View>
       </ScrollView>  
     </SafeAreaView>
   );

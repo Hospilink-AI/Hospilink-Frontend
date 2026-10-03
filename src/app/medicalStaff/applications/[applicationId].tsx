@@ -265,7 +265,7 @@ export default function StaffApplicationDetail() {
             <Text style={styles.sectionTitle}>Pick your interview times</Text>
             <Text style={styles.muted}>
               Choose every time that works for you. The hospital will confirm one of them.
-              {iv.offer?.expiresAt ? ` Please pick by ${formatDate(iv.offer.expiresAt)}.` : ""}
+              {iv.offer?.expiresAt ? ` Please pick by ${formatDate(iv.offer.expiresAt)}, ${formatTime(iv.offer.expiresAt)}.` : ""}
             </Text>
             <View style={styles.slotList}>
               {(iv.offer?.slots ?? []).map((s: Slot) => {

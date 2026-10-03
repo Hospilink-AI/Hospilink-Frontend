@@ -832,22 +832,6 @@ export const vacancyAPI = {
     return response.data;
   },
 
-  // GET /api/agent/v1/jobs?location=X
-  getJobsByLocation: async (location, page = 1) => {
-    const response = await apiAgent.get('/api/agent/v1/jobs', {
-      params: { location, page },
-    });
-    return response.data;
-  },
-
-  // GET /api/agent/v1/jobs?role=X&location=Y
-  getJobsByRoleAndLocation: async (role, location, page = 1) => {
-    const response = await apiAgent.get('/api/agent/v1/jobs', {
-      params: { role, location, page },
-    });
-    return response.data;
-  },
-
   // GET /api/agent/v1/search/stream?role=X&location=Y
   // SSE stream — returns aggregated result when complete
 
