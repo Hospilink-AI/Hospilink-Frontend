@@ -1548,6 +1548,44 @@ export const availabilityAPI = {
   },
 };
 
+export const inAppNotificationAPI = {
+  // GET /api/notifications?limit=&skip= -> { success, count, data: [{ _id, type, isRead, createdAt, payload: { ..., display } }] }
+  list: async (limit = 20, skip = 0) => {
+    const response = await api.get('/api/notifications', { params: { limit, skip } });
+    return response.data;
+  },
+
+  // GET /api/notifications/unread-count -> { success, count }
+  unreadCount: async () => {
+    const response = await api.get('/api/notifications/unread-count');
+    return response.data;
+  },
+
+  markRead: async (notificationId) => {
+    const response = await api.put(`/api/notifications/${notificationId}/read`);
+    return response.data;
+  },
+
+  markAllRead: async () => {
+    const response = await api.put('/api/notifications/read-all');
+    return response.data;
+  },
+};
+
+export const platformSettingsAPI = {
+  // GET /api/admin/settings (Super Admin) -> { config: [{ key, value, history }] } for offer.*, analytics.*, notifications.*
+  get: async () => {
+    const response = await api.get('/api/admin/settings');
+    return response.data;
+  },
+
+  // PATCH /api/admin/settings - one key at a time. Body: { key, value, effectiveFrom? }
+  update: async (key, value) => {
+    const response = await api.patch('/api/admin/settings', { key, value });
+    return response.data;
+  },
+};
+
 export const ratingOverrideAPI = {
   // POST /api/admin/rating-overrides - proposed, not built yet (see Backend-Notes-27Sep.txt)
   // Body: { profileType: 'hospital' | 'staff', profileId, value, reason, expiresAt? }

@@ -349,6 +349,7 @@ const NavConfig: NavConfigType = {
     ...(AUTO_RELIST_ENABLED
       ? [{ label: "Auto-Relist", icon: "refresh-circle-outline" as IoniconName, route: "/admin/auto-relist" as Href, capability: "autoRelist.analytics.view" as AdminCapability }]
       : []),
+    { label: "Platform Settings", icon: "options-outline" as IoniconName, route: "/admin/settings" as Href, capability: "settings.manage" as AdminCapability },
     ...(ANALYTICS_ENABLED
       ? [{ label: "Analytics", icon: "stats-chart-outline" as IoniconName, route: "/admin/analytics" as Href, capability: "analytics.view" as AdminCapability }]
       : []),

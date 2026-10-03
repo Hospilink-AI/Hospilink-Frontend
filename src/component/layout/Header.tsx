@@ -270,6 +270,8 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HEADER_CONTENT_HEIGHT } from "@/constant/layout";
 import NotificationPopup from "./Notification";
+import InAppBell from "@/component/inAppNotifications/InAppBell";
+import { INAPP_NOTIFICATIONS_ENABLED } from "@/constant/inAppNotifications";
 import { adminSubRoleLabel } from "@/constant/adminCapabilities";
 import { useCapability } from "@/hooks/useCapability";
 
@@ -395,6 +397,9 @@ export default function Header() {
         />
 
         {/* Bell */}
+        {INAPP_NOTIFICATIONS_ENABLED ? (
+          <InAppBell />
+        ) : (
         <TouchableOpacity
           style={styles.bellBtn}
           onPress={() => setShowNotifications(v => !v)}
@@ -409,6 +414,7 @@ export default function Header() {
             </View>
           )}
         </TouchableOpacity>
+        )}
 
         {/* Avatar */}
         {role !== "admin" && (
@@ -429,6 +435,7 @@ export default function Header() {
         )}
       </View>
 
+      {!INAPP_NOTIFICATIONS_ENABLED && (
       <NotificationPopup
         isVisible={showNotifications}
         role={role}
@@ -446,6 +453,7 @@ export default function Header() {
           }
         }}
       />
+      )}
     </View>
   );
 }
