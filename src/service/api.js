@@ -1429,6 +1429,50 @@ export const autoRelistAPI = {
   },
 };
 
+export const dutyCalendarAPI = {
+  // GET /api/duties/calendar-counts?from=&to= (hospital or staff, window up to 100 days, cached 60s on the server)
+  // -> { from, to, timezone, settings: { weekStart, prefetchPeriods, bookingHorizonDays, historyDays },
+  //      openCountsAvailable? (staff), days: [...] } - only dates with something on them
+  getCounts: async (from, to) => {
+    const response = await api.get('/api/duties/calendar-counts', { params: { from, to } });
+    return response.data;
+  },
+
+  // GET /api/duties/calendar-day?date= (no Maps)
+  // Hospital -> { date, summary: { total, filled }, groups: [{ staffRole, dutySubType, startTime, endTime,
+  //   isOvernightDuty, continuation, slots, filled, duties: [{ dutyId, status, urgency, offeredRate, relistCount, staff | null }] }] }
+  // Staff -> { date, duties: [{ dutyId, status, staffRole, dutySubType, startTime, endTime, isOvernightDuty,
+  //   continuation, urgency, offeredRate, totalPayment, hospital: { id, name, address, city, state } }] }
+  getDay: async (date) => {
+    const response = await api.get('/api/duties/calendar-day', { params: { date } });
+    return response.data;
+  },
+
+  // GET /api/duties/available?date= - open duties for one date. Uses Maps, so only on a tap.
+  getAvailableOn: async (date) => {
+    const response = await api.get('/api/duties/available', { params: { date } });
+    return response.data;
+  },
+
+  // GET /api/duties/:id/fill-progress (owning hospital) -> { dutyId, status, current, steps: [{ key, at?, count?, staff? }] }
+  getFillProgress: async (dutyId) => {
+    const response = await api.get(`/api/duties/${dutyId}/fill-progress`);
+    return response.data;
+  },
+
+  // GET /api/admin/calendar/config (Super Admin) -> { config: [{ key, value, history }] }
+  getConfig: async () => {
+    const response = await api.get('/api/admin/calendar/config');
+    return response.data;
+  },
+
+  // PATCH /api/admin/calendar/config - one key at a time. Body: { key, value, effectiveFrom? }
+  updateConfig: async (key, value) => {
+    const response = await api.patch('/api/admin/calendar/config', { key, value });
+    return response.data;
+  },
+};
+
 export const ratingOverrideAPI = {
   // POST /api/admin/rating-overrides - proposed, not built yet (see Backend-Notes-27Sep.txt)
   // Body: { profileType: 'hospital' | 'staff', profileId, value, reason, expiresAt? }

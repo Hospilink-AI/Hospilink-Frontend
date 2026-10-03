@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { dutyAPI } from '../../../service/api';
 import AutoRelistCard from '@/component/autoRelist/AutoRelistCard';
+import FillProgress from '@/component/dutyCalendar/FillProgress';
 
 // ─── Types ────────────────────────────────────────────────
 interface DutyDetail {
@@ -383,6 +384,7 @@ function MobileLayout({ duty, dutyId, router }: { duty: DutyDetail; dutyId: stri
         </View>
       )}
 
+      <FillProgress dutyId={duty._id} />
       <AutoRelistCard duty={duty} viewer="hospital" style={{ marginBottom: 12 }} />
 
       {/* ── Card 7: Status History ── */}
@@ -568,6 +570,7 @@ function DesktopLayout({ duty, dutyId, router }: { duty: DutyDetail; dutyId: str
             </View>
           )}
 
+          <FillProgress dutyId={duty._id} />
           <AutoRelistCard duty={duty} viewer="hospital" />
 
           {/* Status history */}

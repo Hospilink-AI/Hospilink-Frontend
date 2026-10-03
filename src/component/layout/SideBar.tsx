@@ -296,6 +296,7 @@ import { authAPI } from "../../service/api";
 import { useCapability } from "@/hooks/useCapability";
 import { AdminCapability } from "@/constant/adminCapabilities";
 import { AUTO_RELIST_ENABLED } from "@/constant/autoRelist";
+import { DUTY_CALENDAR_ENABLED } from "@/constant/dutyCalendar";
 
 type IoniconName = ComponentProps<typeof Ionicons>["name"];
 
@@ -316,12 +317,14 @@ type NavConfigType = {
 const NavConfig: NavConfigType = {
   medicalStaff: [
     { label: "Dashboard", icon: "grid-outline",   route: "/medicalStaff/dashboard" },
+    ...(DUTY_CALENDAR_ENABLED ? [{ label: "Calendar", icon: "calendar-number-outline" as IoniconName, route: "/medicalStaff/calendar" as Href }] : []),
     { label: "History",   icon: "time-outline",   route: "/medicalStaff/history"   },
     { label: "Vacancies", icon: "briefcase-outline", route: "/medicalStaff/vacancies" },
     { label: "Profile",   icon: "person-outline", route: "/medicalStaff/profile"   },
   ],
   hospital: [
     { label: "Dashboard",      icon: "grid-outline",   route: "/hospital/dashboard"      },
+    ...(DUTY_CALENDAR_ENABLED ? [{ label: "Calendar", icon: "calendar-number-outline" as IoniconName, route: "/hospital/calendar" as Href }] : []),
     { label: "Live Tracking",  icon: "locate-outline", route: "/hospital/live-tracking"  },
     { label: "Live Monitoring",icon: "eye-outline",    route: "/hospital/live-monitoring" },
     { label: "Duty History",   icon: "time-outline",   route: "/hospital/duty-history"   },
@@ -344,6 +347,9 @@ const NavConfig: NavConfigType = {
     { label: "Knowledge Base",       icon: "book-outline",             route: "/admin/knowledge-base" as Href, capability: "knowledgeBase.manage" },
     ...(AUTO_RELIST_ENABLED
       ? [{ label: "Auto-Relist", icon: "refresh-circle-outline" as IoniconName, route: "/admin/auto-relist" as Href, capability: "autoRelist.analytics.view" as AdminCapability }]
+      : []),
+    ...(DUTY_CALENDAR_ENABLED
+      ? [{ label: "Calendar Settings", icon: "calendar-number-outline" as IoniconName, route: "/admin/calendar-settings" as Href, capability: "calendar.config.manage" as AdminCapability }]
       : []),
   ],
 };

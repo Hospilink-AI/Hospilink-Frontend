@@ -19,7 +19,8 @@ export type AdminCapability =
   | 'pattern.view' | 'suspension.decide'
   | 'feedback.view'
   | 'autoRelist.analytics.view' | 'autoRelist.history.view' | 'autoRelist.manage'
-  | 'autoRelist.spend.view' | 'autoRelist.config.manage';
+  | 'autoRelist.spend.view' | 'autoRelist.config.manage'
+  | 'calendar.config.manage';
 
 // super_admin has every capability (see hasCapability)
 const ADMIN_CAPABILITIES: Record<
@@ -115,6 +116,7 @@ const ADMIN_ROUTE_CAPABILITIES: [string, AdminCapability][] = [
   ['/admin/knowledge-base', 'knowledgeBase.manage'],
   ['/admin/auto-relist/settings', 'autoRelist.config.manage'],
   ['/admin/auto-relist', 'autoRelist.analytics.view'],
+  ['/admin/calendar-settings', 'calendar.config.manage'],
 ];
 
 export function adminRouteCapability(pathname: string): AdminCapability | null {
