@@ -131,6 +131,7 @@ import { authAPI } from "../../service/api";
 import { AdminCapability } from "@/constant/adminCapabilities";
 import { AUTO_RELIST_ENABLED } from "@/constant/autoRelist";
 import { DUTY_CALENDAR_ENABLED } from "@/constant/dutyCalendar";
+import { ANALYTICS_ENABLED } from "@/constant/analytics";
 import { useCapability } from "@/hooks/useCapability";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -180,6 +181,9 @@ const NavConfig: NavConfigType = {
     { label: "Activity Logs", icon: "reload-outline", route: "/admin/activity-logs", capability: "activityLog.view" },
     ...(AUTO_RELIST_ENABLED
       ? [{ label: "Auto-Relist", icon: "refresh-circle-outline" as IoniconName, route: "/admin/auto-relist" as Href, capability: "autoRelist.analytics.view" as AdminCapability }]
+      : []),
+    ...(ANALYTICS_ENABLED
+      ? [{ label: "Analytics", icon: "stats-chart-outline" as IoniconName, route: "/admin/analytics" as Href, capability: "analytics.view" as AdminCapability }]
       : []),
     ...(DUTY_CALENDAR_ENABLED
       ? [{ label: "Calendar Settings", icon: "calendar-number-outline" as IoniconName, route: "/admin/calendar-settings" as Href, capability: "calendar.config.manage" as AdminCapability }]
