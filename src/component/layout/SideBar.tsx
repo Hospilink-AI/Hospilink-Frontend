@@ -297,6 +297,7 @@ import { useCapability } from "@/hooks/useCapability";
 import { AdminCapability } from "@/constant/adminCapabilities";
 import { AUTO_RELIST_ENABLED } from "@/constant/autoRelist";
 import { DUTY_CALENDAR_ENABLED } from "@/constant/dutyCalendar";
+import { ANALYTICS_ENABLED } from "@/constant/analytics";
 
 type IoniconName = ComponentProps<typeof Ionicons>["name"];
 
@@ -347,6 +348,9 @@ const NavConfig: NavConfigType = {
     { label: "Knowledge Base",       icon: "book-outline",             route: "/admin/knowledge-base" as Href, capability: "knowledgeBase.manage" },
     ...(AUTO_RELIST_ENABLED
       ? [{ label: "Auto-Relist", icon: "refresh-circle-outline" as IoniconName, route: "/admin/auto-relist" as Href, capability: "autoRelist.analytics.view" as AdminCapability }]
+      : []),
+    ...(ANALYTICS_ENABLED
+      ? [{ label: "Analytics", icon: "stats-chart-outline" as IoniconName, route: "/admin/analytics" as Href, capability: "analytics.view" as AdminCapability }]
       : []),
     ...(DUTY_CALENDAR_ENABLED
       ? [{ label: "Calendar Settings", icon: "calendar-number-outline" as IoniconName, route: "/admin/calendar-settings" as Href, capability: "calendar.config.manage" as AdminCapability }]

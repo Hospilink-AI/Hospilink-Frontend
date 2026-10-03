@@ -1473,6 +1473,31 @@ export const dutyCalendarAPI = {
   },
 };
 
+export const analyticsAPI = {
+  // GET /api/admin/analytics/catalogue (Super Admin) -> { sections: [{ key, label, availability }],
+  //   kpis: [{ section, key, label, definition, unit, availability }] }
+  getCatalogue: async () => {
+    const response = await api.get('/api/admin/analytics/catalogue');
+    return response.data;
+  },
+
+  // GET /api/admin/analytics/:section?from=&to=&granularity=&staffRole=&urgency=&city= (all optional; default last 30 days, max 400)
+  // -> { section, period, filters, generatedAt, tiles, charts, dataNotes }
+  getSection: async (section, params = {}) => {
+    const response = await api.get(`/api/admin/analytics/${section}`, { params });
+    return response.data;
+  },
+
+  // GET /api/admin/analytics/export?section=&format=csv|xlsx + the same filters (Super Admin) -> file
+  exportSection: async (section, format, params = {}) => {
+    const response = await api.get('/api/admin/analytics/export', {
+      params: { ...params, section, format },
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+};
+
 export const ratingOverrideAPI = {
   // POST /api/admin/rating-overrides - proposed, not built yet (see Backend-Notes-27Sep.txt)
   // Body: { profileType: 'hospital' | 'staff', profileId, value, reason, expiresAt? }
