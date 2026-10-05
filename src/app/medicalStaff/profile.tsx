@@ -87,7 +87,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
 
   // ── Static fallbacks (only for licenses and stat card icons/labels/colors)
-  const { stats: staticStats, licenses } = profileData;
+  const { stats: staticStats } = profileData;
 
   // ────────────────────────────────────────────────────────────
   // GET /api/profile/me
@@ -258,7 +258,7 @@ export default function Profile() {
           <ProfessionalSummary summary={displaySummary} onEdit={() => { }} />
           {/* FIX: pass live education array */}
           <EducationCard items={displayEducation} onAdd={() => { }} />
-          <LicensesCard items={licenses} onManage={() => { }} />
+          <LicensesCard />
           <RatingSection role="staff" />
         </View>
         <View style={[styles.rightCol, isMobile && styles.rightColMobile]}>

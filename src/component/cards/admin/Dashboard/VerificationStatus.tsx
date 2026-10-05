@@ -84,11 +84,6 @@ const formatRoleLabel = (role: string) => {
 };
 
 // Static data for Verification until that API is ready
-const VERIFICATION_DATA: VerificationItem[] = [
-  { percentage: 58, label: 'Emergency', count: '742', color: '#3B82F6' },
-  { percentage: 57, label: 'Pending', count: '82', color: '#22C55E' },
-  { percentage: 2, label: 'Rejected', count: '18', color: '#F59E0B' },
-];
 
 export default function VerificationStatus() {
   const [staffData, setStaffData] = useState<StaffItem[]>([]);
@@ -96,6 +91,22 @@ export default function VerificationStatus() {
   const [error, setError] = useState('');
   // New state to toggle expanding the staff list
   const [showAllStaff, setShowAllStaff] = useState(false);
+  // document verification counts from the server (the sample numbers are gone)
+  const [verification, setVerification] = useState<VerificationItem[]>([]);
+
+  useEffect(() => {
+    adminAPI
+      .getDocumentStats()
+      .then((d: any) => {
+        if (!d) return;
+        setVerification([
+          { percentage: Math.round(d.approvedPct ?? 0), label: 'Approved', count: String(d.approved ?? 0), color: '#22C55E' },
+          { percentage: Math.round(d.pendingPct ?? 0), label: 'Pending', count: String(d.pending ?? 0), color: '#3B82F6' },
+          { percentage: Math.round(d.rejectedPct ?? 0), label: 'Rejected', count: String(d.rejected ?? 0), color: '#F59E0B' },
+        ]);
+      })
+      .catch(() => setVerification([]));
+  }, []);
 
   const CHART_COLORS = ['#3B82F6', '#22C55E', '#F59E0B', '#8B5CF6', '#EC4899', '#14B8A6'];
 
@@ -197,7 +208,7 @@ export default function VerificationStatus() {
         </View>
 
         <View style={styles.verificationList}>
-          {VERIFICATION_DATA.map((item, index) => (
+          {verification.map((item, index) => (
             <View key={index} style={styles.verificationItem}>
               <CircularProgress
                 percentage={item.percentage}

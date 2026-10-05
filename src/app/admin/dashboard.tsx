@@ -6,6 +6,7 @@ import StatCard from '@/component/cards/admin/Dashboard/StatCard';
 import RecentRequests from '@/component/cards/admin/Dashboard/RecentRequest';
 import VerificationStatus from '@/component/cards/admin/Dashboard/VerificationStatus';
 import PortalUsage from '@/component/cards/admin/Dashboard/PortalUsage';
+import RecentAlerts from '@/component/inAppNotifications/RecentAlerts';
 import { adminAPI } from '@/service/api';
 
 // 1. Define the TypeScript Interface for your stats
@@ -94,41 +95,8 @@ useEffect(() => {
   fetchDashboardStats();
 }, [fetchDashboardStats]);
 
-  // Visual replica of the Alerts section from the image
-  const renderAlertsSection = () => (
-    <View style={styles.alertsContainer}>
-      <View style={styles.alertsHeader}>
-        <Text style={styles.alertsTitle}>Alerts</Text>
-        <View style={styles.alertsBadge}>
-          <Text style={styles.alertsBadgeText}>2 New</Text>
-        </View>
-      </View>
-
-      <View style={[styles.alertCard, styles.alertRed]}>
-        <Text style={styles.alertCardTitle}>
-          <Text style={{ color: '#EF4444' }}>🔕</Text> Code Blue Drill - 15:00
-        </Text>
-        <Text style={styles.alertCardDesc}>Simulated emergency drill in Wing B. Staff participation required.</Text>
-        <Text style={styles.alertCardTime}>10 mins ago</Text>
-      </View>
-
-      <View style={[styles.alertCard, styles.alertYellow]}>
-        <Text style={styles.alertCardTitle}>
-          <Text style={{ color: '#F59E0B' }}>⚠️</Text> System Maintenance
-        </Text>
-        <Text style={styles.alertCardDesc}>EMR system will undergo brief downtime at 02:00 AM</Text>
-        <Text style={styles.alertCardTime}>1 hour ago</Text>
-      </View>
-
-      <View style={[styles.alertCard, styles.alertBlue]}>
-        <Text style={styles.alertCardTitle}>
-          <Text style={{ color: '#3B82F6' }}>ℹ️</Text> New Policy Update
-        </Text>
-        <Text style={styles.alertCardDesc}>Please review the updated visitor guidelines effectively immediately.</Text>
-        <Text style={styles.alertCardTime}>Yesterday</Text>
-      </View>
-    </View>
-  );
+  // the admin's latest real notifications (the sample alerts are gone)
+  const renderAlertsSection = () => <RecentAlerts />;
 
   return (
     <ScrollView
