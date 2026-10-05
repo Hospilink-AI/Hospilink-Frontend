@@ -65,6 +65,8 @@ interface LiveMapProps {
     availability: Record<string, string | undefined>;
     dateLabel?: string;
   };
+  // extra controls in a doctor's pop-up (Block / Report)
+  renderDoctorActions?: (doctor: DoctorWithDistance) => React.ReactNode;
 }
 
 const AVAILABILITY_TEXT: Record<string, { text: string; color: string }> = {
@@ -144,7 +146,7 @@ const RefreshControl: React.FC<RefreshControlProps> = ({ onRefresh }) => {
 
 
 
-const LiveMap: React.FC<LiveMapProps> = ({ hospital, doctors, rangeKm, onRefresh, isSatellite, onToggleSatellite, invite }) => {
+const LiveMap: React.FC<LiveMapProps> = ({ hospital, doctors, rangeKm, onRefresh, isSatellite, onToggleSatellite, invite, renderDoctorActions }) => {
 
     console.log({
     MapContainer,
@@ -210,6 +212,7 @@ const LiveMap: React.FC<LiveMapProps> = ({ hospital, doctors, rangeKm, onRefresh
             📞 {doc.phone}<br />
             📧 {doc.email} <br />
             <small style={{ color: '#777' }}>{doc.location.address}</small>
+            {renderDoctorActions && <div style={{ marginTop: 6 }}>{renderDoctorActions(doc)}</div>}
             {invite && (
               <div>
                 {AVAILABILITY_TEXT[invite.availability[doc.id] ?? ''] && (

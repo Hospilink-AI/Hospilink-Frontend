@@ -1769,7 +1769,9 @@ const Profile = () => {
                 <Text style={mSt.profileName} numberOfLines={1}>
                   {hospitalLegalName || "Hospital Name"}
                 </Text>
-                <Text style={mSt.profileSub}>Multispeciality Hospital</Text>
+                {!!(city || state) && (
+                  <Text style={mSt.profileSub}>{[city, state].filter(Boolean).join(", ")}</Text>
+                )}
                 {verificationStatus === "verified" ? (
                   <View style={mSt.verifiedRow}>
                     <View style={mSt.greenDot} />
@@ -1976,8 +1978,7 @@ const Profile = () => {
                 <View style={{ flex: 1 }}>
                   <Text style={gSt.hospitalTitle}>{hospitalLegalName}</Text>
                   <Text style={gSt.hospitalSub}>
-                    Multispeciality Hospital • {city}
-                    {state ? `, ${state}` : ""}
+                    {[city, state].filter(Boolean).join(", ")}
                   </Text>
                 </View>
               </View>
@@ -2169,79 +2170,31 @@ const Profile = () => {
             </View>
           )}
 
-          {/* ── Departments & Services ── */}
+          {/* ── Departments & Services (what the hospital entered in Edit Profile) ── */}
           <View style={gSt.sectionCard}>
             <View style={gSt.sectionHeader}>
               <Text style={gSt.sectionTitle}>
                 List of Department & Services
               </Text>
-              <TouchableOpacity>
-                <Text style={gSt.viewAllTxt}>View All</Text>
+              <TouchableOpacity onPress={handleStartEdit}>
+                <Text style={gSt.viewAllTxt}>Edit</Text>
               </TouchableOpacity>
             </View>
-            <View style={gSt.deptMainRow}>
-              <View style={gSt.deptMainBox}>
-                <View style={[gSt.deptIcon, { backgroundColor: RED_BG }]}>
-                  <Ionicons name="medkit" size={20} color={RED_TEXT} />
-                </View>
-                <Text style={gSt.deptMainTitle}>Emergency & Acute Care</Text>
-                <Text style={gSt.deptMainSub}>
-                  Level 1 Trauma center and 24/7 cardiac emergency.
-                </Text>
-              </View>
-              <View style={gSt.deptMainBox}>
-                <View
-                  style={[
-                    gSt.deptIcon,
-                    { backgroundColor: PURPLE_LIGHT },
-                  ]}
-                >
-                  <Ionicons name="scan" size={20} color="#9333EA" />
-                </View>
-                <Text style={gSt.deptMainTitle}>Diagnostics & Imaging</Text>
-                <Text style={gSt.deptMainSub}>
-                  Advanced MRI, CT-Scan, and Pathology Labs.
-                </Text>
-              </View>
-              <View style={gSt.deptMainBox}>
-                <View
-                  style={[gSt.deptIcon, { backgroundColor: GREEN_LIGHT }]}
-                >
-                  <Ionicons name="people" size={20} color={GREEN} />
-                </View>
-                <Text style={gSt.deptMainTitle}>Support Services</Text>
-                <Text style={gSt.deptMainSub}>
-                  Physical therapy, Nutrition, and Social work.
-                </Text>
-              </View>
-            </View>
-            <View style={gSt.deptTagsRow}>
-              {services.map((srv, idx) => (
-                <View key={idx} style={gSt.deptMiniBox}>
-                  <View style={gSt.deptMiniHeader}>
-                    <Text style={gSt.deptMiniTitle} numberOfLines={1}>
+            {services.length === 0 ? (
+              <Text style={{ fontSize: 13, color: TEXT_SECONDARY }}>
+                No departments or services added yet. Add them with Edit.
+              </Text>
+            ) : (
+              <View style={gSt.deptTagsRow}>
+                {services.map((srv, idx) => (
+                  <View key={idx} style={gSt.deptMiniBox}>
+                    <Text style={gSt.deptMiniTitle} numberOfLines={2}>
                       {srv}
                     </Text>
-                    <Ionicons
-                      name="arrow-forward"
-                      size={12}
-                      color={TEXT_SECONDARY}
-                    />
                   </View>
-                  <View style={gSt.progressBarBg}>
-                    <View
-                      style={[
-                        gSt.progressBarFill,
-                        {
-                          width: `${Math.floor(Math.random() * 50) + 40}%`,
-                          backgroundColor: BLUE,
-                        },
-                      ]}
-                    />
-                  </View>
-                </View>
-              ))}
-            </View>
+                ))}
+              </View>
+            )}
           </View>
 
           {/* ── Licenses & Certifications ── */}

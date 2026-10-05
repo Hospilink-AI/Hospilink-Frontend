@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { DemoBadge } from "@/component/admin-settings/DemoAccounts";
 import React, { useState, useEffect, useCallback } from 'react';
 import { useCapability } from '@/hooks/useCapability';
 import {
@@ -26,6 +27,7 @@ interface EmergencyRequest {
   id: string;
   hospital: Hospital;
   staffRole: string;
+  isDemo?: boolean; // store reviewer demo duty
   date: string;
   startTime: string;
   endTime: string;
@@ -38,6 +40,7 @@ interface EmergencyRequest {
 }
 
 interface StaffMember {
+  isDemo?: boolean; // store reviewer demo account
   fullName: string;
   jobRole: string;
   phoneNumber?: string;
@@ -404,7 +407,7 @@ export default function RecentRequests() {
                     {/* Requirement */}
                     <View style={styles.colRequirement}>
                       <Text style={styles.requirementText} numberOfLines={1}>
-                        1x {formatRole(req.staffRole)}
+                        1x {formatRole(req.staffRole)}{req.isDemo && <DemoBadge />}
                       </Text>
                     </View>
 
@@ -658,7 +661,7 @@ export default function RecentRequests() {
 
                       <View style={styles.doctorInfo}>
                         <Text style={styles.doctorName} numberOfLines={1}>
-                          {staff.fullName}
+                          {staff.fullName}{staff.isDemo && <DemoBadge />}
                         </Text>
                         <Text style={styles.doctorRole}>
                           {formatRole(staff.jobRole)}

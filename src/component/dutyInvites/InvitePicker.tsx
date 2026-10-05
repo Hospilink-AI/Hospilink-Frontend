@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import FavouriteHeart from "./FavouriteHeart";
+import PersonActions from "@/component/safety/PersonActions";
 
 export type PickerSource = { kind: "hospital" } | { kind: "admin"; hospitalId: string };
 
@@ -105,6 +106,16 @@ export default function InvitePicker({
         : g
     );
 
+  // a blocked doctor can't be invited: drop them from the lists and the picks
+  const removeBlocked = (id: string) => {
+    setPicked((p) => p.filter((x) => x.staffId !== id));
+    setGroups((g) =>
+      g
+        ? (Object.fromEntries(Object.entries(g).map(([k, list]) => [k, (list as InviteCard[]).filter((c) => c.staffId !== id)])) as InviteGroups)
+        : g
+    );
+  };
+
   const total = useMemo(() => (groups ? groups.favourites.length + groups.workedWithYou.length + groups.nearby.length : 0), [groups]);
 
   return (
@@ -161,6 +172,7 @@ export default function InvitePicker({
                           heart={source.kind === "hospital"}
                           onFavourite={(v) => setFavourite(c.staffId, v)}
                           onError={setNote}
+                          onBlocked={source.kind === "hospital" ? removeBlocked : undefined}
                         />
                       ))
                     )}
@@ -198,6 +210,7 @@ export function DoctorRow({
   heart,
   onFavourite,
   onError,
+  onBlocked,
 }: {
   card: InviteCard;
   on: boolean;
@@ -205,6 +218,8 @@ export function DoctorRow({
   heart?: boolean;
   onFavourite?: (v: boolean) => void;
   onError?: (m: string) => void;
+  // hospitals only: adds Block / Report
+  onBlocked?: (staffId: string) => void;
 }) {
   const badge = availabilityBadge(card);
   const rating = typeof card.effectiveRating === "number" ? `★ ${card.effectiveRating.toFixed(1)}` : "Unrated";
@@ -251,6 +266,7 @@ export function DoctorRow({
         </View>
       </View>
       {heart && <FavouriteHeart staffId={card.staffId} value={!!card.isFavourite} onChange={onFavourite} onError={onError} />}
+      {onBlocked && <PersonActions kind="staff" id={card.staffId} name={card.name} onBlocked={() => onBlocked(card.staffId)} />}
     </Pressable>
   );
 }

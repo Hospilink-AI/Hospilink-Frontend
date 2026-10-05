@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import BlockedAccounts from "./BlockedAccounts";
 import DeleteAccount, { DeletionResult, formatDeletionDate } from "./DeleteAccount";
 
 // Profile → Account settings (doctors and hospitals)
@@ -34,6 +35,14 @@ export default function AccountSettingsScreen({ role }: { role: "staff" | "hospi
         <Text style={s.backText}>Profile</Text>
       </TouchableOpacity>
       <Text style={s.title}>Account settings</Text>
+
+      <View style={[s.card, { marginBottom: 16 }]}>
+        <View style={s.cardHead}>
+          <Ionicons name="ban-outline" size={20} color={COLORS.text} />
+          <Text style={s.cardTitle}>Blocked accounts</Text>
+        </View>
+        <BlockedAccounts role={role} />
+      </View>
 
       <View style={s.card}>
         <View style={s.cardHead}>

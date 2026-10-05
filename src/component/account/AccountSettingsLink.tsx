@@ -12,7 +12,7 @@ export default function AccountSettingsLink({ base }: { base: "medicalStaff" | "
       <Ionicons name="settings-outline" size={20} color={COLORS.subText} />
       <View style={{ flex: 1 }}>
         <Text style={s.title}>Account settings</Text>
-        <Text style={s.sub}>Delete your account</Text>
+        <Text style={s.sub}>Blocked accounts, delete your account</Text>
       </View>
       <Ionicons name="chevron-forward" size={18} color={COLORS.subText} />
     </TouchableOpacity>

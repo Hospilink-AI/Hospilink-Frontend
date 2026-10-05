@@ -15,6 +15,7 @@ import { dutyAPI } from '../../../service/api';
 import { dutyErrorMessage } from '@/constant/dutyInvites';
 import RelistBadges from '@/component/autoRelist/RelistBadges';
 import StaffCancelDuty from '@/component/autoRelist/StaffCancelDuty';
+import PersonActions from '@/component/safety/PersonActions';
 
 // ─── Types ────────────────────────────────────────────────
 interface DutyDetail {
@@ -33,6 +34,7 @@ interface DutyDetail {
   distance?: number;
   distanceText?: string;
   hospital: {
+    _id?: string;
     hospitalLegalName: string;
     currentAddress: string;
     location?: string;
@@ -417,6 +419,9 @@ export default function DutyDetailsScreen() {
               </View>
 
               <View style={styles.headerRight}>
+                {!!duty.hospital?._id && (
+                  <PersonActions kind="hospital" id={duty.hospital._id} name={duty.hospital.hospitalLegalName} dutyId={duty._id} />
+                )}
                 {duty.isOvernightDuty && (
                   <View style={styles.overnightBadge}>
                     <Ionicons name="moon-outline" size={11} color="#2563EB" />
