@@ -1,4 +1,6 @@
 import * as DocumentPicker from "expo-document-picker";
+import AccountSettingsLink from "@/component/account/AccountSettingsLink";
+import LogoutButton from "@/component/account/LogoutButton";
 import RatingSection from "@/component/rating/RatingSection";
 import * as ImagePicker from "expo-image-picker";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -1018,6 +1020,7 @@ const Profile = () => {
         )}
 
         <RatingSection role="hospital" />
+        <AccountSettingsLink base="hospital" />
 
         {/* ── Departments & Services ── */}
         <View style={gSt.sectionCard}>
@@ -1115,6 +1118,8 @@ const Profile = () => {
             </View>
           </View>
 
+        {/* phones have no sidebar, so log out lives here */}
+        {isMobile && <LogoutButton />}
       </ScrollView>
 
       {/* ── Edit Profile Modal ── */}

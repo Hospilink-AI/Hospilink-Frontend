@@ -4,6 +4,8 @@ import { Platform } from 'react-native';
 import { fcmService } from '@/service/fcm';
 import { adminAPI, notificationAPI } from '@/service/api';
 import { AdminSubRole } from '@/constant/adminCapabilities';
+import { flash, onSessionEnded } from '@/service/session';
+import { router } from 'expo-router';
 
 type User = {
   id: string;
@@ -75,6 +77,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   
+
+  // The API ended the session (account scheduled for deletion, user gone, token rejected).
+  // Web reloads on its own; the app clears the session here and goes to sign-in.
+  useEffect(
+    () =>
+      onSessionEnded((message) => {
+        setToken(null);
+        setUser(null);
+        if (Platform.OS !== 'web') {
+          if (message) flash(message, 'warning');
+          router.replace('/auth/login' as any);
+        }
+      }),
+    []
+  );
 
   const logout = async () => {
     // Remove FCM token before logout

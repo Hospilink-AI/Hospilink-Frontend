@@ -417,6 +417,12 @@ export default function Profile() {
             icon="medkit-outline"
             label="Specialty"
             right={<ValueText text={roleLabel} />}
+          />
+          <Row
+            icon="settings-outline"
+            label="Account settings"
+            onPress={() => router.push("/medicalStaff/account" as any)}
+            right={<Chevron />}
             isLast
           />
         </View>

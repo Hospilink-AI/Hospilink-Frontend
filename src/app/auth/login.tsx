@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { flash } from "@/service/session";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -163,6 +164,16 @@ export default function AuthScreen() {
       }
 
       setSession(response.token, response.user);
+
+      // signing in during the grace period keeps the account (backend cancels the deletion)
+      if (response.deletionCancelled) {
+        flash(
+          response.user?.role === "staff"
+            ? "Welcome back, your account deletion has been cancelled. Your availability is off; turn it on when you're ready for duties."
+            : "Welcome back, your account deletion has been cancelled.",
+          "success"
+        );
+      }
 
       const role = response.user?.role;
 
