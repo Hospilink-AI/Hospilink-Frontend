@@ -486,7 +486,11 @@ export default function DutyHistoryScreen() {
   useEffect(() => { fetchDuties(); }, [fetchDuties]);
 
   /* ---- Handlers ---- */
+  // Phones: the filters fold away so the list keeps most of the screen
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
   const handleApply = () => {
+    setFiltersOpen(false);
     setPage(1);
     setAppliedDate({ ...draftDate });
     setAppliedRole(draftRole);
@@ -652,7 +656,7 @@ export default function DutyHistoryScreen() {
       <View style={styles.pageContainer}>
 
         {/* ── PAGE HEADER (pinned) ── */}
-        <View style={styles.pageHeader}>
+        <View style={[styles.pageHeader, isMobile && { flexWrap: 'wrap', gap: 8, marginBottom: 12 }]}>
           <View>
             <Text style={styles.pageTitle}>Duty History</Text>
             {totalItems > 0 && (
@@ -666,12 +670,25 @@ export default function DutyHistoryScreen() {
         </View>
 
         {/* ── FILTER BAR (pinned) ── */}
-        <View style={styles.filterCard}>
+        <View style={[styles.filterCard, isMobile && { paddingVertical: 10 }]}>
           {isMobile ? (
             /* ─────────────────────────────────────────────────────
-               MOBILE: vertical stack
+               MOBILE: a Filters row that opens the vertical stack
             ───────────────────────────────────────────────────── */
-            <View style={styles.filterColStack}>
+            <View>
+            <TouchableOpacity
+              style={styles.filterToggle}
+              onPress={() => setFiltersOpen((v) => !v)}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: filtersOpen }}
+            >
+              <Text style={styles.filterToggleTxt}>
+                Filters{hasActiveFilter ? ' · on' : ''}
+              </Text>
+              <Text style={styles.filterToggleLink}>{filtersOpen ? 'Hide' : 'Show'}</Text>
+            </TouchableOpacity>
+            {filtersOpen && (
+            <View style={[styles.filterColStack, { marginTop: 12 }]}>
 
               {/* DATE */}
               <View style={styles.filterFieldFull}>
@@ -722,6 +739,8 @@ export default function DutyHistoryScreen() {
                 )}
               </View>
 
+            </View>
+            )}
             </View>
           ) : (
             /* ─────────────────────────────────────────────────────
@@ -1425,6 +1444,9 @@ const styles = StyleSheet.create({
   exportBtnText: { fontSize: 13, fontWeight: '600', color: '#374151' },
 
   /* ── Filter Card ── */
+  filterToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  filterToggleTxt: { fontSize: 14, fontWeight: '700', color: '#0F172A' },
+  filterToggleLink: { fontSize: 13, fontWeight: '700', color: '#2563EB' },
   filterCard: {
     backgroundColor: '#fff',
     borderRadius: 12,

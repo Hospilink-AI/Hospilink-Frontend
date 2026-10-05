@@ -130,6 +130,7 @@ import {
 import { authAPI } from "../../service/api";
 import { useAuth } from "@/context/AuthContext";
 import LogoutModal from "@/component/common/LogoutModal";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AdminCapability } from "@/constant/adminCapabilities";
 import { AUTO_RELIST_ENABLED } from "@/constant/autoRelist";
 import { DUTY_CALENDAR_ENABLED } from "@/constant/dutyCalendar";
@@ -217,6 +218,7 @@ export default function BottomTab() {
       ? "hospital"
       : "medicalStaff";
 
+  const insets = useSafeAreaInsets();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   // clears storage and the session, so the socket disconnects too
   const { logout } = useAuth();
@@ -253,7 +255,8 @@ export default function BottomTab() {
   };
 
   return (
-    <View style={styles.container}>
+    // sits on the phone's home indicator / nav bar area instead of leaving a fixed gap under it
+    <View style={[styles.container, { height: 60 + insets.bottom, paddingBottom: insets.bottom }]}>
       {/* ── Nav tabs ── */}
       {tabs.map((tab) => {
         const isActive = pathname === tab.route;
@@ -298,8 +301,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
-    paddingBottom: 10,
-    marginBottom: 35,
   },
   tab: {
     alignItems: "center",
