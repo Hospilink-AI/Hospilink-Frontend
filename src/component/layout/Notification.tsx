@@ -17,11 +17,7 @@ import { usePathname, useRouter } from "expo-router";
 import { notificationRoute, notificationTitle, supportNotificationConfig } from "@/constant/notificationLinks";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import NotificationsCenterScreen from "./NotificationCenter";
 import { HEADER_CONTENT_HEIGHT } from "@/constant/layout";
-
-// inside the component, add:
-const [showCenter, setShowCenter] = useState(false);
 
 // ─── Constants ───────────────────────────────────────────────────
 const PAGE_SIZE = 10; // FIX: was 50 — now loads 10 at a time
@@ -132,6 +128,7 @@ export default function NotificationPopup({
   const [error, setError] = useState<string | null>(null);
   const [markingAll, setMarkingAll] = useState(false);
   const [pendingRead, setPendingRead] = useState<Set<string>>(new Set());
+  const [showCenter, setShowCenter] = useState(false);
 
   // support notifications open the ticket / account standing page
   const router = useRouter();
