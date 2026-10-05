@@ -1,4 +1,6 @@
 import AvailabilityCard from "@/component/cards/medicalStaff/Profile/AvailabilityCard";
+import AccountSettingsLink from "@/component/account/AccountSettingsLink";
+import LogoutButton from "@/component/account/LogoutButton";
 import RatingSection from "@/component/rating/RatingSection";
 import EducationCard from "@/component/cards/medicalStaff/Profile/EducationCard";
 import LicensesCard from "@/component/cards/medicalStaff/Profile/LicensesCard";
@@ -260,6 +262,7 @@ export default function Profile() {
           <EducationCard items={displayEducation} onAdd={() => { }} />
           <LicensesCard />
           <RatingSection role="staff" />
+          <AccountSettingsLink base="medicalStaff" />
         </View>
         <View style={[styles.rightCol, isMobile && styles.rightColMobile]}>
           <AvailabilityCard
@@ -303,6 +306,9 @@ export default function Profile() {
           onPress={() => router.push("/medicalStaff/document-manager")}
         />
       </View>
+
+      {/* phones have no sidebar, so log out lives here */}
+      {isMobile && <LogoutButton />}
     </ScrollView>
   );
 }

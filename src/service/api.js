@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from 'axios';
+import { endSession } from './session';
 import { Platform } from "react-native";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
@@ -79,35 +80,51 @@ apiAgent.interceptors.request.use(
 
 
 // ─── RESPONSE INTERCEPTOR ─────────────────────────
+// Ends the session when the server says it's over: an expired/invalid token (401), a user that no
+// longer exists, or an account scheduled for deletion (403). Web redirects to sign-in; the app
+// clears the auth context through endSession (see AuthContext).
+const endLocalSession = async (requestUrl, notice) => {
+  await clearStorage();
+  endSession(notice);
+  if (Platform.OS === "web") {
+    const isAdmin = requestUrl.includes("/admin/");
+    const target = isAdmin ? "/auth/admin/login" : "/auth/login?tab=signin";
+    window.location.href = notice ? `${target}${target.includes("?") ? "&" : "?"}notice=${encodeURIComponent(notice)}` : target;
+  }
+};
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status;
+    const message = String(error.response?.data?.message || "");
+    const requestUrl = error.config?.url || "";
 
-      const requestUrl = error.config?.url || "";
+    // the public delete-account page signs in on its own and shows errors inline
+    if (error.config?.skipAuthRedirect) return Promise.reject(error);
 
-      //  Skip redirect for OTP routes — let the screen handle the error
-      const isOtpRoute =
+    if (status === 403 && /scheduled for deletion/i.test(message)) {
+      await endLocalSession(requestUrl, message);
+      return Promise.reject(error);
+    }
+
+    if (status === 401) {
+      //  Let the screen handle the error (OTP, sign-in, and a wrong password when deleting an account)
+      const handledByScreen =
         requestUrl.includes("verify-otp") ||
         requestUrl.includes("resend-otp") ||
-        requestUrl.includes("forgot-password")||
+        requestUrl.includes("forgot-password") ||
         requestUrl.includes("/auth/login") ||
-        requestUrl.includes("/auth/signup");
+        requestUrl.includes("/auth/signup") ||
+        requestUrl.includes("/auth/signin") ||
+        requestUrl.includes("/account/deletion");
 
-      if (isOtpRoute) {
+      if (handledByScreen) {
         return Promise.reject(error); // pass error back to the screen's catch block
       }
 
-      //  Token invalid / expired — clear and redirect
-      await clearStorage();
-
-      if (Platform.OS === "web") {
-        //  Redirect admin vs regular users to the correct login page
-        const isAdmin = requestUrl.includes("/admin/");
-        window.location.href = isAdmin ? "/auth/admin/login" : "/auth/login?tab=signin";
-      } else {
-        console.log("Session expired. Redirect to login manually.");
-      }
+      //  Token invalid / expired, or the user no longer exists — clear and go to sign-in
+      await endLocalSession(requestUrl, /user not found/i.test(message) ? "Please sign in again." : null);
     }
 
     return Promise.reject(error);
@@ -1582,6 +1599,32 @@ export const platformSettingsAPI = {
   // PATCH /api/admin/settings - one key at a time. Body: { key, value, effectiveFrom? }
   update: async (key, value) => {
     const response = await api.patch('/api/admin/settings', { key, value });
+    return response.data;
+  },
+};
+
+export const accountAPI = {
+  // GET /api/account/deletion -> { scheduled, requestedAt, scheduledFor, graceDays }
+  // token: for the public delete-account page, which signs in without saving a session
+  getDeletion: async (token) => {
+    const response = await api.get('/api/account/deletion', token ? { headers: { Authorization: `Bearer ${token}` }, skipAuthRedirect: true } : {});
+    return response.data;
+  },
+
+  // POST /api/account/deletion { password, reason? } -> { scheduled, scheduledFor, graceDays, dutiesCancelled, ... }
+  // 401 wrong password, 409 a duty under way or starting soon
+  requestDeletion: async (password, reason, token) => {
+    const response = await api.post(
+      '/api/account/deletion',
+      { password, ...(reason ? { reason } : {}) },
+      token ? { headers: { Authorization: `Bearer ${token}` }, skipAuthRedirect: true } : {}
+    );
+    return response.data;
+  },
+
+  // POST /api/auth/signin without saving a session (public delete-account page)
+  signinForDeletion: async (email, password) => {
+    const response = await api.post('/api/auth/signin', { email, password }, { skipAuthRedirect: true });
     return response.data;
   },
 };

@@ -5,6 +5,7 @@ import { AuthProvider } from '@/context/AuthContext';
 import { SocketProvider } from "@/context/SocketContext";
 import { NotificationProvider } from "@/context/NotificationContext";
 import { InAppNotificationsProvider } from "@/context/InAppNotificationsContext";
+import FlashHost from "@/component/common/FlashHost";
 
 export default function RootLayout() {
   const { width } = useWindowDimensions();
@@ -36,6 +37,7 @@ export default function RootLayout() {
                   contentStyle: { backgroundColor: "#dce6f5" },
                 }}
               />
+              <FlashHost />
             </NotificationProvider>
             </InAppNotificationsProvider>
           </SocketProvider>

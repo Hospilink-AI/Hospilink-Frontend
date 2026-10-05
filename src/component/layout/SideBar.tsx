@@ -4,6 +4,7 @@
 // import { ComponentProps } from "react";
 // import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 // import { authAPI } from "../../service/api";
+import { useAuth } from "@/context/AuthContext";
 
 // type IoniconName = ComponentProps<typeof Ionicons>["name"];
 
@@ -386,6 +387,8 @@ export default function Sidebar() {
 
   // ── Custom logout modal state ──────────────────────────────────────────────
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  // clears storage and the session, so the socket disconnects too
+  const { logout } = useAuth();
 
   const doLogout = async () => {
     setShowLogoutModal(false);
@@ -398,8 +401,7 @@ export default function Sidebar() {
     } catch (e) {
       console.warn("Logout API error (ignored):", e);
     } finally {
-      localStorage.removeItem("hospilink_token");
-      localStorage.removeItem("hospilink_user");
+      await logout();
       router.replace("/");
     }
   };

@@ -1714,20 +1714,8 @@ const Profile = () => {
     ]);
   };
 
-  const handleLogoutPress = () => {
-    Alert.alert(
-      "Log Out",
-      "Are you sure you want to log out?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Log Out",
-          style: "destructive",
-          onPress: doLogout,
-        },
-      ]
-    );
-  };
+  // doLogout already asks to confirm
+  const handleLogoutPress = doLogout;
 
   // ─── Loading ─────────────────────────────────────────────────────────────────
   if (loading) {
@@ -1847,9 +1835,10 @@ const Profile = () => {
               value={phoneNumber || "—"}
             />
             <SettingsRow
-              icon="briefcase-outline"
-              label="Specialty"
-              value="Multispeciality Hospital"
+              icon="settings-outline"
+              label="Account settings"
+              chevron
+              onPress={() => router.push("/hospital/account" as any)}
               last
             />
           </View>
