@@ -1,4 +1,5 @@
 
+import { DemoBadge } from "@/component/admin-settings/DemoAccounts";
 import { adminAPI } from '@/service/api';
 import RatingOverride from '@/component/rating/RatingOverride';
 import { useCapability } from '@/hooks/useCapability';
@@ -37,6 +38,7 @@ interface MedicalStaff {
   location: string;
   city: string;
   status: AvailabilityStatus;
+  isDemo?: boolean; // store reviewer demo account
   verificationStatus: VerificationStatus;
   phoneNumber?: string;
   profilePictureUrl: string | null;
@@ -100,6 +102,7 @@ const mapStaff = (s: any): MedicalStaff => ({
   userId: s.userId ?? s.userid ?? '',
   staffId: s.staffId ?? s._id ?? '',
   fullName: s.fullName || 'Unknown',
+  isDemo: !!s.isDemo,
   jobRole: s.jobRole || '',
   jobRoleLabel: formatJobRole(s.jobRole),
   isAvailable: s.isAvailable ?? true,
@@ -1573,7 +1576,7 @@ function StaffRow({ staff, onDotsPress }: StaffRowProps) {
           )}
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={sr.name} numberOfLines={1}>{staff.fullName || '—'}</Text>
+          <Text style={sr.name} numberOfLines={1}>{staff.fullName || '—'}{staff.isDemo && <DemoBadge />}</Text>
           <Text style={sr.uid}>{staff.staffId ? `ID: ${staff.staffId.slice(-6).toUpperCase()}` : 'No ID'}</Text>
         </View>
       </View>

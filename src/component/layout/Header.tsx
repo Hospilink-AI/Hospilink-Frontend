@@ -274,6 +274,8 @@ import InAppBell from "@/component/inAppNotifications/InAppBell";
 import { INAPP_NOTIFICATIONS_ENABLED } from "@/constant/inAppNotifications";
 import { adminSubRoleLabel } from "@/constant/adminCapabilities";
 import { useCapability } from "@/hooks/useCapability";
+import LogoutButton from "@/component/account/LogoutButton";
+import { useWindowDimensions } from "react-native";
 
 // ─── Dynamic greeting ────────────────────────────────────
 const getGreeting = () => {
@@ -292,6 +294,8 @@ const getGreetingIcon = (): React.ComponentProps<typeof Ionicons>["name"] => {
 
 export default function Header() {
   const pathname = usePathname();
+  const { width: screenWidth } = useWindowDimensions();
+  const isPhone = screenWidth < 768;
   const { subRole } = useCapability();
   const role = pathname.startsWith("/admin")
     ? "admin"
@@ -415,6 +419,9 @@ export default function Header() {
           )}
         </TouchableOpacity>
         )}
+
+        {/* Admins have no profile page: on phones (no sidebar) log out sits here */}
+        {role === "admin" && isPhone && <LogoutButton variant="icon" />}
 
         {/* Avatar */}
         {role !== "admin" && (

@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import PersonActions from '@/component/safety/PersonActions';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -48,6 +49,7 @@ interface DutyDetail {
     address: { currentAddress: string; city: string; state: string; pincode: string };
   };
   assignedTo?: {
+    _id?: string;
     fullName?: string;
     user?: { name: string };
     phoneNumber?: string;
@@ -368,6 +370,9 @@ function MobileLayout({ duty, dutyId, router }: { duty: DutyDetail; dutyId: stri
                 <Text style={mobileS.ratingText}>{duty.review.rating}.0</Text>
               </View>
             ) : null}
+            {!!duty.assignedTo?._id && (
+              <PersonActions kind="staff" id={duty.assignedTo._id} name={staffName} dutyId={duty._id} />
+            )}
           </View>
         </View>
       )}
@@ -566,6 +571,9 @@ function DesktopLayout({ duty, dutyId, router }: { duty: DutyDetail; dutyId: str
                     <Text style={{ fontSize: 12, fontWeight: '700', color: '#374151' }}>{duty.review.rating}.0</Text>
                   </View>
                 ) : null}
+                {!!duty.assignedTo?._id && (
+                  <PersonActions kind="staff" id={duty.assignedTo._id} name={staffName} dutyId={duty._id} />
+                )}
               </View>
             </View>
           )}

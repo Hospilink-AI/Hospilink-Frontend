@@ -2,6 +2,7 @@ import RatingSummary, { Stars } from "@/component/rating/RatingSummary";
 import { COLORS } from "@/constant/colors";
 import { formatDate, roleLabel } from "@/constant/jobs";
 import { profileAPI, reviewAPI } from "@/service/api";
+import PersonActions from "@/component/safety/PersonActions";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -85,6 +86,15 @@ export default function RatingSection({ role }: { role: "hospital" | "staff" }) 
                       </Text>
                     </View>
                     <Stars value={r.rating} size={14} />
+                    {(role === "hospital" ? r.medicalStaff?._id : r.hospital?._id) && (
+                      <PersonActions
+                        kind={role === "hospital" ? "staff" : "hospital"}
+                        id={role === "hospital" ? r.medicalStaff._id : r.hospital._id}
+                        name={who}
+                        dutyId={r.duty?._id}
+                        reviewId={r._id}
+                      />
+                    )}
                   </View>
                   {!!r.review && <Text style={styles.body}>{r.review}</Text>}
                 </View>

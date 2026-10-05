@@ -1,4 +1,5 @@
 import { COLORS } from "@/constant/colors";
+import DemoAccounts from "./DemoAccounts";
 import { apiError } from "@/constant/jobs";
 import { platformSettingsAPI } from "@/service/api";
 import React, { useEffect, useState } from "react";
@@ -204,6 +205,8 @@ export default function PlatformSettings() {
           </TouchableOpacity>
         </>
       )}
+
+      <DemoAccounts />
     </ScrollView>
   );
 }

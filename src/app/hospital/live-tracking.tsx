@@ -600,6 +600,11 @@ export default function MapScreen() {
                     onPress={() => togglePick(card)}
                     heart
                     onError={setInviteNote}
+                    onBlocked={(id) => {
+                      setPicked(p => p.filter(c => c.staffId !== id));
+                      cache.data = null;
+                      setRefreshKey(k => k + 1);
+                    }}
                   />
                 );
               })}

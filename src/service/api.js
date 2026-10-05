@@ -1603,6 +1603,47 @@ export const platformSettingsAPI = {
   },
 };
 
+// Block between a doctor and a hospital (either side). The backend hides the pair from each other
+// everywhere (offers, feed, calendar, invites, map); accepted duties stay as they are.
+export const blockAPI = {
+  // GET /api/blocks -> { blocked: [{ hospitalId | staffId, name, city, jobRole? }] }
+  list: async () => {
+    const response = await api.get('/api/blocks');
+    return response.data;
+  },
+  // POST -> { blocked: { id, name }, upcomingDuties }
+  blockHospital: async (hospitalId) => {
+    const response = await api.post(`/api/blocks/hospitals/${hospitalId}`);
+    return response.data;
+  },
+  unblockHospital: async (hospitalId) => {
+    const response = await api.delete(`/api/blocks/hospitals/${hospitalId}`);
+    return response.data;
+  },
+  blockStaff: async (staffId) => {
+    const response = await api.post(`/api/blocks/staff/${staffId}`);
+    return response.data;
+  },
+  unblockStaff: async (staffId) => {
+    const response = await api.delete(`/api/blocks/staff/${staffId}`);
+    return response.data;
+  },
+};
+
+// Store reviewer demo accounts (Super Admin)
+export const demoAccountAPI = {
+  // GET /api/admin/demo-accounts -> { accounts: [{ userId, role, name, jobRole?, email, city, verificationStatus }] }
+  list: async () => {
+    const response = await api.get('/api/admin/demo-accounts');
+    return response.data;
+  },
+  // PATCH /api/admin/demo-accounts/:userId { isDemo } -> { userId, role, isDemo, message }
+  set: async (userId, isDemo) => {
+    const response = await api.patch(`/api/admin/demo-accounts/${userId}`, { isDemo });
+    return response.data;
+  },
+};
+
 export const accountAPI = {
   // GET /api/account/deletion -> { scheduled, requestedAt, scheduledFor, graceDays }
   // token: for the public delete-account page, which signs in without saving a session
@@ -1650,6 +1691,12 @@ export const reviewAPI = {
   // GET /api/reviews/staff/:staffId - hospital reviews of a staff member, only ones already revealed
   getForStaff: async (staffId) => {
     const response = await api.get(`/api/reviews/staff/${staffId}`);
+    return response.data;
+  },
+
+  // POST /api/reviews/:id/report { reason } -> 201 { message, ticket: { ticketId, id } }; 409 already reported
+  report: async (reviewId, reason) => {
+    const response = await api.post(`/api/reviews/${reviewId}/report`, { reason });
     return response.data;
   },
 };

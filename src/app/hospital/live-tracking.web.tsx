@@ -14,6 +14,7 @@ import MapInviteBar from '@/component/dutyInvites/MapInviteBar';
 import { cardFromNearby, DUTY_INVITES_ENABLED, InviteCard, MAX_INVITEES } from '@/constant/dutyInvites';
 import { todayKey } from '@/constant/dutyCalendar';
 import { inviteAPI } from '../../service/api';
+import PersonActions from '@/component/safety/PersonActions';
 
 const LiveMap = React.lazy(
   () => import('../../component/cards/hospital/live-tracking/LiveMap.web')
@@ -240,6 +241,18 @@ export default function MapScreen() {
               onRefresh={handleRefresh}
               isSatellite={isSatellite}
               onToggleSatellite={() => setIsSatellite(v => !v)}
+              renderDoctorActions={(doc) => (
+                <PersonActions
+                  kind="staff"
+                  id={doc.id}
+                  name={doc.name}
+                  label="Block or report"
+                  onBlocked={() => {
+                    setPicked((p) => p.filter((c) => c.staffId !== doc.id));
+                    handleRefresh();
+                  }}
+                />
+              )}
               invite={
                 DUTY_INVITES_ENABLED
                   ? {

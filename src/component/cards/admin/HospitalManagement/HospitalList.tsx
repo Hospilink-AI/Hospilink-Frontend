@@ -1,4 +1,5 @@
 import { adminAPI } from '@/service/api';
+import { DemoBadge } from "@/component/admin-settings/DemoAccounts";
 import RatingOverride from '@/component/rating/RatingOverride';
 import { useCapability } from '@/hooks/useCapability';
 import RatingSummary from '@/component/rating/RatingSummary';
@@ -65,6 +66,7 @@ interface Hospital {
   dutyPercent: number;
   dutyLabel: string;
   licenseStatus: LicenseStatus;
+  isDemo?: boolean; // store reviewer demo account
   verificationStatus: string;
   iconBg: string;
   iconEmoji: string;
@@ -166,6 +168,7 @@ const mapHospital = (h: any): Hospital => {
     dutyLabel: `${occupiedDuties}/${totalDuties} Active`,
     licenseStatus,
     verificationStatus: rawStatus,
+    isDemo: !!h?.isDemo,
     iconBg: '#EEF2FF',
     iconEmoji: '🏥',
     totalDuties,
@@ -1499,7 +1502,7 @@ function HospitalRow({ h, onDotsPress }: HospitalRowProps) {
           )}
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={hr.name} numberOfLines={1}>{h.name}</Text>
+          <Text style={hr.name} numberOfLines={1}>{h.name}{h.isDemo && <DemoBadge />}</Text>
           <Text style={hr.hid}>{h.hospitalId}</Text>
         </View>
       </View>
