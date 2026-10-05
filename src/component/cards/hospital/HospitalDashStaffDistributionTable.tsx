@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'expo-router';
+import RecentAlerts from '@/component/inAppNotifications/RecentAlerts';
+import { DUTY_CALENDAR_ENABLED } from '@/constant/dutyCalendar';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Circle,Svg } from 'react-native-svg';
-import { profileAPI } from '@/service/api';
+import { dutyCalendarAPI, profileAPI } from '@/service/api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface StaffRoleItem {
@@ -178,6 +181,25 @@ function StaffAvailabilityCard() {
 
 // ─── Calendar Card ─────────────────────────────────────────────────────────────
 function CalendarCard() {
+  const router = useRouter();
+  // dots come from the duty calendar counts for this month (duties posted / open and starting within 24 h)
+  const [marks, setMarks] = useState<Record<number, { duties: boolean; urgent: boolean }>>({});
+  useEffect(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const last = new Date(y, now.getMonth() + 1, 0).getDate();
+    dutyCalendarAPI
+      .getCounts(`${y}-${m}-01`, `${y}-${m}-${String(last).padStart(2, '0')}`)
+      .then((res: any) => {
+        const next: Record<number, { duties: boolean; urgent: boolean }> = {};
+        (res?.days ?? []).forEach((d: any) => {
+          next[Number(String(d.date).slice(8, 10))] = { duties: (d.total ?? 0) > 0, urgent: (d.urgentOpen ?? 0) > 0 };
+        });
+        setMarks(next);
+      })
+      .catch(() => setMarks({}));
+  }, []);
   const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   const today = new Date();
   const currentMonthName = today.toLocaleString('default', { month: 'long' });
@@ -197,10 +219,11 @@ function CalendarCard() {
         <Text style={styles.title}>
           {currentMonthName} {currentYear}
         </Text>
-        <View style={styles.calendarNav}>
-          <Text style={styles.navArrow}>{'<'}</Text>
-          <Text style={styles.navArrow}>{'>'}</Text>
-        </View>
+        {DUTY_CALENDAR_ENABLED && (
+          <TouchableOpacity onPress={() => router.push('/hospital/calendar' as any)}>
+            <Text style={styles.navArrow}>Open</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.calendarGrid}>
@@ -213,18 +236,27 @@ function CalendarCard() {
           if (day === null) {
             return <View key={`empty-${index}`} style={{ width: '13%', marginBottom: 12 }} />;
           }
+          const mark = marks[day];
+          const dots = mark ? (
+            <View style={{ flexDirection: 'row', gap: 2, justifyContent: 'center', marginTop: 2 }}>
+              {mark.duties && <View style={[styles.dot, { backgroundColor: '#3B82F6' }]} />}
+              {mark.urgent && <View style={[styles.dot, { backgroundColor: '#EF4444' }]} />}
+            </View>
+          ) : null;
           if (day === currentDate) {
             return (
               <View key={`day-${index}`} style={styles.calDayActive}>
                 <Text style={styles.calDayActiveText}>{day}</Text>
+                {dots}
               </View>
             );
           }
           const isFuture = day > currentDate;
           return (
-            <Text key={`day-${index}`} style={isFuture ? styles.calDayBold : styles.calDay}>
-              {day}
-            </Text>
+            <View key={`day-${index}`} style={{ width: '13%', marginBottom: 12, alignItems: 'center' }}>
+              <Text style={[isFuture ? styles.calDayBold : styles.calDay, { width: '100%', marginBottom: 0 }]}>{day}</Text>
+              {dots}
+            </View>
           );
         })}
       </View>
@@ -232,11 +264,11 @@ function CalendarCard() {
       <View style={styles.legendRow}>
         <View style={styles.legendItem}>
           <View style={[styles.dot, { backgroundColor: '#3B82F6' }]} />
-          <Text style={styles.legendText}>Shifts</Text>
+          <Text style={styles.legendText}>Duties</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.dot, { backgroundColor: '#EF4444' }]} />
-          <Text style={styles.legendText}>Emergencies</Text>
+          <Text style={styles.legendText}>Open, starts within 24 h</Text>
         </View>
       </View>
     </View>
@@ -244,67 +276,9 @@ function CalendarCard() {
 }
 
 // ─── Alerts Card ───────────────────────────────────────────────────────────────
-interface AlertItem {
-  title: string;
-  desc: string;
-  time: string;
-  type: 'critical' | 'info' | 'warning';
-}
-
-const ALERTS: AlertItem[] = [
-  {
-    title: 'Shift Gap Alert',
-    desc: 'ICU Night Shift (Wing B) is short 2 nurses for tomorrow.',
-    time: '10 mins ago',
-    type: 'critical',
-  },
-  {
-    title: 'System Maintenance',
-    desc: 'EMR system will undergo brief downtime at 02:00 AM.',
-    time: '1 hour ago',
-    type: 'info',
-  },
-  {
-    title: 'New Policy Update',
-    desc: 'Please review the updated visitor guidelines effective immediately.',
-    time: 'Yesterday',
-    type: 'warning',
-  },
-];
-
+// The hospital's latest real notifications (the sample alerts are gone)
 function AlertsCard() {
-  return (
-    <View style={styles.card}>
-      <View style={styles.alertHeaderRow}>
-        <Text style={styles.title}>Alerts</Text>
-        <View style={styles.badgeNew}>
-          <Text style={styles.badgeNewText}>2 New</Text>
-        </View>
-      </View>
-
-      <View style={{ gap: 12, marginTop: 16 }}>
-        {ALERTS.map((a, i) => (
-          <View
-            key={i}
-            style={[
-              styles.alertBox,
-              a.type === 'critical' && styles.alertBoxRed,
-              a.type === 'info' && styles.alertBoxBlue,
-              a.type === 'warning' && styles.alertBoxYellow,
-            ]}
-          >
-            <View style={styles.alertContent}>
-              <Text style={[styles.alertTitle, a.type === 'critical' && { color: '#B91C1C' }]}>
-                {a.title}
-              </Text>
-              <Text style={styles.alertDesc}>{a.desc}</Text>
-              <Text style={styles.alertTime}>{a.time}</Text>
-            </View>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
+  return <RecentAlerts />;
 }
 
 // ─── Main Export ───────────────────────────────────────────────────────────────

@@ -10,29 +10,6 @@ interface Alert {
   timestamp: string;
 }
 
-const ALERTS: Alert[] = [
-  {
-    type: 'error',
-    icon: '🚨',
-    title: 'Code Blue Drill - 15:00',
-    description: 'Simulated emergency drill in Wing B. Staff participation required.',
-    timestamp: '10 mins ago',
-  },
-  {
-    type: 'warning',
-    icon: '⚠️',
-    title: 'System Maintenance',
-    description: 'EMR system will undergo brief downtime at 02:00 AM',
-    timestamp: '1 hour ago',
-  },
-  {
-    type: 'info',
-    icon: '📋',
-    title: 'New Policy Update',
-    description: 'Please review the updated visitor guidelines effective immediately.',
-    timestamp: 'Yesterday',
-  },
-];
 
 interface CalendarDay {
   day: number;
@@ -73,8 +50,6 @@ const generateCalendar = (): CalendarDay[] => {
   for (let i = 1; i <= daysInMonth; i++) {
     const day: CalendarDay = { day: i };
 
-    if ([5, 12, 17, 23, 26].includes(i)) day.hasShift = true;
-    if ([8, 15, 22].includes(i)) day.hasEmergency = true;
 
     if (i === todayDate) day.isToday = true; 
     if (i < todayDate) day.isPast = true;
@@ -147,17 +122,6 @@ const generateCalendar = (): CalendarDay[] => {
           })}
         </View>
 
-        {/* Legend */}
-        <View style={styles.legend}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#3B82F6' }]} />
-            <Text style={styles.legendText}>Shifts</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#EF4444' }]} />
-            <Text style={styles.legendText}>Emergencies</Text>
-          </View>
-        </View>
       </View>
     </View>
   );

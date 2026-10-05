@@ -1,73 +1,126 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { dutyCalendarAPI } from '../../../service/api';
+import { roleLabel } from '@/constant/jobs';
+import { addDays, dutyStatus, formatTime, minutesUntil, todayKey } from '@/constant/dutyCalendar';
 
-const EMERGENCIES = [
-  { id: 1, priority: 'CRITICAL', dept: 'ER - Trauma Center', req: '2x Trauma Nurse', eta: '05 min', status: 'Dispatching', priColor: '#FEE2E2', priText: '#EF4444', etaColor: '#EF4444', statDot: '#F59E0B' },
-  { id: 2, priority: 'HIGH', dept: 'ICU - Wing A', req: '1x Anesthesiologist', eta: '15 min', status: 'Matching', priColor: '#FEF3C7', priText: '#F59E0B', etaColor: '#F59E0B', statDot: '#3B82F6' },
-  { id: 3, priority: 'STANDARD', dept: 'Pediatrics', req: '3x Gen. Staff', eta: '45 min', status: 'Pending', priColor: '#DBEAFE', priText: '#3B82F6', etaColor: '#6B7280', statDot: '#9CA3AF' },
-  { id: 4, priority: 'CRITICAL', dept: 'Cardiology OR 2', req: '1x Surgeon Asst.', eta: 'Immediate', status: 'Alert Sent', priColor: '#FEE2E2', priText: '#EF4444', etaColor: '#EF4444', statDot: '#EF4444' },
-];
+// The hospital's own emergency and high-priority duties today and tomorrow that are still open or under way.
+// Read from the calendar day lists (they carry urgency and the assigned staff; no Maps calls).
+const PRIORITY: Record<string, { label: string; bg: string; text: string }> = {
+  emergency: { label: 'EMERGENCY', bg: '#FEE2E2', text: '#EF4444' },
+  high: { label: 'HIGH', bg: '#FEF3C7', text: '#F59E0B' },
+};
+const LIVE = ['available', 'assigned', 'enroute', 'in-progress'];
+
+function startsIn(duty: any): string {
+  const mins = duty.startTime ? minutesUntil(duty.date, duty.startTime) : null;
+  if (mins === null) return formatTime(duty.startTime);
+  if (mins <= 0) return 'Started';
+  if (mins < 60) return `${mins} min`;
+  if (mins < 24 * 60) return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+  return 'Tomorrow';
+}
 
 export function ActiveEmergencyRequests({ isTablet }: { isTablet: boolean }) {
+  const router = useRouter();
+  const [rows, setRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      (async () => {
+        try {
+          const days = [todayKey(), addDays(todayKey(), 1)];
+          const res = await Promise.all(days.map((d) => dutyCalendarAPI.getDay(d)));
+          if (!active) return;
+          const list = res
+            .flatMap((day: any, i: number) =>
+              (day?.groups ?? [])
+                .filter((g: any) => !g.continuation)
+                .flatMap((g: any) => (g.duties ?? []).map((d: any) => ({ ...d, staffRole: g.staffRole, startTime: g.startTime, date: days[i] })))
+            )
+            .filter((d: any) => PRIORITY[d.urgency] && LIVE.includes(d.status))
+            .sort((a: any, b: any) => (a.urgency === 'emergency' ? -1 : 0) - (b.urgency === 'emergency' ? -1 : 0));
+          setRows(list.slice(0, 6));
+          setFailed(false);
+        } catch {
+          if (active) setFailed(true);
+        } finally {
+          if (active) setLoading(false);
+        }
+      })();
+      return () => {
+        active = false;
+      };
+    }, [])
+  );
+
   return (
     <View style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.title}>Active Emergency Requests</Text>
-        <Text style={styles.viewAll}>View All</Text>
+        <TouchableOpacity onPress={() => router.push('/hospital/live-monitoring')}>
+          <Text style={styles.viewAll}>View All</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* flexGrow: 1 ensures the ScrollView content stretches to fill the card on wide screens */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
-        <View style={styles.table}>
-          
-          {/* Table Header */}
-          <View style={styles.row}>
-            <Text style={[styles.colHeader, styles.colPriority]}>PRIORITY</Text>
-            <Text style={[styles.colHeader, styles.colDept]}>DEPARTMENT</Text>
-            <Text style={[styles.colHeader, styles.colReq]}>REQUIREMENT</Text>
-            <Text style={[styles.colHeader, styles.colEta]}>ETA</Text>
-            <Text style={[styles.colHeader, styles.colStatus]}>STATUS</Text>
-            <Text style={[styles.colHeader, styles.colAction]}>ACTION</Text>
-          </View>
-
-          {/* Table Body */}
-          {EMERGENCIES.map((req, idx) => (
-            <View key={req.id} style={[styles.row, styles.bodyRow, idx !== EMERGENCIES.length - 1 && styles.borderBottom]}>
-              
-              <View style={[styles.colPriority, { justifyContent: 'center' }]}>
-                <View style={[styles.priorityBadge, { backgroundColor: req.priColor }]}>
-                  <Text style={[styles.priorityText, { color: req.priText }]}>! {req.priority}</Text>
-                </View>
-              </View>
-              
-              {/* numberOfLines={1} prevents long text from breaking the row height */}
-              <Text style={[styles.cell, styles.colDept, { fontWeight: '600' }]} numberOfLines={1}>
-                {req.dept}
-              </Text>
-              
-              <Text style={[styles.cell, styles.colReq, { color: '#6B7280' }]} numberOfLines={1}>
-                {req.req}
-              </Text>
-              
-              <Text style={[styles.cell, styles.colEta, { color: req.etaColor, fontWeight: '600' }]}>
-                {req.eta}
-              </Text>
-              
-              <View style={[styles.colStatus, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
-                <View style={[styles.dot, { backgroundColor: req.statDot }]} />
-                <Text style={styles.cell} numberOfLines={1}>{req.status}</Text>
-              </View>
-              
-              <View style={[styles.colAction, { flexDirection: 'row', gap: 8, alignItems: 'center' }]}>
-                {/* Placeholder for Icons */}
-                <View style={styles.iconCircle} />
-                <View style={styles.iconCircle} />
-              </View>
-
+      {loading ? (
+        <ActivityIndicator color="#2563EB" style={{ marginVertical: 20 }} />
+      ) : failed ? (
+        <Text style={styles.empty}>Couldn't load emergency requests.</Text>
+      ) : rows.length === 0 ? (
+        <Text style={styles.empty}>No emergency or high-priority duties open right now.</Text>
+      ) : (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
+          <View style={styles.table}>
+            <View style={styles.row}>
+              <Text style={[styles.colHeader, styles.colPriority]}>PRIORITY</Text>
+              <Text style={[styles.colHeader, styles.colDept]}>ROLE</Text>
+              <Text style={[styles.colHeader, styles.colReq]}>STAFF</Text>
+              <Text style={[styles.colHeader, styles.colEta]}>STARTS</Text>
+              <Text style={[styles.colHeader, styles.colStatus]}>STATUS</Text>
+              <Text style={[styles.colHeader, styles.colAction]}>OPEN</Text>
             </View>
-          ))}
-        </View>
-      </ScrollView>
+
+            {rows.map((d, idx) => {
+              const p = PRIORITY[d.urgency];
+              const st = dutyStatus(d.status);
+              const id = d.dutyId ?? d._id;
+              return (
+                <TouchableOpacity
+                  key={id}
+                  style={[styles.row, styles.bodyRow, idx !== rows.length - 1 && styles.borderBottom]}
+                  onPress={() => router.push(`/hospital/dutyDetails/${id}` as any)}
+                >
+                  <View style={[styles.colPriority, { justifyContent: 'center' }]}>
+                    <View style={[styles.priorityBadge, { backgroundColor: p.bg }]}>
+                      <Text style={[styles.priorityText, { color: p.text }]}>! {p.label}</Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.cell, styles.colDept, { fontWeight: '600' }]} numberOfLines={1}>
+                    {roleLabel(d.staffRole)}
+                  </Text>
+                  <Text style={[styles.cell, styles.colReq, { color: '#6B7280' }]} numberOfLines={1}>
+                    {d.staff?.name ?? d.assignedTo?.name ?? 'Not filled yet'}
+                  </Text>
+                  <Text style={[styles.cell, styles.colEta, { color: p.text, fontWeight: '600' }]}>{startsIn(d)}</Text>
+                  <View style={[styles.colStatus, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
+                    <View style={[styles.dot, { backgroundColor: st.text }]} />
+                    <Text style={styles.cell} numberOfLines={1}>{st.label}</Text>
+                  </View>
+                  <View style={[styles.colAction, { alignItems: 'flex-start' }]}>
+                    <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -77,27 +130,26 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   title: { fontSize: 16, fontWeight: '700', color: '#111827' },
   viewAll: { fontSize: 13, fontWeight: '600', color: '#2563EB' },
-  
+  empty: { fontSize: 13, color: '#6B7280', paddingVertical: 16, textAlign: 'center' },
+
   // Table width is 100% to fill space, but minWidth prevents it from squishing on mobile devices
-  table: { width: '100%', minWidth: 650 }, 
+  table: { width: '100%', minWidth: 650 },
   row: { flexDirection: 'row', paddingVertical: 12, alignItems: 'center' },
   bodyRow: { paddingVertical: 16 },
   borderBottom: { borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
-  
+
   colHeader: { fontSize: 10, fontWeight: '700', color: '#6B7280', textTransform: 'uppercase' },
-  cell: { fontSize: 12, color: '#111827', paddingRight: 8 }, // paddingRight prevents text from touching the next column
-  
-  // FLEX COLUMNS: These replace the hardcoded pixel widths
+  cell: { fontSize: 12, color: '#111827', paddingRight: 8 },
+
   colPriority: { flex: 1.2 },
   colDept: { flex: 2 },
   colReq: { flex: 2 },
   colEta: { flex: 1 },
   colStatus: { flex: 1.5 },
   colAction: { flex: 1 },
-  
+
   priorityBadge: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
   priorityText: { fontSize: 10, fontWeight: '700' },
-  
+
   dot: { width: 6, height: 6, borderRadius: 3 },
-  iconCircle: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#F3F4F6' },
 });
