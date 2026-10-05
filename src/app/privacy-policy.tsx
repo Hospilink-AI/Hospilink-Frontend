@@ -1,7 +1,7 @@
 import LegalPage from "@/component/legal/LegalPage";
 import { PRIVACY_POLICY } from "@/constant/legal/privacyPolicy";
 
-// Linked from the landing page and contact page; same document as /privacy-policy
-export default function AuthPrivacyPolicyPage() {
+// Public link for the store listings and the app (hospilink.in/privacy-policy)
+export default function PrivacyPolicyPage() {
   return <LegalPage doc={PRIVACY_POLICY} />;
 }

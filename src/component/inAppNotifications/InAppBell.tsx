@@ -110,7 +110,7 @@ export default function InAppBell() {
 }
 
 const s = StyleSheet.create({
-  bell: { marginLeft: "auto", padding: 6, position: "relative" },
+  bell: { padding: 6, position: "relative" },
   badge: {
     position: "absolute",
     top: 0,

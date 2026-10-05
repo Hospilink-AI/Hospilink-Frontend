@@ -36,6 +36,24 @@ export default function AccountSettingsScreen({ role }: { role: "staff" | "hospi
       </TouchableOpacity>
       <Text style={s.title}>Account settings</Text>
 
+      <View style={[s.card, { marginBottom: 16, paddingVertical: 4 }]}>
+        {[
+          { label: "Privacy Policy", href: "/privacy-policy", icon: "shield-checkmark-outline" },
+          { label: "Terms of Use", href: "/terms", icon: "document-text-outline" },
+        ].map((l, i) => (
+          <TouchableOpacity
+            key={l.href}
+            style={[s.linkRow, i > 0 && { borderTopWidth: 1, borderTopColor: "#F1F5F9" }]}
+            onPress={() => router.push(l.href as any)}
+            accessibilityRole="link"
+          >
+            <Ionicons name={l.icon as any} size={20} color={COLORS.subText} />
+            <Text style={s.linkText}>{l.label}</Text>
+            <Ionicons name="chevron-forward" size={18} color={COLORS.subText} />
+          </TouchableOpacity>
+        ))}
+      </View>
+
       <View style={[s.card, { marginBottom: 16 }]}>
         <View style={s.cardHead}>
           <Ionicons name="ban-outline" size={20} color={COLORS.text} />
@@ -64,4 +82,6 @@ const s = StyleSheet.create({
   card: { backgroundColor: COLORS.white, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: COLORS.border },
   cardHead: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
   cardTitle: { fontSize: 17, fontWeight: "700", color: COLORS.text },
+  linkRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14 },
+  linkText: { flex: 1, fontSize: 15, fontWeight: "600", color: COLORS.text },
 });

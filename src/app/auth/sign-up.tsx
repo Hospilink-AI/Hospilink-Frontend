@@ -202,8 +202,9 @@ export default function SignUpScreen() {
             {agreedToTerms && <Ionicons name="checkmark" size={11} color="#fff" />}
           </View>
           <Text style={styles.termsText}>
-            I agree to the <Text style={styles.termsBold}>Terms</Text> and{" "}
-            <Text style={styles.termsBold}>Privacy Policy</Text>
+            I agree to the{" "}
+            <Text style={styles.termsBold} onPress={() => router.push("/terms" as any)} accessibilityRole="link">Terms</Text> and{" "}
+            <Text style={styles.termsBold} onPress={() => router.push("/privacy-policy" as any)} accessibilityRole="link">Privacy Policy</Text>
           </Text>
         </TouchableOpacity>
         {errors.terms ? <Text style={[styles.errorText, { marginTop: 6 }]}>{errors.terms}</Text> : null}

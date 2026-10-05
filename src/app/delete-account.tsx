@@ -2,6 +2,7 @@ import DeleteAccount, { DeletionResult, formatDeletionDate } from "@/component/a
 import { COLORS } from "@/constant/colors";
 import { accountAPI } from "@/service/api";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
@@ -11,6 +12,7 @@ import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, TextInput, To
 const SUPPORT_EMAIL = "info@hospilink.com";
 
 export default function DeleteAccountPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [signingIn, setSigningIn] = useState(false);
@@ -104,6 +106,10 @@ export default function DeleteAccountPage() {
             {SUPPORT_EMAIL}
           </Text>{" "}
           and we'll delete it for you.
+        </Text>
+        <Text style={[s.helpText, { marginTop: 12 }]}>
+          How we handle your data:{" "}
+          <Text style={s.link} onPress={() => router.push("/privacy-policy" as any)}>Privacy Policy</Text>
         </Text>
       </View>
     </ScrollView>
