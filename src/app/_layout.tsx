@@ -29,14 +29,14 @@ export default function RootLayout() {
         <AuthProvider>
           <SocketProvider>
             <InAppNotificationsProvider>
-            {/* <NotificationProvider> */}
+            <NotificationProvider>
               <Stack
                 screenOptions={{
                   headerShown: false,
                   contentStyle: { backgroundColor: "#dce6f5" },
                 }}
               />
-            {/* </NotificationProvider> */}
+            </NotificationProvider>
             </InAppNotificationsProvider>
           </SocketProvider>
         </AuthProvider>

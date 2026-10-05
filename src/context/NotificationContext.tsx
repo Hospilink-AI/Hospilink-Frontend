@@ -1,12 +1,14 @@
-// Notification Context with Firebase Cloud Messaging
-// For use with Expo Development Build
+// Push notifications for the Android / iOS app (Firebase Cloud Messaging).
+// The web app gets notifications in-app instead (see NotificationContext.web.tsx).
 
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect } from 'react';
 import messaging, { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
 import { useRouter } from 'expo-router';
 import { fcmService } from '@/service/fcm';
-import { notificationAPI } from '@/service/api';
+import { inAppNotificationAPI, notificationAPI } from '@/service/api';
 import { useAuth } from './AuthContext';
+import { Base, routeFor } from '@/constant/inAppNotifications';
+import { useInAppNotifications } from './InAppNotificationsContext';
 
 interface NotificationContextType {
   unreadCount: number;
@@ -18,143 +20,98 @@ const NotificationContext = createContext<NotificationContextType>({
   refreshUnreadCount: async () => {},
 });
 
+const baseFor = (role?: string): Base => (role === 'admin' ? 'admin' : role === 'hospital' ? 'hospital' : 'medicalStaff');
+
 export const NotificationProvider = ({ children }: { children: React.ReactNode }) => {
-  const [unreadCount, setUnreadCount] = useState(0);
   const { user, token } = useAuth();
   const router = useRouter();
-  const unsubscribeForeground = useRef<(() => void) | null>(null);
+  const { unread, refreshUnread } = useInAppNotifications();
 
-  // Handle FCM token refresh
+  // Push data only carries type, notificationId and dutyId: look the notification up for where it opens
+  const openFromPush = useCallback(
+    async (data: Record<string, any> = {}) => {
+      const base = baseFor(user?.role);
+      let route: string | null = null;
+      try {
+        if (data.notificationId) {
+          const res = await inAppNotificationAPI.list(50, 0);
+          const n = (res?.data ?? []).find((x: any) => String(x._id) === String(data.notificationId));
+          if (n) {
+            if (!n.isRead) inAppNotificationAPI.markRead(n._id).catch(() => {});
+            route = routeFor(n, base);
+          }
+        }
+      } catch {
+        // fall through to the duty or the notification list
+      }
+      if (!route && data.dutyId) route = base === 'admin' ? '/admin/duty-overnight' : `/${base}/dutyDetails/${data.dutyId}`;
+      router.push((route ?? `/${base}/notifications`) as any);
+      refreshUnread();
+    },
+    [user?.role, router, refreshUnread]
+  );
+
+  // Token refresh
   useEffect(() => {
     if (!user || !token) return;
-
-    const unsubscribeTokenRefresh = messaging().onTokenRefresh(async (newToken) => {
-      console.log('🔄 FCM token refreshed:', newToken);
+    const unsubscribe = messaging().onTokenRefresh(async (newToken) => {
       const deviceInfo = await fcmService.getDeviceInfo();
-      
       try {
-        await notificationAPI.registerFCMToken(
-          newToken,
-          deviceInfo.deviceId,
-          deviceInfo.platform
-        );
-        console.log('✅ Refreshed FCM token registered successfully');
+        await notificationAPI.registerFCMToken(newToken, deviceInfo.deviceId, deviceInfo.platform);
       } catch (error) {
-        console.error('❌ Failed to register refreshed FCM token:', error);
+        console.error('Failed to register refreshed FCM token:', error);
       }
     });
-
-    return () => unsubscribeTokenRefresh();
+    return unsubscribe;
   }, [user, token]);
 
-  // Register token and handle notifications
+  // Register, and handle messages and taps
   useEffect(() => {
     if (!user || !token) return;
 
     registerForPushNotifications();
 
-    // Foreground notification handler
-    unsubscribeForeground.current = messaging().onMessage(
-      async (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
-        console.log('📱 Foreground notification:', remoteMessage);
-        setUnreadCount((prev) => prev + 1);
-      }
-    );
+    // In the foreground the socket shows the pop-up; just keep the bell count right
+    const unsubscribeForeground = messaging().onMessage(async (_remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
+      refreshUnread();
+    });
 
-    // Handle notification tap when app is in background
-    const unsubscribeNotificationOpened = messaging().onNotificationOpenedApp(
-      (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
-        console.log('👆 Notification opened app from background:', remoteMessage);
-        if (remoteMessage.data) {
-          handleNotificationTap(remoteMessage.data);
-        }
-      }
-    );
+    // Tapped while the app was in the background
+    const unsubscribeOpened = messaging().onNotificationOpenedApp((remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
+      openFromPush(remoteMessage.data ?? {});
+    });
 
-    // Handle notification tap when app was closed/killed
+    // Tapped while the app was closed: wait for the router to be ready
     messaging()
       .getInitialNotification()
       .then((remoteMessage: FirebaseMessagingTypes.RemoteMessage | null) => {
-        if (remoteMessage) {
-          console.log('🚀 App opened from notification (killed state):', remoteMessage);
-          if (remoteMessage.data) {
-            handleNotificationTap(remoteMessage.data);
-          }
-        }
+        if (remoteMessage) setTimeout(() => openFromPush(remoteMessage.data ?? {}), 600);
       });
 
     return () => {
-      if (unsubscribeForeground.current) {
-        unsubscribeForeground.current();
-      }
-      unsubscribeNotificationOpened();
+      unsubscribeForeground();
+      unsubscribeOpened();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, token]);
 
   const registerForPushNotifications = async () => {
     const hasPermission = await fcmService.requestPermission();
-    if (!hasPermission) {
-      console.log('⚠️ Notification permission denied');
-      return;
-    }
+    if (!hasPermission) return;
 
     const fcmToken = await fcmService.getFCMToken();
-    if (!fcmToken) {
-      console.log('⚠️ Failed to get FCM token');
-      return;
-    }
+    if (!fcmToken) return;
 
     const deviceInfo = await fcmService.getDeviceInfo();
-
     try {
-      await notificationAPI.registerFCMToken(
-        fcmToken,
-        deviceInfo.deviceId,
-        deviceInfo.platform
-      );
-      console.log('✅ FCM token registered successfully');
+      await notificationAPI.registerFCMToken(fcmToken, deviceInfo.deviceId, deviceInfo.platform);
     } catch (error) {
-      console.error('❌ Failed to register FCM token:', error);
+      console.error('Failed to register FCM token:', error);
     }
-  };
-
-  const handleNotificationTap = (data: any) => {
-    const { type, dutyId } = data;
-
-    console.log('🔔 Handling notification tap:', { type, dutyId });
-
-    switch (type) {
-      case 'NEW_DUTY_OFFER':
-      case 'EMERGENCY_DUTY_REQUEST':
-        if (dutyId) router.push(`/medicalStaff/duty-details?id=${dutyId}` as any);
-        break;
-      case 'DUTY_CONFIRMED':
-      case 'STAFF_ASSIGNED':
-        router.push('/medicalStaff/my-duties' as any);
-        break;
-      case 'NAVIGATE_TO_DUTY':
-        if (dutyId) router.push(`/medicalStaff/navigation?dutyId=${dutyId}` as any);
-        break;
-      case 'DUTY_CANCELLED_BY_HOSPITAL':
-      case 'DUTY_CANCELLED_BY_STAFF':
-      case 'DUTY_EDITED':
-        if (dutyId) router.push(`/medicalStaff/duty-details?id=${dutyId}` as any);
-        break;
-      case 'DOCUMENT_VERIFIED':
-      case 'DOCUMENT_REJECTED':
-        router.push('/profile/document-upload' as any);
-        break;
-      default:
-        router.push('/medicalStaff/notifications' as any);
-    }
-  };
-
-  const refreshUnreadCount = async () => {
-    // TODO: Implement API call to get unread count
   };
 
   return (
-    <NotificationContext.Provider value={{ unreadCount, refreshUnreadCount }}>
+    <NotificationContext.Provider value={{ unreadCount: unread, refreshUnreadCount: refreshUnread }}>
       {children}
     </NotificationContext.Provider>
   );
