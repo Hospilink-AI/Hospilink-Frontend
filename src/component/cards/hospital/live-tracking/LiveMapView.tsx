@@ -22,7 +22,45 @@ export interface DoctorPin {
   phone: string;
   email: string;
   location: { latitude: number; longitude: number; address: string };
+  contactHidden?: boolean; // contacts hidden until a duty is assigned
+  approximate?: boolean; // position rounded to about precisionKm
+  precisionKm?: number;
 }
+
+// Draws the doctors on a Leaflet map. Plain JS (a string) so the WebView page and the web
+// build run the same code. Rounded positions are shared, so doctors at one point become one
+// soft area with a count; names and addresses are escaped before going into the pop-up HTML.
+const DRAW_DOCTORS_JS = `
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  var groups={},order=[];
+  doctors.forEach(function(d){
+    var k=d.approximate?(d.location.latitude.toFixed(5)+','+d.location.longitude.toFixed(5)):('id:'+d.id);
+    if(!groups[k]){groups[k]=[];order.push(k);}
+    groups[k].push(d);
+  });
+  function card(d){
+    var contact=d.contactHidden
+      ?'<span style="color:#64748B">Contact shared once a duty is assigned</span>'
+      :((d.phone?'📞 '+esc(d.phone)+'<br>':'')+(d.email?'📧 '+esc(d.email):''));
+    return '<strong>'+esc(d.name)+'</strong><br>'+esc(d.specialty)+'<br>'+
+      '<span style="color:'+(d.available?'#2E7D32':'#E65100')+';font-weight:bold">'+(d.available?'✅ Available now':'🟠 Currently busy')+'</span><br>'+
+      '📍 '+Number(d.distanceKm||0).toFixed(1)+' km away<br>'+contact+'<br>'+
+      '<small style="color:#777">'+esc(d.location.address)+(d.approximate?' · approximate area (±'+(d.precisionKm||1)+' km)':'')+'</small>';
+  }
+  order.forEach(function(k){
+    var g=groups[k],d0=g[0],free=g.some(function(d){return d.available;}),color=free?'#43A047':'#FB8C00';
+    var pos=[d0.location.latitude,d0.location.longitude];
+    if(d0.approximate){
+      L.circle(pos,{radius:(d0.precisionKm||1)*1000,color:color,weight:2,fillColor:color,fillOpacity:.2,dashArray:'4 4'}).addTo(map);
+    }
+    var icon=g.length>1
+      ?L.divIcon({className:'',html:'<div style="background:'+color+';border-radius:50%;width:34px;height:34px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:13px;">'+g.length+'</div>',iconSize:[34,34],iconAnchor:[17,17],popupAnchor:[0,-18]})
+      :L.divIcon({className:'',html:'<div style="background:'+color+';border-radius:50% 50% 50% 0;width:30px;height:30px;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;"><span style="transform:rotate(45deg);font-size:14px;line-height:1;">👨‍⚕️</span></div>',iconSize:[30,30],iconAnchor:[15,30],popupAnchor:[0,-32]});
+    L.marker(pos,{icon:icon}).addTo(map).bindPopup(
+      '<div style="max-height:260px;overflow:auto">'+(g.length>1?'<strong>'+g.length+' doctors in this area</strong><hr style="border:none;border-top:1px solid #eee;margin:6px 0">':'')+
+      g.map(card).join('<hr style="border:none;border-top:1px solid #eee;margin:6px 0">')+'</div>');
+  });
+`;
 
 export interface HospitalPin {
   name: string;
@@ -47,7 +85,8 @@ function buildLeafletHTML(
   const tileUrl     = isSatellite ? SATELLITE_URL : STREET_URL;
   const esc         = (s: string) =>
     s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, ' ');
-  const doctorsJson = JSON.stringify(doctors);
+  // '<' escaped so a name can't close the <script> tag
+  const doctorsJson = JSON.stringify(doctors).replace(/</g, '\\u003c');
 
   return `<!DOCTYPE html>
 <html>
@@ -113,22 +152,7 @@ function buildLeafletHTML(
   }).addTo(map);
 
   var doctors=${doctorsJson};
-  doctors.forEach(function(doc){
-    var color=doc.available?'#43A047':'#FB8C00';
-    var dIcon=L.divIcon({
-      className:'',
-      html:'<div style="background:'+color+';border-radius:50% 50% 50% 0;width:30px;height:30px;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;"><span style="transform:rotate(45deg);font-size:14px;line-height:1;">👨\u200d⚕️</span></div>',
-      iconSize:[30,30],iconAnchor:[15,30],popupAnchor:[0,-32],
-    });
-    L.marker([doc.location.latitude,doc.location.longitude],{icon:dIcon})
-     .addTo(map)
-     .bindPopup(
-       '<strong>'+doc.name+'</strong><br>'+doc.specialty+'<br>'+
-       '<span style="color:'+(doc.available?'#2E7D32':'#E65100')+';font-weight:bold">'+(doc.available?'✅ Available now':'🟠 Currently busy')+'</span><br>'+
-       '📍 '+doc.distanceKm.toFixed(1)+' km away<br>📞 '+doc.phone+'<br>📧 '+doc.email+'<br>'+
-       '<small style="color:#777">'+doc.location.address+'</small>'
-     );
-  });
+  ${DRAW_DOCTORS_JS}
 </script>
 </body>
 </html>`;
@@ -204,22 +228,7 @@ const LiveMapView: React.FC<LiveMapViewProps> = ({
         fillOpacity: 0.08, weight: 2, dashArray: '6 4',
       }).addTo(map);
 
-      doctors.forEach(doc => {
-        const color = doc.available ? '#43A047' : '#FB8C00';
-        const dIcon = L.divIcon({
-          className: '',
-          html: `<div style="background:${color};border-radius:50% 50% 50% 0;width:30px;height:30px;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;"><span style="transform:rotate(45deg);font-size:14px;line-height:1;">👨‍⚕️</span></div>`,
-          iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -32],
-        });
-        L.marker([doc.location.latitude, doc.location.longitude], { icon: dIcon })
-          .addTo(map)
-          .bindPopup(
-            `<strong>${doc.name}</strong><br>${doc.specialty}<br>` +
-            `<span style="color:${doc.available ? '#2E7D32' : '#E65100'};font-weight:bold">${doc.available ? '✅ Available now' : '🟠 Currently busy'}</span><br>` +
-            `📍 ${doc.distanceKm.toFixed(1)} km away<br>📞 ${doc.phone}<br>📧 ${doc.email}<br>` +
-            `<small style="color:#777">${doc.location.address}</small>`,
-          );
-      });
+      new Function('L', 'map', 'doctors', DRAW_DOCTORS_JS)(L, map, doctors);
     };
 
     if (!(window as any).L) {

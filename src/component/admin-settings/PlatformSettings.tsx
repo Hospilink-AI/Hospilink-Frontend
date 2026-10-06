@@ -44,6 +44,14 @@ const SECTIONS: { title: string; intro: string; fields: Field[] }[] = [
       { key: "notifications.webPushEnabled", label: "Browser push for web users", help: "Off: web users see notifications inside the app only. Phone app push is not affected.", kind: { type: "bool" } },
     ],
   },
+  {
+    title: "Privacy on the hospital map",
+    intro: "What hospitals see about nearby doctors before a duty is assigned. Once a duty is assigned, the hospital sees that doctor's contact details.",
+    fields: [
+      { key: "privacy.showContactOnMap", label: "Show doctor contacts on the hospital map", help: "Off: phone and email stay hidden until a duty is assigned.", kind: { type: "bool" } },
+      { key: "privacy.mapLocationPrecisionKm", label: "Round doctor positions to", help: "0 = exact position and street address.", kind: { type: "int", min: 0, max: 10, unit: "km" } },
+    ],
+  },
 ];
 
 const ALL = SECTIONS.flatMap((s) => s.fields);
@@ -84,6 +92,7 @@ export default function PlatformSettings() {
     const next = { ...values };
     for (const f of ALL) {
       if (f.kind.type !== "int" && f.kind.type !== "number") continue;
+      if (!(f.key in server)) continue; // not on this server yet
       const n = Number(text[f.key]);
       const okNumber = f.kind.type === "int" ? Number.isInteger(n) : Number.isFinite(n);
       if (text[f.key] === "" || !okNumber || n < f.kind.min || n > f.kind.max) {
@@ -134,7 +143,10 @@ export default function PlatformSettings() {
         <Text style={s.error}>{loadError}</Text>
       ) : (
         <>
-          {SECTIONS.map((sec) => (
+          {/* only settings this server knows about (older servers lack the newer keys) */}
+          {SECTIONS.map((sec) => ({ ...sec, fields: sec.fields.filter((f) => f.key in server) }))
+            .filter((sec) => sec.fields.length > 0)
+            .map((sec) => (
             <View key={sec.title} style={s.card}>
               <Text style={s.cardTitle}>{sec.title}</Text>
               <Text style={s.muted}>{sec.intro}</Text>

@@ -67,16 +67,20 @@ export function adaptStaffToDoctor(staff: NearbyStaffMember): DoctorWithDistance
   return {
     id: staff.id,
     name: staff.name,
-    specialty: staff.role,
-    phone: staff.phone,
+    specialty: staff.formattedRole || staff.role,
+    phone: staff.phone ?? '',
     email: staff.email ?? '',
+    contactHidden: !!staff.contactHidden,
+    approximate: !!staff.location.approximate,
+    precisionKm: staff.location.precisionKm,
     available: staff.isAvailable === true,
     distanceKm: staff.distance,
     distanceText: staff.distanceText,
     location: {
       latitude: staff.location.latitude,
       longitude: staff.location.longitude,
-      address: staff.address?.currentAddress ?? '',
+      // the street address is hidden while positions are rounded: show the area instead
+      address: staff.address?.currentAddress || [staff.address?.city, staff.address?.pincode].filter(Boolean).join(' '),
     },
     // Doctor base fields — set defaults since API doesn't return these
     qualification: '',
@@ -132,12 +136,15 @@ function formatJobRole(role: string): string {
 
 type WithLocation = {
   location: { latitude: number; longitude: number };
+  approximate?: boolean;
 };
 
 export function jitterDuplicates<T extends WithLocation>(items: T[]): T[] {
   const seen = new Map<string, number>();
 
   return items.map((item) => {
+    // rounded positions are shared on purpose; the map groups them into one area instead
+    if (item.approximate) return item;
     const key = `${item.location.latitude.toFixed(6)},${item.location.longitude.toFixed(6)}`;
     const count = seen.get(key) ?? 0;
     seen.set(key, count + 1);
