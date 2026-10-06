@@ -101,7 +101,7 @@ export const PRIVACY_POLICY: LegalDocument = {
           blocks: [
             {
               bullets: [
-                "Hospitals see the profile, contact details, rating, distance and approximate position of nearby verified staff, so they can invite them; and the live position of the staff member on their duty.",
+                "Hospitals see the profile, rating, distance, city and an approximate area (not your exact position or street address) of nearby verified staff, so they can invite them. Your phone number and email are shared with a hospital once you are assigned to its duty, and the hospital sees your live position during that duty.",
                 "Medical staff see the hospital's name, address, contact details and duty details.",
                 "Reviews are shown to the person reviewed after both sides have reviewed, or 14 days after the shift.",
               ],

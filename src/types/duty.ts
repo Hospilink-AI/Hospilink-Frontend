@@ -92,6 +92,10 @@ export interface Doctor {
   phone: string;
    email: string;  
   location: GeoLocation;
+  // hospital map privacy (before a duty is assigned)
+  contactHidden?: boolean;
+  approximate?: boolean; // location is rounded to about precisionKm
+  precisionKm?: number;
 
 }
 
@@ -175,7 +179,9 @@ export interface NearbyStaffMember {
   name: string;
   email: string | null;
   role: string;
-  phone: string;
+  formattedRole?: string;
+  phone: string | null;
+  contactHidden?: boolean; // contacts hidden until a duty is assigned
   rating: number;
   isAvailable: boolean;
   verificationStatus: string;
@@ -187,7 +193,7 @@ export interface NearbyStaffMember {
   hasActiveDuty: boolean;
   hasUpcomingDuty: boolean;
   address: {
-    currentAddress: string;
+    currentAddress: string | null; // null when positions are rounded
     city: string;
     state: string;
     pincode: string;
@@ -195,6 +201,8 @@ export interface NearbyStaffMember {
   location: {
     latitude: number;
     longitude: number;
+    approximate?: boolean;
+    precisionKm?: number;
   };
 }
 

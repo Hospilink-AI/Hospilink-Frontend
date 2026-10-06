@@ -35,6 +35,28 @@ const hospitalIcon = L.divIcon({
   popupAnchor: [0, -40],
 });
 
+// Doctors at the same rounded point share one marker with a count
+const makeGroupIcon = (count: number, available: boolean, picked = false) =>
+  L.divIcon({
+    className: '',
+    html: `<div style="background:${picked ? '#2563EB' : available ? '#43A047' : '#FB8C00'};
+      border-radius:50%;width:34px;height:34px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);
+      display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:13px;">${count}</div>`,
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
+    popupAnchor: [0, -18],
+  });
+
+// Exact positions stay one marker each; rounded (approximate) ones group by their shared point
+function groupDoctors(doctors: DoctorWithDistance[]): DoctorWithDistance[][] {
+  const groups = new Map<string, DoctorWithDistance[]>();
+  for (const d of doctors) {
+    const key = d.approximate ? `${d.location.latitude.toFixed(5)},${d.location.longitude.toFixed(5)}` : `id:${d.id}`;
+    groups.set(key, [...(groups.get(key) ?? []), d]);
+  }
+  return [...groups.values()];
+}
+
 const makeDoctorIcon = (available: boolean, picked = false) =>
   L.divIcon({
     className: '',
@@ -196,22 +218,46 @@ const LiveMap: React.FC<LiveMapProps> = ({ hospital, doctors, rangeKm, onRefresh
           <small>{hospital.location.address}</small>
         </Popup>
       </Marker>
-      {doctors.map((doc) => (
-        <Marker
-          key={doc.id}
-          position={[doc.location.latitude, doc.location.longitude]}
-          icon={makeDoctorIcon(doc.available, !!invite?.pickedIds.includes(doc.id))}
-        >
-          <Popup>
+      {groupDoctors(doctors).map((g) => {
+        const first = g[0];
+        const pos: [number, number] = [first.location.latitude, first.location.longitude];
+        const anyFree = g.some((d) => d.available);
+        const anyPicked = g.some((d) => !!invite?.pickedIds.includes(d.id));
+        return (
+          <React.Fragment key={g.map((d) => d.id).join('|')}>
+            {first.approximate && (
+              // rounded position: a soft area, not a pin on the doctor's door
+              <Circle
+                center={pos}
+                radius={(first.precisionKm ?? 1) * 1000}
+                pathOptions={{ color: anyFree ? '#43A047' : '#FB8C00', weight: 2, fillOpacity: 0.2, dashArray: '4 4' }}
+              />
+            )}
+            <Marker position={pos} icon={g.length > 1 ? makeGroupIcon(g.length, anyFree, anyPicked) : makeDoctorIcon(first.available, anyPicked)}>
+              <Popup>
+                <div style={{ maxHeight: 280, overflowY: 'auto' }}>
+                  {g.length > 1 && <strong>{g.length} doctors in this area</strong>}
+                  {g.map((doc, i) => (
+                    <div key={doc.id} style={i > 0 || g.length > 1 ? { borderTop: '1px solid #eee', marginTop: 6, paddingTop: 6 } : undefined}>
             <strong>{doc.name}</strong><br />
             {doc.specialty}<br />
             <span style={{ color: doc.available ? '#2E7D32' : '#E65100', fontWeight: 'bold' }}>
               {doc.available ? '✅ Available now' : '🟠 Currently busy'}
             </span><br />
             📍 {doc.distanceKm.toFixed(1)} km away<br />
-            📞 {doc.phone}<br />
-            📧 {doc.email} <br />
-            <small style={{ color: '#777' }}>{doc.location.address}</small>
+            {doc.contactHidden ? (
+              <span style={{ color: '#64748B' }}>Contact shared once a duty is assigned</span>
+            ) : (
+              <>
+                {!!doc.phone && <>📞 {doc.phone}<br /></>}
+                {!!doc.email && <>📧 {doc.email}</>}
+              </>
+            )}
+            <br />
+            <small style={{ color: '#777' }}>
+              {doc.location.address}
+              {doc.approximate ? ` · approximate area (±${doc.precisionKm ?? 1} km)` : ''}
+            </small>
             {renderDoctorActions && <div style={{ marginTop: 6 }}>{renderDoctorActions(doc)}</div>}
             {invite && (
               <div>
@@ -239,9 +285,15 @@ const LiveMap: React.FC<LiveMapProps> = ({ hospital, doctors, rangeKm, onRefresh
                 </button>
               </div>
             )}
-          </Popup>
-        </Marker>
-      ))}
+          
+                    </div>
+                  ))}
+                </div>
+              </Popup>
+            </Marker>
+          </React.Fragment>
+        );
+      })}
     </MapContainer>
     {/* Satellite Toggle Button */}
     <button

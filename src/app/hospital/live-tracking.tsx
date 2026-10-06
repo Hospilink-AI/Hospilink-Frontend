@@ -483,6 +483,7 @@ export default function MapScreen() {
     id: d.id, name: d.name, specialty: d.specialty,
     available: d.available, distanceKm: d.distanceKm,
     phone: d.phone, email: d.email, location: d.location,
+    contactHidden: d.contactHidden, approximate: d.approximate, precisionKm: d.precisionKm,
   }));
 
   const screenHeight = Dimensions.get('window').height;
