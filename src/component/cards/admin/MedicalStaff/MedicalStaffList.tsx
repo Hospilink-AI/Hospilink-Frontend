@@ -514,63 +514,6 @@ const ld = StyleSheet.create({
 
 
 
-// ─── Verification Tab Row ─────────────────────────────────────────────────────
-// ✅ NEW: replaces the verification dropdown — renders All Staff / Pending / Approved / Rejected tabs
-// interface VerificationTabsProps {
-//   activeKey: string;
-//   onChange: (key: string) => void;
-// }
-// function VerificationTabs({ activeKey, onChange }: VerificationTabsProps) {
-//   return (
-//     <View style={vt.wrap}>
-//       {VERIFICATION_TABS.map(tab => {
-//         const isActive = activeKey === tab.key;
-//         return (
-//           <TouchableOpacity
-//             key={tab.key}
-//             style={[vt.tab, isActive && vt.tabActive]}
-//             onPress={() => onChange(tab.key)}
-//             activeOpacity={0.75}
-//           >
-//             <Text style={[vt.tabTxt, isActive && vt.tabTxtActive]}>
-//               {tab.label}
-//             </Text>
-//           </TouchableOpacity>
-//         );
-//       })}
-//     </View>
-//   );
-// }
-// const vt = StyleSheet.create({
-//   wrap: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     gap: 4,
-//     paddingHorizontal: 16,
-//     paddingVertical: 12,
-//     borderBottomWidth: 1,
-//     borderBottomColor: '#F1F5F9',
-//   },
-//   tab: {
-//     paddingHorizontal: 16,
-//     paddingVertical: 8,
-//     borderRadius: 8,
-//     backgroundColor: 'transparent',
-//   },
-//   tabActive: {
-//     backgroundColor: '#2563EB',
-//   },
-//   tabTxt: {
-//     fontSize: 13,
-//     fontWeight: '600',
-//     color: '#64748B',
-//   },
-//   tabTxtActive: {
-//     color: '#FFFFFF',
-//   },
-// });
-
-// ─── Verification Tab Row ─────────────────────────────────────────────────────
 interface VerificationTabsProps {
   activeKey: string;
   onChange: (key: string) => void;
@@ -782,42 +725,6 @@ function DocumentViewerModal({ visible, doc, onClose }: DocumentViewerModalProps
   const docUrl = doc.url ?? doc.documentUrl ?? '';
 
   return (
-    // <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-    //   <View style={vm.overlay}>
-    //     <View style={vm.sheet}>
-    //       <View style={vm.header}>
-    //         <Text style={vm.title}>{docLabel}</Text>
-    //         <TouchableOpacity style={vm.closeBtn} onPress={onClose}>
-    //           <Text style={vm.closeX}>✕</Text>
-    //         </TouchableOpacity>
-    //       </View>
-
-    //       <View style={vm.content}>
-    //         <View style={vm.placeholderBox}>
-    //           <Text style={vm.placeholderIcon}>{docIcon}</Text>
-    //           <Text style={vm.placeholderTxt}>Document Preview Area</Text>
-    //           <Text style={vm.placeholderSub}>({docLabel})</Text>
-    //           <TouchableOpacity 
-    //             style={vm.viewBtn}
-    //             onPress={() => {
-    //               if (doc.documentUrl) {
-    //                 console.log('Open URL:', doc.documentUrl);
-    //               }
-    //             }}
-    //           >
-    //             <Text style={vm.viewBtnTxt}>Open Document</Text>
-    //           </TouchableOpacity>
-    //         </View>
-    //       </View>
-
-    //       <View style={vm.footer}>
-    //         <TouchableOpacity style={vm.doneBtn} onPress={onClose}>
-    //           <Text style={vm.doneBtnTxt}>Close Viewer</Text>
-    //         </TouchableOpacity>
-    //       </View>
-    //     </View>
-    //   </View>
-    // </Modal>
 
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={vm.overlay}>
@@ -1753,25 +1660,6 @@ export default function MedicalStaffListSection() {
       setExporting(false);
     }
   };
-  // const fetchStaff = async (page = 1, currentSearch = search, currentRole = role, tabKey = activeTabKey) => {
-  //   try {
-  //     setLoading(true);
-  //     const roleParam = currentRole !== 'All Roles'
-  //       ? currentRole.toLowerCase().replace(/ /g, '_')
-  //       : '';
-  //     const data = await adminAPI.getMedicalStaff(currentSearch, page, roleParam);
-  //     if (data.success) {
-  //       const mapped: MedicalStaff[] = (data.staff ?? []).map(mapStaff);
-  //       setStaffList(mapped);
-  //       setPagination(data.pagination ?? null);
-  //     }
-  //   } catch (error) {
-  //     console.error('Failed to fetch staff:', error);
-  //     showToast('Failed to load medical staff', 'error');
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   const fetchStaff = async (
     page = 1,

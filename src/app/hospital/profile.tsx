@@ -189,23 +189,6 @@ const bSt = StyleSheet.create({
   text: { fontSize: 11, fontWeight: "700" },
 });
 
-// ─── Labeled Input ────────────────────────────────────────────────────────────
-// const LabeledInput = ({ label, value, onChangeText, half, placeholder }: {
-//   label: string; value: string; onChangeText: (t: string) => void; half?: boolean; placeholder?: string;
-// }) => (
-//   <View style={[iSt.group, half && iSt.half]}>
-//     <Text style={iSt.label}>{label}</Text>
-//     <TextInput
-//       style={iSt.input}
-//       value={value}
-//       onChangeText={onChangeText}
-//       placeholder={placeholder}
-//       placeholderTextColor="#9CA3AF"
-//     />
-//   </View>
-// );
-
-// ─── Labeled Input ────────────────────────────────────────────────────────────
 const LabeledInput = ({ label, value, onChangeText, half, placeholder, multiline }: {
   label: string; value: string; onChangeText: (t: string) => void; half?: boolean; placeholder?: string; multiline?: boolean;
 }) => (

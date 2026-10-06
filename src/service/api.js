@@ -431,27 +431,6 @@ export const profileAPI = {
     }
   },
 
-  // deleteProfilePicture: async () => {
-  //   const token = Platform.OS === "web"
-  //     ? localStorage.getItem("hospilink_token")
-  //     : await AsyncStorage.getItem("hospilink_token");
-
-  //   try {
-  //     const res = await fetch(`https://hospilink-backend.vercel.app/api/profile/delete-picture`, {
-  //       method: "DELETE",
-  //       headers: {
-  //         Authorization: `Bearer ${token}`,
-  //         "Content-Type": "application/json",
-  //       },
-  //     });
-  //     const data = await res.json();
-  //     if (!res.ok) throw { response: { data } };
-  //     return data;
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // },
-
   deleteProfilePicture: async () => {
     const token = Platform.OS === "web"
       ? localStorage.getItem("hospilink_token")
@@ -1990,33 +1969,6 @@ export const adminAPI = {
     return response.data;
   },
 
-  // Get nearby medical staff for a specific hospital based on distance
-  // Corresponds to /api/admin/nearby-staff?hospital_id=...&distance=...
-  // getNearbyStaff: async (hospitalId, distance) => {
-  //   const response = await api.get('/api/admin/nearby-staff', {
-  //     params: {
-  //       hospital_id: hospitalId,
-  //       distance: distance
-  //     }
-  //   });
-  //   return response.data;
-  // },
-  // Update your API file to accept the 3rd parameter
-  // getNearbyStaff: async (hospitalId, distance, role) => {
-  //   const params = {
-  //     hospital_id: hospitalId,
-  //     distance: distance
-  //   };
-
-  //   // Pass role only if it's explicitly selected (not empty string / default option)
-  //   if (role && role !== '') {
-  //     params.role = role;
-  //   }
-
-  //   const response = await api.get('/api/admin/nearby-staff', { params });
-  //   return response.data;
-  // },
-
   getNearbyStaff: async (hospitalId, radius, role, date) => {
     const params = { hospital_id: hospitalId, radius };
     if (role && role !== '') params.role = role;
@@ -2163,33 +2115,6 @@ export const adminAPI = {
     const response = await api.get(`/api/admin/emergency-dashboard?page=${page}`);
     return response.data;
   },
-
-  // Get Medical Staff List
-  // getMedicalStaff: async (search = '', page = 1) => {
-  //   const response = await api.get(`/api/admin/medical-staff?search=${search}&page=${page}`);
-  //   return response.data;
-  // },
-
-  //   getMedicalStaff: async (params = {}) => {
-  //   // You can pass { page, limit, status, etc. } as params if your API supports it
-  //   const response = await api.get('/api/admin/medical-staff', { params });
-  //   return response.data;
-  // },
-
-  // getMedicalStaff: async (search = '', page = 1, role = '') => {
-  //   const roleQuery = role ? `&role=${role}` : '';
-  //   const response = await api.get(`/api/admin/medical-staff?search=${search}&page=${page}${roleQuery}`);
-  //   return response.data;
-  // },
-  // getMedicalStaff: async (search = '', page = 1, role = '', status = '', location = '') => {
-  // const roleQuery = role ? `&role=${role}` : '';
-  // const statusQuery = status ? `&status=${status}` : '';
-  // const locationQuery = location && location !== 'All Cities' ? `&location=${encodeURIComponent(location)}` : '';
-  // const response = await api.get(
-  //   `/api/admin/medical-staff?search=${search}&page=${page}${roleQuery}${statusQuery}${locationQuery}`
-  // );
-  // return response.data;
-  // },
 
   getMedicalStaff: async (search = '', page = 1, role = '', status = '', location = '') => {
     const roleQuery = role ? `&role=${role}` : '';

@@ -98,19 +98,18 @@ export function useTrackingReceiver({ dutyId, hospitalId }: UseTrackingReceiverO
       console.log('🎯 [useTrackingReceiver] Staff arrived:', data);
     });
 
-    // Debug: Log all socket events
-    const originalOnevent = socket.onevent;
-    socket.onevent = function(packet: any) {
-      console.log('🔔 [Socket Debug] Received event:', packet.data);
-      originalOnevent.call(this, packet);
+    // Debug: Log all socket events (public onAny instead of patching the private onevent)
+    const logAny = (event: string, ...args: any[]) => {
+      console.log('🔔 [Socket Debug] Received event:', [event, ...args]);
     };
+    socket.onAny(logAny);
 
     return () => {
       console.log('🧹 [useTrackingReceiver] Cleanup - removing event listeners');
       socket.off('staff_location_update', handleUpdate);
       socket.off('location_update');
       socket.off('staff_arrived');
-      socket.onevent = originalOnevent;
+      socket.offAny(logAny);
     };
   }, [socket, isConnected, dutyId, hospitalId, handleUpdate]);
 

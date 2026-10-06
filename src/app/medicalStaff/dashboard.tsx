@@ -117,54 +117,6 @@ export default function Dashboard() {
 
 
 
-  // const checkLocationPermission = async () => {
-  //   try {
-  //     if (Platform.OS === 'web') {
-  //       const permissionStatus = await navigator.permissions?.query({ name: 'geolocation' as PermissionName });
-
-  //       if (permissionStatus?.state === 'granted') {
-  //         navigator.geolocation.getCurrentPosition(
-  //           async (position) => {
-  //             await profileAPI.sendDashboardLocationPermission(
-  //               true,
-  //               position.coords.latitude as unknown as null,
-  //               position.coords.longitude as unknown as null
-  //             );
-  //           },
-  //           async () => {
-  //             await profileAPI.sendDashboardLocationPermission(false);
-  //           },
-  //           { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-  //         );
-  //         return;
-  //       }
-
-  //       if (permissionStatus?.state === 'denied') {
-  //         await profileAPI.sendDashboardLocationPermission(false);
-  //         return;
-  //       }
-
-  //       if (permissionStatus?.state === 'prompt') {
-  //         navigator.geolocation.getCurrentPosition(
-  //           async (position) => {
-  //             await profileAPI.sendDashboardLocationPermission(
-  //               true,
-  //               position.coords.latitude as unknown as null,
-  //               position.coords.longitude as unknown as null
-  //             );
-  //           },
-  //           async () => {
-  //             await profileAPI.sendDashboardLocationPermission(false);
-  //           },
-  //           { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-  //         );
-  //       }
-  //     }
-  //   } catch (error) {
-  //     await profileAPI.sendDashboardLocationPermission(false);
-  //   }
-  // };
-
   const handleAccept = useCallback(async () => {
     setToast(true);
     setTimeout(() => setToast(false), 3000);

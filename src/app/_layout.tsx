@@ -1,5 +1,8 @@
 import { Stack } from "expo-router";
-import { Platform, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, Platform, View, useWindowDimensions } from "react-native";
+import { Feather, Ionicons, MaterialIcons } from "@expo/vector-icons";
+import * as Font from "expo-font";
+import { useEffect, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider } from '@/context/AuthContext';
 import { SocketProvider } from "@/context/SocketContext";
@@ -7,8 +10,36 @@ import { NotificationProvider } from "@/context/NotificationContext";
 import { InAppNotificationsProvider } from "@/context/InAppNotificationsContext";
 import FlashHost from "@/component/common/FlashHost";
 
+// Icon fonts load before the first screen. An icon that mounts before its font is ready draws
+// nothing, and on a slow connection the browser's 6 s font check times out (blank icons and an
+// error). Try a few times, then carry on regardless so the app never hangs here.
+const ICON_FONTS = { ...Ionicons.font, ...Feather.font, ...MaterialIcons.font };
+
+function useIconFonts() {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          await Font.loadAsync(ICON_FONTS);
+          break;
+        } catch {
+          // still downloading: the next try keeps waiting for the same font
+        }
+      }
+      if (alive) setReady(true);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return ready;
+}
+
 export default function RootLayout() {
   const { width } = useWindowDimensions();
+  const iconsReady = useIconFonts();
 
   const isWeb = Platform.OS === "web";
   // Only cap the max-width on large desktop screens
@@ -27,6 +58,11 @@ export default function RootLayout() {
           backgroundColor: "#dce6f5",   // match light theme page bg
         }}
       >
+        {!iconsReady ? (
+          <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+            <ActivityIndicator size="large" color="#2563EB" />
+          </View>
+        ) : (
         <AuthProvider>
           <SocketProvider>
             <InAppNotificationsProvider>
@@ -42,6 +78,7 @@ export default function RootLayout() {
             </InAppNotificationsProvider>
           </SocketProvider>
         </AuthProvider>
+        )}
       </View>
     </SafeAreaProvider>
   );

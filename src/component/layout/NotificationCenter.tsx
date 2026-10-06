@@ -334,22 +334,6 @@ export default function NotificationsCenterScreen() {
       });
     };
 
-    // const handleConnect = async () => {
-    //   try {
-    //     const lastSeen = await AsyncStorage.getItem(LAST_CONNECTED_KEY);
-    //     if (lastSeen) {
-    //       socket.emit("get_missed_notifications", { since: lastSeen });
-    //     }
-    //     await AsyncStorage.setItem(
-    //       LAST_CONNECTED_KEY,
-    //       new Date().toISOString()
-    //     );
-    //   } catch (e) {
-    //     console.error("❌ handleConnect:", e);
-    //   }
-    // };
-
-    // src/component/layout/NotificationCenter.tsx
     const handleConnect = async () => {
       try {
         // ✅ Debounce and don't block UI

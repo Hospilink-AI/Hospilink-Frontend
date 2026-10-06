@@ -88,86 +88,6 @@ export default function VerifyOtp() {
     }
   };
 
-  // const handleVerify = async () => {
-  //   const otpCode = otp.join("");
-  //   if (otpCode.length < 6) {
-  //     Alert.alert("Incomplete OTP", "Please enter all 6 digits.");
-  //     return;
-  //   }
-
-  //   try {
-  //     setLoading(true);
-
-  //     // ── ADMIN flow ────────────────────────────────────────────────────
-  //     if (isAdmin) {
-  //       const response = await adminAPI.verifyOTP(email, otpCode);
-
-  //       if (response?.token) {
-  //         if (Platform.OS === "web") {
-  //           localStorage.setItem("hospilink_token", response.token);
-  //           localStorage.setItem("hospilink_user", JSON.stringify(response.user));
-  //         } else {
-  //           await AsyncStorage.setItem("hospilink_token", response.token);
-  //           await AsyncStorage.setItem("hospilink_user", JSON.stringify(response.user));
-  //         }
-  //         setSession(response.token, response.user);
-  //       }
-
-  //       router.replace("/admin/dashboard");
-  //       return;
-  //     }
-
-  //     // ── EXISTING flow (medical staff / hospital) ──────────────────────
-  //     const response = await authAPI.verifyOTP(email, otpCode);
-
-  //     if (response?.token) {
-  //       if (Platform.OS === "web") {
-  //         localStorage.setItem("hospilink_token", response.token);
-  //         localStorage.setItem("hospilink_user", JSON.stringify(response.user));
-  //       } else {
-  //         await AsyncStorage.setItem("hospilink_token", response.token);
-  //         await AsyncStorage.setItem("hospilink_user", JSON.stringify(response.user));
-  //       }
-  //       setSession(response.token, response.user);
-  //     }
-
-  //     router.replace({
-  //       pathname: "/auth/welcome-choice",
-  //       params: { email, signupName, accountType },
-  //     });
-
-
-  //     // // ── CHANGE: pass signupName so profile can pre-fill fullName ──
-  //     // if (accountType === "medical") {
-  //     //   router.replace({
-  //     //     pathname: "/profile/medical-staff",
-  //     //     params: {email, signupName },
-  //     //   });
-  //     // } else {
-  //     //   router.replace({
-  //     //     pathname: "/profile/hospital",
-  //     //     params: {email, signupName },
-  //     //   });
-  //     // }
-
-  //   } catch (error: any) {
-  //     const message = error.response?.data?.message || "";
-
-  //     if (message.toLowerCase().includes("expired")) {
-  //       setOtpError("⏱ Your OTP has expired. Please request a new one.");
-  //     } else if (message.toLowerCase().includes("invalid") || message.toLowerCase().includes("incorrect")) {
-  //       setOtpError("✗ Invalid OTP. Please check and try again.");
-  //     } else {
-  //       setOtpError("Verification failed. Please try again.");
-  //     }
-
-  //     setOtp(["", "", "", "", "", ""]);
-  //     inputs.current[0]?.focus();
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   const handleVerify = async () => {
     const otpCode = otp.join('');
 
@@ -259,27 +179,6 @@ export default function VerifyOtp() {
       setLoading(false);
     }
   };
-  // const handleResend = async () => {
-  //   if (!canResend) return;
-  //   setOtpError(null);
-  //   try {
-  //     if (isAdmin) {
-  //       await adminAPI.resendOTP(email);
-  //     } else {
-  //       await authAPI.resendOTP(email);
-  //     }
-
-  //     Alert.alert("Sent!", "A new OTP has been sent to your email.");
-  //     setOtp(["", "", "", "", "", ""]);
-  //     inputs.current[0]?.focus();
-  //     startTimer();
-  //   } catch (error: any) {
-  //     Alert.alert(
-  //       "Error",
-  //       error.response?.data?.message || "Failed to resend OTP."
-  //     );
-  //   }
-  // };
 
   const handleResend = async () => {
     if (!canResend) return;

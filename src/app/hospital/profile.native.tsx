@@ -1675,29 +1675,6 @@ const Profile = () => {
     }
   };
 
-  // ─── Logout Handler ──────────────────────────────────────────────────────────
-  // const doLogout = async () => {
-  //   setShowLogoutModal(false);
-  //   try {
-  //     if (role === "admin") {
-  //       await authAPI.adminLogout();
-  //     } else {
-  //       await authAPI.logout();
-  //     }
-  //   } catch (e) {
-  //     console.warn("Logout API error (ignored):", e);
-  //   } finally {
-  //     try {
-  //       await AsyncStorage.removeItem("hospilink_token");
-  //       await AsyncStorage.removeItem("hospilink_user");
-  //       await AsyncStorage.removeItem("hospilink_role");
-  //     } catch (e) {
-  //       console.warn("Error clearing storage:", e);
-  //     }
-  //     router.replace("/");
-  //   }
-  // };
-
   const { logout } = useAuth();
 
   const doLogout = () => {
