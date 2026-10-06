@@ -9,7 +9,7 @@ import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, TextInput, To
 // Public page (hospilink.in/delete-account) required by the app stores: delete an account without
 // installing the app. Signs in only to get a token for the request; nothing is saved on this device.
 
-const SUPPORT_EMAIL = "info@hospilink.com";
+const SUPPORT_EMAIL = "support@hospilink.in";
 
 export default function DeleteAccountPage() {
   const router = useRouter();

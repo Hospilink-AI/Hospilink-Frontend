@@ -4,9 +4,9 @@ import type { LegalDocument } from "@/component/legal/LegalDoc";
 // Keep in line with the data the app actually collects (see the data-safety notes).
 export const PRIVACY_POLICY: LegalDocument = {
   title: "Privacy Policy",
-  updated: "5 October 2026",
+  updated: "6 October 2026",
   intro: [
-    "HospiLink connects hospitals with doctors, nurses and other medical staff for short duties and permanent jobs. This policy explains what personal data HospiLink collects through its website and mobile apps, why, who it is shared with, how long it is kept, and the choices you have.",
+    "HospiLink is operated by Hospilink Private Limited (\"HospiLink\", \"we\", \"us\"). HospiLink connects hospitals with doctors, nurses and other medical staff for short duties and permanent jobs. This policy explains what personal data HospiLink collects through its website and mobile apps, why, who it is shared with, how long it is kept, and the choices you have.",
     "It applies to everyone who uses HospiLink: medical staff, hospitals and the HospiLink team. We process personal data in line with India's Digital Personal Data Protection Act, 2023 and the Information Technology Act, 2000.",
   ],
   sections: [
@@ -158,7 +158,7 @@ export const PRIVACY_POLICY: LegalDocument = {
             "Delete your account in the app (Profile → Account settings → Delete account) or at hospilink.in/delete-account.",
             "Block a hospital or staff member, and report users or reviews.",
             "Turn off location or notification permissions in your phone settings.",
-            "Withdraw your consent, ask for a summary of the data we hold about you, or nominate someone to act for you, by emailing info@hospilink.com.",
+            "Withdraw your consent, ask for a summary of the data we hold about you, or nominate someone to act for you, by emailing support@hospilink.in.",
             "Raise a complaint with us, and if you are not satisfied with our answer, with the Data Protection Board of India.",
           ],
         },
@@ -182,7 +182,9 @@ export const PRIVACY_POLICY: LegalDocument = {
     {
       title: "9. Contact and grievances",
       blocks: [
-        "For questions, requests or complaints about your personal data, email our Grievance Officer at info@hospilink.com. We aim to resolve complaints within 30 days.",
+        "For questions, requests or complaints about your personal data, contact our Grievance Officer:",
+        { bullets: ["Sumit Thombre, Grievance Officer, Hospilink Private Limited", "Email: support@hospilink.in"] },
+        "We aim to resolve complaints within 30 days. For anything else, write to info@hospilink.in.",
       ],
     },
   ],

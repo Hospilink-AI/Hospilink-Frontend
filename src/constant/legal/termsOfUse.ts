@@ -3,9 +3,9 @@ import type { LegalDocument } from "@/component/legal/LegalDoc";
 // Terms of Use shown at /terms, /auth/terms and in the app (sign-up asks users to accept them).
 export const TERMS_OF_USE: LegalDocument = {
   title: "Terms of Use",
-  updated: "5 October 2026",
+  updated: "6 October 2026",
   intro: [
-    "These terms apply to your use of the HospiLink website and mobile apps. By creating an account or using HospiLink, you agree to them and to our Privacy Policy. If you do not agree, please do not use HospiLink.",
+    "HospiLink is operated by Hospilink Private Limited (\"HospiLink\", \"we\", \"us\"). These terms are an agreement between you and Hospilink Private Limited and apply to your use of the HospiLink website and mobile apps. By creating an account or using HospiLink, you agree to them and to our Privacy Policy. If you do not agree, please do not use HospiLink.",
   ],
   sections: [
     {
@@ -30,7 +30,7 @@ export const TERMS_OF_USE: LegalDocument = {
     {
       title: "3. Your account",
       blocks: [
-        "Keep your password private; you are responsible for what happens under your account. Tell us at info@hospilink.com if you think someone else has used it. You can delete your account at any time from Profile → Account settings or at hospilink.in/delete-account.",
+        "Keep your password private; you are responsible for what happens under your account. Tell us at support@hospilink.in if you think someone else has used it. You can delete your account at any time from Profile → Account settings or at hospilink.in/delete-account.",
       ],
     },
     {
@@ -83,7 +83,7 @@ export const TERMS_OF_USE: LegalDocument = {
     },
     {
       title: "9. Our content",
-      blocks: ["The HospiLink name, logo, apps and website belong to HospiLink. You keep the rights in content you upload, and you allow us to use it to run the service."],
+      blocks: ["The HospiLink name, logo, apps and website belong to Hospilink Private Limited. You keep the rights in content you upload, and you allow us to use it to run the service."],
     },
     {
       title: "10. Responsibility",
@@ -98,7 +98,7 @@ export const TERMS_OF_USE: LegalDocument = {
     {
       title: "12. Law and contact",
       blocks: [
-        "These terms are governed by the laws of India, and the courts of Mumbai, Maharashtra have jurisdiction. Questions or complaints: info@hospilink.com.",
+        "These terms are governed by the laws of India, and the courts of Mumbai, Maharashtra have jurisdiction. Questions: info@hospilink.in. Complaints and support: support@hospilink.in (Grievance Officer: Sumit Thombre).",
       ],
     },
   ],
