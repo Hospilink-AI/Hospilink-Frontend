@@ -1605,6 +1605,20 @@ export const platformSettingsAPI = {
 
 // Block between a doctor and a hospital (either side). The backend hides the pair from each other
 // everywhere (offers, feed, calendar, invites, map); accepted duties stay as they are.
+// Address lookups through the backend (Google), instead of public geocoders that don't allow app use
+export const mapsAPI = {
+  // GET /api/maps/geocode?q= -> { latitude, longitude, formattedAddress }
+  geocode: async (q) => {
+    const response = await api.get('/api/maps/geocode', { params: { q } });
+    return response.data;
+  },
+  // GET /api/maps/reverse-geocode?lat=&lng= -> { formattedAddress, street, city, state, pincode }
+  reverseGeocode: async (lat, lng) => {
+    const response = await api.get('/api/maps/reverse-geocode', { params: { lat, lng } });
+    return response.data;
+  },
+};
+
 export const blockAPI = {
   // GET /api/blocks -> { blocked: [{ hospitalId | staffId, name, city, jobRole? }] }
   list: async () => {

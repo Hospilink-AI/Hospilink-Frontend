@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { fetchRouteLine, LatLng, routeScript as routeLineScript } from '@/constant/routeLine';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -158,26 +159,13 @@ function buildMapHTML(
   hospLng: number,
   staffLat?: number,
   staffLng?: number,
+  route: LatLng[] | null = null,
 ) {
   const hasStaff = staffLat != null && staffLng != null;
 
   const routeScript = hasStaff
     ? `
-      fetch('https://router.project-osrm.org/route/v1/driving/${staffLng},${staffLat};${hospLng},${hospLat}?overview=full&geometries=geojson')
-        .then(r => r.json())
-        .then(data => {
-          if (data.routes && data.routes[0]) {
-            L.geoJSON(data.routes[0].geometry, {
-              style: { color: '#EF4444', weight: 4, opacity: 0.85 }
-            }).addTo(map);
-            var coords = data.routes[0].geometry.coordinates;
-            map.fitBounds(L.latLngBounds(coords.map(function(c){return[c[1],c[0]];})), { padding: [40,40] });
-          }
-        })
-        .catch(function() {
-          L.polyline([[${staffLat},${staffLng}],[${hospLat},${hospLng}]],{color:'#EF4444',weight:3,dashArray:'8 4'}).addTo(map);
-          map.fitBounds([[${staffLat},${staffLng}],[${hospLat},${hospLng}]],{padding:[40,40]});
-        });
+      ${routeLineScript(route, [staffLat!, staffLng!], [hospLat, hospLng])}
       var staffIcon = L.divIcon({
         html: '<div style="background:#10B981;width:14px;height:14px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.35)"></div>',
         iconSize:[14,14], className:''
@@ -217,13 +205,23 @@ function buildMapHTML(
 
 // ─── Cross-platform map component ────────────────────────
 function DutyMap({
-  hospLat, hospLng, staffLat, staffLng, height,
+  dutyId, hospLat, hospLng, staffLat, staffLng, height,
 }: {
+  dutyId?: string;
   hospLat: number; hospLng: number;
   staffLat?: number; staffLng?: number;
   height: number;
 }) {
-  const html = buildMapHTML(hospLat, hospLng, staffLat, staffLng);
+  const [route, setRoute] = useState<LatLng[] | null>(null);
+  useEffect(() => {
+    if (!dutyId || staffLat == null || staffLng == null) return;
+    let alive = true;
+    fetchRouteLine("staff", dutyId, { latitude: staffLat, longitude: staffLng }).then((r) => alive && setRoute(r));
+    return () => {
+      alive = false;
+    };
+  }, [dutyId, staffLat, staffLng]);
+  const html = buildMapHTML(hospLat, hospLng, staffLat, staffLng, route);
 
   if (Platform.OS === 'web') {
     return (
@@ -515,6 +513,7 @@ export default function DutyDetailsScreen() {
             {hasMap ? (
               <View style={styles.mapCard}>
                 <DutyMap
+                  dutyId={duty._id}
                   hospLat={hospLat!}
                   hospLng={hospLng!}
                   staffLat={staffLat}
