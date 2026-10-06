@@ -190,6 +190,10 @@ export default function ContactUsPage() {
                                             Email: info@hospilink.in
                                         </Text>
 
+                                        <Text style={styles.infoPhone}>
+                                            Phone: +91 95290 11896
+                                        </Text>
+
                                     </View>
 
                                     {/* SUPPORT */}
