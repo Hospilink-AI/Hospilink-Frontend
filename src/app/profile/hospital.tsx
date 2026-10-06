@@ -13,7 +13,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { profileAPI } from "../../service/api";
+import { mapsAPI, profileAPI } from "../../service/api";
 import { useLocalSearchParams } from "expo-router";
 
 // Lazy import so web build doesn't choke if not installed yet
@@ -304,17 +304,13 @@ export default function HospitalProfile() {
         const q = [addressVal, cityVal, stateVal].filter(Boolean).join(", ");
         setIsGeocoding(true);
         try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`,
-            { headers: { "Accept-Language": "en" } }
-          );
-          const data = await res.json();
-          if (data?.[0]) {
-            const newLat = parseFloat(data[0].lat);
-            const newLng = parseFloat(data[0].lon);
+          const data = await mapsAPI.geocode(q);
+          const newLat = Number(data?.latitude);
+          const newLng = Number(data?.longitude);
+          if (Number.isFinite(newLat) && Number.isFinite(newLng)) {
             setMapLat(newLat);
             setMapLng(newLng);
-            setPinnedLabel(data[0].display_name.split(",").slice(0, 2).join(",").trim());
+            setPinnedLabel(String(data?.formattedAddress ?? q).split(",").slice(0, 2).join(",").trim());
             webViewRef.current?.injectJavaScript(
               `window.updateMarker(${newLat}, ${newLng}); true;`
             );
@@ -337,17 +333,13 @@ export default function HospitalProfile() {
   const handleLocationChange = (lat: number, lng: number) => {
     setMapLat(lat);
     setMapLng(lng);
-    fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
-      { headers: { "Accept-Language": "en" } }
-    )
-      .then((r) => r.json())
-      .then((d) => {
-        if (d?.address) {
-          const a = d.address;
-          const street = [a.house_number, a.road].filter(Boolean).join(" ");
-          const cityName = a.city || a.town || a.suburb || a.village || "";
-          const stateName = a.state || "";
+    mapsAPI
+      .reverseGeocode(lat, lng)
+      .then((d: any) => {
+        if (d && (d.street || d.city || d.state)) {
+          const street = d.street || "";
+          const cityName = d.city || "";
+          const stateName = d.state || "";
           if (street) setAddress(street);
           if (cityName) setCity(cityName);
           if (stateName) setState(stateName);

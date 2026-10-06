@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { fetchRouteLine, LatLng, routeScript as routeLineScript } from '@/constant/routeLine';
 import PersonActions from '@/component/safety/PersonActions';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -139,20 +140,10 @@ function formatTime(t: string) {
 }
 
 // ─── Map HTML ─────────────────────────────────────────────
-function buildMapHTML(hospLat: number, hospLng: number, staffLat?: number, staffLng?: number) {
+function buildMapHTML(hospLat: number, hospLng: number, staffLat?: number, staffLng?: number, route: LatLng[] | null = null) {
   const hasStaff = staffLat != null && staffLng != null;
   const routeScript = hasStaff ? `
-    fetch('https://router.project-osrm.org/route/v1/driving/${staffLng},${staffLat};${hospLng},${hospLat}?overview=full&geometries=geojson')
-      .then(r=>r.json()).then(data=>{
-        if(data.routes&&data.routes[0]){
-          L.geoJSON(data.routes[0].geometry,{style:{color:'#EF4444',weight:4,opacity:0.85}}).addTo(map);
-          var c=data.routes[0].geometry.coordinates;
-          map.fitBounds(L.latLngBounds(c.map(function(x){return[x[1],x[0]];})),{padding:[40,40]});
-        }
-      }).catch(function(){
-        L.polyline([[${staffLat},${staffLng}],[${hospLat},${hospLng}]],{color:'#EF4444',weight:3,dashArray:'8 4'}).addTo(map);
-        map.fitBounds([[${staffLat},${staffLng}],[${hospLat},${hospLng}]],{padding:[40,40]});
-      });
+    ${routeLineScript(route, [staffLat!, staffLng!], [hospLat, hospLng])}
     L.marker([${staffLat},${staffLng}],{icon:L.divIcon({html:'<div style="background:#10B981;width:14px;height:14px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)"></div>',iconSize:[14,14],className:''})}).addTo(map).bindPopup('<b>Staff Location</b>');
   ` : '';
   return `<!DOCTYPE html><html><head>
@@ -169,10 +160,20 @@ function buildMapHTML(hospLat: number, hospLng: number, staffLat?: number, staff
 }
 
 // ─── Map component ────────────────────────────────────────
-function DutyMap({ hospLat, hospLng, staffLat, staffLng, height }: {
+function DutyMap({ dutyId, hospLat, hospLng, staffLat, staffLng, height }: {
+  dutyId?: string;
   hospLat: number; hospLng: number; staffLat?: number; staffLng?: number; height: number;
 }) {
-  const html = buildMapHTML(hospLat, hospLng, staffLat, staffLng);
+  const [route, setRoute] = useState<LatLng[] | null>(null);
+  useEffect(() => {
+    if (!dutyId || staffLat == null || staffLng == null) return;
+    let alive = true;
+    fetchRouteLine("hospital", dutyId).then((r) => alive && setRoute(r));
+    return () => {
+      alive = false;
+    };
+  }, [dutyId, staffLat, staffLng]);
+  const html = buildMapHTML(hospLat, hospLng, staffLat, staffLng, route);
   if (Platform.OS === 'web') {
     return (
       // @ts-ignore
@@ -336,7 +337,7 @@ function MobileLayout({ duty, dutyId, router }: { duty: DutyDetail; dutyId: stri
       {/* ── Card 4: Map ── */}
       {hasMap ? (
         <View style={mobileS.mapCard}>
-          <DutyMap hospLat={hospLat!} hospLng={hospLng!} staffLat={staffLat} staffLng={staffLng} height={200} />
+          <DutyMap dutyId={duty._id} hospLat={hospLat!} hospLng={hospLng!} staffLat={staffLat} staffLng={staffLng} height={200} />
           <View style={mobileS.locationBar}>
             <View style={{ flex: 1 }}>
               <Text style={mobileS.locationTitle}>Location Details</Text>
@@ -538,7 +539,7 @@ function DesktopLayout({ duty, dutyId, router }: { duty: DutyDetail; dutyId: str
           {/* Map */}
           {hasMap ? (
             <View style={desktopS.mapCard}>
-              <DutyMap hospLat={hospLat!} hospLng={hospLng!} staffLat={staffLat} staffLng={staffLng} height={240} />
+              <DutyMap dutyId={duty._id} hospLat={hospLat!} hospLng={hospLng!} staffLat={staffLat} staffLng={staffLng} height={240} />
               <View style={desktopS.locationBar}>
                 <View style={{ flex: 1 }}>
                   <Text style={desktopS.locationTitle}>Location Details</Text>
