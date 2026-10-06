@@ -187,12 +187,9 @@ export default function ContactUsPage() {
                                         </Text>
 
                                         <Text style={styles.infoEmail}>
-                                            Email: info@hospilink.com
+                                            Email: info@hospilink.in
                                         </Text>
 
-                                        <Text style={styles.infoPhone}>
-                                            Phone: +91 XXXXXX XXXXX
-                                        </Text>
                                     </View>
 
                                     {/* SUPPORT */}
@@ -209,7 +206,7 @@ export default function ContactUsPage() {
 
                                         <Text style={styles.infoEmail}>
                                             Email:
-                                            hospitals@hospilink.com
+                                            support@hospilink.in
                                         </Text>
                                     </View>
 
@@ -221,7 +218,7 @@ export default function ContactUsPage() {
                                         </Text>
 
                                         <Text style={styles.infoEmail}>
-                                            Hospilink
+                                            Hospilink Private Limited
                                         </Text>
 
                                         <Text style={styles.infoDesc}>
