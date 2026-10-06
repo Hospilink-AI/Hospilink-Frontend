@@ -50,7 +50,7 @@ export function useLocationTracking({
   const [permissionStatus, setPermissionStatus] = useState<Location.PermissionStatus | null>(null);
 
   const locationSubscription = useRef<Location.LocationSubscription | null>(null);
-  const updateIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const updateIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastLocationRef = useRef<LocationCoordinates | null>(null);
   const isTrackingRef = useRef(false);
 

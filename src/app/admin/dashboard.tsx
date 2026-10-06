@@ -170,7 +170,7 @@ useEffect(() => {
             </View>
 
             {/* Existing Left Column Components */}
-            <RecentRequests isTablet={isTablet} />
+            <RecentRequests />
             {renderAlertsSection()}
           </View>
 
@@ -230,7 +230,7 @@ useEffect(() => {
           </View>
 
           {/* Existing Components */}
-          <RecentRequests isTablet={isTablet} />
+          <RecentRequests />
           {renderAlertsSection()}
           <VerificationStatus />
           <PortalUsage />
