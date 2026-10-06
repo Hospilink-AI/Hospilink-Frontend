@@ -58,31 +58,6 @@ export default function History() {
   const [profileData, setProfileData] = useState<any>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
 
-  // ────────────────────────────────────────────────────────────
-  // GET /api/completed-duties
-  // res = { success, summary: { totalDutiesCompleted, totalHours,
-  //         totalEarnings, lastDutyDate }, duties: [] }
-  // ────────────────────────────────────────────────────────────
-  // useEffect(() => {
-  //   (async () => {
-  //     try {
-  //       const res = await dutyAPI.getCompletedDuties();
-  //       setSummary(res.summary);
-  //       setDuties(res.duties ?? []);
-
-  //       const profileRes = await profileAPI.getMyProfile();
-  //       setProfileData(profileRes);
-  //     } catch (err) {
-  //       console.error("❌ Failed to load history:", err);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   })();
-  // }, []);
-
-  // Replace your existing useEffect fetch with this:
-  // Replace the single useCallback+useEffect block with these two:
-
   const fetchDuties = useCallback(async () => {
     setLoading(true);
     try {

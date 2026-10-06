@@ -119,59 +119,6 @@ export default function DocumentUpload() {
     imgError: boolean;
   }>({ visible: false, url: "", name: "", imgError: false });
 
-  // ────────────────────────────────────────────────────────────
-  // Load already-uploaded documents from API on mount
-  // ────────────────────────────────────────────────────────────
-  // const loadDocuments = async () => {
-  //   try {
-  //     // const data = await profileAPI.getMyProfile();
-  //     // const apiDocs: any[] = data?.documents ?? [];
-  //     const data = await documentAPI.getDocument();
-  //     const apiDocs: any[] = data?.documents ?? [];
-
-  //     if (!apiDocs.length) return;
-
-  //     setDocuments((prev) => {
-  //       const updated = [...prev];
-
-  //       apiDocs.forEach((apiDoc) => {
-  //         const docId = DOC_TYPE_TO_ID[apiDoc.documentType];
-  //         if (!docId) return;
-
-  //         const idx = updated.findIndex((d) => d.id === docId);
-  //         if (idx === -1) return;
-
-  //         const mappedStatus: DocumentItem["status"] =
-  //           API_STATUS_MAP[apiDoc.verificationStatus] ?? "pending";
-
-  //         // For registration certificate row: if already set, keep the more favourable status
-  //         if (docId === "3" && updated[idx].status !== "not_uploaded") {
-  //           const priority: Record<DocumentItem["status"], number> = {
-  //             not_uploaded: 0, rejected: 1, pending: 2, auto_verified: 3, verified: 4,
-  //           };
-  //           if (priority[mappedStatus] <= priority[updated[idx].status]) return;
-  //         }
-
-  //         updated[idx] = {
-  //           ...updated[idx],
-  //           status: mappedStatus,
-  //           fileUrl: apiDoc.url ?? undefined,
-  //           fileName: apiDoc.fileName ?? undefined,
-  //           key: apiDoc.documentType,    // keep actual subtype key for registration cert
-  //           // apiId:    apiDoc.id ?? undefined, // store DB id for delete
-  //           apiId: apiDoc.documentId ?? undefined,
-  //         };
-  //       });
-
-  //       return updated;
-  //     });
-  //   } catch (err) {
-  //     console.warn("Could not load profile documents:", err);
-  //   } finally {
-  //     setProfileLoading(false);
-  //   }
-  // };
-
   const loadDocuments = async () => {
     try {
       const data = await documentAPI.getDocuments();

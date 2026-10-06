@@ -489,36 +489,6 @@ const ld = StyleSheet.create({
 
 
 
-// function StatusTabBar({ activeTab, counts, onSelect }: StatusTabBarProps) {
-//   return (
-//     <View style={stb.wrap}>
-//       <ScrollView
-//         horizontal
-//         showsHorizontalScrollIndicator={false}
-//         contentContainerStyle={stb.scrollContent}
-//       >
-//         {STATUS_TABS.map(tab => {
-//           const isActive = activeTab === tab.key;
-//           const count = counts[tab.key];
-//           return (
-//             <TouchableOpacity
-//               key={tab.key}
-//               style={[stb.tab, isActive && stb.tabActive]}
-//               onPress={() => onSelect(tab.key)}
-//               activeOpacity={0.75}
-//             >
-//               <Text style={[stb.tabTxt, isActive && stb.tabTxtActive]}>
-//                 {tab.label}
-//               </Text>
-
-//             </TouchableOpacity>
-//           );
-//         })}
-//       </ScrollView>
-//     </View>
-//   );
-// }
-
 function StatusTabBar({ activeTab, counts, onSelect, locationFilter, onLocationChange, onApplyFilter }: StatusTabBarProps) {
   return (
     <View style={stb.wrap}>

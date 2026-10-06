@@ -150,30 +150,6 @@ export interface StaffMember {
   averageRating: number;
 }
 
-// export interface NearbyStaffResponse {
-//   // success: boolean;
-//   // hospital: {
-//   //   name: string;
-//   //   location: StaffLocation;
-//   // };
-//   // searchRadius: number;
-//   // totalStaffFound: number;
-//   // staff: StaffMember[];
-//   // message: string;
-//   success: boolean;
-//   hospital: {
-//     name: string;
-//     location: { latitude: number; longitude: number };
-//     address: { currentAddress: string; city: string; state: string; pincode: string };
-//   };
-//   staff: StaffMember[];
-//   totalStaffFound: number;   
-//   searchRadius: number;
-//   message: string;
-// }
-
-// ── Nearby Staff API (profile side) ──────────────────────────────────────────
-
 export interface NearbyStaffMember {
   id: string;
   name: string;

@@ -104,35 +104,6 @@ function formatJobRole(role: string): string {
  * Slightly offset markers sharing identical coordinates
  * so they fan out and stay individually clickable on the map.
  */
-// export function jitterDuplicates(
-//   doctors: DoctorWithDistance[],
-// ): DoctorWithDistance[] {
-//   const seen = new Map<string, number>(); // "lat,lng" → count
-
-//   return doctors.map((doc) => {
-//     const key = `${doc.location.latitude.toFixed(6)},${doc.location.longitude.toFixed(6)}`;
-//     const count = seen.get(key) ?? 0;
-//     seen.set(key, count + 1);
-
-//     if (count === 0) return doc; // first occurrence — no change
-
-//     // Spiral offset: ~15–40 m per step, invisible at city zoom
-//     const angle = (count * 137.5 * Math.PI) / 180; // golden angle spread
-//     const radius = 0.00015 * count;                 // ~15 m per ring
-
-//     return {
-//       ...doc,
-//       location: {
-//         ...doc.location,
-//         latitude: doc.location.latitude + radius * Math.cos(angle),
-//         longitude: doc.location.longitude + radius * Math.sin(angle),
-//       },
-//     };
-//   });
-// }
-
-
-// utils/distanceDecoder.ts
 
 type WithLocation = {
   location: { latitude: number; longitude: number };
