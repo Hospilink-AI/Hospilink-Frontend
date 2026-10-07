@@ -283,6 +283,7 @@ export default function HospitalProfile() {
   const [mapLng, setMapLng] = useState(DEFAULT_LNG);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [pinnedLabel, setPinnedLabel] = useState("Pune, Maharashtra");
+  const [mapNotice, setMapNotice] = useState("");
   const webViewRef = useRef<any>(null);
   const geocodeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -294,6 +295,15 @@ export default function HospitalProfile() {
     }
   };
 
+  // Messages for the backend map endpoints; other failures leave the form as it is.
+  const mapErrorNotice = (err: any) => {
+    const status = err?.response?.status;
+    if (status === 503) return "Map search is unavailable, enter the address manually.";
+    if (status === 429) return err?.response?.data?.message || "Too many map searches. Wait a minute and try again.";
+    if (status === 404) return "No match found. Drag the pin to your location.";
+    return "";
+  };
+
   const formatPhone = (raw: string) => `+91 ${raw.replace(/\D/g, "").slice(0, 10)}`;
 
   const geocode = useCallback(
@@ -301,7 +311,8 @@ export default function HospitalProfile() {
       if (geocodeTimer.current) clearTimeout(geocodeTimer.current);
       if (!addressVal && !cityVal && !stateVal) return;
       geocodeTimer.current = setTimeout(async () => {
-        const q = [addressVal, cityVal, stateVal].filter(Boolean).join(", ");
+        const q = [addressVal, cityVal, stateVal].filter(Boolean).join(", ").slice(0, 200);
+        if (q.trim().length < 3) return;
         setIsGeocoding(true);
         try {
           const data = await mapsAPI.geocode(q);
@@ -314,8 +325,9 @@ export default function HospitalProfile() {
             webViewRef.current?.injectJavaScript(
               `window.updateMarker(${newLat}, ${newLng}); true;`
             );
+            setMapNotice("");
           }
-        } catch (_) { }
+        } catch (err) { setMapNotice(mapErrorNotice(err)); }
         setIsGeocoding(false);
       }, 800);
     },
@@ -336,17 +348,20 @@ export default function HospitalProfile() {
     mapsAPI
       .reverseGeocode(lat, lng)
       .then((d: any) => {
-        if (d && (d.street || d.city || d.state)) {
+        setMapNotice("");
+        if (d && (d.street || d.city || d.state || d.pincode)) {
           const street = d.street || "";
           const cityName = d.city || "";
           const stateName = d.state || "";
+          const pin = String(d.pincode || "").replace(/\D/g, "").slice(0, 6);
           if (street) setAddress(street);
           if (cityName) setCity(cityName);
           if (stateName) setState(stateName);
+          if (pin.length === 6) setPincode(pin);
           setPinnedLabel([street || cityName, stateName].filter(Boolean).slice(0, 2).join(", "));
         }
       })
-      .catch(() => { });
+      .catch((err: any) => setMapNotice(mapErrorNotice(err)));
   };
 
   const toggleService = (service: string) => {
@@ -886,7 +901,9 @@ export default function HospitalProfile() {
                   {mapLat.toFixed(4)}, {mapLng.toFixed(4)}
                 </Text>
               </View>
-              <Text style={styles.mapHint}>Tap map or drag pin to adjust location</Text>
+              <Text style={[styles.mapHint, mapNotice ? { color: "#b45309" } : null]}>
+                {mapNotice || "Tap map or drag pin to adjust location"}
+              </Text>
             </View>
 
             <View style={styles.verificationBox}>
