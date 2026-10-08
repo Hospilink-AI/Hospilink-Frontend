@@ -41,3 +41,9 @@ app-example
 # generated native folders
 /ios
 /android
+
+# Marketing site
+marketing/node_modules/
+marketing/dist/
+marketing/.astro/
+.site-dist/

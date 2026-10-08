@@ -1,0 +1,124 @@
+---
+import Base from "../../layouts/Base.astro";
+import PageHero from "../../components/ui/PageHero.astro";
+import Icon from "../../components/ui/Icon.astro";
+import Faq from "../../components/ui/Faq.astro";
+import CtaBand from "../../components/ui/CtaBand.astro";
+import Lifecycle from "../../components/pages/Lifecycle.astro";
+import { LINKS } from "../../config";
+import "../../components/pages/b.css";
+
+const crumbs = [{ name: "How it works", href: "/how-it-works/" }];
+const chain = [
+  { t: "Verified once", s: "Aadhaar, registration, degree, licence", icon: "id-badge-2" },
+  { t: "Offer within 30 km", s: "Widening 5 km an hour to 75 km", icon: "radar-2" },
+  { t: "First to accept", s: "One person, one duty", icon: "hand-finger" },
+  { t: "Start code at the desk", s: "Inside a 100 m geofence", icon: "map-pin-check" },
+  { t: "End code, desk enters", s: "Or it waits, and we follow up", icon: "lock-check" },
+  { t: "Rated both ways", s: "No-shows count", icon: "star" },
+];
+const endings = [
+  { k: "Cancelled", icon: "calendar-x", tone: "", p: "The duty was called off before it started. Staff can cancel up to 30 minutes before the start; after that, not turning up counts as a no-show." },
+  { k: "Incomplete", icon: "alert-triangle", tone: "amber", p: "The duty was never started with a start code. If that's wrong, either side can report a problem from the duty." },
+  { k: "Expired", icon: "clock-off", tone: "", p: "Nobody took the duty before its time. Next time, raise the rate, invite favourites, or use an emergency request." },
+];
+const faqs = [
+  { q: "Is pending confirmation a dispute?", a: "No. It only means the hospital hasn't entered the end code yet. HospiLink follows it up so the duty can be closed. Disputes are a separate process with their own tickets and a 14-day timeline." },
+  { q: "Why can't the start code be sent straight to the staff member?", a: "Because the code proves the person arrived at your desk. It goes to the hospital, and the desk reads it out when they're there. Together with the 100 m geofence, that's how both sides know the duty really started." },
+  { q: "What exactly does the hospital see before someone accepts?", a: "Before a duty is assigned, hospitals can see nearby verified staff's profile, rating, distance, city and an approximate area, not their exact position or address. Phone number, email and live position are shared only once that person is assigned to the hospital's duty." },
+  { q: "What if something goes wrong during a duty?", a: "Either side can report a problem from the duty and follow it as a ticket. Duty disputes are decided within 14 days, with written reasons. See <a href=\"/trust/\">Trust &amp; safety</a>." },
+];
+const howTo = {
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  name: "How a HospiLink duty works",
+  description: "From the offer to a completed, rated duty.",
+  step: [
+    { "@type": "HowToStep", name: "Offer", text: "The hospital posts a duty; verified staff in that role within 30 km see it, widening 5 km an hour up to 75 km." },
+    { "@type": "HowToStep", name: "Assigned", text: "The first verified staff member to accept gets the duty." },
+    { "@type": "HowToStep", name: "En route", text: "The hospital follows them on a live map while their app is open." },
+    { "@type": "HowToStep", name: "In progress", text: "At the hospital, within 100 m, they enter the start code the duty desk reads out." },
+    { "@type": "HowToStep", name: "Pending confirmation", text: "At the end they read their SMS end code to the desk; the desk enters it." },
+    { "@type": "HowToStep", name: "Completed", text: "The duty closes and both sides rate each other." },
+  ],
+};
+---
+<Base
+  title="How it works: every HospiLink duty, step by step"
+  description="Follow a HospiLink duty from offer to completion: verified staff within 30 km, first to accept, live tracking, a start code inside a 100 m geofence, an end code your desk enters, and ratings both ways."
+  crumbs={crumbs}
+  jsonLd={howTo}
+>
+  <PageHero
+    title='Six checks between a gap in the rota and <span class="soft">a closed duty.</span>'
+    lead="Every duty on HospiLink moves through the same states, for both sides, in the same order. Scroll through one from the moment it's posted to the moment it's rated."
+    crumbs={crumbs}
+  >
+    <Fragment slot="actions">
+      <a class="btn btn-primary btn-lg" href="#lifecycle">Walk through a duty <Icon name="arrow-down" /></a>
+      <a class="btn btn-white btn-lg" href={LINKS.hospitalSignUp}>Post a duty</a>
+    </Fragment>
+    <ol slot="visual" class="hw-chain" role="list" aria-label="The trust chain">
+      {chain.map((c, i) => (
+        <li style={`--i:${i}`}>
+          <span class="hc-n"><Icon name={c.icon} size={20} /></span>
+          <span class="hc-t">{c.t}<small>{c.s}</small></span>
+        </li>
+      ))}
+    </ol>
+  </PageHero>
+
+  <section id="lifecycle" class="section" aria-labelledby="lc-t">
+    <div class="wrap">
+      <div class="b-head2" data-reveal>
+        <h2 id="lc-t" class="h2">One duty, from both sides of the desk.</h2>
+        <p class="lead">On the left, what the duty looks like. On the right, what the hospital and the staff member each do at that step.</p>
+      </div>
+      <Lifecycle />
+    </div>
+  </section>
+
+  <section class="section-tight" aria-labelledby="end-t">
+    <div class="wrap">
+      <div class="b-head2" data-reveal>
+        <h2 id="end-t" class="h2">Not every duty ends in “completed”. Each ending says why.</h2>
+        <p class="lead">A duty that doesn't finish still leaves a clear record, so nobody has to argue about what happened.</p>
+      </div>
+      <div class="endings">
+        {endings.map((e, i) => (
+          <article class:list={["b-note", e.tone]} data-reveal style={`--d:${i * 0.06}s`}>
+            <span class="ic"><Icon name={e.icon} /></span>
+            <div><b>{e.k}</b><p>{e.p}</p></div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section-tight" aria-labelledby="faq-t">
+    <div class="wrap b-faq">
+      <div class="head" data-reveal>
+        <h2 id="faq-t" class="h2">The details people ask about</h2>
+        <p class="lead">For each side's view, see <a href="/hospitals/">for hospitals</a> and <a href="/staff/">for staff</a>.</p>
+      </div>
+      <div data-reveal style="--d:.08s"><Faq items={faqs} /></div>
+    </div>
+  </section>
+
+  <CtaBand />
+</Base>
+
+<style>
+  .hw-chain { position: relative; display: grid; gap: .55rem; max-width: 500px; margin-left: auto; }
+  .hw-chain::before { content: ""; position: absolute; left: 27px; top: 28px; bottom: 28px; width: 2px; background: linear-gradient(var(--ceil-300), rgba(169, 192, 236, .1)); }
+  .hw-chain li { position: relative; display: flex; align-items: center; gap: 1rem; padding: .7rem .9rem .7rem .6rem; border-radius: 20px; background: rgba(255, 255, 255, .72); box-shadow: var(--glass-edge), 0 8px 20px -14px rgba(14, 30, 58, .3); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+  .hc-n { position: relative; z-index: 1; flex: none; width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; background: var(--ceil-deep); color: #fff; box-shadow: 0 8px 18px -8px rgba(68, 110, 192, .9); }
+  .hc-t { font-weight: 600; font-size: .98rem; }
+  .hc-t small { display: block; font-size: .8rem; font-weight: 600; color: var(--on-dark-muted); }
+  @media (prefers-reduced-motion: no-preference) {
+    .js .hw-chain li { animation: hcin .8s var(--ease-out) both; animation-delay: calc(var(--i) * .12s + .2s); }
+    @keyframes hcin { from { opacity: 0; transform: translateX(16px); filter: blur(4px); } }
+  }
+  .endings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+  @media (max-width: 900px) { .endings { grid-template-columns: minmax(0, 1fr); } .hw-chain { margin: 0; } }
+</style>

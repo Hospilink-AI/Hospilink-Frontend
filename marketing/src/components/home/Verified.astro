@@ -1,0 +1,144 @@
+---
+import Icon from "../ui/Icon.astro";
+const docs = [
+  { name: "Aadhaar", via: "Checked with IDfy", state: "verified" },
+  { name: "Medical registration", via: "MCIM / NCIM number", state: "auto" },
+  { name: "Degree certificate", via: "MBBS", state: "verified" },
+  { name: "Practising licence", via: "Uploaded today", state: "review" },
+];
+---
+<section id="verified" class="section verified" aria-labelledby="verified-title">
+  <div class="wrap v-grid">
+    <div class="v-copy" data-reveal>
+      <h2 id="verified-title" class="h2">Verified once.<br />Trusted on every shift.</h2>
+      <p class="lead">
+        Before anyone sees a duty, HospiLink checks who they are. Identity through Aadhaar, medical registration, degree and licence. Hospitals see the verified profile, the rating and the duties already done before anyone walks in.
+      </p>
+      <ul class="v-points" role="list">
+        <li>
+          <span class="icon-tile"><Icon name="fingerprint" /></span>
+          <div><h3>Identity, not just a phone number</h3><p>Aadhaar is checked through IDfy, and only verified staff are shown duties at all.</p></div>
+        </li>
+        <li>
+          <span class="icon-tile"><Icon name="certificate" /></span>
+          <div><h3>Every document has a visible status</h3><p>Verified, auto-verified, in manual review, pending or rejected. Nobody has to guess.</p></div>
+        </li>
+        <li>
+          <span class="icon-tile"><Icon name="stethoscope" /></span>
+          <div><h3>Roles are a hard filter</h3><p>A duty for an ICU nurse only reaches verified ICU nurses. Specialty is a gate, not a suggestion.</p></div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="v-visual" data-reveal style="--d:.12s">
+      <div class="profile relief-high">
+        <div class="p-head">
+          <div class="avatar">AK<span class="avatar-ok"><Icon name="check" size={12} stroke={3} /></span></div>
+          <div>
+            <p class="p-name">Dr. Ananya Kulkarni</p>
+            <p class="p-sub">RMO · MBBS · 4 yrs</p>
+          </div>
+          <span class="sample">Sample</span>
+        </div>
+        <div class="p-stats">
+          <span class="tag tag-white"><Icon name="star-filled" size={14} /> <b class="tnum">4.8</b></span>
+          <span class="tag tag-white tnum">126 duties</span>
+          <span class="tag tag-green"><Icon name="shield-check" size={14} /> Verified</span>
+        </div>
+        <div class="p-docs well">
+          <div class="p-docs-h"><span>Documents</span><span class="tnum" data-count>3 of 4 verified</span></div>
+          <div class="bar"><span data-bar></span></div>
+          <ul role="list">
+            {docs.map((d) => (
+              <li data-doc={d.state}>
+                <span class="d-ic"><Icon name={d.state === "review" ? "hourglass" : "file-check"} size={18} /></span>
+                <span class="d-t">{d.name}<small>{d.via}</small></span>
+                <span class:list={["d-st", d.state]}>
+                  {d.state === "verified" && "Verified"}
+                  {d.state === "auto" && "Auto-verified"}
+                  {d.state === "review" && <><span class="r1">Manual review</span><span class="r2">Verified</span></>}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div class="p-avail">
+          <div><p class="pa-t">Available for duty offers</p><p class="pa-s">Duty offers near you reach your phone</p></div>
+          <span class="switch" aria-hidden="true"><span></span></span>
+        </div>
+      </div>
+      <div class="v-float glass" aria-hidden="true">
+        <Icon name="scan" size={18} />
+        <span>Aadhaar matched · IDfy</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .verified { padding-top: calc(var(--section) * 0.85); }
+  .v-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(3rem, 7vw, 7rem); align-items: center; }
+  .v-copy .lead { margin-top: 1.4rem; }
+  .v-points { margin-top: 2.6rem; display: grid; gap: 1.6rem; }
+  .v-points li { display: grid; grid-template-columns: 52px 1fr; gap: 1.1rem; align-items: start; }
+  .v-points h3 { font-size: 1.08rem; }
+  .v-points p { color: var(--ink-muted); margin-top: .3rem; font-size: .96rem; }
+
+  .v-visual { position: relative; padding: 2rem 0 2rem 2rem; }
+  .v-visual::before { content: ""; position: absolute; inset: 8% -10% 8% 18%; border-radius: 40px; background: radial-gradient(closest-side, rgba(91, 133, 215, .28), transparent); filter: blur(30px); z-index: -1; }
+  .profile { padding: 1.6rem; max-width: 540px; margin-left: auto; }
+  .p-head { display: flex; align-items: center; gap: .9rem; }
+  .p-head .sample { margin-left: auto; align-self: start; }
+  .avatar { position: relative; width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; background: var(--saline); color: var(--ceil-700); font-weight: 600; font-size: 1.1rem; box-shadow: var(--relief-raised); }
+  .avatar-ok { position: absolute; right: -2px; bottom: -2px; width: 22px; height: 22px; border-radius: 50%; background: var(--green); color: #fff; display: grid; place-items: center; box-shadow: 0 0 0 3px #fff; }
+  .p-name { font-weight: 600; font-size: 1.15rem; letter-spacing: -0.02em; }
+  .p-sub { color: var(--ink-muted); font-size: .88rem; font-weight: 600; }
+  .p-stats { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.2rem; }
+  .p-stats .tag-white :global(svg) { color: var(--amber); }
+  .p-docs { margin-top: 1.2rem; padding: 1.1rem; border-radius: 20px; }
+  .p-docs-h { display: flex; justify-content: space-between; font-size: .85rem; font-weight: 600; }
+  .p-docs-h span:last-child { color: var(--ink-muted); }
+  .bar { height: 8px; margin-top: .7rem; border-radius: 99px; background: var(--line); overflow: hidden; }
+  .bar span { display: block; height: 100%; width: 100%; border-radius: inherit; background: var(--green); transform: scaleX(.75); transform-origin: left; transition: transform 1.2s var(--ease-out); }
+  .p-docs ul { display: grid; gap: .55rem; margin-top: 1rem; }
+  .p-docs li { display: grid; grid-template-columns: 36px 1fr auto; gap: .7rem; align-items: center; padding: .6rem .7rem; background: #fff; border-radius: 14px; box-shadow: 0 2px 6px rgba(14, 30, 58, .05); }
+  .d-ic { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; background: var(--saline); color: var(--ceil-deep); }
+  .d-t { font-size: .88rem; font-weight: 600; line-height: 1.25; }
+  .d-t small { display: block; font-size: .75rem; color: var(--ink-muted); font-weight: 600; }
+  .d-st { font-size: .74rem; font-weight: 600; padding: .3rem .6rem; border-radius: 99px; white-space: nowrap; position: relative; }
+  .d-st.verified { background: var(--green-soft); color: var(--green-ink); }
+  .d-st.auto { background: var(--saline); color: var(--ceil-700); }
+  .d-st.review { background: var(--amber-soft); color: var(--amber-ink); transition: background-color .5s, color .5s; }
+  .d-st .r2 { display: none; }
+  .profile.done .d-st.review { background: var(--green-soft); color: var(--green-ink); }
+  .profile.done .d-st .r1 { display: none; }
+  .profile.done .d-st .r2 { display: inline; }
+  .profile.done .bar span { transform: scaleX(1); }
+  .p-avail { display: flex; align-items: center; justify-content: space-between; margin-top: 1rem; padding: .9rem 1rem; border-radius: 18px; background: var(--ward); box-shadow: var(--relief-raised); }
+  .pa-t { font-weight: 600; font-size: .92rem; }
+  .pa-s { font-size: .78rem; color: var(--ink-muted); font-weight: 600; }
+  .switch { width: 52px; height: 30px; border-radius: 99px; background: var(--ceil-deep); padding: 3px; display: flex; justify-content: flex-end; box-shadow: inset 0 1px 3px rgba(0, 0, 0, .2); }
+  .switch span { width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0, 0, 0, .2); }
+  .v-float { position: absolute; right: 1.6rem; top: .2rem; display: flex; align-items: center; gap: .5rem; padding: .7rem 1rem; border-radius: 16px; font-weight: 600; font-size: .85rem; color: var(--navy); }
+  .v-float :global(svg) { color: var(--green); }
+
+  @media (max-width: 900px) {
+    .v-grid { grid-template-columns: minmax(0, 1fr); }
+    .v-visual { padding: 1rem 0 0; }
+    .profile { margin-inline: auto; }
+    .v-float { top: -0.5rem; left: auto; right: 0; }
+  }
+</style>
+
+<script>
+  const profile = document.querySelector<HTMLElement>(".profile");
+  if (profile) {
+    const count = profile.querySelector<HTMLElement>("[data-count]");
+    const io = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) return;
+      io.disconnect();
+      setTimeout(() => { profile.classList.add("done"); if (count) count.textContent = "4 of 4 verified"; }, 1400);
+    }, { threshold: 0.6 });
+    io.observe(profile);
+  }
+</script>

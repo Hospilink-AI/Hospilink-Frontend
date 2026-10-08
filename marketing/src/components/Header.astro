@@ -1,0 +1,193 @@
+---
+import Wordmark from "./ui/Wordmark.astro";
+import Icon from "./ui/Icon.astro";
+import { NAV, NAV_MORE, LINKS } from "../config";
+
+interface Props { dark?: boolean }
+const { dark = true } = Astro.props;
+const path = Astro.url.pathname;
+const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWith(href.replace(/\/$/, "")));
+---
+<header class:list={["hdr", dark && "hdr-dark"]} data-header>
+  <div class="hdr-bar">
+    <a href="/" class="brand" aria-label="HospiLink home">
+      <Wordmark class="wm wm-on-dark" tone="white" />
+      <Wordmark class="wm wm-on-light" />
+    </a>
+
+    <nav class="nav" aria-label="Main">
+      <ul role="list">
+        {NAV.map((n) => (
+          <li>
+            <a href={n.href} class:list={["nav-link", isActive(n.href) && "active", (n as any).highlight && "hl"]} aria-current={isActive(n.href) ? "page" : undefined}>
+              {(n as any).highlight && <span class="live-dot" aria-hidden="true" />}
+              {n.label}
+            </a>
+          </li>
+        ))}
+        <li class="more">
+          <button class="nav-link" aria-expanded="false" aria-controls="more-menu" data-more>
+            Company <Icon name="chevron-down" size={16} />
+          </button>
+          <div class="more-menu" id="more-menu" hidden>
+            {NAV_MORE.map((m) => (
+              <a href={m.href} class="more-item">
+                <span class="more-t">{m.label}</span>
+                <span class="more-d">{m.desc}</span>
+              </a>
+            ))}
+          </div>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="hdr-cta">
+      <a class="signin" href={LINKS.signIn}>Sign in</a>
+      <a class="btn btn-primary btn-sm" href={LINKS.hospitalSignUp}>Post a duty</a>
+      <button class="menu-btn" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-nav" data-menu>
+        <span></span><span></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="mnav" id="mobile-nav" hidden data-mnav>
+    <nav aria-label="Mobile">
+      <ul role="list">
+        <li><a href="/">Home</a></li>
+        {NAV.map((n) => <li><a href={n.href} aria-current={isActive(n.href) ? "page" : undefined}>{n.label}</a></li>)}
+        {NAV_MORE.map((n) => <li class="sub"><a href={n.href}>{n.label}</a></li>)}
+      </ul>
+    </nav>
+    <div class="mnav-cta">
+      <a class="btn btn-primary" href={LINKS.hospitalSignUp}>Post a duty <Icon name="arrow-right" class="arrow" /></a>
+      <a class="btn btn-relief" href={LINKS.playStore}><Icon name="brand-google-play" /> Get the staff app</a>
+      <a class="signin-m" href={LINKS.signIn}>Sign in to HospiLink</a>
+    </div>
+  </div>
+</header>
+
+<style>
+  /* --bar-pad is the pill's inner left padding; the pill reaches out by the same amount so the logo lines up with the page content at every width */
+  .hdr { --bar-pad: 22px; position: fixed; inset: 0 0 auto 0; z-index: 100; padding: 14px max(6px, calc(var(--gutter) - var(--bar-pad))) 0; pointer-events: none; }
+  .hdr-bar {
+    pointer-events: auto;
+    max-width: calc(var(--max) + 2 * var(--bar-pad)); margin-inline: auto; height: 68px;
+    display: flex; align-items: center; gap: 1.5rem; padding: 0 10px 0 var(--bar-pad);
+    border-radius: var(--r-pill);
+    transition: background-color .45s var(--ease-out), box-shadow .45s var(--ease-out), backdrop-filter .45s;
+    color: var(--ink);
+  }
+  .hdr.scrolled .hdr-bar {
+    background: rgba(255, 255, 255, .74);
+    -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+    box-shadow: var(--glass-edge), 0 10px 30px -10px rgba(14, 30, 58, .18);
+  }
+  .hdr-dark:not(.scrolled):not(.open) .hdr-bar { color: var(--navy); }
+  .brand { flex: none; display: block; width: 150px; }
+  .brand :global(.wm) { width: 100%; }
+  .brand :global(.wm-on-dark) { display: none; }
+  .hdr-dark:not(.scrolled):not(.open) .brand :global(.wm-on-dark) { display: block; }
+  .hdr-dark:not(.scrolled):not(.open) .brand :global(.wm-on-light) { display: none; }
+
+  .nav { margin-inline: auto; }
+  .nav ul { display: flex; align-items: center; gap: .15rem; }
+  .nav-link {
+    display: inline-flex; align-items: center; gap: .35rem; height: 40px; padding: 0 .85rem; border-radius: var(--r-pill);
+    font-weight: 550; font-size: .92rem; color: inherit; opacity: .82; transition: opacity .2s, background-color .2s;
+  }
+  .nav-link:hover, .nav-link.active, .nav-link[aria-expanded="true"] { opacity: 1; background: rgba(91, 133, 215, .12); }
+  .hdr-dark:not(.scrolled) .nav-link:hover, .hdr-dark:not(.scrolled) .nav-link.active { background: rgba(255, 255, 255, .12); }
+  .nav-link.hl { opacity: 1; }
+  .nav-link :global(svg) { transition: transform .3s var(--ease-out); }
+  .nav-link[aria-expanded="true"] :global(svg) { transform: rotate(180deg); }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #3fcf8e; box-shadow: 0 0 0 0 rgba(63, 207, 142, .6); animation: livepulse 2.2s infinite; }
+  @keyframes livepulse { 0% { box-shadow: 0 0 0 0 rgba(63, 207, 142, .55); } 70% { box-shadow: 0 0 0 8px rgba(63, 207, 142, 0); } 100% { box-shadow: 0 0 0 0 rgba(63, 207, 142, 0); } }
+
+  .more { position: relative; }
+  .more-menu {
+    position: absolute; top: calc(100% + 14px); right: -40px; width: 320px; padding: 10px;
+    background: rgba(255, 255, 255, .9); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+    border-radius: 22px; box-shadow: var(--glass-edge), var(--float); color: var(--ink);
+    display: grid; gap: 2px;
+    animation: menuin .35s var(--ease-out);
+  }
+  .more-menu[hidden] { display: none; }
+  @keyframes menuin { from { opacity: 0; transform: translateY(-6px) scale(.98); } }
+  .more-item { display: grid; gap: 1px; padding: .7rem .9rem; border-radius: 14px; transition: background-color .2s; }
+  .more-item:hover { background: var(--saline); }
+  .more-t { font-weight: 600; font-size: .93rem; }
+  .more-d { font-size: .8rem; color: var(--ink-muted); }
+
+  .hdr-cta { display: flex; align-items: center; gap: .6rem; flex: none; }
+  .signin { font-weight: 600; font-size: .92rem; padding: 0 .8rem; opacity: .85; }
+  .signin:hover { opacity: 1; text-decoration: underline; text-underline-offset: 4px; }
+
+  .menu-btn { display: none; width: 46px; height: 46px; border-radius: 50%; position: relative; color: inherit; }
+  .menu-btn span { position: absolute; left: 13px; right: 13px; height: 2px; border-radius: 2px; background: currentColor; transition: transform .4s var(--ease-out), top .4s var(--ease-out); }
+  .menu-btn span:first-child { top: 18px; }
+  .menu-btn span:last-child { top: 26px; }
+  .open .menu-btn span:first-child { top: 22px; transform: rotate(45deg); }
+  .open .menu-btn span:last-child { top: 22px; transform: rotate(-45deg); }
+
+  .mnav {
+    pointer-events: auto; position: fixed; inset: 0; z-index: -1; padding: 104px var(--gutter) 2rem;
+    background: rgba(240, 242, 247, .94); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+    overflow-y: auto; display: flex; flex-direction: column; gap: 2rem;
+    animation: mnavin .45s var(--ease-out);
+  }
+  .mnav[hidden] { display: none; }
+  @keyframes mnavin { from { opacity: 0; } }
+  .mnav ul { display: grid; }
+  .mnav li a { display: block; padding: .55rem 0; font-size: 1.6rem; font-weight: 600; letter-spacing: -0.03em; color: var(--ink); }
+  .mnav li a[aria-current="page"] { color: var(--ceil-deep); }
+  .mnav li.sub a { font-size: 1.05rem; font-weight: 550; color: var(--ink-soft); padding: .4rem 0; letter-spacing: 0; }
+  .mnav li.sub:first-of-type { margin-top: 1rem; }
+  .mnav-cta { display: grid; gap: .75rem; margin-top: auto; }
+  .signin-m { text-align: center; font-weight: 600; padding: .6rem; color: var(--ink-soft); }
+  .open .hdr-bar { background: transparent; box-shadow: none; backdrop-filter: none; }
+
+  @media (max-width: 1120px) {
+    .signin { display: none; }
+    .nav-link { padding: 0 .65rem; font-size: .88rem; }
+  }
+  @media (max-width: 980px) {
+    .nav { display: none; }
+    .menu-btn { display: block; }
+    .hdr-cta { margin-left: auto; }
+    .hdr { --bar-pad: 12px; }
+    .hdr-bar { padding: 0 6px 0 var(--bar-pad); height: 60px; }
+  }
+  @media (max-width: 420px) {
+    .hdr-cta .btn { display: none; }
+    .brand { width: 134px; }
+  }
+</style>
+
+<script>
+  const hdr = document.querySelector<HTMLElement>("[data-header]")!;
+  const onScroll = () => hdr.classList.toggle("scrolled", window.scrollY > 24);
+  onScroll();
+  window.addEventListener("scroll", onScroll, { passive: true });
+
+  const moreBtn = hdr.querySelector<HTMLButtonElement>("[data-more]");
+  const moreMenu = document.getElementById("more-menu");
+  const setMore = (open: boolean) => {
+    if (!moreBtn || !moreMenu) return;
+    moreBtn.setAttribute("aria-expanded", String(open));
+    moreMenu.hidden = !open;
+  };
+  moreBtn?.addEventListener("click", (e) => { e.stopPropagation(); setMore(moreMenu!.hidden); });
+  document.addEventListener("click", (e) => { if (moreMenu && !moreMenu.contains(e.target as Node)) setMore(false); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") { setMore(false); setMenu(false); } });
+
+  const menuBtn = hdr.querySelector<HTMLButtonElement>("[data-menu]")!;
+  const mnav = hdr.querySelector<HTMLElement>("[data-mnav]")!;
+  const setMenu = (open: boolean) => {
+    menuBtn.setAttribute("aria-expanded", String(open));
+    menuBtn.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+    mnav.hidden = !open;
+    hdr.classList.toggle("open", open);
+    document.documentElement.style.overflow = open ? "hidden" : "";
+  };
+  menuBtn.addEventListener("click", () => setMenu(mnav.hidden));
+</script>

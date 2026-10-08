@@ -1,0 +1,112 @@
+---
+// Live vacancy board: filter bar, results, pagination. Shared by /vacancies/ and the role pages.
+// Behaviour lives in board.ts; each board is configured through data attributes.
+import Icon from "../ui/Icon.astro";
+import { ROLES, ROLE_GROUPS } from "../../data/roles";
+
+interface Props {
+  /** Lock the board to one specialty (role pages). Hides the role select. */
+  specialty?: string;
+  /** Sync filters to the page URL. Off for role pages. */
+  syncUrl?: boolean;
+  limit?: number;
+  title?: string;
+}
+const { specialty, syncUrl = true, limit = 12, title = "Open vacancies" } = Astro.props;
+const locked = !!specialty;
+---
+<section class="board-sec" aria-labelledby="board-title">
+  <div class="wrap">
+    <div class="vb" data-board data-specialty={specialty ?? ""} data-sync={syncUrl ? "1" : "0"} data-limit={limit}>
+      <form class="vb-bar glass" role="search" aria-label="Filter vacancies" data-form>
+        {!locked && (
+          <div class="vb-field">
+            <label for="vb-role">Role</label>
+            <select id="vb-role" class="field-input" name="specialty" data-role>
+              <option value="">All roles</option>
+              {ROLE_GROUPS.map((g) => (
+                <optgroup label={g}>
+                  {ROLES.filter((r) => r.group === g).map((r) => <option value={r.value}>{r.label}</option>)}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+        )}
+        <div class="vb-field grow">
+          <label for={`vb-loc${locked ? "-r" : ""}`}>City or area</label>
+          <div class="vb-search">
+            <Icon name="map-pin" size={18} />
+            <input id={`vb-loc${locked ? "-r" : ""}`} class="field-input" name="location" type="search" placeholder="Pune, Baner, Hadapsar…" autocomplete="off" enterkeyhint="search" data-loc />
+          </div>
+        </div>
+        <div class="vb-btns">
+          <button class="btn btn-primary" type="submit"><Icon name="search" /> Search</button>
+          <button class="btn btn-relief" type="button" data-clear hidden>Clear</button>
+        </div>
+      </form>
+
+      <div class="vb-head">
+        <h2 id="board-title" class="h3">{title}</h2>
+        <p class="vb-count" data-count aria-live="polite">Loading vacancies…</p>
+      </div>
+
+      <div class="vb-list" data-list aria-live="polite" aria-busy="true">
+        {Array.from({ length: 6 }).map(() => (
+          <div class="vcard skel" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+        ))}
+      </div>
+      <div class="vb-state relief-white" data-state hidden></div>
+
+      <nav class="vb-pager" aria-label="Vacancy pages" data-pager hidden>
+        <button class="btn btn-relief btn-sm" type="button" data-prev><Icon name="arrow-left" /> Previous</button>
+        <span class="vb-page tnum" data-page-label></span>
+        <button class="btn btn-relief btn-sm" type="button" data-next>Next <Icon name="arrow-right" /></button>
+      </nav>
+
+      <p class="vb-note"><Icon name="shield-check" size={16} /> Every vacancy here is posted by a hospital registered on HospiLink. You apply with your verified HospiLink profile.</p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .board-sec { position: relative; z-index: 2; margin-top: -2.5rem; padding-bottom: calc(var(--section) * .6); }
+  .vb-bar {
+    position: sticky; top: 92px; z-index: 20;
+    display: flex; flex-wrap: wrap; align-items: end; gap: .9rem 1rem;
+    padding: 1rem 1.1rem; border-radius: 28px; background: rgba(255, 255, 255, .78);
+  }
+  .vb-field { display: grid; gap: .35rem; min-width: 220px; }
+  .vb-field.grow { flex: 1; min-width: 200px; }
+  .vb-field label { font-size: .8rem; font-weight: 600; color: var(--ink-muted); padding-left: .3rem; }
+  .vb-search { position: relative; }
+  .vb-search :global(svg) { position: absolute; left: 1rem; top: 50%; translate: 0 -50%; color: var(--ceil-deep); pointer-events: none; }
+  .vb-search input { padding-left: 2.7rem; }
+  .vb-search input::-webkit-search-cancel-button { display: none; }
+  .vb-btns { display: flex; gap: .6rem; }
+  .vb-btns .btn { --btn-h: 54px; }
+  .vb-btns .btn[hidden] { display: none; }
+  .vb-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: .5rem 1.5rem; margin: 2.6rem .3rem 1.2rem; }
+  .vb-count { color: var(--ink-muted); font-weight: 550; font-size: .95rem; }
+  .vb-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+  .vb-list:empty { display: none; }
+  .vb-state:not([hidden]) { display: grid; justify-items: center; text-align: center; gap: .8rem; padding: 3.5rem 1.2rem; }
+  .vb-pager:not([hidden]) { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 2rem; }
+  .vb-pager button:disabled { opacity: .45; cursor: not-allowed; }
+  .vb-page { font-weight: 600; color: var(--ink-soft); min-width: 8ch; text-align: center; }
+  .vb-note { display: flex; align-items: center; justify-content: center; gap: .45rem; margin-top: 2rem; font-size: .86rem; font-weight: 550; color: var(--ink-muted); text-align: center; }
+  .vb-note :global(svg) { color: var(--green); flex: none; }
+
+  @media (max-width: 1000px) { .vb-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 680px) {
+    .vb-bar { position: static; padding: .9rem; border-radius: 22px; }
+    .vb-field, .vb-field.grow { min-width: 100%; }
+    .vb-btns { width: 100%; }
+    .vb-btns .btn { flex: 1; }
+    .vb-list { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>
+
+<script>
+  import { initBoards } from "./board";
+  initBoards();
+</script>

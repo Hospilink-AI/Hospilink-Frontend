@@ -1,0 +1,162 @@
+---
+import Base from "../layouts/Base.astro";
+import PageHero from "../components/ui/PageHero.astro";
+import Icon from "../components/ui/Icon.astro";
+import { COMPANY, LINKS } from "../config";
+
+const routes = [
+  { icon: "building-hospital", t: "Hospitals getting started", d: "Registering your hospital, posting your first duty or vacancy, rates and onboarding.", ch: [{ k: "Call", v: COMPANY.phones[0].display, href: `tel:${COMPANY.phones[0].tel}` }, { k: "Email", v: COMPANY.emails.info, href: `mailto:${COMPANY.emails.info}` }] },
+  { icon: "stethoscope", t: "Doctors, nurses and staff", d: "Verification, your account, a duty in progress, or a problem with the app. The in-app help chat is quickest.", ch: [{ k: "Email", v: COMPANY.emails.support, href: `mailto:${COMPANY.emails.support}` }, { k: "Call", v: COMPANY.phones[1].display, href: `tel:${COMPANY.phones[1].tel}` }] },
+  { icon: "briefcase-2", t: "Permanent vacancies", d: "Questions about a vacancy, your application or an interview slot.", ch: [{ k: "Email", v: COMPANY.emails.support, href: `mailto:${COMPANY.emails.support}` }, { k: "Browse", v: "Live vacancies", href: "/vacancies/" }] },
+  { icon: "users-group", t: "Partners and press", d: "Partnerships, media and anything else about the company.", ch: [{ k: "Email", v: COMPANY.emails.info, href: `mailto:${COMPANY.emails.info}` }] },
+];
+const crumbs = [{ name: "Contact", href: "/contact/" }];
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "ContactPage",
+  name: "Contact HospiLink",
+  url: "https://hospilink.in/contact/",
+  mainEntity: {
+    "@type": "Organization",
+    "@id": "https://hospilink.in/#org",
+    name: COMPANY.brand,
+    legalName: COMPANY.legalName,
+    email: COMPANY.emails.info,
+    telephone: COMPANY.phones.map((p) => p.tel),
+    address: { "@type": "PostalAddress", addressLocality: COMPANY.city, addressRegion: COMPANY.region, addressCountry: COMPANY.country },
+  },
+};
+---
+<Base title="Contact HospiLink" description="Call +91 95290 11896 or +91 99602 41860, or write to info@hospilink.in and support@hospilink.in. Grievance Officer: Dr. Sumit Thombre." crumbs={crumbs} jsonLd={ld}>
+  <PageHero
+    title={'Talk to a person, <span class="soft">not a form.</span>'}
+    lead="Call or email. Every number and inbox below reaches the HospiLink team in Pune."
+    crumbs={crumbs}
+  >
+    <div slot="visual" class="ct-cards">
+      {COMPANY.phones.map((p, i) => (
+        <a class="ct-phone glass-dark" href={`tel:${p.tel}`}>
+          <span class="ct-ic"><Icon name="phone-call" /></span>
+          <span class="ct-body">
+            <span class="ct-k">{i === 0 ? "Call us" : "Or call"}</span>
+            <span class="ct-v tnum">{p.display}</span>
+          </span>
+          <Icon name="arrow-up-right" class="ct-go" />
+        </a>
+      ))}
+      <a class="ct-phone glass-dark" href={`mailto:${COMPANY.emails.info}`}>
+        <span class="ct-ic"><Icon name="mail" /></span>
+        <span class="ct-body"><span class="ct-k">Email</span><span class="ct-v">{COMPANY.emails.info}</span></span>
+        <Icon name="arrow-up-right" class="ct-go" />
+      </a>
+    </div>
+  </PageHero>
+
+  <section class="section" aria-labelledby="who-t">
+    <div class="wrap">
+      <div class="head" data-reveal>
+        <h2 id="who-t" class="h2">Who to contact for what.</h2>
+        <p class="lead">Pick the line that matches what you need and you'll reach the right person first time.</p>
+      </div>
+      <ul class="rt" role="list">
+        {routes.map((r, i) => (
+          <li class="rt-item relief-white" data-reveal style={`--d:${i * 0.05}s`}>
+            <span class="icon-tile"><Icon name={r.icon} /></span>
+            <div class="rt-copy">
+              <h3>{r.t}</h3>
+              <p>{r.d}</p>
+            </div>
+            <div class="rt-ch">
+              {r.ch.map((c) => (
+                <a href={c.href} class="rt-link"><span class="rt-k">{c.k}</span><span class="rt-v tnum">{c.v}</span></a>
+              ))}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <section id="grievance" class="section-tight gv-wrap" aria-labelledby="gv-t">
+    <div class="wrap">
+      <div class="gv field-dark">
+        <div class="gv-copy">
+          <h2 id="gv-t" class="h2">Grievance redressal</h2>
+          <p class="lead on-dark">If something on HospiLink has gone wrong and the usual help hasn't fixed it, write to our Grievance Officer. We aim to resolve complaints within 30 days.</p>
+          <p class="gv-s">Include your registered phone number or email, the duty, vacancy or ticket reference if you have one, and what you'd like us to do.</p>
+          <a class="link-arrow on-dark" href="/privacy/#contact-and-grievances">Read the grievance section of our privacy policy <Icon name="arrow-right" /></a>
+        </div>
+        <div class="gv-card glass">
+          <span class="gv-l">Grievance Officer</span>
+          <p class="gv-n">{COMPANY.grievanceOfficer}</p>
+          <p class="gv-co">{COMPANY.legalName}</p>
+          <a class="btn btn-primary" href={`mailto:${COMPANY.emails.support}?subject=Grievance`}><Icon name="mail" /> {COMPANY.emails.support}</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-tight" aria-labelledby="co-t">
+    <div class="wrap co-strip relief">
+      <div>
+        <h2 id="co-t" class="h3">{COMPANY.legalName}</h2>
+        <p class="muted">Pune, Maharashtra, India</p>
+      </div>
+      <dl class="co-dl">
+        <div><dt>Directors</dt><dd>{COMPANY.directors.map((d) => d.name).join(" · ")}</dd></div>
+        <div><dt>General</dt><dd><a href={`mailto:${COMPANY.emails.info}`}>{COMPANY.emails.info}</a></dd></div>
+        <div><dt>Support</dt><dd><a href={`mailto:${COMPANY.emails.support}`}>{COMPANY.emails.support}</a></dd></div>
+      </dl>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .ct-cards { display: grid; gap: .8rem; }
+  .ct-phone { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 1rem; padding: 1rem 1.2rem; border-radius: 24px; transition: transform .4s var(--ease-out), background-color .3s; }
+  .ct-phone:hover { transform: translateX(4px); background: rgba(255, 255, 255, .12); }
+  .ct-ic { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; background: rgba(255, 255, 255, .7); box-shadow: var(--glass-edge), 0 6px 16px -12px rgba(14, 30, 58, .3); color: var(--ceil-deep); }
+  .ct-ic.wa { color: #6ee7a8; }
+  .ct-body { display: grid; min-width: 0; }
+  .ct-k { font-size: .8rem; font-weight: 600; color: var(--on-dark-muted); }
+  .ct-v { font-size: clamp(1.05rem, .9rem + .7vw, 1.4rem); font-weight: 600; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+  .ct-phone :global(.ct-go) { color: var(--on-dark-muted); transition: transform .35s var(--ease-out), color .3s; }
+  .ct-phone:hover :global(.ct-go) { color: var(--navy); transform: translate(2px, -2px); }
+
+  .rt { display: grid; gap: .9rem; margin-top: 2.5rem; }
+  .rt-item { display: grid; grid-template-columns: 52px minmax(0, 1.2fr) minmax(0, 1fr); gap: 1.4rem; align-items: center; padding: 1.4rem 1.6rem; border-radius: 26px; }
+  .rt-copy h3 { font-size: 1.15rem; }
+  .rt-copy p { color: var(--ink-muted); margin-top: .3rem; font-size: .95rem; }
+  .rt-ch { display: grid; gap: .5rem; }
+  .rt-link { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .7rem 1rem; border-radius: 14px; background: var(--ward); box-shadow: var(--relief-pressed); transition: background-color .2s; }
+  .rt-link:hover { background: var(--saline); }
+  .rt-k { font-size: .78rem; font-weight: 600; color: var(--ink-muted); }
+  .rt-v { font-weight: 600; font-size: .93rem; color: var(--ceil-700); overflow-wrap: anywhere; text-align: right; }
+
+  .gv-wrap { scroll-margin-top: 90px; }
+  .gv { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 2rem 4rem; align-items: center; padding: clamp(2rem, 5vw, 4rem); border-radius: 40px; overflow: hidden; }
+  .gv-copy .lead { margin-top: 1rem; }
+  .gv-s { margin: 1rem 0 1.4rem; color: var(--on-dark-soft); max-width: 56ch; }
+  .gv-card { padding: 1.6rem; border-radius: 26px; color: var(--navy); display: grid; gap: .2rem; justify-items: start; }
+  .gv-l { font-size: .8rem; font-weight: 600; color: var(--ink-muted); }
+  .gv-n { font-size: 1.6rem; font-weight: 600; letter-spacing: -0.03em; }
+  .gv-co { color: var(--ink-muted); font-weight: 600; margin-bottom: 1rem; }
+  .gv-card .btn { max-width: 100%; white-space: normal; }
+
+  .co-strip { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1.4rem 3rem; padding: 1.6rem 1.8rem; border-radius: 28px; }
+  .co-dl { display: flex; flex-wrap: wrap; gap: 1rem 2.4rem; }
+  .co-dl dt { font-size: .78rem; font-weight: 600; color: var(--ink-muted); }
+  .co-dl dd { font-weight: 600; }
+  .co-dl a:hover { color: var(--ceil-700); }
+
+  @media (max-width: 900px) {
+    .rt-item { grid-template-columns: 52px minmax(0, 1fr); }
+    .rt-ch { grid-column: 1 / -1; }
+    .gv { grid-template-columns: minmax(0, 1fr); border-radius: 30px; }
+  }
+  @media (max-width: 480px) {
+    .rt-item { padding: 1.1rem; gap: 1rem; }
+    .ct-phone { grid-template-columns: 44px 1fr auto; padding: .85rem 1rem; }
+    .ct-ic { width: 44px; height: 44px; border-radius: 14px; }
+  }
+</style>

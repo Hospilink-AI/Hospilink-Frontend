@@ -1,0 +1,46 @@
+/* Shared layout pieces for the audience and product pages (hospitals, staff, how it works, emergency, trust). */
+
+.b-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: clamp(2.5rem, 6vw, 6rem); align-items: center; }
+.b-split.rev > :first-child { order: 2; }
+.b-split.top { align-items: start; }
+.b-copy .lead { margin-top: 1.2rem; }
+.b-copy > .h3 + p, .b-copy > p + p { margin-top: .9rem; }
+.b-copy p:not(.lead) { color: var(--ink-soft); }
+.b-head2 { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 1.5rem 5rem; align-items: end; margin-bottom: clamp(2.5rem, 5vw, 4rem); }
+.b-head2 .lead { margin: 0; }
+
+.b-ticks { list-style: none; padding: 0; display: grid; gap: .85rem; margin-top: 1.8rem; }
+.b-ticks li { display: grid; grid-template-columns: 26px 1fr; gap: .75rem; align-items: start; color: var(--ink-soft); font-weight: 600; }
+.b-ticks li b { color: var(--ink); font-weight: 600; }
+.b-ticks .tk { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--green-soft); color: var(--green-ink); margin-top: 1px; }
+.on-dark .b-ticks li, .b-ticks.on-dark li { color: var(--on-dark-soft); }
+.on-dark .b-ticks li b { color: var(--navy); }
+.on-dark .b-ticks .tk { background: var(--green-soft); color: var(--green); }
+
+.b-note {
+  display: grid; grid-template-columns: 44px 1fr; gap: 1rem; align-items: start;
+  padding: 1.2rem 1.3rem; border-radius: 22px; background: #fff; box-shadow: var(--relief-raised);
+}
+.b-note { color: var(--ink); }
+.head .lead a, .b-copy .lead a, .b-head2 .lead a { color: var(--ceil-700); font-weight: 600; text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 3px; text-decoration-color: var(--ceil-300); }
+.head .lead a:hover, .b-copy .lead a:hover { text-decoration-color: currentColor; }
+.b-copy > .link-arrow { margin-top: 1.4rem; }
+.b-note .ic { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--saline); color: var(--ceil-deep); }
+.b-note.amber .ic { background: var(--amber-soft); color: var(--amber-ink); }
+.b-note.red .ic { background: var(--red-soft); color: var(--red); }
+.b-note.green .ic { background: var(--green-soft); color: var(--green-ink); }
+.b-note b { display: block; font-weight: 600; letter-spacing: -0.01em; }
+.b-note p { color: var(--ink-muted); font-size: .94rem; margin-top: .2rem; }
+
+.b-dark-band { width: min(100% - 2 * var(--gutter), var(--max)); margin-inline: auto; border-radius: 48px; overflow: hidden; }
+.b-dark-band > .wrap { width: auto; padding-inline: clamp(1.25rem, 4vw, 4rem); }
+@media (max-width: 560px) { .b-dark-band { border-radius: 30px; } }
+
+.b-faq { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: clamp(2rem, 5vw, 5rem); align-items: start; }
+.b-faq .head { position: sticky; top: 110px; }
+
+@media (max-width: 960px) {
+  .b-split, .b-head2, .b-faq { grid-template-columns: minmax(0, 1fr); }
+  .b-split.rev > :first-child { order: 0; }
+  .b-faq .head { position: static; }
+}

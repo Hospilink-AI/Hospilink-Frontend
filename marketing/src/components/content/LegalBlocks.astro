@@ -1,0 +1,25 @@
+---
+// Renders the client's LegalBlock union verbatim: plain strings, bullet lists, and titled sub-groups (recursive).
+import type { LegalBlock } from "../../data/legal/types";
+import LegalBlocks from "./LegalBlocks.astro";
+interface Props { blocks: LegalBlock[]; depth?: number }
+const { blocks, depth = 0 } = Astro.props;
+// Turn bare emails and hospilink.in paths into links without touching the wording.
+const linkify = (t: string) =>
+  t
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/\b([a-z0-9._-]+@hospilink\.in)\b/gi, '<a href="mailto:$1">$1</a>')
+    .replace(/\bhospilink\.in\/delete-account\b/g, '<a href="https://hospilink.in/delete-account">hospilink.in/delete-account</a>');
+---
+{blocks.map((b) =>
+  typeof b === "string" ? (
+    <p set:html={linkify(b)} />
+  ) : "bullets" in b ? (
+    <ul>{b.bullets.map((x) => <li set:html={linkify(x)} />)}</ul>
+  ) : (
+    <div class="lg-sub">
+      {depth === 0 ? <h3>{b.sub}</h3> : <h4>{b.sub}</h4>}
+      <LegalBlocks blocks={b.blocks} depth={depth + 1} />
+    </div>
+  )
+)}

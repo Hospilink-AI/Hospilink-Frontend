@@ -1,0 +1,57 @@
+---
+import Icon from "../ui/Icon.astro";
+import Faq from "../ui/Faq.astro";
+import { COMPANY } from "../../config";
+const initials = (n: string) => n.replace("Dr. ", "").split(" ").map((p) => p[0]).join("");
+const faqs = [
+  { q: "What is HospiLink?", a: "HospiLink is a healthcare staffing platform. Hospitals post short duties and permanent vacancies; verified doctors, nurses and clinical staff nearby take the duties or apply for the vacancies. It is run by Hospilink Private Limited, starting in Pune." },
+  { q: "Who can join as staff?", a: "Doctors (including RMOs and DMOs), nurses, technicians, and patient-support and hospital staff. Everyone is verified before they see a duty: identity through Aadhaar, plus registration, degree and licence where the role needs them." },
+  { q: "How fast can a duty be filled?", a: "The offer reaches verified staff within 30 km the moment you post it and widens by 5 km every hour, up to 75 km. Emergency requests reach staff across the city at once. How quickly someone accepts depends on the role, the hour and the rate." },
+  { q: "How do I know the right person turned up?", a: "A duty only starts when the staff member is within 100 m of your hospital and enters the start code your duty desk reads out to them. At the end, your desk enters the end code from their phone to close it." },
+  { q: "Does HospiLink handle payments?", a: "Not inside the app yet. Every duty shows its rate before anyone accepts it. For how payment works for your hospital, call or write to us." },
+];
+---
+<section class="section company" aria-labelledby="co-title">
+  <div class="wrap co-grid">
+    <div class="co-left" data-reveal>
+      <h2 id="co-title" class="h2">Run by doctors, from Pune.</h2>
+      <p class="lead">HospiLink is a product of {COMPANY.legalName}, a Pune company whose directors are both doctors. Call either number below and you reach the team that runs it.</p>
+      <ul class="directors" role="list">
+        {COMPANY.directors.map((d) => (
+          <li class="dir relief">
+            <span class="dir-av">{initials(d.name)}</span>
+            <span><b>{d.name}</b><small>{d.role}, {COMPANY.legalName}</small></span>
+          </li>
+        ))}
+      </ul>
+      <div class="co-contact">
+        {COMPANY.phones.map((p) => <a href={`tel:${p.tel}`} class="tnum"><Icon name="phone" size={18} /> {p.display}</a>)}
+        <a href={`mailto:${COMPANY.emails.info}`}><Icon name="mail" size={18} /> {COMPANY.emails.info}</a>
+      </div>
+      <a class="link-arrow" href="/about/">More about HospiLink <Icon name="arrow-right" /></a>
+    </div>
+    <div class="co-right" data-reveal style="--d:.08s">
+      <h3 class="h3 co-faq-t">Short answers</h3>
+      <Faq items={faqs} />
+      <a class="link-arrow co-more" href="/faq/">All questions <Icon name="arrow-right" /></a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .co-grid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: clamp(3rem, 6vw, 6rem); align-items: start; }
+  .co-left { position: sticky; top: 110px; }
+  .co-left .lead { margin-top: 1.3rem; }
+  .directors { display: grid; gap: .8rem; margin-top: 2rem; }
+  .dir { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.1rem; border-radius: 22px; }
+  .dir-av { flex: none; width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; background: var(--navy); color: #fff; font-weight: 600; letter-spacing: .02em; }
+  .dir b { display: block; font-size: 1.05rem; font-weight: 600; }
+  .dir small { font-size: .84rem; color: var(--ink-muted); font-weight: 600; }
+  .co-contact { display: flex; flex-wrap: wrap; gap: .5rem 1.4rem; margin: 1.6rem 0 1.4rem; }
+  .co-contact a { display: inline-flex; align-items: center; gap: .45rem; font-weight: 600; }
+  .co-contact a:hover { color: var(--ceil-700); }
+  .co-contact :global(svg) { color: var(--ceil-deep); }
+  .co-faq-t { margin-bottom: 1.2rem; }
+  .co-more { margin-top: 1.4rem; }
+  @media (max-width: 900px) { .co-grid { grid-template-columns: minmax(0, 1fr); } .co-left { position: static; } }
+</style>

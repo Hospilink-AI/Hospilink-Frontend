@@ -1,0 +1,68 @@
+---
+import Base from "../layouts/Base.astro";
+import Icon from "../components/ui/Icon.astro";
+import { cityMap } from "../lib/map";
+const m = cityMap(1200, 800, 19, 54);
+const links = [
+  { href: "/", icon: "home", t: "Home", d: "Start from the top" },
+  { href: "/vacancies/", icon: "briefcase-2", t: "Permanent vacancies", d: "Live roles at hospitals" },
+  { href: "/guides/", icon: "book-2", t: "Guides", d: "How every step works" },
+  { href: "/contact/", icon: "phone", t: "Contact", d: "Talk to the team" },
+];
+---
+<Base title="Page not found" description="This page doesn't exist on HospiLink." noindex>
+  <section class="nf field-dark">
+    <svg class="nf-map" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <path d={m.river} class="nf-river" />
+      <g class="nf-streets">{m.minor.map((d) => <path d={d} />)}</g>
+      <g class="nf-art">{m.arterial.map((d) => <path d={d} />)}</g>
+      <circle cx="600" cy="400" r="150" class="nf-ring" />
+      <circle cx="600" cy="400" r="300" class="nf-ring r2" />
+      <path d="M470 330 A 150 150 0 0 1 730 330" class="nf-arc" pathLength="1" />
+      <circle cx="470" cy="330" r="9" class="nf-a" />
+      <circle cx="730" cy="330" r="9" class="nf-b" />
+    </svg>
+    <div class="wrap nf-in">
+      <p class="nf-code tnum" aria-hidden="true">404</p>
+      <h1 class="h1">This page is outside our reach.</h1>
+      <p class="lead on-dark">The link may be old, or the page may have moved. Here's where most people are headed.</p>
+      <ul class="nf-links" role="list">
+        {links.map((l) => (
+          <li>
+            <a href={l.href} class="glass-dark">
+              <Icon name={l.icon} />
+              <span><b>{l.t}</b><small>{l.d}</small></span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .nf { min-height: 100svh; display: grid; align-items: center; padding: 8rem 0 6rem; overflow: hidden; }
+  .nf-map { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; opacity: .9;
+    -webkit-mask-image: radial-gradient(70% 70% at 50% 45%, #000 40%, transparent 100%); mask-image: radial-gradient(70% 70% at 50% 45%, #000 40%, transparent 100%); }
+  .nf-river { fill: none; stroke: rgba(91, 133, 215, .25); stroke-width: 18; stroke-linecap: round; }
+  .nf-streets path { fill: none; stroke: rgba(169, 192, 236, .12); stroke-width: 1.2; }
+  .nf-art path { fill: none; stroke: rgba(201, 216, 244, .22); stroke-width: 3; stroke-linecap: round; }
+  .nf-ring { fill: none; stroke: rgba(201, 216, 244, .3); stroke-width: 1.5; stroke-dasharray: 2 8; stroke-linecap: round; }
+  .nf-ring.r2 { stroke: rgba(201, 216, 244, .14); }
+  .nf-arc { fill: none; stroke: var(--ceil-300); stroke-width: 4; stroke-linecap: round; stroke-dasharray: .42 .16; animation: nfarc 3.2s ease-in-out infinite alternate; }
+  @keyframes nfarc { to { stroke-dashoffset: -.3; } }
+  .nf-a { fill: #fff; }
+  .nf-b { fill: var(--ceil); }
+  .nf-in { text-align: center; display: grid; justify-items: center; }
+  .nf-code { font-size: clamp(5rem, 3rem + 10vw, 11rem); font-weight: 600; letter-spacing: -0.06em; line-height: .9; color: transparent; -webkit-text-stroke: 1.5px rgba(201, 216, 244, .5); }
+  .nf-in h1 { margin-top: 1rem; max-width: 18ch; }
+  .nf-in .lead { margin-top: 1.2rem; }
+  .nf-links { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .8rem; margin-top: 2.6rem; width: min(100%, 980px); }
+  .nf-links a { display: flex; align-items: center; gap: .8rem; padding: 1rem 1.1rem; border-radius: 20px; text-align: left; transition: transform .4s var(--ease-out), background-color .3s; }
+  .nf-links a:hover { transform: translateY(-3px); background: rgba(255, 255, 255, .14); }
+  .nf-links :global(svg) { flex: none; color: var(--ceil-deep); }
+  .nf-links b { display: block; font-size: .95rem; }
+  .nf-links small { color: var(--on-dark-muted); font-size: .8rem; font-weight: 600; }
+  @media (max-width: 860px) { .nf-links { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 460px) { .nf-links { grid-template-columns: minmax(0, 1fr); } }
+</style>

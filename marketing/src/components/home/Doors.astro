@@ -1,0 +1,132 @@
+---
+import Icon from "../ui/Icon.astro";
+import { LINKS } from "../../config";
+const duties = [
+  { role: "RMO · Casualty", time: "Tonight · 8 PM", st: "Assigned", tone: "saline" },
+  { role: "ICU Staff Nurse", time: "Tonight · 8 PM", st: "En route", tone: "saline" },
+  { role: "OT Technician", time: "Tomorrow · 7 AM", st: "Offer live", tone: "red" },
+  { role: "Dialysis Nurse", time: "Fri · 9 AM", st: "Completed", tone: "green" },
+];
+const offers = [
+  { role: "RMO · Casualty", hosp: "Aranya Hospital", km: "3.1 km", rate: "₹1,400", per: "8 h" },
+  { role: "RMO · ICU night", hosp: "Kesar Nursing Home", km: "6.8 km", rate: "₹1,800", per: "8 h" },
+];
+---
+<section class="section doors" aria-labelledby="doors-title">
+  <div class="wrap">
+    <div class="head center" data-reveal>
+      <h2 id="doors-title" class="h2">Two sides of the same shift.</h2>
+      <p class="lead">One platform, built around the duty itself. Here is what each side gets.</p>
+    </div>
+
+    <div class="d2">
+      <article class="door-h field-dark" data-reveal>
+        <div class="dh-copy">
+          <h3 class="h2">For hospitals</h3>
+          <p class="lead on-dark">Cover a shift before the ward notices the gap.</p>
+          <ul role="list" class="dl">
+            <li><Icon name="square-plus" /> Post a duty or an emergency request in a few taps</li>
+            <li><Icon name="map-2" /> See who accepted and follow them to your door</li>
+            <li><Icon name="calendar-week" /> Plan the week on a duty calendar</li>
+            <li><Icon name="heart-handshake" /> Invite staff you already trust, first</li>
+            <li><Icon name="briefcase-2" /> Hire for permanent vacancies, interviews included</li>
+          </ul>
+          <div class="dh-actions">
+            <a class="btn btn-primary" href={LINKS.hospitalSignUp}>Register your hospital <Icon name="arrow-right" class="arrow" /></a>
+            <a class="link-arrow on-dark" href="/hospitals/">How it works for hospitals <Icon name="arrow-right" /></a>
+          </div>
+        </div>
+        <div class="dash glass" aria-hidden="true">
+          <div class="dash-h"><span>Today's duties</span><span class="sample">Sample</span></div>
+          <ul role="list">
+            {duties.map((d) => (
+              <li>
+                <span class="dash-r">{d.role}<small>{d.time}</small></span>
+                <span class:list={["tag", d.tone === "red" ? "tag-red" : d.tone === "green" ? "tag-green" : "tag-saline"]}>{d.st}</span>
+              </li>
+            ))}
+          </ul>
+          <div class="dash-f"><span>Filled this week</span><span class="dash-bar"><i></i></span><b class="tnum">7 / 9</b></div>
+        </div>
+      </article>
+
+      <article class="door-s relief-high" data-reveal style="--d:.1s">
+        <div class="ds-copy">
+          <h3 class="h2">For doctors, nurses and clinical staff</h3>
+          <p class="lead">Paid duties near you, on your terms.</p>
+          <ul role="list" class="dl">
+            <li><Icon name="map-pin" /> Duties near you, with rate, hours and distance up front</li>
+            <li><Icon name="hand-click" /> Accept in one tap. First to accept gets it</li>
+            <li><Icon name="toggle-right" /> Switch on when you're free, off when you're not</li>
+            <li><Icon name="wallet" /> See what you earned, duty by duty</li>
+            <li><Icon name="briefcase-2" /> Apply to permanent vacancies from the same app</li>
+          </ul>
+          <div class="dh-actions">
+            <a class="btn btn-dark" href={LINKS.playStore}><Icon name="brand-google-play" /> Get it on Google Play</a>
+            <a class="link-arrow" href="/staff/">How it works for staff <Icon name="arrow-right" /></a>
+          </div>
+        </div>
+        <div class="offers" aria-hidden="true">
+          {offers.map((o, i) => (
+            <div class:list={["offer-mini", i === 0 && "front"]}>
+              <div class="om-top"><span class="tag tag-amber"><Icon name="flame" /> Urgent</span><span class="om-km tnum">{o.km}</span></div>
+              <p class="om-role">{o.role}</p>
+              <p class="om-h"><Icon name="building-hospital" size={15} /> {o.hosp}</p>
+              <div class="om-f"><span><b class="tnum">{o.rate}</b> for {o.per}</span><span class="om-btn">Accept</span></div>
+            </div>
+          ))}
+          <span class="sample offers-s">Sample offers</span>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<style>
+  .d2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.4rem; margin-top: 3.5rem; }
+  .d2 > article { position: relative; padding: clamp(1.8rem, 3vw, 2.8rem); border-radius: 36px; overflow: hidden; display: grid; grid-template-rows: auto 1fr; gap: 2.4rem; }
+  .door-s { background: #fff; }
+  .d2 h3.h2 { font-size: clamp(1.7rem, 1.3rem + 1.4vw, 2.4rem); max-width: 16ch; }
+  .d2 .lead { margin-top: .7rem; font-size: 1.08rem; }
+  .dl { display: grid; gap: .8rem; margin-top: 1.6rem; }
+  .dl li { display: flex; gap: .7rem; align-items: start; font-weight: 550; font-size: .97rem; }
+  .dl :global(svg) { flex: none; width: 22px; height: 22px; margin-top: 1px; }
+  .door-h .dl :global(svg) { color: var(--ceil-deep); }
+  .door-h .dl li { color: var(--on-dark-soft); }
+  .door-s .dl :global(svg) { color: var(--ceil-deep); }
+  .door-s .dl li { color: var(--ink-soft); }
+  .dh-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.4rem; margin-top: 2rem; }
+
+  .dash { align-self: end; padding: 1.1rem; border-radius: 24px; color: var(--navy); }
+  .dash-h { display: flex; justify-content: space-between; font-weight: 600; font-size: .92rem; padding: 0 .2rem .7rem; }
+  .dash ul { display: grid; gap: .45rem; }
+  .dash li { display: flex; align-items: center; justify-content: space-between; gap: .6rem; padding: .65rem .8rem; background: #fff; border-radius: 14px; }
+  .dash-r { font-weight: 600; font-size: .88rem; line-height: 1.25; }
+  .dash-r small { display: block; font-size: .74rem; font-weight: 600; color: var(--ink-muted); }
+  .dash-f { display: flex; align-items: center; gap: .7rem; margin-top: .9rem; padding: 0 .2rem; font-size: .8rem; font-weight: 600; color: var(--ink-muted); }
+  .dash-bar { flex: 1; height: 8px; border-radius: 99px; background: rgba(14, 30, 58, .1); overflow: hidden; }
+  .dash-bar i { display: block; height: 100%; width: 78%; border-radius: inherit; background: var(--ceil-deep); }
+  .dash-f b { color: var(--navy); }
+
+  .offers { position: relative; align-self: end; min-height: 230px; }
+  .offer-mini { position: absolute; left: 12%; right: -2%; top: 0; padding: 1rem 1.1rem; background: var(--ward); border-radius: 22px; box-shadow: var(--relief-raised); transform: rotate(2.5deg) translateY(10px); opacity: .7; }
+  .offer-mini:not(.front) .om-f, .offer-mini:not(.front) .om-km { visibility: hidden; }
+  .offer-mini.front { left: 0; right: 6%; top: 3.2rem; transform: rotate(-1.5deg); opacity: 1; background: #fff; box-shadow: var(--relief-high); z-index: 1; }
+  .om-top { display: flex; justify-content: space-between; align-items: center; }
+  .om-km { font-weight: 600; font-size: .85rem; color: var(--ceil-700); }
+  .om-role { font-weight: 600; font-size: 1.1rem; margin-top: .55rem; letter-spacing: -0.02em; }
+  .om-h { display: flex; align-items: center; gap: .35rem; font-size: .82rem; color: var(--ink-muted); font-weight: 550; }
+  .om-h :global(svg) { color: var(--ceil-deep); }
+  .om-f { display: flex; justify-content: space-between; align-items: center; margin-top: .8rem; font-size: .85rem; color: var(--ink-muted); font-weight: 550; }
+  .om-f b { color: var(--navy); font-size: 1.1rem; }
+  .om-btn { height: 38px; padding: 0 1rem; display: inline-flex; align-items: center; border-radius: 99px; background: var(--ceil-deep); color: #fff; font-weight: 600; font-size: .82rem; }
+  .offers-s { position: absolute; right: 0; bottom: -.4rem; }
+
+  @media (max-width: 980px) {
+    .d2 { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 520px) {
+    .d2 > article { border-radius: 28px; }
+    .offers { min-height: 250px; }
+  }
+</style>

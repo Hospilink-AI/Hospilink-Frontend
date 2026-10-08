@@ -1,0 +1,61 @@
+---
+import Icon from "../ui/Icon.astro";
+// The six links of the trust chain. Each one opens its chapter below.
+const links = [
+  { icon: "id-badge-2", t: "Verified once", href: "#verified", ph: [0, 1, 2, 3, 4] },
+  { icon: "radar-2", t: "Offer within 30 km", href: "#reach", ph: [0, 1, 2, 3, 4] },
+  { icon: "hand-finger", t: "First to accept", href: "#reach", ph: [1, 2, 3, 4] },
+  { icon: "map-pin-check", t: "Start code at the door", href: "#door", ph: [3, 4] },
+  { icon: "lock-check", t: "End code, hospital enters", href: "#handshake", ph: [4] },
+  { icon: "star", t: "Rated both ways", href: "#handshake", ph: [4] },
+];
+---
+<nav class="chain-wrap wrap" aria-label="How every duty is checked">
+  <ol class="chain relief-high" role="list" data-chain>
+    {links.map((l, i) => (
+      <li data-ph={l.ph.join(",")}>
+        <a href={l.href}>
+          <span class="node"><Icon name={l.icon} size={20} /></span>
+          <span class="t">{l.t}</span>
+        </a>
+        {i < links.length - 1 && <span class="link" aria-hidden="true"><svg viewBox="0 0 60 16" preserveAspectRatio="none"><path d="M2 14 Q 30 -6 58 14" pathLength="1" /></svg></span>}
+      </li>
+    ))}
+  </ol>
+</nav>
+
+<style>
+  .chain-wrap { position: relative; z-index: 5; margin-top: -3.6rem; }
+  .chain { list-style: none; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); padding: .9rem; gap: 0; }
+  .chain li { position: relative; }
+  .chain a { display: flex; flex-direction: column; align-items: center; gap: .6rem; padding: .9rem .4rem .8rem; border-radius: 20px; text-align: center; transition: background-color .3s; }
+  .chain a:hover { background: var(--ward); }
+  .node { display: grid; place-items: center; width: 50px; height: 50px; border-radius: 16px; background: var(--ward); box-shadow: var(--relief-raised); color: var(--ink-faint); transition: color .5s, background-color .5s, box-shadow .5s, transform .6s var(--ease-out); }
+  .t { font-size: .86rem; font-weight: 600; line-height: 1.25; color: var(--ink-muted); transition: color .5s; max-width: 13ch; }
+  .link { position: absolute; top: 1.85rem; right: -22px; width: 44px; height: 14px; pointer-events: none; }
+  .link svg { width: 100%; height: 100%; overflow: visible; }
+  .link path { fill: none; stroke: var(--line-strong); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 0; vector-effect: non-scaling-stroke; transition: stroke .5s; }
+  li.on .node { color: #fff; background: var(--ceil-deep); box-shadow: 0 10px 20px -8px rgba(68, 110, 192, .8), inset 0 1px 0 rgba(255, 255, 255, .25); transform: translateY(-2px); }
+  li.on .t { color: var(--navy); }
+  li.on .link path { stroke: var(--ceil); }
+
+  @media (max-width: 860px) {
+    .chain-wrap { margin-top: -2.5rem; }
+    .chain { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: .2rem; }
+    .chain li:nth-child(3) .link { display: none; }
+  }
+  @media (max-width: 480px) {
+    .chain { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: .6rem; }
+    .chain li .link { display: none; }
+    .chain a { flex-direction: row; text-align: left; padding: .6rem; gap: .65rem; }
+    .node { width: 40px; height: 40px; border-radius: 13px; flex: none; }
+    .t { font-size: .8rem; }
+  }
+</style>
+
+<script>
+  const items = document.querySelectorAll<HTMLElement>("[data-chain] li");
+  const paint = (p: number) => items.forEach((li) => li.classList.toggle("on", (li.dataset.ph ?? "").split(",").includes(String(p))));
+  paint(4);
+  document.addEventListener("hl:phase", (e) => paint((e as CustomEvent<number>).detail));
+</script>

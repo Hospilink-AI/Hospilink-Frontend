@@ -1,0 +1,131 @@
+---
+import Wordmark from "./ui/Wordmark.astro";
+import Icon from "./ui/Icon.astro";
+import { COMPANY, LINKS } from "../config";
+
+const cols = [
+  {
+    title: "Product",
+    links: [
+      { label: "How it works", href: "/how-it-works/" },
+      { label: "Permanent vacancies", href: "/vacancies/" },
+      { label: "Emergency cover", href: "/emergency-cover/" },
+      { label: "Trust & safety", href: "/trust/" },
+    ],
+  },
+  {
+    title: "For you",
+    links: [
+      { label: "For hospitals", href: "/hospitals/" },
+      { label: "For doctors & staff", href: "/staff/" },
+      { label: "Vacancies by role", href: "/vacancies/roles/" },
+      { label: "Guides", href: "/guides/" },
+    ],
+  },
+  {
+    title: "Company",
+    links: [
+      { label: "About", href: "/about/" },
+      { label: "Contact", href: "/contact/" },
+      { label: "FAQ", href: "/faq/" },
+      { label: "Grievance redressal", href: "/contact/#grievance" },
+    ],
+  },
+  {
+    title: "Legal",
+    links: [
+      { label: "Privacy policy", href: "/privacy/" },
+      { label: "Terms of use", href: "/terms/" },
+      { label: "Delete your account", href: LINKS.deleteAccount },
+    ],
+  },
+];
+const year = new Date().getFullYear();
+---
+<footer class="ftr">
+  <div class="wrap-wide">
+    <div class="ftr-card">
+      <svg class="ftr-arc" viewBox="0 0 1200 400" preserveAspectRatio="none" aria-hidden="true"><path d="M-20 420 C 300 60, 900 60, 1220 420" /></svg>
+
+      <div class="ftr-top">
+        <div class="ftr-brand">
+          <a href="/" aria-label="HospiLink home"><Wordmark class="ftr-wm" /></a>
+          <p class="ftr-tag">Live staffing, trusted healthcare.</p>
+          <p class="ftr-co">{COMPANY.legalName} · Pune, Maharashtra</p>
+        </div>
+        <nav class="ftr-cols" aria-label="Footer">
+          {cols.map((c) => (
+            <div class="ftr-col">
+              <h2>{c.title}</h2>
+              <ul role="list">
+                {c.links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+              </ul>
+            </div>
+          ))}
+        </nav>
+      </div>
+
+      <ul class="ftr-reach" role="list" aria-label="Contact">
+        {COMPANY.phones.map((p) => (
+          <li><a href={`tel:${p.tel}`}><Icon name="phone" size={17} /><span class="tnum">{p.display}</span></a></li>
+        ))}
+        <li><a href={`mailto:${COMPANY.emails.info}`}><Icon name="mail" size={17} /><span>{COMPANY.emails.info}</span></a></li>
+        <li><a href={`mailto:${COMPANY.emails.support}`}><Icon name="lifebuoy" size={17} /><span>{COMPANY.emails.support}</span></a></li>
+      </ul>
+
+      <div class="ftr-base">
+        <p>© {year} {COMPANY.legalName}</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .ftr { padding: 0 0 clamp(1rem, 2vw, 1.5rem); }
+  .ftr-card {
+    position: relative; isolation: isolate; overflow: hidden;
+    padding: clamp(2.5rem, 5vw, 4.5rem) clamp(1.4rem, 4vw, 4rem) clamp(1.6rem, 3vw, 2.2rem);
+    border-radius: 40px;
+    background:
+      radial-gradient(55% 80% at 0% 100%, rgba(201, 216, 244, .9), transparent 70%),
+      radial-gradient(45% 70% at 100% 0%, rgba(169, 192, 236, .6), transparent 70%),
+      radial-gradient(35% 60% at 70% 100%, rgba(207, 242, 255, .8), transparent 70%),
+      #f4f7fd;
+    box-shadow: var(--relief-high), inset 0 1px 0 #fff;
+  }
+  .ftr-arc { position: absolute; inset: 35% 0 0 0; width: 100%; height: 65%; z-index: -1; pointer-events: none; }
+  .ftr-arc path { fill: none; stroke: rgba(68, 110, 192, .16); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+
+  .ftr-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: clamp(2.5rem, 6vw, 6rem); }
+  :global(.ftr-wm) { width: 150px; }
+  .ftr-tag { margin-top: 1.4rem; font-size: clamp(1.4rem, 1.1rem + 1vw, 1.9rem); font-weight: 500; letter-spacing: -0.03em; line-height: 1.15; max-width: 14ch; color: var(--navy); }
+  .ftr-co { margin-top: .9rem; font-size: .88rem; color: var(--ink-muted); }
+
+  .ftr-cols { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.5rem; }
+  .ftr-col h2 { font-size: .82rem; font-weight: 600; letter-spacing: 0; color: var(--ink-muted); margin-bottom: 1.1rem; }
+  .ftr-col ul { display: grid; gap: .7rem; }
+  .ftr-col a { color: var(--navy); font-weight: 500; font-size: .94rem; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 4px; transition: color .2s, text-decoration-color .2s; }
+  .ftr-col a:hover { color: var(--ceil-700); text-decoration-color: currentColor; }
+
+  .ftr-reach { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: clamp(2.8rem, 5vw, 4rem); }
+  .ftr-reach a {
+    display: inline-flex; align-items: center; gap: .55rem; height: 46px; padding: 0 1.1rem; border-radius: 99px;
+    background: rgba(255, 255, 255, .7); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+    box-shadow: var(--glass-edge), 0 6px 16px -12px rgba(14, 30, 58, .3);
+    font-size: .92rem; font-weight: 550; color: var(--navy); transition: background-color .25s, transform .35s var(--ease-out);
+  }
+  .ftr-reach a:hover { background: #fff; transform: translateY(-1px); }
+  .ftr-reach :global(svg) { color: var(--ceil-deep); }
+
+  .ftr-base { display: flex; flex-wrap: wrap; gap: .5rem 2rem; justify-content: space-between; margin-top: 2rem; padding-top: 1.4rem; border-top: 1px solid rgba(68, 110, 192, .14); font-size: .84rem; color: var(--ink-muted); }
+  .ftr-base a { color: var(--navy); font-weight: 550; }
+  .ftr-base a:hover { color: var(--ceil-700); text-decoration: underline; text-underline-offset: 3px; }
+
+  @media (max-width: 1000px) { .ftr-top { grid-template-columns: minmax(0, 1fr); } }
+  @media (max-width: 620px) {
+    .ftr-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 2rem; }
+    .ftr-card { border-radius: 28px; }
+    .ftr-reach a { width: 100%; }
+    .ftr-base { flex-direction: column; }
+  }
+</style>

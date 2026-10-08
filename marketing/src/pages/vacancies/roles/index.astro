@@ -1,0 +1,51 @@
+---
+import Base from "../../../layouts/Base.astro";
+import PageHero from "../../../components/ui/PageHero.astro";
+import Icon from "../../../components/ui/Icon.astro";
+import CtaBand from "../../../components/ui/CtaBand.astro";
+import RoleGrid from "../../../components/vacancies/RoleGrid.astro";
+import { ROLES, ROLE_GROUPS } from "../../../data/roles";
+
+const crumbs = [
+  { name: "Permanent vacancies", href: "/vacancies/" },
+  { name: "All roles", href: "/vacancies/roles/" },
+];
+const itemList = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: "Vacancy roles on HospiLink",
+  itemListElement: ROLES.map((r, i) => ({ "@type": "ListItem", position: i + 1, name: `${r.short} vacancies`, url: `https://hospilink.in/vacancies/roles/${r.slug}/` })),
+};
+---
+<Base
+  title="Vacancies by role: doctors, nurses, technicians and hospital staff"
+  description={`Browse permanent hospital vacancies by role on HospiLink: ${ROLES.length} roles across doctors, nurses, technicians, patient support, pharmacy and administration.`}
+  crumbs={crumbs}
+  jsonLd={itemList}
+>
+  <PageHero
+    title='Every role a hospital <span class="soft">hires for.</span>'
+    lead={`${ROLES.length} roles in ${ROLE_GROUPS.length} groups, from resident medical officers to ward and front-desk staff. Pick yours to see the open vacancies for it.`}
+    crumbs={crumbs}
+    compact
+  >
+    <Fragment slot="actions">
+      <a class="btn btn-primary btn-lg" href="/vacancies/">See all open vacancies <Icon name="arrow-right" class="arrow" /></a>
+    </Fragment>
+    <ul class="jump" role="list" aria-label="Jump to a group">
+      {ROLE_GROUPS.map((g) => <li><a class="tag tag-ghost jump-a" href={`#group-${g.replace(/[^a-z]/gi, "").toLowerCase()}`}>{g} · {ROLES.filter((r) => r.group === g).length}</a></li>)}
+    </ul>
+  </PageHero>
+
+  <section class="section-tight">
+    <div class="wrap-wide"><RoleGrid headingLevel={2} /></div>
+  </section>
+
+  <CtaBand primary="staff" title="Don't see your role open yet?" body="Install the HospiLink app and verify your profile. You'll be ready to apply the moment a hospital posts a vacancy, and you can pick up short duties in the meantime." />
+</Base>
+
+<style>
+  .jump { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: 2rem; }
+  .jump-a { height: 34px; transition: background-color .2s; }
+  .jump-a:hover { background: rgba(255, 255, 255, .22); }
+</style>

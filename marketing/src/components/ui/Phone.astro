@@ -1,0 +1,26 @@
+---
+// A phone shell for product screens. Content inside is illustrative and labelled as such by the caller.
+interface Props { class?: string; tilt?: boolean }
+const { class: cls, tilt = false } = Astro.props;
+---
+<div class:list={["phone", tilt && "tilt", cls]} aria-hidden="true">
+  <div class="phone-screen">
+    <div class="phone-status"><span class="tnum">7:58</span><span class="notch"></span><span class="sig"><i></i><i></i><i></i></span></div>
+    <slot />
+  </div>
+</div>
+
+<style>
+  .phone {
+    position: relative; width: 300px; aspect-ratio: 300 / 620; border-radius: 46px; padding: 10px;
+    background: linear-gradient(150deg, #ffffff 0%, #e4e9f3 55%, #d5ddec 100%);
+    box-shadow: 0 50px 90px -40px rgba(14, 30, 58, .35), 0 20px 40px -24px rgba(14, 30, 58, .25), inset 0 0 0 1px rgba(255, 255, 255, .9), inset 0 -2px 0 rgba(14, 30, 58, .06);
+  }
+  .phone.tilt { transform: perspective(1400px) rotateY(-12deg) rotateX(4deg); }
+  .phone-screen { position: relative; height: 100%; border-radius: 37px; overflow: hidden; background: var(--ward); color: var(--navy); display: flex; flex-direction: column; }
+  .phone-status { position: absolute; inset: 0 0 auto 0; z-index: 5; height: 38px; display: flex; align-items: center; justify-content: space-between; padding: 0 22px 0 26px; font-size: .74rem; font-weight: 600; }
+  .notch { position: absolute; left: 50%; top: 9px; width: 86px; height: 24px; border-radius: 99px; background: #0e1e3a; translate: -50% 0; }
+  .sig { display: flex; gap: 2px; align-items: flex-end; }
+  .sig i { width: 3px; border-radius: 1px; background: currentColor; }
+  .sig i:nth-child(1) { height: 5px; } .sig i:nth-child(2) { height: 7px; } .sig i:nth-child(3) { height: 9px; }
+</style>

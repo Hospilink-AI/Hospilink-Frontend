@@ -1,0 +1,119 @@
+---
+import Icon from "../ui/Icon.astro";
+import Phone from "../ui/Phone.astro";
+import { cityMap } from "../../lib/map";
+const m = cityMap(300, 300, 3, 34);
+---
+<section id="door" class="door field-dark" aria-labelledby="door-title">
+  <div class="wrap d-grid">
+    <div class="d-copy" data-reveal>
+      <h2 id="door-title" class="h2">It starts at the door,<br /><span class="soft">not on trust.</span></h2>
+      <p class="lead on-dark">
+        A duty can only start when the staff member is within 100&nbsp;m of your hospital and enters the start code your duty desk reads out to them. Both are checked together. No code, no start. Not at the hospital, no start.
+      </p>
+      <dl class="d-facts">
+        <div><dt><Icon name="map-pin-check" /> 100 m geofence</dt><dd>Checked against your hospital's pinned location, not a typed address.</dd></div>
+        <div><dt><Icon name="password" /> Start code</dt><dd>From 15 minutes before the start, they ask for it at the desk. It goes to your team, never to them directly.</dd></div>
+        <div><dt><Icon name="route" /> Live while it matters</dt><dd>You see them travel to you after they accept. Location is shared only during that duty, and only while the app is open.</dd></div>
+        <div><dt><Icon name="clock-x" /> Cancellation cut-off</dt><dd>Staff can cancel up to 30 minutes before the start. Later than that counts as a no-show.</dd></div>
+      </dl>
+    </div>
+
+    <div class="d-visual" data-reveal style="--d:.1s">
+      <div class="d-orbit" aria-hidden="true"></div>
+      <Phone class="d-phone">
+        <div class="ph-map">
+          <svg viewBox="0 0 300 300" preserveAspectRatio="xMidYMid slice">
+            <rect width="300" height="300" fill="#dfe6f3" />
+            <path d={m.river} fill="none" stroke="#c4d3ef" stroke-width="12" />
+            {m.minor.map((d) => <path d={d} fill="none" stroke="#fff" stroke-width="2.4" />)}
+            {m.arterial.map((d) => <path d={d} fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" />)}
+            <circle cx="150" cy="170" r="62" fill="rgba(19,128,74,.14)" stroke="#13804A" stroke-width="2" stroke-dasharray="4 5" class="gf" />
+            <rect x="136" y="156" width="28" height="28" rx="9" fill="#fff" stroke="#DCE3F0" />
+            <path d="M145 170h10M150 165v10" stroke="#D0322F" stroke-width="3" stroke-linecap="round" />
+            <circle cx="186" cy="196" r="9" fill="#5B85D7" stroke="#fff" stroke-width="3" />
+          </svg>
+          <div class="ph-geo glass"><Icon name="circle-check" size={16} /> Inside the geofence · <b class="tnum">42 m</b></div>
+        </div>
+        <div class="ph-sheet">
+          <p class="ph-k">Aranya Hospital · ICU</p>
+          <h3 class="ph-t">Enter your start code</h3>
+          <p class="ph-s">Enter the 6-digit code from the duty desk.</p>
+          <div class="ph-otp tnum" data-otp>
+            {"482913".split("").map((n, i) => <span style={`--i:${i}`}>{n}</span>)}
+          </div>
+          <div class="ph-btn"><Icon name="player-play" size={18} /> Start duty</div>
+        </div>
+      </Phone>
+
+      <div class="d-desk glass" aria-hidden="true">
+        <p class="dd-h"><Icon name="building-hospital" size={16} /> Duty desk · start code</p>
+        <p class="dd-n">Priya S. · ICU Staff Nurse</p>
+        <p class="dd-code tnum">482 913</p>
+        <p class="dd-s">Read it out when they reach the desk</p>
+      </div>
+      <p class="sample on-dark d-sample">Illustration · sample data</p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .door { padding-block: var(--section); overflow: hidden; border-radius: 48px; width: min(100% - 2 * var(--gutter), var(--max)); margin-inline: auto; }
+  .door > .wrap { width: auto; padding-inline: clamp(1.25rem, 4vw, 4rem); }
+  .d-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(3rem, 7vw, 7rem); align-items: center; }
+  .d-copy .lead { margin-top: 1.4rem; }
+  .d-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.8rem 2rem; margin-top: 2.8rem; }
+  .d-facts dt { display: flex; align-items: center; gap: .5rem; font-weight: 600; font-size: 1rem; }
+  .d-facts dt :global(svg) { color: var(--ceil-deep); width: 22px; height: 22px; }
+  .d-facts dd { margin-top: .4rem; color: var(--on-dark-soft); font-size: .93rem; }
+
+  .d-visual { position: relative; display: grid; place-items: center; padding: 2rem 0; }
+  .d-orbit { position: absolute; width: 520px; aspect-ratio: 1; border-radius: 50%; border: 1px dashed rgba(201, 216, 244, .2); }
+  .d-orbit::before { content: ""; position: absolute; inset: 70px; border-radius: 50%; border: 1px solid rgba(201, 216, 244, .12); }
+  .d-orbit::after { content: ""; position: absolute; inset: 20%; border-radius: 50%; background: radial-gradient(closest-side, rgba(91, 133, 215, .45), transparent); filter: blur(20px); }
+  :global(.d-phone) { position: relative; z-index: 1; }
+  .ph-map { position: relative; height: 47%; }
+  .ph-map svg { width: 100%; height: 100%; }
+  .gf { animation: gf 3s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes gf { 50% { transform: scale(1.06); } }
+  .ph-geo { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; align-items: center; gap: .4rem; padding: .55rem .75rem; border-radius: 14px; font-size: .74rem; font-weight: 600; }
+  .ph-geo :global(svg) { color: var(--green); }
+  .ph-sheet { flex: 1; margin-top: -14px; position: relative; background: #fff; border-radius: 26px 26px 0 0; padding: 1.1rem 1.1rem 1rem; display: flex; flex-direction: column; }
+  .ph-k { font-size: .7rem; font-weight: 600; color: var(--ink-muted); }
+  .ph-t { font-size: 1.15rem; margin-top: .2rem; }
+  .ph-s { font-size: .74rem; color: var(--ink-muted); font-weight: 600; margin-top: .2rem; }
+  .ph-otp { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; margin-top: .9rem; }
+  .ph-otp span { height: 44px; display: grid; place-items: center; border-radius: 10px; background: var(--ward); box-shadow: var(--relief-pressed); font-weight: 600; font-size: 1.15rem; }
+  .js .ph-otp span { color: transparent; transition: color .2s, box-shadow .3s, background-color .3s; transition-delay: calc(var(--i) * .22s + .4s); }
+  .js .ph-otp.in span { color: var(--navy); background: #fff; box-shadow: inset 0 0 0 1.5px var(--green); }
+  .ph-btn { margin-top: auto; height: 46px; border-radius: 99px; background: var(--ceil-deep); color: #fff; display: flex; align-items: center; justify-content: center; gap: .4rem; font-weight: 600; font-size: .88rem; }
+
+  .d-desk { position: absolute; z-index: 2; right: 0; top: 16%; padding: 1rem 1.15rem; border-radius: 20px; color: var(--navy); min-width: 210px; }
+  .dd-h { display: flex; align-items: center; gap: .4rem; font-size: .74rem; font-weight: 600; color: var(--ink-muted); }
+  .dd-h :global(svg) { color: var(--ceil-deep); }
+  .dd-n { font-weight: 600; font-size: .9rem; margin-top: .45rem; }
+  .dd-code { font-size: 1.9rem; font-weight: 600; letter-spacing: .04em; margin-top: .1rem; color: var(--ceil-700); }
+  .dd-s { font-size: .72rem; color: var(--ink-muted); font-weight: 600; }
+  .d-sample { position: absolute; bottom: -.5rem; left: 50%; translate: -50% 0; white-space: nowrap; }
+
+  @media (max-width: 900px) {
+    .d-grid { grid-template-columns: minmax(0, 1fr); }
+    .d-facts { grid-template-columns: minmax(0, 1fr); }
+    .d-desk { right: 0; top: 4%; min-width: 0; padding: .8rem .9rem; }
+    .dd-code { font-size: 1.4rem; }
+    .d-orbit { width: 400px; }
+    .door { border-radius: 30px; }
+  }
+  @media (max-width: 420px) {
+    :global(.d-phone) { width: 260px; }
+    .d-desk { top: auto; bottom: 10%; right: -4px; }
+  }
+</style>
+
+<script>
+  const otp = document.querySelector<HTMLElement>("[data-otp]");
+  if (otp) {
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { otp.classList.add("in"); io.disconnect(); } }, { threshold: 0.7 });
+    io.observe(otp);
+  }
+</script>

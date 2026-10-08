@@ -1,0 +1,63 @@
+---
+import Icon from "../ui/Icon.astro";
+// Staff-facing application statuses, worded exactly as the app shows them.
+const steps = [
+  { k: "Application sent", s: "You apply with your verified profile and résumé.", icon: "send" },
+  { k: "Being reviewed", s: "The hospital opens your application.", icon: "eye" },
+  { k: "Shortlisted", s: "You're on the list for an interview.", icon: "list-check" },
+  { k: "Pick an interview time", s: "Choose one of the slots the hospital offers.", icon: "calendar-time" },
+  { k: "Interview scheduled", s: "The hospital confirms and sends a Google Meet link.", icon: "video" },
+  { k: "Offer received", s: "Read the offer and reply in the app.", icon: "mail-opened" },
+  { k: "Hired", s: "Welcome to your new team.", icon: "confetti" },
+];
+interface Props { title?: string; lead?: string }
+const {
+  title = "How applying works",
+  lead = "One application, followed from start to finish in the app. Every step has a name, so you always know where you stand.",
+} = Astro.props;
+---
+<section class="section-tight ha" aria-labelledby="ha-title">
+  <div class="wrap">
+    <div class="ha-head" data-reveal>
+      <h2 id="ha-title" class="h2">{title}</h2>
+      <p class="lead">{lead}</p>
+    </div>
+    <ol class="ha-steps relief-high" role="list" data-reveal style="--d:.08s">
+      {steps.map((s, i) => (
+        <li style={`--i:${i}`} class:list={[i === steps.length - 1 && "last"]}>
+          <span class="ha-node"><Icon name={s.icon} size={20} /></span>
+          <span class="ha-k">{s.k}</span>
+          <span class="ha-s">{s.s}</span>
+        </li>
+      ))}
+    </ol>
+    <p class="ha-side" data-reveal>
+      <Icon name="info-circle" size={16} />
+      An application can also end as <b>Not selected</b>, or as <b>Withdrawn</b> if you take it back yourself.
+    </p>
+  </div>
+</section>
+
+<style>
+  .ha-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem 4rem; align-items: end; }
+  .ha-head .lead { margin: 0; }
+  .ha-steps { position: relative; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .8rem; margin-top: 3rem; padding: 2.2rem 1.6rem 1.8rem; }
+  .ha-steps::before { content: ""; position: absolute; left: calc(1.6rem + 100% / 14 - 6px); right: calc(1.6rem + 100% / 14 - 6px); top: calc(2.2rem + 25px); height: 3px; border-radius: 3px; background: linear-gradient(90deg, var(--ceil-deep), var(--green)); opacity: .9; }
+  .ha-steps li { position: relative; display: grid; justify-items: center; text-align: center; gap: .35rem; align-content: start; }
+  .ha-node { position: relative; z-index: 1; width: 52px; height: 52px; border-radius: 17px; display: grid; place-items: center; background: var(--ceil-deep); color: #fff; box-shadow: 0 10px 20px -10px rgba(68, 110, 192, .8), inset 0 1px 0 rgba(255, 255, 255, .25); margin-bottom: .5rem; }
+  .last .ha-node { background: var(--green); box-shadow: 0 10px 20px -10px rgba(19, 128, 74, .7); }
+  .ha-k { font-weight: 600; font-size: .92rem; line-height: 1.2; }
+  .ha-s { font-size: .78rem; color: var(--ink-muted); font-weight: 600; line-height: 1.4; }
+  .ha-side { display: block; margin-top: 1.4rem; font-size: .9rem; color: var(--ink-muted); font-weight: 600; text-align: center; }
+  .ha-side :global(svg) { display: inline-block; vertical-align: -3px; margin-right: .3rem; color: var(--ceil-deep); }
+  .ha-side b { color: var(--ink); }
+
+  @media (max-width: 1000px) {
+    .ha-head { grid-template-columns: minmax(0, 1fr); }
+    .ha-steps { grid-template-columns: minmax(0, 1fr); gap: 0; padding: 1.4rem 1.3rem; }
+    .ha-steps::before { left: calc(1.3rem + 25px); right: auto; top: 2.2rem; bottom: 2.2rem; width: 3px; height: auto; background: linear-gradient(180deg, var(--ceil-deep), var(--green)); }
+    .ha-steps li { grid-template-columns: 52px 1fr; justify-items: start; text-align: left; column-gap: 1rem; padding: .5rem 0; }
+    .ha-node { grid-row: span 2; margin: 0; }
+    .ha-k { align-self: end; }
+  }
+</style>

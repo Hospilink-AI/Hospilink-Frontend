@@ -1,0 +1,37 @@
+---
+// Accessible FAQ list. Emits FAQPage structured data when `schema` is true.
+import Icon from "./Icon.astro";
+export interface QA { q: string; a: string }
+interface Props { items: QA[]; schema?: boolean }
+const { items, schema = true } = Astro.props;
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: items.map((i) => ({ "@type": "Question", name: i.q, acceptedAnswer: { "@type": "Answer", text: i.a } })),
+};
+---
+<div class="faq">
+  {items.map((i) => (
+    <details class="qa">
+      <summary><span>{i.q}</span><span class="qa-ic"><Icon name="plus" size={18} /></span></summary>
+      <div class="qa-a"><p set:html={i.a} /></div>
+    </details>
+  ))}
+</div>
+{schema && <script type="application/ld+json" set:html={JSON.stringify(ld)} />}
+
+<style>
+  .faq { display: grid; gap: .7rem; }
+  .qa { background: #fff; border-radius: 22px; box-shadow: var(--relief-raised); transition: box-shadow .3s; }
+  .qa[open] { box-shadow: var(--relief-high); }
+  summary { list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1.2rem 1.4rem; cursor: pointer; font-weight: 600; font-size: 1.05rem; letter-spacing: -0.01em; border-radius: 22px; }
+  summary::-webkit-details-marker { display: none; }
+  .qa-ic { flex: none; width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; background: var(--ward); box-shadow: var(--relief-raised); color: var(--ceil-deep); transition: transform .4s var(--ease-out), background-color .3s, color .3s; }
+  .qa[open] .qa-ic { transform: rotate(45deg); background: var(--ceil-deep); color: #fff; box-shadow: none; }
+  .qa-a { padding: 0 1.4rem 1.3rem; color: var(--ink-soft); max-width: 70ch; }
+  .qa-a :global(a) { color: var(--ceil-700); text-decoration: underline; text-underline-offset: 3px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .qa[open] .qa-a { animation: qa-in .45s var(--ease-out); }
+    @keyframes qa-in { from { opacity: 0; transform: translateY(-4px); } }
+  }
+</style>

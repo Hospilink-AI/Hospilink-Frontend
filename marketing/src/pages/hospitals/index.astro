@@ -1,0 +1,333 @@
+---
+import Base from "../../layouts/Base.astro";
+import PageHero from "../../components/ui/PageHero.astro";
+import Icon from "../../components/ui/Icon.astro";
+import Faq from "../../components/ui/Faq.astro";
+import CtaBand from "../../components/ui/CtaBand.astro";
+import DutyComposer from "../../components/pages/DutyComposer.astro";
+import ReachLanes from "../../components/pages/ReachLanes.astro";
+import { LINKS, COMPANY } from "../../config";
+import "../../components/pages/b.css";
+
+const crumbs = [{ name: "For hospitals", href: "/hospitals/" }];
+const week = [
+  { d: "Mon", n: 3, f: 3 }, { d: "Tue", n: 2, f: 2 }, { d: "Wed", n: 4, f: 3 },
+  { d: "Thu", n: 2, f: 1 }, { d: "Fri", n: 3, f: 1 }, { d: "Sat", n: 1, f: 0 }, { d: "Sun", n: 2, f: 0 },
+];
+const pipe = [
+  { k: "New", items: ["Rahul D. · 3 yrs", "Sneha P. · 6 yrs"] },
+  { k: "Shortlisted", items: ["Meera J. · 5 yrs"] },
+  { k: "Slots offered", items: ["Arjun T. · 2 yrs"] },
+  { k: "Interview confirmed", items: ["Kavya R. · 8 yrs"] },
+  { k: "Offer", items: [] as string[] },
+];
+const faqs = [
+  { q: "How much does a duty cost?", a: "You set the rate when you post. The total for a duty has to be between ₹499 and ₹9,999, and a duty is at least 3 hours. As a guide, hospitals usually pay ₹1,400 to ₹1,800 for 8 hours of RMO cover in casualty; duties at that rate are taken sooner." },
+  { q: "Who can see my duty?", a: "Only verified staff in the exact role you asked for. It reaches those within 30 km first, then widens by 5 km an hour up to 75 km. Staff you invite get a 30-minute window to accept, and staff who have marked themselves available get a 10-minute head start." },
+  { q: "What if nobody accepts?", a: "The offer keeps widening on its own up to 75 km. If it can't wait, raise it as an emergency request, which reaches staff across the city at once. You can also raise the rate." },
+  { q: "How do we start and close a duty?", a: "When the staff member arrives, they ask your duty desk for a start code; it goes to your team, and they read it out. The duty only starts if they are within 100 m of your hospital. At the end they get an end code by SMS and read it to your desk; your team enters it to close the duty." },
+  { q: "What happens if we forget to enter the end code?", a: "The duty waits in pending confirmation. That is not a dispute: HospiLink follows it up with you so the record can be closed." },
+  { q: "Can we hire permanent staff too?", a: "Yes. Post a permanent vacancy, review applicants, offer interview slots with a Google Meet link, and send an offer, all from the same account. <a href=\"/vacancies/\">See live vacancies</a>." },
+];
+const service = {
+  "@context": "https://schema.org",
+  "@type": "Service",
+  name: "HospiLink for hospitals",
+  serviceType: "Healthcare staffing",
+  provider: { "@type": "Organization", name: COMPANY.legalName },
+  areaServed: { "@type": "City", name: "Pune" },
+  description: "Post short duties and permanent vacancies to verified doctors, nurses and clinical staff nearby. Duties start with a code at your desk inside a 100 m geofence and close with an end code your team enters.",
+};
+import { cityMap } from "../../lib/map";
+const miniMap = cityMap(360, 170, 19, 30);
+---
+<Base
+  title="For hospitals: cover duties with verified staff nearby"
+  description="Post a duty and verified doctors, nurses and technicians within 30 km see it at once. Track them to your door, start with a code at your desk, close with an end code. Hire permanent staff too."
+  crumbs={crumbs}
+  jsonLd={service}
+>
+  <PageHero
+    title='Cover a shift before <span class="soft">the ward notices.</span>'
+    lead="Post a duty in a few taps. Verified staff in that exact role see it at once, the first to accept is on the way, and your desk decides when it starts and when it ends."
+    crumbs={crumbs}
+  >
+    <Fragment slot="actions">
+      <a class="btn btn-primary btn-lg" href={LINKS.hospitalSignUp}>Register your hospital <Icon name="arrow-right" class="arrow" /></a>
+      <a class="btn btn-white btn-lg" href={`tel:${COMPANY.phones[0].tel}`}><Icon name="phone" /> Talk to us</a>
+    </Fragment>
+    <DutyComposer slot="visual" />
+  </PageHero>
+
+  <!-- Posting: the rules that keep rates sane -->
+  <section class="section" aria-labelledby="post-t">
+    <div class="wrap b-split">
+      <div class="b-copy" data-reveal>
+        <h2 id="post-t" class="h2">Say who, when and what it pays. That's the whole form.</h2>
+        <p class="lead">Pick the role, the hours and the total you will pay. HospiLink shows what hospitals usually pay for that role as you type, so you are never guessing.</p>
+        <ul class="b-ticks" role="list">
+          <li><span class="tk"><Icon name="check" size={15} stroke={2.6} /></span><span><b>Role is a hard filter.</b> An ICU nurse duty only reaches verified ICU nurses.</span></li>
+          <li><span class="tk"><Icon name="check" size={15} stroke={2.6} /></span><span><b>The usual rate, right in the form.</b> Duties at that rate are taken sooner.</span></li>
+          <li><span class="tk"><Icon name="check" size={15} stroke={2.6} /></span><span><b>One clear total.</b> Staff see it before they accept, so nothing is renegotiated at the door.</span></li>
+        </ul>
+      </div>
+      <figure class="rg relief-high" data-reveal style="--d:.1s">
+        <figcaption>
+          <span class="rg-t">Usual rate guide</span>
+          <span class="sample">Client guidance</span>
+        </figcaption>
+        <p class="rg-role">RMO in casualty · 8 hours</p>
+        <div class="rg-opts">
+          <div class="rg-opt"><span class="rg-n tnum">₹1,400</span><span class="rg-l">for the duty</span></div>
+          <div class="rg-opt hi"><span class="rg-n tnum">₹1,800</span><span class="rg-l">for the duty</span></div>
+        </div>
+        <p class="rg-cap"><Icon name="bolt" size={16} /> What hospitals usually pay. Duties at this rate are taken sooner.</p>
+      </figure>
+    </div>
+  </section>
+
+  <!-- Who sees it, and when -->
+  <section class="section-tight" aria-labelledby="reach-t">
+    <div class="wrap">
+      <div class="b-head2" data-reveal>
+        <h2 id="reach-t" class="h2">One duty, the right people, in the right order.</h2>
+        <p class="lead">No group forwards and no calling round. The offer goes out on a clock you can read, and stops the moment someone accepts.</p>
+      </div>
+      <div data-reveal><ReachLanes /></div>
+    </div>
+  </section>
+
+  <!-- Arrival: dark band -->
+  <section class="section field-dark b-dark-band on-dark" aria-labelledby="arr-t">
+    <div class="wrap b-split">
+      <div class="b-copy" data-reveal>
+        <h2 id="arr-t" class="h2">From “accepted” to “on the ward”, <span class="soft">you can see every step.</span></h2>
+        <p class="lead on-dark">Once someone accepts, you get their verified profile, rating, phone number and email, and you can follow them to your door on the map.</p>
+        <ul class="b-ticks" role="list">
+          <li><span class="tk"><Icon name="check" size={15} stroke={2.6} /></span><span><b>Live position during the duty only.</b> Shared while their app is open, never in the background.</span></li>
+          <li><span class="tk"><Icon name="check" size={15} stroke={2.6} /></span><span><b>Start code from your desk.</b> From 15 minutes before the start, they ask for it at the desk. It goes to your team, who read it out.</span></li>
+          <li><span class="tk"><Icon name="check" size={15} stroke={2.6} /></span><span><b>Inside 100 m or it doesn't start.</b> The code and the geofence are checked together.</span></li>
+          <li><span class="tk"><Icon name="check" size={15} stroke={2.6} /></span><span><b>Late cancellations count.</b> Staff can cancel up to 30 minutes before the start; after that it's a no-show on their record.</span></li>
+        </ul>
+      </div>
+      <div class="arr-vis" data-reveal style="--d:.1s" aria-hidden="true">
+        <div class="arr-card glass">
+          <div class="ac-h">
+            <span class="ac-av">PS</span>
+            <span class="ac-who"><b>Priya S.</b><small>ICU Staff Nurse · <Icon name="star-filled" size={12} /> 4.7</small></span>
+            <span class="tag tag-saline">On the way</span>
+          </div>
+          <div class="ac-map">
+            <svg viewBox="0 0 360 170" preserveAspectRatio="xMidYMid slice">
+              <rect width="360" height="170" fill="#dde6f5" />
+              <path d={miniMap.river} fill="none" stroke="rgba(91,133,215,.25)" stroke-width="10" />
+              {miniMap.minor.map((d) => <path d={d} fill="none" stroke="#fff" stroke-width="2" />)}
+              {miniMap.arterial.map((d) => <path d={d} fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" />)}
+              <path d="M44 140 L96 128 L118 96 L170 88 L214 70 L276 62" fill="none" stroke="#446EC0" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M44 140 L96 128 L118 96" fill="none" stroke="#9FB1D4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+              <circle cx="44" cy="140" r="5" fill="#fff" stroke="#9FB1D4" stroke-width="2.5" />
+              <circle cx="118" cy="96" r="9" fill="#446EC0" stroke="#fff" stroke-width="3.5" />
+              <circle cx="276" cy="62" r="30" fill="rgba(19,128,74,.12)" stroke="#13804A" stroke-width="1.5" stroke-dasharray="3 4" />
+              <rect x="264" y="50" width="24" height="24" rx="8" fill="#fff" stroke="#DCE3F0" />
+              <path d="M270 62h12M276 56v12" stroke="#D0322F" stroke-width="2.8" stroke-linecap="round" />
+            </svg>
+            <span class="ac-eta glass"><b class="tnum">9 min</b> · 2.4 km to you</span>
+            <span class="ac-geo">100 m geofence</span>
+          </div>
+          <div class="ac-f tnum"><span><Icon name="navigation" size={15} /> Arriving at 7:52 PM</span><span class="ac-shift">Duty starts 8:00 PM</span></div>
+        </div>
+        <div class="desk-card glass">
+          <p class="dk-h"><Icon name="building-hospital" size={15} /> Duty desk</p>
+          <p class="dk-t">Start code requested</p>
+          <p class="dk-code tnum">482 913</p>
+          <p class="dk-s">Read it out when Priya reaches the desk</p>
+        </div>
+        <span class="sample on-dark arr-s">Illustration · sample data</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Closing -->
+  <section class="section" aria-labelledby="close-t">
+    <div class="wrap">
+      <div class="b-head2" data-reveal>
+        <h2 id="close-t" class="h2">Your desk closes the duty. Nobody else can.</h2>
+        <p class="lead">At the end, the staff member gets an end code by SMS and reads it to your desk. Your team enters it and the duty is complete. Then you rate each other.</p>
+      </div>
+      <div class="close-grid">
+        <div class="b-note green" data-reveal><span class="ic"><Icon name="lock-check" /></span><div><b>End code, entered by you</b><p>The end time on the record is the one your team confirmed.</p></div></div>
+        <div class="b-note amber" data-reveal style="--d:.06s"><span class="ic"><Icon name="hourglass" /></span><div><b>Forgot to enter it?</b><p>The duty waits in pending confirmation, and HospiLink follows it up with you. It is not treated as a dispute.</p></div></div>
+        <div class="b-note" data-reveal style="--d:.12s"><span class="ic"><Icon name="star" /></span><div><b>Ratings both ways</b><p>No-shows and late cancellations count against a staff member's rating.</p></div></div>
+        <div class="b-note red" data-reveal style="--d:.18s"><span class="ic"><Icon name="scale" /></span><div><b>Disputes with a deadline</b><p>Raise a ticket from the duty. Duty disputes are decided within 14 days, with written reasons.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Plan the week -->
+  <section class="section-tight" aria-labelledby="plan-t">
+    <div class="wrap b-split rev">
+      <div class="b-copy" data-reveal>
+        <h2 id="plan-t" class="h2">See the week before it sees you.</h2>
+        <p class="lead">The duty calendar shows every duty you've posted, day by day, and how many are filled. Spot the gaps early, post straight from the day, and invite the people who covered for you last time.</p>
+        <ul class="b-ticks" role="list">
+          <li><span class="tk"><Icon name="check" size={15} stroke={2.6} /></span><span><b>Favourites</b> you can invite first, with a 30-minute window to accept.</span></li>
+          <li><span class="tk"><Icon name="check" size={15} stroke={2.6} /></span><span><b>Fill progress</b> for each day at a glance.</span></li>
+        </ul>
+      </div>
+      <figure class="cal relief-high" data-reveal style="--d:.1s" aria-hidden="true">
+        <div class="cal-h"><span>This week</span><span class="sample">Sample</span></div>
+        <div class="cal-grid">
+          {week.map((w) => (
+            <div class:list={["cal-d", w.f < w.n && "gap"]}>
+              <span class="cd-d">{w.d}</span>
+              <span class="cd-pills">{Array.from({ length: w.n }).map((_, i) => <i class:list={[i < w.f && "f"]} />)}</span>
+              <span class="cd-n tnum">{w.f}/{w.n}</span>
+            </div>
+          ))}
+        </div>
+        <div class="cal-legend"><span><i class="f"></i> Filled</span><span><i></i> Still open</span></div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- Permanent vacancies -->
+  <section class="section" aria-labelledby="vac-t">
+    <div class="wrap-wide">
+      <div class="vac-panel field-saline relief-high">
+        <div class="b-head2 vp-head" data-reveal>
+          <h2 id="vac-t" class="h2">Hiring for good? Same account.</h2>
+          <div>
+            <p class="lead">Post a permanent vacancy and applicants come with the profile they already verified and a résumé. Shortlist, offer interview slots with your Google Meet link, and send the offer.</p>
+            <div class="vp-actions">
+              <a class="btn btn-dark" href={LINKS.hospitalSignUp}>Post a vacancy <Icon name="arrow-right" class="arrow" /></a>
+              <a class="link-arrow" href="/vacancies/">See live vacancies <Icon name="arrow-right" /></a>
+            </div>
+          </div>
+        </div>
+        <div class="pipe" data-reveal aria-hidden="true">
+          {pipe.map((c) => (
+            <div class="pcol">
+              <p class="pc-h">{c.k}<span class="tnum">{c.items.length}</span></p>
+              {c.items.map((it) => (
+                <div class="pc-card">
+                  <span class="pc-av">{it.split(" ")[0][0]}{it.split(" ")[1][0]}</span>
+                  <span class="pc-t">{it.split(" · ")[0]}<small>Staff Nurse · {it.split(" · ")[1]}</small></span>
+                </div>
+              ))}
+              {c.items.length === 0 && <div class="pc-empty">Drop the offer here</div>}
+            </div>
+          ))}
+        </div>
+        <p class="sample vp-s">Applicants pipeline · sample names</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-tight" aria-labelledby="faq-t">
+    <div class="wrap b-faq">
+      <div class="head" data-reveal>
+        <h2 id="faq-t" class="h2">Questions hospitals ask</h2>
+        <p class="lead">Something not covered? Call <a class="tnum" href={`tel:${COMPANY.phones[0].tel}`}>{COMPANY.phones[0].display}</a> or read the <a href="/guides/">guides</a>.</p>
+      </div>
+      <div data-reveal style="--d:.08s"><Faq items={faqs} /></div>
+    </div>
+  </section>
+
+  <CtaBand title="Post your first duty tonight." body="Register your hospital on the web, add your location, and your first duty can be live in minutes. We are starting in Pune." />
+</Base>
+
+<style>
+  .rg { padding: clamp(1.4rem, 3vw, 2rem); border-radius: 30px; background: #fff; }
+  .rg figcaption { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+  .rg-t { font-weight: 600; }
+  .rg-role { margin-top: 1.2rem; font-size: .9rem; color: var(--ink-muted); }
+  .rg-opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; margin-top: .9rem; }
+  .rg-opt { display: grid; gap: .2rem; padding: 1.2rem 1.2rem 1.1rem; border-radius: 22px; background: var(--ward); box-shadow: var(--relief-pressed); }
+  .rg-opt.hi { background: var(--saline); box-shadow: inset 0 0 0 1.5px var(--ceil-200); }
+  .rg-n { font-size: clamp(2rem, 1.5rem + 1.6vw, 2.8rem); font-weight: 300; letter-spacing: -0.04em; line-height: 1; color: var(--navy); }
+  .rg-l { font-size: .82rem; color: var(--ink-muted); }
+  .rg-cap { display: flex; align-items: center; gap: .45rem; margin-top: 1.1rem; font-size: .88rem; color: var(--ink-soft); }
+  .rg-cap :global(svg) { color: var(--ceil-deep); flex: none; }
+  .ruler { margin: 0; padding: clamp(1.4rem, 3vw, 2.2rem); }
+  .ruler figcaption { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+  .r-t { font-weight: 600; font-size: 1.1rem; }
+  .r-scale { position: relative; margin-top: 6.2rem; }
+  .r-band { height: 18px; border-radius: 99px; background: linear-gradient(90deg, var(--saline), var(--ceil-200)); box-shadow: var(--relief-pressed); position: relative; overflow: hidden; }
+  .r-zone { position: absolute; top: 0; bottom: 0; left: calc(var(--a) * 100%); width: calc((var(--b) - var(--a)) * 100%); background: var(--green); opacity: .85; }
+  .r-pin { position: absolute; bottom: 28px; left: calc(var(--x) * 100%); translate: -50% 0; display: grid; justify-items: center; }
+  .r-pin::after { content: ""; width: 2px; height: 14px; background: var(--navy); margin-top: 4px; }
+  .r-pin b { font-size: .9rem; font-weight: 600; padding: .3rem .6rem; border-radius: 99px; background: var(--navy); color: #fff; white-space: nowrap; }
+  .r-pin.alt { bottom: 62px; }
+  .r-pin.alt::after { height: 48px; }
+  .r-pin.alt b { background: var(--ceil-deep); }
+  .r-ends { display: flex; justify-content: space-between; margin-top: .7rem; font-weight: 600; font-size: .9rem; color: var(--ink-muted); }
+  .r-cap { margin-top: 1.4rem; padding-top: 1.2rem; border-top: 1px solid var(--line); color: var(--ink-soft); font-size: .95rem; }
+  .r-cap b { color: var(--ink); }
+
+  .arr-vis { position: relative; padding: 1rem 0 2.5rem; }
+  .arr-card { padding: 1.1rem; border-radius: 26px; color: var(--navy); max-width: 500px; }
+  .ac-h { display: flex; align-items: center; gap: .7rem; }
+  .ac-h .tag { margin-left: auto; }
+  .ac-av { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--saline); color: var(--ceil-700); font-weight: 600; }
+  .ac-who b { display: block; font-weight: 600; }
+  .ac-who small { display: inline-flex; align-items: center; gap: .25rem; font-size: .78rem; font-weight: 550; color: var(--ink-muted); }
+  .ac-who small :global(svg) { color: var(--amber); }
+  .ac-map { position: relative; margin-top: .9rem; height: 170px; border-radius: 18px; background: #dde6f5; overflow: hidden; }
+  .ac-eta { position: absolute; left: 10px; top: 10px; padding: .35rem .7rem; border-radius: 99px; font-size: .78rem; font-weight: 550; color: var(--ink-soft); }
+  .ac-eta b { color: var(--navy); font-weight: 600; }
+  .ac-geo { position: absolute; right: 10px; bottom: 10px; padding: .25rem .6rem; border-radius: 99px; background: var(--green-soft); color: var(--green-ink); font-size: .72rem; font-weight: 600; }
+  .ac-shift { color: var(--ink-muted); font-weight: 500; }
+  .ac-map svg { width: 100%; height: 100%; }
+  .ac-f { display: flex; justify-content: space-between; margin-top: .8rem; font-weight: 600; font-size: .88rem; }
+  .ac-f span:first-child { display: inline-flex; align-items: center; gap: .35rem; }
+  .ac-f :global(svg) { color: var(--ceil-deep); }
+  .desk-card { position: absolute; right: 0; bottom: 0; padding: 1rem 1.15rem; border-radius: 22px; color: var(--navy); min-width: 220px; }
+  .dk-h { display: flex; align-items: center; gap: .35rem; font-size: .74rem; font-weight: 600; color: var(--ink-muted); }
+  .dk-h :global(svg) { color: var(--ceil-deep); }
+  .dk-t { font-weight: 600; margin-top: .35rem; font-size: .92rem; }
+  .dk-code { font-size: 1.8rem; font-weight: 600; color: var(--ceil-700); letter-spacing: .04em; }
+  .dk-s { font-size: .74rem; font-weight: 600; color: var(--ink-muted); }
+  .arr-s { position: absolute; left: 0; bottom: -.4rem; }
+
+  .close-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+
+  .cal { margin: 0; padding: 1.4rem; }
+  .cal-h { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 1rem; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .5rem; }
+  .cal-d { display: grid; justify-items: center; gap: .6rem; padding: .8rem .3rem; border-radius: 16px; background: var(--ward); box-shadow: var(--relief-pressed); }
+  .cal-d.gap { box-shadow: var(--relief-pressed), inset 0 0 0 1.5px rgba(250, 179, 64, .7); }
+  .cd-d { font-size: .78rem; font-weight: 600; color: var(--ink-muted); }
+  .cd-pills { display: grid; gap: 4px; width: 100%; padding: 0 .35rem; min-height: 64px; align-content: start; }
+  .cd-pills i { display: block; height: 12px; border-radius: 4px; background: #fff; box-shadow: inset 0 0 0 1.5px var(--line-strong); }
+  .cd-pills i.f { background: var(--ceil-deep); box-shadow: none; }
+  .cd-n { font-size: .8rem; font-weight: 600; }
+  .cal-legend { display: flex; gap: 1.2rem; margin-top: 1rem; font-size: .8rem; font-weight: 550; color: var(--ink-muted); }
+  .cal-legend span { display: inline-flex; align-items: center; gap: .4rem; }
+  .cal-legend i { width: 14px; height: 10px; border-radius: 3px; background: #fff; box-shadow: inset 0 0 0 1.5px var(--line-strong); }
+  .cal-legend i.f { background: var(--ceil-deep); box-shadow: none; }
+
+  .vac-panel { padding: clamp(1.6rem, 4vw, 3.5rem); border-radius: 44px; }
+  .vp-head { margin-bottom: 2.4rem; }
+  .vp-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.4rem; margin-top: 1.6rem; }
+  .pipe { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .8rem; }
+  .pcol { padding: .8rem; border-radius: 20px; background: rgba(255, 255, 255, .55); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .8); display: grid; gap: .5rem; align-content: start; min-height: 190px; }
+  .pc-h { display: flex; justify-content: space-between; font-size: .8rem; font-weight: 600; color: var(--ink-soft); padding: 0 .2rem .2rem; }
+  .pc-h span { color: var(--ink-faint); }
+  .pc-card { display: flex; align-items: center; gap: .55rem; padding: .6rem; border-radius: 14px; background: #fff; box-shadow: 0 4px 12px -6px rgba(14, 30, 58, .2); }
+  .pc-av { flex: none; width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: var(--saline); color: var(--ceil-700); font-weight: 600; font-size: .72rem; }
+  .pc-t { font-weight: 600; font-size: .84rem; line-height: 1.2; min-width: 0; }
+  .pc-t small { display: block; font-size: .72rem; font-weight: 600; color: var(--ink-muted); }
+  .pc-empty { display: grid; place-items: center; min-height: 64px; border-radius: 14px; border: 1.5px dashed var(--line-strong); font-size: .75rem; font-weight: 550; color: var(--ink-faint); text-align: center; padding: .4rem; }
+  .vp-s { margin-top: 1rem; }
+
+  @media (max-width: 1000px) { .pipe { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 760px) {
+    .close-grid { grid-template-columns: minmax(0, 1fr); }
+    .pipe { grid-template-columns: repeat(5, minmax(150px, 1fr)); overflow-x: auto; padding-bottom: .5rem; scroll-snap-type: x mandatory; }
+    .pcol { scroll-snap-align: start; }
+    .vac-panel { border-radius: 30px; }
+    .cal-grid { gap: .3rem; }
+    .cd-d { font-size: .68rem; }
+    .desk-card { position: relative; margin-top: .9rem; margin-left: auto; width: fit-content; }
+  }
+</style>

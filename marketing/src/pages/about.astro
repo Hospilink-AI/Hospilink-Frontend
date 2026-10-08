@@ -1,0 +1,182 @@
+---
+import Base from "../layouts/Base.astro";
+import PageHero from "../components/ui/PageHero.astro";
+import Icon from "../components/ui/Icon.astro";
+import CtaBand from "../components/ui/CtaBand.astro";
+import { COMPANY } from "../config";
+
+const initials = (n: string) => n.replace("Dr. ", "").split(" ").map((p) => p[0]).join("");
+const principles = [
+  { t: "Show the mechanism, not adjectives.", d: "The offer radius, the start code and the 100 m geofence are the product. We would rather show you how a duty is checked than tell you it's trustworthy." },
+  { t: "Trust is shown, not claimed.", d: "Verification statuses, ratings both ways and a named company with named directors and real phone numbers. Everything you'd want to check before letting a stranger onto a ward." },
+  { t: "Never fake it.", d: "No invented numbers on this site, no made-up testimonials. If something isn't built yet, like in-app payments, we say so." },
+  { t: "Strict where it matters, easy everywhere else.", d: "The checks at the door can't be skipped. Everything around them, from posting a duty to accepting one, should take a few taps." },
+];
+const route = [
+  { city: "Pune", when: "Now", d: "Where HospiLink starts, and where the team is." },
+  { city: "Mumbai", when: "Next", d: "The next city on the plan." },
+  { city: "Across India", when: "Then", d: "City by city, with the same checks everywhere." },
+];
+const crumbs = [{ name: "About", href: "/about/" }];
+const ld = { "@context": "https://schema.org", "@type": "AboutPage", name: "About HospiLink", url: "https://hospilink.in/about/", about: { "@id": "https://hospilink.in/#org" } };
+---
+<Base title="About HospiLink" description="HospiLink is a healthcare staffing platform by Hospilink Private Limited, Pune. Directors: Dr. Sumit Thombre and Dr. Vishvas Koul." crumbs={crumbs} jsonLd={ld}>
+  <PageHero
+    title={'An empty shift is a <span class="soft"><span class="nw">patient-safety</span> problem.</span>'}
+    lead="HospiLink exists so a hospital can cover a shift with someone verified, nearby and accountable, without a night of phone calls."
+    crumbs={crumbs}
+  >
+    <div slot="visual" class="ab-hv">
+      <div class="ab-hcard">
+        <p class="ab-hk">{COMPANY.legalName}</p>
+        <p class="ab-hc">Pune, Maharashtra</p>
+        <ul class="ab-hdirs" role="list">
+          {COMPANY.directors.map((d) => (
+            <li>
+              <span class="ab-hav">{d.name.replace("Dr. ", "").split(" ").map((p) => p[0]).join("")}</span>
+              <span><b>{d.name}</b><small>{d.role}</small></span>
+            </li>
+          ))}
+        </ul>
+        <div class="ab-hph">
+          {COMPANY.phones.map((p) => <a href={`tel:${p.tel}`} class="tnum"><Icon name="phone" size={16} /> {p.display}</a>)}
+        </div>
+      </div>
+    </div>
+  </PageHero>
+
+  <section class="section ab-why">
+    <div class="wrap ab-why-grid">
+      <div data-reveal>
+        <h2 class="h2">Why we built it.</h2>
+      </div>
+      <div class="ab-why-copy" data-reveal style="--d:.08s">
+        <p class="lead">When a nurse calls in sick or a night RMO drops out, most hospitals still fill the gap the old way: phone calls, WhatsApp forwards, a favour from someone's friend. The person who turns up may be great. Nobody has checked.</p>
+        <p>HospiLink replaces that with one loop. A hospital posts a duty. It reaches verified staff in that exact role, nearest first. The first to accept gets it. The duty starts only when they're at the hospital with a code from the duty desk, and it ends only when the hospital enters their end code. Then both sides rate each other.</p>
+        <p>The same verified profiles work for permanent hiring too, so a hospital can find its next full-time RMO the same way it found tonight's.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="ab-principles field-dark" aria-labelledby="pr-t">
+    <div class="wrap">
+      <h2 id="pr-t" class="h2" data-reveal>What we hold ourselves to.</h2>
+      <ul class="pr-list" role="list">
+        {principles.map((p, i) => (
+          <li data-reveal style={`--d:${i * 0.06}s`}>
+            <h3>{p.t}</h3>
+            <p>{p.d}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <section class="section ab-team" aria-labelledby="team-t">
+    <div class="wrap ab-team-grid">
+      <div data-reveal>
+        <h2 id="team-t" class="h2">The company.</h2>
+        <p class="lead">{COMPANY.legalName} is registered in India and based in Pune, Maharashtra. Both of its directors are doctors.</p>
+      </div>
+      <ul class="dirs" role="list">
+        {COMPANY.directors.map((d, i) => (
+          <li class="dir relief-high" data-reveal style={`--d:${i * 0.08}s`}>
+            <span class="dir-av" aria-hidden="true">{initials(d.name)}</span>
+            <div>
+              <p class="dir-n">{d.name}</p>
+              <p class="dir-r">{d.role}, {COMPANY.legalName}</p>
+              {"note" in d && d.note && <p class="dir-note"><Icon name="shield-check" size={16} /> {d.note}</p>}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+
+  <section class="section-tight ab-contact" aria-labelledby="ac-t">
+    <div class="wrap">
+      <div class="ac relief">
+        <h2 id="ac-t" class="h3">Talk to us</h2>
+        <div class="ac-row">
+          {COMPANY.phones.map((p) => <a class="tnum" href={`tel:${p.tel}`}><Icon name="phone" /> {p.display}</a>)}
+          <a href={`mailto:${COMPANY.emails.info}`}><Icon name="mail" /> {COMPANY.emails.info}</a>
+          <a href="/contact/" class="ac-more">All contact options <Icon name="arrow-right" size={18} /></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <CtaBand />
+</Base>
+
+<style>
+  .ab-hv { display: grid; justify-items: end; }
+  .ab-hcard { width: min(420px, 100%); padding: 1.5rem; border-radius: 30px; background: rgba(255, 255, 255, .72); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); box-shadow: var(--glass-edge), var(--float); }
+  .ab-hk { font-weight: 600; font-size: 1.05rem; }
+  .ab-hc { font-size: .86rem; color: var(--ink-muted); }
+  .ab-hdirs { display: grid; gap: .55rem; margin-top: 1.2rem; }
+  .ab-hdirs li { display: flex; align-items: center; gap: .85rem; padding: .75rem .85rem; border-radius: 18px; background: #fff; box-shadow: 0 1px 2px rgba(14, 30, 58, .05); }
+  .ab-hav { flex: none; width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--saline); color: var(--ceil-700); font-weight: 600; }
+  .ab-hdirs b { display: block; font-weight: 600; }
+  .ab-hdirs small { font-size: .8rem; color: var(--ink-muted); }
+  .ab-hph { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; margin-top: 1.1rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+  .ab-hph a { display: inline-flex; align-items: center; gap: .4rem; font-weight: 550; font-size: .9rem; color: var(--navy); }
+  .ab-hph a:hover { color: var(--ceil-700); }
+  .ab-hph :global(svg) { color: var(--ceil-deep); }
+  @media (max-width: 960px) { .ab-hv { justify-items: stretch; } .ab-hcard { width: 100%; } }
+  .ab-why-grid { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 2rem 5rem; }
+  .ab-why-copy { display: grid; gap: 1.2rem; }
+  .ab-why-copy .lead { color: var(--ink); }
+  .ab-why-copy p:not(.lead) { color: var(--ink-soft); font-size: 1.06rem; max-width: 62ch; }
+
+  .ab-principles { padding-block: var(--section); border-radius: 48px; margin-inline: clamp(.5rem, 1.5vw, 1.25rem); overflow: hidden; }
+  .pr-list { margin-top: 3rem; display: grid; border-top: 1px solid rgba(255, 255, 255, .14); }
+  .pr-list li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 1rem 4rem; padding: 2rem 0; border-bottom: 1px solid rgba(255, 255, 255, .14); align-items: baseline; }
+  .pr-list h3 { font-size: clamp(1.4rem, 1.1rem + 1.2vw, 2.1rem); letter-spacing: -0.03em; font-weight: 600; }
+  .pr-list p { color: var(--on-dark-soft); font-size: 1.05rem; max-width: 52ch; }
+
+  .ab-team-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2.5rem 5rem; align-items: center; }
+  .ab-team-grid .lead { margin-top: 1.2rem; }
+  .dirs { display: grid; gap: 1.2rem; }
+  .dir { display: flex; align-items: center; gap: 1.4rem; padding: 1.5rem 1.6rem; }
+  .dir-av { flex: none; width: 76px; height: 76px; border-radius: 24px; display: grid; place-items: center; background: linear-gradient(145deg, var(--navy-2), var(--navy)); color: #fff; font-weight: 600; font-size: 1.5rem; letter-spacing: .02em; box-shadow: 0 14px 28px -14px rgba(14, 30, 58, .7), inset 0 1px 0 rgba(255, 255, 255, .15); }
+  .dir-n { font-weight: 600; font-size: 1.3rem; letter-spacing: -0.02em; }
+  .dir-r { color: var(--ink-muted); font-weight: 600; font-size: .95rem; }
+  .dir-note { display: inline-flex; align-items: center; gap: .35rem; margin-top: .55rem; padding: .3rem .7rem; border-radius: 99px; background: var(--saline); color: var(--ceil-700); font-size: .8rem; font-weight: 600; }
+
+  .route { position: relative; margin-top: 2.5rem; padding: 3.2rem 2rem 2rem; border-radius: 32px; }
+  .route-arc { position: absolute; left: 0; right: 0; top: 1.2rem; height: 90px; width: 100%; }
+  .route-arc path { fill: none; stroke: var(--ceil); stroke-width: 3; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+  .route-arc path.later { stroke: var(--line-strong); stroke-dasharray: 2 8; }
+  .route ol { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; }
+  .route li { display: grid; justify-items: center; text-align: center; gap: .3rem; }
+  .r-dot { width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 4px var(--line-strong); margin-top: 3.6rem; margin-bottom: .6rem; }
+  .route li.now .r-dot { background: var(--ceil); box-shadow: 0 0 0 6px rgba(91, 133, 215, .2), inset 0 0 0 4px #fff; }
+  .r-when { font-size: .78rem; font-weight: 600; color: var(--ink-muted); }
+  .route li.now .r-when { color: var(--green-ink); }
+  .r-city { font-size: clamp(1.4rem, 1.1rem + 1vw, 2rem); font-weight: 600; letter-spacing: -0.03em; }
+  .r-d { font-size: .92rem; color: var(--ink-muted); max-width: 24ch; }
+
+  .ac { padding: 1.6rem 1.8rem; border-radius: 28px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1.2rem 2rem; }
+  .ac-row { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem 1.8rem; }
+  .ac-row a { display: inline-flex; align-items: center; gap: .5rem; font-weight: 600; }
+  .ac-row a:hover { color: var(--ceil-700); }
+  .ac-row :global(svg) { color: var(--ceil-deep); }
+  .ac-more { color: var(--ceil-700); }
+
+  @media (max-width: 900px) {
+    .ab-why-grid, .ab-team-grid { grid-template-columns: minmax(0, 1fr); }
+    .pr-list li { grid-template-columns: minmax(0, 1fr); }
+    .ab-principles { border-radius: 30px; }
+  }
+  @media (max-width: 640px) {
+    .route { padding: 1.6rem 1.2rem; }
+    .route-arc { display: none; }
+    .route ol { grid-template-columns: minmax(0, 1fr); gap: 1.4rem; }
+    .route li { grid-template-columns: 22px 1fr; justify-items: start; text-align: left; column-gap: 1rem; }
+    .r-dot { margin: .2rem 0 0; grid-row: span 3; }
+    .dir { padding: 1.2rem; gap: 1rem; }
+    .dir-av { width: 60px; height: 60px; border-radius: 18px; font-size: 1.2rem; }
+  }
+</style>

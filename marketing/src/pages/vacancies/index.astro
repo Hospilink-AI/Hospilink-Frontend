@@ -1,0 +1,69 @@
+---
+import Base from "../../layouts/Base.astro";
+import PageHero from "../../components/ui/PageHero.astro";
+import Icon from "../../components/ui/Icon.astro";
+import Faq from "../../components/ui/Faq.astro";
+import CtaBand from "../../components/ui/CtaBand.astro";
+import Board from "../../components/vacancies/Board.astro";
+import Constellation from "../../components/vacancies/Constellation.astro";
+import HowApplying from "../../components/vacancies/HowApplying.astro";
+import HospitalBand from "../../components/vacancies/HospitalBand.astro";
+import RoleGrid from "../../components/vacancies/RoleGrid.astro";
+import { LINKS } from "../../config";
+
+const crumbs = [{ name: "Permanent vacancies", href: "/vacancies/" }];
+const faqs = [
+  { q: "Who posts these vacancies?", a: "Hospitals registered on HospiLink. They post permanent roles from the hospital web app, and every listing on this page comes straight from them." },
+  { q: "How do I apply?", a: `Open the vacancy and apply in the HospiLink app with your verified profile and your résumé. <a href="${LINKS.playStore}">Get the app on Google Play</a> if you don't have it yet.` },
+  { q: "What do I need to apply?", a: "Your HospiLink profile and a résumé. Hospitals see your profile when you apply, including which of your documents are verified, so it helps to finish verification first." },
+  { q: "How do interviews work?", a: "If you're shortlisted, the hospital offers interview slots and you pick one in the app. The hospital confirms it and sends a Google Meet link." },
+  { q: "Are vacancies the same as duties?", a: "No. Duties are short shifts, often the same day, offered to staff nearby. Vacancies are permanent roles with an application and interview. You can do both from the same app." },
+];
+---
+<Base
+  title="Permanent vacancies for doctors, nurses and hospital staff"
+  description="Live permanent vacancies from hospitals on HospiLink. RMO, nurse, technician and support roles, starting in Pune. Apply with your verified profile and follow every step to the offer."
+  crumbs={crumbs}
+>
+  <PageHero
+    title='Permanent vacancies at <span class="soft">verified</span> hospitals.'
+    lead="Hospitals on HospiLink hire for permanent roles here. Apply with the profile you already verified, pick your interview time, and follow every step until the offer."
+    crumbs={crumbs}
+  >
+    <Fragment slot="actions">
+      <a class="btn btn-primary btn-lg" href="#board-title">See open vacancies <Icon name="arrow-down" class="arrow" /></a>
+      <a class="btn btn-white btn-lg" href={LINKS.playStore}><Icon name="brand-google-play" /> Apply in the app</a>
+    </Fragment>
+    <Fragment slot="visual"><Constellation /></Fragment>
+  </PageHero>
+
+  <Board />
+
+  <HowApplying />
+
+  <HospitalBand />
+
+  <section class="section-tight" aria-labelledby="roles-title">
+    <div class="wrap">
+      <div class="head" data-reveal>
+        <h2 id="roles-title" class="h2">Browse vacancies by role</h2>
+        <p class="lead">Every role hospitals can hire for on HospiLink, from RMOs to ward staff. Each page shows the open vacancies for that role.</p>
+      </div>
+      <div class="roles-wrap" data-reveal style="--d:.06s"><RoleGrid /></div>
+    </div>
+  </section>
+
+  <section class="section-tight" aria-labelledby="vfaq-title">
+    <div class="wrap-narrow">
+      <h2 id="vfaq-title" class="h2 vfaq-t">Questions about vacancies</h2>
+      <Faq items={faqs} />
+    </div>
+  </section>
+
+  <CtaBand primary="staff" title="Your next role could be one tap away." body="Install the HospiLink app, verify your profile once, and apply to permanent vacancies and short duties from the same place." />
+</Base>
+
+<style>
+  .roles-wrap { margin-top: 2.6rem; }
+  .vfaq-t { margin-bottom: 2rem; text-align: center; }
+</style>

@@ -1,0 +1,10 @@
+---
+import LegalPage from "../components/content/LegalPage.astro";
+import { TERMS_OF_USE } from "../data/legal/termsOfUse";
+---
+<LegalPage
+  doc={TERMS_OF_USE}
+  path="/terms/"
+  description="The terms that apply when hospitals and medical staff use HospiLink for duties and permanent vacancies."
+  other={{ label: "Privacy policy", href: "/privacy/" }}
+/>

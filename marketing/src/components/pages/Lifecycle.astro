@@ -1,0 +1,203 @@
+---
+// The duty lifecycle as a sticky, scroll-driven stage. Each step swaps the inset on the duty card.
+import Icon from "../ui/Icon.astro";
+import { cityMap } from "../../lib/map";
+
+const m = cityMap(420, 300, 17, 36);
+const STATES = [
+  {
+    k: "offer", name: "Offer", icon: "broadcast",
+    title: "The duty goes out to verified staff.",
+    hosp: "You post the role, hours and rate. It reaches verified staff in that role within 30 km at once, then widens 5 km an hour up to 75 km.",
+    staff: "You see the hospital, the hours, the rate and the distance, all before you decide. Invited staff get a 30-minute window; staff marked available get a 10-minute head start.",
+  },
+  {
+    k: "assigned", name: "Assigned", icon: "user-check",
+    title: "The first to accept gets it.",
+    hosp: "You see who accepted: their verified profile and rating, plus their phone number and email.",
+    staff: "It's yours. You can cancel up to 30 minutes before the start. After that, not turning up counts as a no-show.",
+  },
+  {
+    k: "route", name: "En route", icon: "navigation",
+    title: "On the way, on the map.",
+    hosp: "Follow them to your door on the live map while their app is open.",
+    staff: "Get directions or call the hospital from the duty. Your position is shared with this hospital only, and only for this duty.",
+  },
+  {
+    k: "progress", name: "In progress", icon: "player-play",
+    title: "Started at the desk, inside 100 m.",
+    hosp: "When they reach the desk, your team reads out the start code. It never goes to them directly.",
+    staff: "From 15 minutes before the start, ask for your start code. Enter it within 100 m of the hospital and the duty starts.",
+  },
+  {
+    k: "pending", name: "Pending confirmation", icon: "hourglass",
+    title: "Waiting for the end code.",
+    hosp: "Enter the end code they read to you to close the duty. If you don't, the duty waits here and HospiLink follows it up. It is not a dispute.",
+    staff: "Request your end code. It comes by SMS. Read it to the duty desk. If the hospital hasn't entered it, HospiLink follows it up.",
+  },
+  {
+    k: "done", name: "Completed", icon: "circle-check",
+    title: "Closed, on the record, rated both ways.",
+    hosp: "The duty is complete with the end time your desk confirmed. Rate the staff member.",
+    staff: "The duty and its pay show in your earnings. Rate the hospital. Reviews show once both sides have reviewed, or 14 days after the shift.",
+  },
+];
+---
+<div class="lc">
+  <div class="lc-stick">
+    <div class="lc-stage field-dark" data-lc data-step="offer" aria-hidden="true">
+      <ol class="lc-rail" role="list">
+        {STATES.map((s) => <li data-k={s.k}><span><Icon name={s.icon} size={16} /></span><b>{s.name}</b></li>)}
+      </ol>
+
+      <div class="lc-card glass">
+        <div class="lcc-h">
+          <div>
+            <p class="lcc-role">ICU Staff Nurse</p>
+            <p class="lcc-sub">Aranya Hospital · Tonight 8 PM to 8 AM</p>
+          </div>
+          <div class="lcc-pills">
+            <span class="pill p-offer tag tag-red"><Icon name="broadcast" /> Offer live</span>
+            <span class="pill p-assigned tag tag-saline"><Icon name="user-check" /> Assigned</span>
+            <span class="pill p-route tag tag-saline"><Icon name="navigation" /> En route</span>
+            <span class="pill p-progress tag tag-navy"><Icon name="player-play" /> In progress</span>
+            <span class="pill p-pending tag tag-amber"><Icon name="hourglass" /> Pending confirmation</span>
+            <span class="pill p-done tag tag-green"><Icon name="circle-check" /> Completed</span>
+          </div>
+        </div>
+
+        <div class="lcc-body">
+          <svg class="lcc-map" viewBox="0 0 420 300" preserveAspectRatio="xMidYMid slice">
+            <rect width="420" height="300" fill="#dfe6f3" />
+            <path d={m.river} fill="none" stroke="#c4d3ef" stroke-width="12" />
+            {m.minor.map((d) => <path d={d} fill="none" stroke="#fff" stroke-width="2" />)}
+            {m.arterial.map((d) => <path d={d} fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" />)}
+            <g class="ins ins-offer">
+              <circle cx="250" cy="150" r="120" fill="rgba(91,133,215,.14)" stroke="#446EC0" stroke-width="1.6" stroke-dasharray="3 6" class="ring-a" />
+              <circle cx="250" cy="150" r="60" fill="none" stroke="#446EC0" stroke-width="1.2" stroke-dasharray="2 6" />
+              {[[180, 110], [320, 120], [210, 210], [300, 220], [150, 170], [350, 170], [265, 80]].map(([x, y]) => <circle cx={x} cy={y} r="6" fill="#5B85D7" stroke="#fff" stroke-width="2.5" />)}
+            </g>
+            <g class="ins ins-route">
+              <path d="M90 250 C 140 240, 150 190, 190 180 S 230 150, 250 150" fill="none" stroke="#446EC0" stroke-width="5" stroke-linecap="round" class="rt" pathLength="1" />
+              <circle cx="190" cy="180" r="9" fill="#5B85D7" stroke="#fff" stroke-width="3" />
+            </g>
+            <g class="ins ins-progress ins-pending ins-done">
+              <circle cx="250" cy="150" r="46" fill="rgba(19,128,74,.14)" stroke="#13804A" stroke-width="2" stroke-dasharray="4 5" />
+            </g>
+            <g transform="translate(250 150)">
+              <rect x="-16" y="-16" width="32" height="32" rx="10" fill="#fff" stroke="#DCE3F0" />
+              <path d="M-6 0h12M0 -6v12" stroke="#D0322F" stroke-width="3" stroke-linecap="round" />
+            </g>
+          </svg>
+
+          <div class="lcc-panel">
+            <div class="pn pn-offer"><Icon name="radar-2" /><span><b>Sent to verified ICU nurses</b><small>Within 30 km · widening 5 km an hour</small></span></div>
+            <div class="pn pn-assigned"><span class="av">PS</span><span><b>Priya S. accepted</b><small>Verified · rating 4.7 · phone shared</small></span></div>
+            <div class="pn pn-route"><Icon name="navigation" /><span><b class="tnum">Arriving 7:52 PM</b><small>Live while her app is open</small></span></div>
+            <div class="pn pn-progress"><span class="code tnum">{"482913".split("").map((n) => <i>{n}</i>)}</span><span><b>Inside 100 m · started</b><small>Code read out by the duty desk</small></span></div>
+            <div class="pn pn-pending"><Icon name="hourglass" /><span><b>End code not entered yet</b><small>HospiLink follows this up</small></span></div>
+            <div class="pn pn-done"><span class="stars"><Icon name="star-filled" size={16} /><Icon name="star-filled" size={16} /><Icon name="star-filled" size={16} /><Icon name="star-filled" size={16} /><Icon name="star-filled" size={16} /></span><span><b>Closed 8:02 AM by the desk</b><small>Rated both ways</small></span></div>
+          </div>
+        </div>
+      </div>
+      <span class="sample on-dark lc-s">Illustration · sample duty</span>
+    </div>
+  </div>
+
+  <ol class="lc-steps" role="list">
+    {STATES.map((s, i) => (
+      <li class="lc-step" data-k={s.k} id={`state-${s.k}`}>
+        <h3 class="h3">{s.title}</h3>
+        <dl>
+          <div><dt><Icon name="building-hospital" size={17} /> Hospital</dt><dd>{s.hosp}</dd></div>
+          <div><dt><Icon name="stethoscope" size={17} /> Staff</dt><dd>{s.staff}</dd></div>
+        </dl>
+      </li>
+    ))}
+  </ol>
+</div>
+
+<style>
+  .lc { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: clamp(2rem, 5vw, 5rem); }
+  .lc-stick { position: sticky; top: 96px; height: calc(100svh - 120px); max-height: 760px; display: flex; align-items: center; }
+  .lc-stage { position: relative; width: 100%; border-radius: 40px; padding: clamp(1.2rem, 2.5vw, 2rem); display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 1.4rem; align-items: center; box-shadow: var(--relief-high); overflow: hidden; }
+  .lc-rail { display: grid; gap: .3rem; position: relative; }
+  .lc-rail::before { content: ""; position: absolute; left: 17px; top: 18px; bottom: 18px; width: 2px; background: rgba(169, 192, 236, .2); }
+  .lc-rail li { position: relative; display: flex; align-items: center; gap: .7rem; padding: .4rem 0; color: var(--on-dark-muted); font-size: .86rem; transition: color .4s; }
+  .lc-rail span { position: relative; z-index: 1; width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; background: var(--ward); color: var(--ink-muted); box-shadow: var(--relief-raised); transition: background-color .4s, color .4s; }
+  .lc-rail b { font-weight: 600; }
+  .lc-rail li.past { color: var(--on-dark-soft); }
+  .lc-rail li.past span { background: rgba(68, 110, 192, .55); color: #fff; }
+  .lc-rail li.now { color: var(--navy); }
+  .lc-rail li.now span { background: var(--ceil); color: #fff; box-shadow: 0 0 0 5px rgba(91, 133, 215, .25); }
+
+  .lc-card { padding: 1rem; border-radius: 26px; color: var(--navy); }
+  .lcc-h { display: flex; justify-content: space-between; align-items: start; gap: .8rem; }
+  .lcc-role { font-weight: 600; font-size: 1.1rem; letter-spacing: -0.02em; }
+  .lcc-sub { font-size: .78rem; font-weight: 550; color: var(--ink-muted); }
+  .lcc-pills { position: relative; height: 28px; min-width: 150px; }
+  .pill { position: absolute; right: 0; top: 0; opacity: 0; transform: translateY(4px); transition: opacity .35s, transform .45s var(--ease-out); }
+  .lcc-body { position: relative; margin-top: .9rem; border-radius: 18px; overflow: hidden; }
+  .lcc-map { display: block; width: 100%; aspect-ratio: 420 / 300; height: auto; }
+  .ins { opacity: 0; transition: opacity .5s; }
+  .rt { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.4s var(--ease-in-out); }
+  .ring-a { transform-box: fill-box; transform-origin: center; animation: ringa 3s var(--ease-out) infinite; }
+  @keyframes ringa { from { transform: scale(.5); opacity: 1; } to { transform: scale(1.15); opacity: .2; } }
+  .lcc-panel { position: absolute; left: .7rem; right: .7rem; bottom: .7rem; height: 62px; }
+  .pn { position: absolute; inset: 0; display: flex; align-items: center; gap: .7rem; padding: .6rem .8rem; border-radius: 16px; background: rgba(255, 255, 255, .9); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); box-shadow: var(--float); opacity: 0; transform: translateY(8px); transition: opacity .4s, transform .5s var(--ease-out); }
+  .pn > :global(svg) { width: 30px; height: 30px; padding: 5px; border-radius: 10px; background: var(--saline); color: var(--ceil-deep); flex: none; }
+  .pn b { display: block; font-size: .88rem; font-weight: 600; }
+  .pn small { display: block; font-size: .74rem; font-weight: 550; color: var(--ink-muted); }
+  .pn .av { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--saline); color: var(--ceil-700); font-weight: 600; font-size: .78rem; flex: none; }
+  .pn-pending > :global(svg) { background: var(--amber-soft); color: var(--amber-ink); }
+  .code { display: flex; gap: 3px; flex: none; }
+  .code i { font-style: normal; width: 20px; height: 28px; display: grid; place-items: center; border-radius: 7px; background: #fff; box-shadow: inset 0 0 0 1.5px var(--green); font-weight: 600; font-size: .8rem; }
+  .stars { display: flex; color: var(--amber); flex: none; }
+  .lc-s { position: absolute; right: 1.6rem; bottom: .8rem; }
+
+  [data-step="offer"] .p-offer, [data-step="assigned"] .p-assigned, [data-step="route"] .p-route, [data-step="progress"] .p-progress, [data-step="pending"] .p-pending, [data-step="done"] .p-done,
+  [data-step="offer"] .pn-offer, [data-step="assigned"] .pn-assigned, [data-step="route"] .pn-route, [data-step="progress"] .pn-progress, [data-step="pending"] .pn-pending, [data-step="done"] .pn-done { opacity: 1; transform: none; }
+  [data-step="offer"] .ins-offer, [data-step="assigned"] .ins-route, [data-step="route"] .ins-route,
+  [data-step="progress"] .ins-progress, [data-step="pending"] .ins-pending, [data-step="done"] .ins-done { opacity: 1; }
+  [data-step="route"] .rt { stroke-dashoffset: 0; }
+
+  .lc-steps { padding-block: 8vh 14vh; }
+  .lc-step { min-height: 64vh; display: grid; align-content: center; gap: 1rem; opacity: .32; transition: opacity .6s var(--ease-out); }
+  .lc-step.active { opacity: 1; }
+  .lc-n { font-size: .82rem; font-weight: 600; color: var(--ceil-deep); }
+  .lc-step dl { display: grid; gap: 1rem; margin-top: .4rem; }
+  .lc-step dt { display: inline-flex; align-items: center; gap: .4rem; font-weight: 600; font-size: .88rem; color: var(--ceil-700); }
+  .lc-step dd { margin: .25rem 0 0; color: var(--ink-soft); }
+
+  @media (max-width: 1100px) { .lc-stage { grid-template-columns: minmax(0, 1fr); } .lc-rail { display: none; } }
+  @media (max-width: 900px) {
+    .lc-step { opacity: 1; }
+    .lc { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .lc-stick { top: 70px; height: auto; z-index: 2; padding-bottom: .8rem; background: linear-gradient(var(--ward) 88%, transparent); }
+    .lc-stage { border-radius: 26px; padding: .8rem; }
+    .lc-card { padding: .7rem; }
+    .lcc-map { aspect-ratio: 420 / 200; }
+    .lcc-sub { display: none; }
+    .lc-s { display: none; }
+    .lc-steps { padding-block: 1rem 8vh; }
+    .lc-step { min-height: 46vh; align-content: start; padding-top: 1.5rem; }
+  }
+</style>
+
+<script>
+  const stage = document.querySelector<HTMLElement>("[data-lc]");
+  const steps = document.querySelectorAll<HTMLElement>(".lc-step");
+  if (stage && steps.length) {
+    const order = Array.from(steps).map((s) => s.dataset.k!);
+    const rail = stage.querySelectorAll<HTMLElement>(".lc-rail li");
+    const apply = (k: string) => {
+      stage.dataset.step = k;
+      const idx = order.indexOf(k);
+      steps.forEach((s) => s.classList.toggle("active", s.dataset.k === k));
+      rail.forEach((li, i) => { li.classList.toggle("past", i < idx); li.classList.toggle("now", i === idx); });
+    };
+    const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) apply((e.target as HTMLElement).dataset.k!); }), { rootMargin: "-45% 0px -45% 0px" });
+    steps.forEach((s) => io.observe(s));
+    apply(order[0]);
+  }
+</script>

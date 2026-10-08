@@ -1,0 +1,83 @@
+---
+// Staff app "duties near you" screen, as an illustration with sample data.
+import Icon from "../ui/Icon.astro";
+import Phone from "../ui/Phone.astro";
+const offers = [
+  { tag: "Overnight", tone: "navy", role: "ICU Staff Nurse", hosp: "Aranya Hospital", km: "2.4 km", time: "Tonight · 8 PM to 8 AM", rate: "₹2,160", total: "for 12 hours" },
+  { tag: "Urgent", tone: "amber", role: "RMO · Casualty", hosp: "Kesar Nursing Home", km: "6.8 km", time: "Tomorrow · 8 AM to 4 PM", rate: "₹1,400", total: "for 8 hours" },
+];
+---
+<div class="op" aria-hidden="true">
+  <Phone class="op-phone">
+    <div class="op-screen">
+      <div class="op-top">
+        <span class="op-hi">Duties near<b>Baner, Pune</b></span>
+        <span class="op-bell"><Icon name="bell" size={18} /><i></i></span>
+      </div>
+      <div class="op-avail">
+        <span><b>Available</b><small>Ready for duty offers</small></span>
+        <span class="op-sw"><i></i></span>
+      </div>
+      <div class="op-tabs"><span class="on">Offers <i class="tnum">2</i></span><span>Upcoming</span><span>History</span></div>
+      {offers.map((o, i) => (
+        <div class:list={["op-card", i === 0 && "first"]}>
+          <div class="oc-top">
+            <span class:list={["tag", o.tone === "navy" ? "tag-navy" : "tag-amber"]}>{o.tag}</span>
+            <span class="oc-km tnum">{o.km}</span>
+          </div>
+          <p class="oc-role">{o.role}</p>
+          <p class="oc-m"><Icon name="building-hospital" size={13} /> {o.hosp}</p>
+          <p class="oc-m"><Icon name="clock" size={13} /> {o.time}</p>
+          <div class="oc-f">
+            <span class="tnum"><b>{o.rate}</b> <small>{o.total}</small></span>
+            {i === 0 && <span class="oc-btn"><span class="oc-ring tnum">4:52</span> Accept</span>}
+          </div>
+        </div>
+      ))}
+    </div>
+  </Phone>
+  <div class="op-chip glass c1"><Icon name="shield-check" size={16} /> Verified · 4 of 4 documents</div>
+  <div class="op-chip glass c2"><Icon name="bell-ringing" size={16} /> New duty offer · OT Nurse · <span class="tnum">1.8 km</span></div>
+</div>
+
+<style>
+  .op { position: relative; display: grid; place-items: center; padding: 2rem 0; }
+  .op::before { content: ""; position: absolute; width: 460px; max-width: 110%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(closest-side, rgba(91, 133, 215, .5), transparent); filter: blur(20px); }
+  :global(.op-phone) { position: relative; }
+  .op-screen { padding: 46px 12px 12px; display: grid; gap: .55rem; align-content: start; height: 100%; }
+  .op-top { display: flex; justify-content: space-between; align-items: center; padding: 0 .3rem; }
+  .op-hi { font-size: .68rem; font-weight: 550; color: var(--ink-muted); line-height: 1.2; }
+  .op-hi b { display: block; font-size: .95rem; color: var(--navy); font-weight: 600; }
+  .op-bell { position: relative; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: #fff; box-shadow: var(--relief-raised); }
+  .op-bell i { position: absolute; top: 7px; right: 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 2px #fff; }
+  .op-avail { display: flex; justify-content: space-between; align-items: center; padding: .6rem .75rem; border-radius: 16px; background: #fff; box-shadow: var(--relief-raised); }
+  .op-avail b { display: block; font-size: .8rem; }
+  .op-avail small { font-size: .66rem; color: var(--ink-muted); font-weight: 550; }
+  .op-sw { width: 40px; height: 24px; border-radius: 99px; background: var(--ceil-deep); padding: 3px; display: flex; justify-content: flex-end; }
+  .op-sw i { width: 18px; height: 18px; border-radius: 50%; background: #fff; }
+  .op-tabs { display: flex; gap: .2rem; padding: .25rem; border-radius: 99px; background: var(--ward); box-shadow: var(--relief-pressed); font-size: .68rem; font-weight: 600; color: var(--ink-muted); }
+  .op-tabs span { flex: 1; text-align: center; padding: .35rem 0; border-radius: 99px; }
+  .op-tabs .on { background: #fff; color: var(--navy); box-shadow: 0 2px 6px rgba(14, 30, 58, .08); }
+  .op-tabs i { font-style: normal; background: var(--ceil-deep); color: #fff; border-radius: 99px; padding: 0 .35rem; margin-left: .15rem; }
+  .op-card { padding: .7rem .75rem; border-radius: 18px; background: #fff; box-shadow: 0 6px 16px -10px rgba(14, 30, 58, .3); }
+  .op-card .tag { height: 22px; font-size: .64rem; padding: 0 .5rem; }
+  .oc-top { display: flex; justify-content: space-between; align-items: center; }
+  .oc-km { font-size: .72rem; font-weight: 600; color: var(--ceil-700); }
+  .oc-role { font-weight: 600; font-size: .92rem; margin-top: .35rem; letter-spacing: -0.01em; }
+  .oc-m { display: flex; align-items: center; gap: .3rem; font-size: .68rem; font-weight: 550; color: var(--ink-muted); }
+  .oc-m :global(svg) { color: var(--ceil-deep); }
+  .oc-f { display: flex; justify-content: space-between; align-items: center; margin-top: .5rem; }
+  .oc-f b { font-size: .95rem; }
+  .oc-f small { font-size: .64rem; color: var(--ink-muted); font-weight: 550; }
+  .oc-btn { display: inline-flex; align-items: center; gap: .35rem; height: 32px; padding: 0 .7rem 0 .25rem; border-radius: 99px; background: var(--ceil-deep); color: #fff; font-weight: 600; font-size: .7rem; }
+  .oc-ring { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--navy); font-size: .5rem; box-shadow: inset 0 0 0 2px #fff; }
+  .op-card.first { animation: offerin 5s var(--ease-out) infinite; }
+  @keyframes offerin { 0% { transform: translateY(-8px); opacity: 0; } 8%, 100% { transform: none; opacity: 1; } }
+  .op-chip { position: absolute; display: inline-flex; align-items: center; gap: .45rem; padding: .6rem .9rem; border-radius: 99px; font-size: .78rem; font-weight: 600; color: var(--navy); white-space: nowrap; }
+  .op-chip :global(svg) { color: var(--ceil-deep); }
+  .c1 { left: -18%; top: 4%; }
+  .c1 :global(svg) { color: var(--green); }
+  .c2 { right: 0; bottom: 18%; }
+  @media (max-width: 520px) { .op-chip { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .op-card.first { animation: none; } }
+</style>
