@@ -1,3 +1,5 @@
+import { TIcon, useThemedStyles } from "@/ds/themed";
+import { Theme, useTheme } from "@/ds/theme";
 import EvidencePicker from "@/component/support/EvidencePicker";
 import { COLORS } from "@/constant/colors";
 import { apiError, formatDate, roleLabel } from "@/constant/jobs";
@@ -11,7 +13,6 @@ import {
   categoryInfo,
 } from "@/constant/support";
 import { dutyAPI, jobAPI, ticketAPI } from "@/service/api";
-import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -38,6 +39,8 @@ const dutyRole = (value?: string | null) => {
 
 // base: "/medicalStaff/support" or "/hospital/support"
 export default function RaiseTicketForm({ base, role }: { base: string; role: "staff" | "hospital" }) {
+  const styles = useStylesThemed();
+  const th = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams<{ category?: string; subjectId?: string }>();
   const { width } = useWindowDimensions();
@@ -166,7 +169,7 @@ export default function RaiseTicketForm({ base, role }: { base: string; role: "s
     return (
       <ScrollView style={styles.container} contentContainerStyle={[styles.content, isMobile && { padding: 16 }]}>
         <View style={[styles.card, styles.doneCard]}>
-          <Ionicons name="checkmark-circle" size={40} color="#16A34A" />
+          <TIcon ion="checkmark-circle" size={40} color={th.hex("#16A34A")} />
           <Text style={styles.doneTitle}>Ticket {created.ticketId} raised</Text>
           <Text style={styles.muted}>
             Our team will pick it up and keep you updated here and by notification.
@@ -194,7 +197,7 @@ export default function RaiseTicketForm({ base, role }: { base: string; role: "s
   return (
     <ScrollView style={styles.container} contentContainerStyle={[styles.content, isMobile && { padding: 16 }]}>
       <TouchableOpacity style={styles.back} onPress={() => router.push(base as any)}>
-        <Ionicons name="arrow-back" size={16} color={COLORS.subText} />
+        <TIcon ion="arrow-back" size={16} color={th.c.subText} />
         <Text style={styles.backText}>Back to Support</Text>
       </TouchableOpacity>
       <Text style={styles.pageTitle}>Raise a Ticket</Text>
@@ -212,7 +215,7 @@ export default function RaiseTicketForm({ base, role }: { base: string; role: "s
                 onPress={() => pickDomain(d.value)}
                 activeOpacity={0.85}
               >
-                <Ionicons name={d.icon as any} size={18} color={active ? COLORS.primary : COLORS.subText} />
+                <TIcon ion={d.icon as any} size={18} color={active ? COLORS.primary : COLORS.subText} />
                 <Text style={[styles.domainText, active && { color: COLORS.primary }]}>{d.label}</Text>
               </TouchableOpacity>
             );
@@ -232,8 +235,8 @@ export default function RaiseTicketForm({ base, role }: { base: string; role: "s
                     onPress={() => pickCategory(cat)}
                     activeOpacity={0.85}
                   >
-                    <Ionicons
-                      name={active ? "radio-button-on" : "radio-button-off"}
+                    <TIcon
+                      ion={active ? "radio-button-on" : "radio-button-off"}
                       size={18}
                       color={active ? COLORS.primary : COLORS.subText}
                     />
@@ -252,7 +255,7 @@ export default function RaiseTicketForm({ base, role }: { base: string; role: "s
               {!subjectRequired && <Text style={styles.optional}> (optional)</Text>}
             </Text>
             {subjectsLoading ? (
-              <ActivityIndicator color={COLORS.primary} style={{ alignSelf: "flex-start" }} />
+              <ActivityIndicator color={th.c.primary} style={{ alignSelf: "flex-start" }} />
             ) : subjects.length === 0 ? (
               <Text style={styles.muted}>
                 {subjectsError ?? `No recent ${subjectKind === "duty" ? "shifts" : "applications"} found.`}
@@ -268,8 +271,8 @@ export default function RaiseTicketForm({ base, role }: { base: string; role: "s
                       onPress={() => setSubjectId(active ? null : s.id)}
                       activeOpacity={0.85}
                     >
-                      <Ionicons
-                        name={active ? "radio-button-on" : "radio-button-off"}
+                      <TIcon
+                        ion={active ? "radio-button-on" : "radio-button-off"}
                         size={18}
                         color={active ? COLORS.primary : COLORS.subText}
                       />
@@ -301,7 +304,7 @@ export default function RaiseTicketForm({ base, role }: { base: string; role: "s
               value={text}
               onChangeText={(t) => setText(t.slice(0, TICKET_TEXT_MAX))}
               placeholder="Describe what happened, with dates and times if you have them"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={th.hex("#9CA3AF")}
               multiline
             />
             <Text style={styles.counter}>{text.length}/{TICKET_TEXT_MAX}</Text>
@@ -322,85 +325,86 @@ export default function RaiseTicketForm({ base, role }: { base: string; role: "s
           disabled={!canSubmit}
           onPress={submit}
         >
-          {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>Raise Ticket</Text>}
+          {submitting ? <ActivityIndicator color={th.hex("#fff")} /> : <Text style={styles.primaryText}>Raise Ticket</Text>}
         </TouchableOpacity>
       )}
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const make_styles = (t: Theme) => ({
+  container: { flex: 1, backgroundColor: t.c.background },
   content: { padding: 24, paddingBottom: 48, maxWidth: 820, width: "100%", alignSelf: "center" },
-  back: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 12 },
-  backText: { fontSize: 13, color: COLORS.subText },
-  pageTitle: { fontSize: 22, fontWeight: "800", color: COLORS.text },
-  muted: { fontSize: 13, color: COLORS.subText, marginTop: 4, lineHeight: 19 },
+  back: { display: t.v2 ? ("none" as const) : ("flex" as const), flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 12 },
+  backText: { ...t.f(), fontSize: 13, color: t.c.subText },
+  pageTitle: { fontSize: 22, ...t.f("800"), color: t.c.text },
+  muted: { ...t.f(), fontSize: 13, color: t.c.subText, marginTop: 4, lineHeight: 19 },
   card: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
+    backgroundColor: t.c.surface,
+    borderRadius: t.v2 ? 16 : 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: t.c.border,
     padding: 20,
     marginTop: 16,
     gap: 10,
   },
-  step: { fontSize: 14, fontWeight: "700", color: COLORS.text, marginTop: 8 },
-  optional: { fontSize: 12, fontWeight: "400", color: COLORS.subText },
+  step: { fontSize: 14, ...t.f("700"), color: t.c.text, marginTop: 8 },
+  optional: { fontSize: 12, ...t.f("400"), color: t.c.subText },
   domains: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   domain: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 10,
+    borderColor: t.c.border,
+    borderRadius: t.v2 ? 14 : 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     minWidth: 180,
   },
   domainMobile: { minWidth: 0, width: "48%" },
-  domainActive: { borderColor: COLORS.primary, backgroundColor: "#EFF6FF" },
-  domainText: { fontSize: 13, fontWeight: "600", color: COLORS.text, flexShrink: 1 },
+  domainActive: { borderColor: t.c.primary, backgroundColor: t.hex("#EFF6FF") },
+  domainText: { fontSize: 13, ...t.f("600"), color: t.c.text, flexShrink: 1 },
   option: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 10,
+    borderColor: t.c.border,
+    borderRadius: t.v2 ? 14 : 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  optionActive: { borderColor: COLORS.primary, backgroundColor: "#EFF6FF" },
-  optionText: { fontSize: 13, color: COLORS.text, flexShrink: 1 },
-  optionSub: { fontSize: 12, color: COLORS.subText, marginTop: 2 },
-  hintBox: { backgroundColor: "#F8FAFC", borderRadius: 8, padding: 10, gap: 2 },
-  hintTitle: { fontSize: 12, fontWeight: "700", color: COLORS.subText },
-  hintItem: { fontSize: 12, color: COLORS.subText },
-  textArea: {
+  optionActive: { borderColor: t.c.primary, backgroundColor: t.hex("#EFF6FF") },
+  optionText: { ...t.f(), fontSize: 13, color: t.c.text, flexShrink: 1 },
+  optionSub: { ...t.f(), fontSize: 12, color: t.c.subText, marginTop: 2 },
+  hintBox: { backgroundColor: t.hex("#F8FAFC"), borderRadius: t.v2 ? 12 : 8, padding: 10, gap: 2 },
+  hintTitle: { fontSize: 12, ...t.f("700"), color: t.c.subText },
+  hintItem: { ...t.f(), fontSize: 12, color: t.c.subText },
+  textArea: { ...t.f(),
     minHeight: 120,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 10,
+    borderColor: t.c.border,
+    borderRadius: t.v2 ? 14 : 10,
     padding: 12,
     fontSize: 14,
-    color: COLORS.text,
+    color: t.c.text,
     textAlignVertical: "top",
   },
-  counter: { fontSize: 11, color: COLORS.subText, alignSelf: "flex-end" },
-  error: { fontSize: 13, color: COLORS.red, marginTop: 12 },
-  warn: { fontSize: 13, color: "#B45309", textAlign: "center" },
+  counter: { ...t.f(), fontSize: 11, color: t.c.subText, alignSelf: "flex-end" },
+  error: { ...t.f(), fontSize: 13, color: t.c.danger, marginTop: 12 },
+  warn: { ...t.f(), fontSize: 13, color: t.hex("#B45309"), textAlign: "center" },
   primaryBtn: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 8,
+    backgroundColor: t.c.primary,
+    borderRadius: t.v2 ? 12 : 8,
     paddingHorizontal: 18,
     paddingVertical: 12,
     alignItems: "center",
   },
-  primaryText: { color: "#fff", fontSize: 14, fontWeight: "700" },
+  primaryText: { color: t.hex("#fff"), fontSize: 14, ...t.f("700") },
   submit: { marginTop: 16, alignSelf: "flex-start", minWidth: 160 },
   disabled: { opacity: 0.5 },
   doneCard: { alignItems: "center", gap: 10, paddingVertical: 32 },
-  doneTitle: { fontSize: 18, fontWeight: "800", color: COLORS.text },
-});
+  doneTitle: { fontSize: 18, ...t.f("800"), color: t.c.text },
+} as const);
+const useStylesThemed = () => useThemedStyles(make_styles as any) as any;

@@ -1,3 +1,5 @@
+import { TIcon, useThemedStyles } from "@/ds/themed";
+import { Theme, useTheme } from "@/ds/theme";
 import { COLORS } from "@/constant/colors";
 import { apiError, formatDate, formatTime } from "@/constant/jobs";
 import {
@@ -9,7 +11,6 @@ import {
   categoryLabel,
 } from "@/constant/support";
 import { accountStandingAPI } from "@/service/api";
-import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
@@ -27,6 +28,8 @@ const when = (iso?: string | null) => (iso ? `${formatDate(iso)}, ${formatTime(i
 
 // base: "/medicalStaff/support" or "/hospital/support"
 export default function AccountStanding({ base }: { base: string }) {
+  const styles = useStylesThemed();
+  const th = useTheme();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
@@ -59,7 +62,7 @@ export default function AccountStanding({ base }: { base: string }) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={[styles.content, isMobile && { padding: 16 }]}>
       <TouchableOpacity style={styles.back} onPress={() => router.push(base as any)}>
-        <Ionicons name="arrow-back" size={16} color={COLORS.subText} />
+        <TIcon ion="arrow-back" size={16} color={th.c.subText} />
         <Text style={styles.backText}>Back to Support</Text>
       </TouchableOpacity>
       <Text style={styles.title}>Account Standing</Text>
@@ -67,7 +70,7 @@ export default function AccountStanding({ base }: { base: string }) {
         If a pattern shows up on your account, you'll see it here. Nothing is decided without asking for your side first.
       </Text>
 
-      {loading && <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 32 }} />}
+      {loading && <ActivityIndicator size="large" color={th.c.primary} style={{ marginTop: 32 }} />}
 
       {!loading && !!error && (
         <View style={styles.state}>
@@ -80,7 +83,7 @@ export default function AccountStanding({ base }: { base: string }) {
 
       {!loading && !error && flags.length === 0 && (
         <View style={[styles.card, styles.good]}>
-          <Ionicons name="shield-checkmark" size={28} color="#047857" />
+          <TIcon ion="shield-checkmark" size={28} color={th.hex("#047857")} />
           <Text style={styles.goodTitle}>Your account is in good standing</Text>
           <Text style={styles.muted}>There are no flags on your account.</Text>
         </View>
@@ -92,6 +95,8 @@ export default function AccountStanding({ base }: { base: string }) {
 }
 
 function FlagCard({ flag, base, onUpdated }: { flag: any; base: string; onUpdated: (flag: any) => void }) {
+  const styles = useStylesThemed();
+  const th = useTheme();
   const router = useRouter();
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -140,7 +145,7 @@ function FlagCard({ flag, base, onUpdated }: { flag: any; base: string; onUpdate
                 {categoryLabel(c.category)} · {c.ticketId} · {formatDate(c.createdAt)}
                 {c.resolutionOutcome ? ` · ${OUTCOME_LABELS[c.resolutionOutcome] ?? c.resolutionOutcome}` : ""}
               </Text>
-              <Ionicons name="chevron-forward" size={14} color={COLORS.subText} />
+              <TIcon ion="chevron-forward" size={14} color={th.c.subText} />
             </TouchableOpacity>
           ))}
         </>
@@ -167,7 +172,7 @@ function FlagCard({ flag, base, onUpdated }: { flag: any; base: string; onUpdate
         <View style={{ gap: 8, marginTop: 4 }}>
           {!!proposal.responseDeadline && (
             <View style={styles.due}>
-              <Ionicons name="time-outline" size={14} color="#B45309" />
+              <TIcon ion="time-outline" size={14} color={th.hex("#B45309")} />
               <Text style={styles.dueText}>Please reply by {when(proposal.responseDeadline)}</Text>
             </View>
           )}
@@ -176,7 +181,7 @@ function FlagCard({ flag, base, onUpdated }: { flag: any; base: string; onUpdate
             value={text}
             onChangeText={(t) => setText(t.slice(0, TICKET_TEXT_MAX))}
             placeholder="Your side, and anything we should take into account"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={th.hex("#9CA3AF")}
             multiline
           />
           {!!error && <Text style={styles.error}>{error}</Text>}
@@ -185,7 +190,7 @@ function FlagCard({ flag, base, onUpdated }: { flag: any; base: string; onUpdate
             disabled={!text.trim() || sending}
             onPress={send}
           >
-            {sending ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>Send Reply</Text>}
+            {sending ? <ActivityIndicator color={th.hex("#fff")} /> : <Text style={styles.primaryText}>Send Reply</Text>}
           </TouchableOpacity>
         </View>
       )}
@@ -193,39 +198,40 @@ function FlagCard({ flag, base, onUpdated }: { flag: any; base: string; onUpdate
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const make_styles = (t: Theme) => ({
+  container: { flex: 1, backgroundColor: t.c.background },
   content: { padding: 24, paddingBottom: 48, maxWidth: 820, width: "100%", alignSelf: "center", gap: 10 },
-  back: { flexDirection: "row", alignItems: "center", gap: 6 },
-  backText: { fontSize: 13, color: COLORS.subText },
-  title: { fontSize: 22, fontWeight: "800", color: COLORS.text },
-  muted: { fontSize: 13, color: COLORS.subText, lineHeight: 19 },
+  back: { display: t.v2 ? ("none" as const) : ("flex" as const), flexDirection: "row", alignItems: "center", gap: 6 },
+  backText: { ...t.f(), fontSize: 13, color: t.c.subText },
+  title: { fontSize: 22, ...t.f("800"), color: t.c.text },
+  muted: { ...t.f(), fontSize: 13, color: t.c.subText, lineHeight: 19 },
   caseRow: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 4 },
-  caseText: { flex: 1, fontSize: 13, color: COLORS.primary, fontWeight: "600" },
-  body: { fontSize: 14, color: COLORS.text, lineHeight: 20 },
-  label: { fontSize: 12, fontWeight: "700", color: COLORS.subText, marginTop: 6 },
+  caseText: { flex: 1, fontSize: 13, color: t.c.primary, ...t.f("600") },
+  body: { ...t.f(), fontSize: 14, color: t.c.text, lineHeight: 20 },
+  label: { fontSize: 12, ...t.f("700"), color: t.c.subText, marginTop: 6 },
   state: { alignItems: "center", gap: 10, paddingVertical: 40 },
-  card: { backgroundColor: COLORS.white, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, padding: 18, gap: 6 },
+  card: { backgroundColor: t.c.surface, borderRadius: t.v2 ? 16 : 12, borderWidth: 1, borderColor: t.c.border, padding: 18, gap: 6 },
   good: { alignItems: "center", paddingVertical: 28, marginTop: 6 },
-  goodTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text },
+  goodTitle: { fontSize: 16, ...t.f("700"), color: t.c.text },
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 },
-  cardTitle: { fontSize: 15, fontWeight: "700", color: COLORS.text, flexShrink: 1 },
-  pill: { backgroundColor: "#F1F5F9", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
-  pillText: { fontSize: 11, fontWeight: "700", color: "#475569" },
-  due: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#FFFBEB", borderRadius: 8, padding: 8, alignSelf: "flex-start" },
-  dueText: { fontSize: 12, color: "#B45309", fontWeight: "600" },
-  textArea: {
+  cardTitle: { fontSize: 15, ...t.f("700"), color: t.c.text, flexShrink: 1 },
+  pill: { backgroundColor: t.hex("#F1F5F9"), borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  pillText: { fontSize: 11, ...t.f("700"), color: t.hex("#475569") },
+  due: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: t.hex("#FFFBEB"), borderRadius: t.v2 ? 12 : 8, padding: 8, alignSelf: "flex-start" },
+  dueText: { fontSize: 12, color: t.hex("#B45309"), ...t.f("600") },
+  textArea: { ...t.f(),
     minHeight: 100,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 10,
+    borderColor: t.c.border,
+    borderRadius: t.v2 ? 14 : 10,
     padding: 12,
     fontSize: 14,
-    color: COLORS.text,
+    color: t.c.text,
     textAlignVertical: "top",
   },
-  error: { fontSize: 13, color: COLORS.red },
-  primaryBtn: { backgroundColor: COLORS.primary, borderRadius: 8, paddingHorizontal: 18, paddingVertical: 11, alignItems: "center", alignSelf: "flex-start", minWidth: 140 },
-  primaryText: { color: "#fff", fontSize: 13, fontWeight: "700" },
+  error: { ...t.f(), fontSize: 13, color: t.c.danger },
+  primaryBtn: { backgroundColor: t.c.primary, borderRadius: t.v2 ? 12 : 8, paddingHorizontal: 18, paddingVertical: 11, alignItems: "center", alignSelf: "flex-start", minWidth: 140 },
+  primaryText: { color: t.hex("#fff"), fontSize: 13, ...t.f("700") },
   disabled: { opacity: 0.5 },
-});
+} as const);
+const useStylesThemed = () => useThemedStyles(make_styles as any) as any;

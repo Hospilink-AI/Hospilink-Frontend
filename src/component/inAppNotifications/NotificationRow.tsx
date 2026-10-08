@@ -1,6 +1,7 @@
+import { TIcon, useThemedStyles } from "@/ds/themed";
+import { Theme, useTheme } from "@/ds/theme";
 import { COLORS } from "@/constant/colors";
 import { CATEGORY_LABELS, displayOf, iconFor, SEVERITY_STYLE, StoredNotification, timeAgo } from "@/constant/inAppNotifications";
-import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -14,6 +15,8 @@ export default function NotificationRow({
   onPress: () => void;
   compact?: boolean;
 }) {
+  const s = useSThemed();
+  const th = useTheme();
   const d = displayOf(item);
   const st = SEVERITY_STYLE[d.severity] ?? SEVERITY_STYLE.info;
   return (
@@ -24,11 +27,11 @@ export default function NotificationRow({
       accessibilityLabel={`${item.isRead ? "" : "Unread. "}${d.title}`}
     >
       <View style={[s.icon, { backgroundColor: st.bg }]}>
-        <Ionicons name={iconFor(d)} size={compact ? 16 : 18} color={st.fg} />
+        <TIcon ion={iconFor(d)} size={compact ? 16 : 18} color={st.fg} />
       </View>
       <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
         <View style={s.top}>
-          <Text style={[s.title, !item.isRead && { fontWeight: "800" }]} numberOfLines={1}>
+          <Text style={[s.title, !item.isRead && th.f("800")]} numberOfLines={1}>
             {d.title}
           </Text>
           {d.severity === "critical" && (
@@ -51,16 +54,17 @@ export default function NotificationRow({
   );
 }
 
-const s = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "flex-start", gap: 10, paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
-  unread: { backgroundColor: "#F8FBFF" },
-  hover: { backgroundColor: "#F1F5F9" },
+const make_s = (t: Theme) => ({
+  row: { flexDirection: "row", alignItems: "flex-start", gap: 10, paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: t.hex("#F1F5F9") },
+  unread: { backgroundColor: t.hex("#F8FBFF") },
+  hover: { backgroundColor: t.hex("#F1F5F9") },
   icon: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
   top: { flexDirection: "row", alignItems: "center", gap: 6 },
-  title: { fontSize: 13, fontWeight: "600", color: COLORS.text, flexShrink: 1 },
-  body: { fontSize: 12, color: COLORS.subText, lineHeight: 17 },
-  meta: { fontSize: 11, color: "#94A3B8" },
+  title: { fontSize: 13, ...t.f("600"), color: t.c.text, flexShrink: 1 },
+  body: { ...t.f(), fontSize: 12, color: t.c.subText, lineHeight: 17 },
+  meta: { ...t.f(), fontSize: 11, color: t.hex("#94A3B8") },
   tag: { borderRadius: 999, paddingHorizontal: 6, paddingVertical: 1 },
-  tagText: { fontSize: 10, fontWeight: "800" },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.primary, marginTop: 6 },
-});
+  tagText: { fontSize: 10, ...t.f("800") },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: t.c.primary, marginTop: 6 },
+} as const);
+const useSThemed = () => useThemedStyles(make_s as any) as any;

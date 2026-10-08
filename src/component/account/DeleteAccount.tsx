@@ -1,6 +1,7 @@
+import { TIcon, useThemedStyles } from "@/ds/themed";
+import { Theme, useTheme } from "@/ds/theme";
 import { COLORS } from "@/constant/colors";
 import { accountAPI } from "@/service/api";
-import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
@@ -32,6 +33,8 @@ export const formatDeletionDate = (iso?: string) => {
 };
 
 export default function DeleteAccount({ role, token, onDeleted }: Props) {
+  const s = useSThemed();
+  const th = useTheme();
   const [graceDays, setGraceDays] = useState<number>(7);
   const [scheduledFor, setScheduledFor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -82,13 +85,13 @@ export default function DeleteAccount({ role, token, onDeleted }: Props) {
   };
 
   if (loading) {
-    return <ActivityIndicator color={COLORS.primary} style={{ marginVertical: 24 }} />;
+    return <ActivityIndicator color={th.c.primary} style={{ marginVertical: 24 }} />;
   }
 
   if (scheduledFor !== null) {
     return (
       <View style={[s.notice, s.noticeWarn]}>
-        <Ionicons name="time-outline" size={20} color="#92400E" />
+        <TIcon ion="time-outline" size={20} color={th.hex("#92400E")} />
         <Text style={s.noticeText}>
           This account is already scheduled for deletion{scheduledFor ? ` on ${formatDeletionDate(scheduledFor)}` : ""}.
           Signing in before then keeps it.
@@ -135,7 +138,7 @@ export default function DeleteAccount({ role, token, onDeleted }: Props) {
           }}
           secureTextEntry={!showPassword}
           placeholder="Enter your password"
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor={th.hex("#94A3B8")}
           autoCapitalize="none"
           accessibilityLabel="Password"
         />
@@ -144,7 +147,7 @@ export default function DeleteAccount({ role, token, onDeleted }: Props) {
           accessibilityLabel={showPassword ? "Hide password" : "Show password"}
           style={{ paddingHorizontal: 10 }}
         >
-          <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={COLORS.subText} />
+          <TIcon ion={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={th.c.subText} />
         </TouchableOpacity>
       </View>
 
@@ -156,7 +159,7 @@ export default function DeleteAccount({ role, token, onDeleted }: Props) {
         multiline
         maxLength={500}
         placeholder="Tell us why you're leaving"
-        placeholderTextColor="#94A3B8"
+        placeholderTextColor={th.hex("#94A3B8")}
         accessibilityLabel="Reason"
       />
 
@@ -166,14 +169,14 @@ export default function DeleteAccount({ role, token, onDeleted }: Props) {
         accessibilityRole="checkbox"
         accessibilityState={{ checked: confirmed }}
       >
-        <Ionicons name={confirmed ? "checkbox" : "square-outline"} size={22} color={confirmed ? COLORS.red : COLORS.subText} />
+        <TIcon ion={confirmed ? "checkbox" : "square-outline"} size={22} color={confirmed ? COLORS.red : COLORS.subText} />
         <Text style={s.checkText}>I understand my account will be deleted after {graceDays} days.</Text>
       </TouchableOpacity>
 
       {error && (
         <View style={[s.notice, s.noticeErr]}>
-          <Ionicons name="alert-circle-outline" size={18} color="#B91C1C" />
-          <Text style={[s.noticeText, { color: "#B91C1C" }]}>{error}</Text>
+          <TIcon ion="alert-circle-outline" size={18} color={th.hex("#B91C1C")} />
+          <Text style={[s.noticeText, { color: th.hex("#B91C1C") }]}>{error}</Text>
         </View>
       )}
 
@@ -183,13 +186,14 @@ export default function DeleteAccount({ role, token, onDeleted }: Props) {
         onPress={submit}
         accessibilityRole="button"
       >
-        {submitting ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>Delete my account</Text>}
+        {submitting ? <ActivityIndicator color={th.hex("#fff")} /> : <Text style={s.btnText}>Delete my account</Text>}
       </TouchableOpacity>
     </View>
   );
 }
 
 function Bullet({ children }: { children: React.ReactNode }) {
+  const s = useSThemed();
   return (
     <View style={s.bullet}>
       <Text style={s.dot}>•</Text>
@@ -198,42 +202,43 @@ function Bullet({ children }: { children: React.ReactNode }) {
   );
 }
 
-const s = StyleSheet.create({
-  h: { fontSize: 14, fontWeight: "700", color: COLORS.text, marginTop: 14, marginBottom: 6 },
+const make_s = (t: Theme) => ({
+  h: { fontSize: 14, ...t.f("700"), color: t.c.text, marginTop: 14, marginBottom: 6 },
   bullet: { flexDirection: "row", gap: 8, marginBottom: 6 },
-  dot: { fontSize: 14, color: COLORS.subText, lineHeight: 20 },
-  bulletText: { flex: 1, fontSize: 14, color: "#334155", lineHeight: 20 },
-  label: { fontSize: 13, fontWeight: "600", color: COLORS.text, marginTop: 16, marginBottom: 6 },
-  input: {
+  dot: { ...t.f(), fontSize: 14, color: t.c.subText, lineHeight: 20 },
+  bulletText: { ...t.f(), flex: 1, fontSize: 14, color: t.hex("#334155"), lineHeight: 20 },
+  label: { fontSize: 13, ...t.f("600"), color: t.c.text, marginTop: 16, marginBottom: 6 },
+  input: { ...t.f(),
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 10,
+    borderColor: t.c.border,
+    borderRadius: t.v2 ? 14 : 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: COLORS.text,
-    backgroundColor: COLORS.white,
+    color: t.c.text,
+    backgroundColor: t.c.surface,
   },
   pwRow: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 10,
-    backgroundColor: COLORS.white,
+    borderColor: t.c.border,
+    borderRadius: t.v2 ? 14 : 10,
+    backgroundColor: t.c.surface,
   },
   check: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 16 },
-  checkText: { flex: 1, fontSize: 14, color: COLORS.text },
-  notice: { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 12, borderRadius: 10, marginTop: 14 },
-  noticeWarn: { backgroundColor: "#FFFBEB" },
-  noticeErr: { backgroundColor: "#FEF2F2" },
-  noticeText: { flex: 1, fontSize: 14, lineHeight: 20, color: "#92400E" },
+  checkText: { ...t.f(), flex: 1, fontSize: 14, color: t.c.text },
+  notice: { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 12, borderRadius: t.v2 ? 14 : 10, marginTop: 14 },
+  noticeWarn: { backgroundColor: t.hex("#FFFBEB") },
+  noticeErr: { backgroundColor: t.hex("#FEF2F2") },
+  noticeText: { ...t.f(), flex: 1, fontSize: 14, lineHeight: 20, color: t.hex("#92400E") },
   btn: {
     marginTop: 18,
-    backgroundColor: COLORS.red,
-    borderRadius: 10,
+    backgroundColor: t.c.danger,
+    borderRadius: t.v2 ? 14 : 10,
     paddingVertical: 13,
     alignItems: "center",
   },
-  btnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
-});
+  btnText: { color: t.hex("#fff"), fontSize: 15, ...t.f("700") },
+} as const);
+const useSThemed = () => useThemedStyles(make_s as any) as any;

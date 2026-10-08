@@ -1,5 +1,3 @@
-import ActionModal from "@/component/cards/jobs/ActionModal";
-import { COLORS } from "@/constant/colors";
 import {
   ApplicationStatus,
   CANDIDATE_CHANGE_REASONS,
@@ -9,7 +7,6 @@ import {
   WITHDRAW_REASONS,
   apiError,
   formatDate,
-  formatSlot,
   formatTime,
   minutesSince,
   reasonLabel,
@@ -19,18 +16,20 @@ import {
 import { OPEN_TICKET_STATUSES, TICKET_TEXT_MAX } from "@/constant/support";
 import { useInterviewConfig } from "@/hooks/useInterviewConfig";
 import { jobAPI, ticketAPI } from "@/service/api";
-import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
-import {
-  ActivityIndicator,
-  Linking,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Linking, Pressable, StyleSheet, View } from "react-native";
+import Button from "@/ds/Button";
+import Icon from "@/ds/Icon";
+import { ListRow, Screen, ScreenHeader } from "@/ds/Layout";
+import ReasonSheet from "@/ds/ReasonSheet";
+import { CardSkeleton, EmptyState, Notice, Skeleton } from "@/ds/States";
+import { Card, IconTile } from "@/ds/Surface";
+import { Meta, Tag } from "@/ds/Tag";
+import Txt from "@/ds/Txt";
+import { color, depth, radius } from "@/ds/tokens";
+import { APP_TONE } from "@/doctor/components/VacancyCards";
+import { salaryText, slotText } from "@/doctor/format";
 
 const STEPS = ["Applied", "Review", "Shortlisted", "Interview", "Offer"];
 
@@ -57,27 +56,30 @@ type ModalKind = null | "withdraw" | "cancel" | "rescheduleRequest" | "accept" |
 const NO_SHOW_CATEGORY = "jobs.interview_no_show";
 
 function Stepper({ reached, closed, done }: { reached: number; closed: boolean; done: boolean }) {
+  const tint = closed ? color.inkFaint : color.primary;
   return (
-    <View style={styles.stepper}>
+    <View style={styles.stepper} accessibilityLabel={`Progress: ${STEPS[reached]}`}>
       {STEPS.map((label, i) => {
         const complete = i < reached || (i === reached && done);
         const current = i === reached && !done;
-        const color = closed ? COLORS.subText : COLORS.primary;
         return (
           <View key={label} style={styles.step}>
             <View style={styles.stepTrack}>
-              {i > 0 && <View style={[styles.stepLine, i <= reached && { backgroundColor: color }]} />}
+              {i > 0 ? <View style={[styles.stepLine, i <= reached && { backgroundColor: tint }]} /> : <View style={{ flex: 1 }} />}
               <View
                 style={[
                   styles.stepDot,
-                  (complete || current) && { backgroundColor: color, borderColor: color },
+                  complete && { backgroundColor: tint },
+                  current && { backgroundColor: color.surface, borderWidth: 5, borderColor: tint, width: 22, height: 22, borderRadius: 11 },
                 ]}
               >
-                {complete && <Ionicons name="checkmark" size={12} color="#fff" />}
+                {complete ? <Icon name="check" size={11} color={color.onDark} strokeWidth={3} /> : null}
               </View>
-              {i < STEPS.length - 1 && <View style={[styles.stepLine, i < reached && { backgroundColor: color }]} />}
+              {i < STEPS.length - 1 ? <View style={[styles.stepLine, i < reached && { backgroundColor: tint }]} /> : <View style={{ flex: 1 }} />}
             </View>
-            <Text style={[styles.stepLabel, (complete || current) && { color, fontWeight: "700" }]}>{label}</Text>
+            <Txt style={styles.stepLabel} color={current ? color.ink : color.inkMuted} align="center">
+              {label}
+            </Txt>
           </View>
         );
       })}
@@ -152,23 +154,28 @@ export default function StaffApplicationDetail() {
   const togglePick = (slot: Slot) =>
     setPicked((prev) => (prev.some((p) => sameSlot(p, slot)) ? prev.filter((p) => !sameSlot(p, slot)) : [...prev, slot]));
 
-  if (loading) {
+  const header = <ScreenHeader title="Application" subtitle={app?.vacancy?.title} fallback="/medicalStaff/vacancies?tab=mine" />;
+
+  if (loading && !app) {
     return (
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
+      <>
+        {header}
+        <Screen>
+          <Skeleton height={48} r={16} />
+          <CardSkeleton />
+        </Screen>
+      </>
     );
   }
 
   if (error || !app) {
     return (
-      <View style={[styles.container, styles.center, { padding: 24, gap: 10 }]}>
-        <Ionicons name="alert-circle-outline" size={32} color={COLORS.red} />
-        <Text style={styles.emptyTitle}>{error ?? "Application not found."}</Text>
-        <TouchableOpacity style={styles.primaryBtn} onPress={load}>
-          <Text style={styles.primaryText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
+      <>
+        {header}
+        <Screen>
+          <EmptyState icon="warning" tone="danger" title={error ?? "Application not found."} action="Try again" onAction={load} />
+        </Screen>
+      </>
     );
   }
 
@@ -181,17 +188,13 @@ export default function StaffApplicationDetail() {
 
   const start = iv.confirmedSlot?.start;
   const sinceStart = minutesSince(start);
-  const joinOpen =
-    sinceStart >= -cfg.joinWindowBeforeMin && sinceStart <= cfg.joinWindowAfterMin;
+  const joinOpen = sinceStart >= -cfg.joinWindowBeforeMin && sinceStart <= cfg.joinWindowAfterMin;
   const canReportNoShow = sinceStart >= cfg.noShowGraceMin;
 
   const noShow = iv.noShow?.markedAt ? iv.noShow : null;
   const complaintOpen = !!complaint && OPEN_TICKET_STATUSES.includes(complaint.status);
-  const disputeBy = noShow
-    ? new Date(new Date(noShow.markedAt).getTime() + cfg.disputeWindowDays * 86400000)
-    : null;
-  const canDispute =
-    noShow?.by === "candidate" && noShow.disputeStatus === "none" && !!disputeBy && new Date() <= disputeBy && !complaintOpen;
+  const disputeBy = noShow ? new Date(new Date(noShow.markedAt).getTime() + cfg.disputeWindowDays * 86400000) : null;
+  const canDispute = noShow?.by === "candidate" && noShow.disputeStatus === "none" && !!disputeBy && new Date() <= disputeBy && !complaintOpen;
   const canComplain = noShow?.by === "hospital" && !complaintOpen;
 
   const sendComplaint = async (text: string) => {
@@ -203,11 +206,7 @@ export default function StaffApplicationDetail() {
       setModal(null);
       load();
     } catch (err: any) {
-      setModalError(
-        err?.response?.status === 409
-          ? "You already have an open complaint about this interview."
-          : apiError(err, "Could not send your complaint.")
-      );
+      setModalError(err?.response?.status === 409 ? "You already have an open complaint about this interview." : apiError(err, "Could not send your complaint."));
     } finally {
       setBusy(false);
     }
@@ -224,272 +223,226 @@ export default function StaffApplicationDetail() {
       else if (canDispute) note = `If you did attend, you can dispute this until ${formatDate(disputeBy!.toISOString())}.`;
       else note = `The ${cfg.disputeWindowDays}-day window to dispute this has passed.`;
     } else if (complaint) {
-      note = complaintOpen
-        ? `Your complaint ${complaint.ticketId} is with our team.`
-        : `Your complaint ${complaint.ticketId} has been closed.`;
+      note = complaintOpen ? `Your complaint ${complaint.ticketId} is with our team.` : `Your complaint ${complaint.ticketId} has been closed.`;
     } else {
       note = "If you'd like our team to look into it, you can raise a complaint.";
     }
 
     return (
-      <View style={[styles.section, { marginTop: 16 }]}>
-        <Text style={styles.sectionTitle}>Interview no-show</Text>
-        <Text style={styles.muted}>
-          {byCandidate
-            ? status === "rejected" ? "" : "The hospital marked that you didn't attend the interview. "
-            : "You reported that the hospital didn't join the interview. "}
-          {note}
-        </Text>
-        {(canDispute || canComplain) && (
-          <TouchableOpacity style={[styles.outlineBtn, { alignSelf: "flex-start" }]} onPress={() => openModal("complaint")}>
-            <Text style={styles.outlineText}>{canDispute ? "Dispute No-Show" : "Raise a Complaint"}</Text>
-          </TouchableOpacity>
-        )}
-        {!!complaint?._id && (
-          <TouchableOpacity
-            style={[styles.outlineBtn, { alignSelf: "flex-start" }]}
-            onPress={() => router.push(`/medicalStaff/support/tickets/${complaint._id}` as any)}
-          >
-            <Text style={styles.outlineText}>View Complaint</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      <Card>
+        <View style={{ gap: 12 }}>
+          <Txt v="h3">Interview no-show</Txt>
+          <Txt v="bodySm" tone="soft">
+            {byCandidate
+              ? status === "rejected"
+                ? ""
+                : "The hospital marked that you didn't attend the interview. "
+              : "You reported that the hospital didn't join the interview. "}
+            {note}
+          </Txt>
+          <View style={styles.btnRow}>
+            {canDispute || canComplain ? (
+              <Button label={canDispute ? "Dispute No-Show" : "Raise a Complaint"} variant="tonal" size="sm" onPress={() => openModal("complaint")} />
+            ) : null}
+            {complaint?._id ? (
+              <Button label="View Complaint" variant="secondary" size="sm" onPress={() => router.push(`/medicalStaff/support/tickets/${complaint._id}` as any)} />
+            ) : null}
+          </View>
+        </View>
+      </Card>
     );
   };
+
+  const stageCard = (icon: any, tone: "well" | "success" | "warning" | "primary", title: string, body: string, extra?: React.ReactNode) => (
+    <Card>
+      <View style={{ gap: 14 }}>
+        <View style={styles.headRow}>
+          <IconTile name={icon} tone={tone} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Txt v="h3">{title}</Txt>
+            <Txt v="bodySm" tone="soft">
+              {body}
+            </Txt>
+          </View>
+        </View>
+        {extra}
+      </View>
+    </Card>
+  );
 
   const renderStage = () => {
     switch (status) {
       case "slots_offered":
-        return (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Pick your interview times</Text>
-            <Text style={styles.muted}>
-              Choose every time that works for you. The hospital will confirm one of them.
-              {iv.offer?.expiresAt ? ` Please pick by ${formatDate(iv.offer.expiresAt)}, ${formatTime(iv.offer.expiresAt)}.` : ""}
-            </Text>
-            <View style={styles.slotList}>
-              {(iv.offer?.slots ?? []).map((s: Slot) => {
-                const active = picked.some((p) => sameSlot(p, s));
-                return (
-                  <TouchableOpacity key={s.start} style={[styles.slot, active && styles.slotActive]} onPress={() => togglePick(s)}>
-                    <Ionicons name={active ? "checkbox" : "square-outline"} size={18} color={active ? COLORS.primary : COLORS.subText} />
-                    <Text style={styles.slotText}>{formatSlot(s)}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-            <TouchableOpacity
-              style={[styles.primaryBtn, styles.fullBtn, picked.length === 0 && styles.disabled]}
-              disabled={busy || picked.length === 0}
+        return stageCard(
+          "calendar",
+          "primary",
+          "Pick your interview times",
+          `Choose every time that works for you. The hospital will confirm one of them.${
+            iv.offer?.expiresAt ? ` Please pick by ${formatDate(iv.offer.expiresAt)}, ${formatTime(iv.offer.expiresAt)}.` : ""
+          }`,
+          <View style={{ gap: 10 }}>
+            {(iv.offer?.slots ?? []).map((s: Slot) => {
+              const active = picked.some((p) => sameSlot(p, s));
+              return (
+                <Pressable
+                  key={s.start}
+                  onPress={() => togglePick(s)}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: active }}
+                  accessibilityLabel={slotText(s)}
+                  style={(st: any) => [styles.slot, active ? styles.slotOn : depth.raisedSm, st.focused && depth.focus]}
+                >
+                  <View style={[styles.box, active && styles.boxOn]}>{active ? <Icon name="check" size={14} color={color.onDark} strokeWidth={3} /> : null}</View>
+                  <Txt v="title" style={{ flex: 1, fontVariant: ["tabular-nums"] }}>
+                    {slotText(s)}
+                  </Txt>
+                </Pressable>
+              );
+            })}
+            <Button
+              label={picked.length ? `Send my ${picked.length} ${picked.length === 1 ? "pick" : "picks"}` : "Send my picks"}
+              disabled={picked.length === 0}
+              loading={busy}
               onPress={() => run(() => jobAPI.selectSlots(applicationId, picked), "Could not send your picks.")}
-            >
-              {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>Send My Picks</Text>}
-            </TouchableOpacity>
+              full
+              size="lg"
+            />
           </View>
         );
 
       case "slot_selected":
-        return (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Waiting for the hospital</Text>
-            <Text style={styles.muted}>You picked these times. {hospitalName} will confirm one and send the meeting details.</Text>
-            <View style={styles.slotList}>
-              {(iv.candidatePicks ?? []).map((s: Slot) => (
-                <Text key={s.start} style={styles.slotPlain}>• {formatSlot(s)}</Text>
-              ))}
-            </View>
+        return stageCard(
+          "hourglass",
+          "warning",
+          "Waiting for the hospital",
+          `You picked these times. ${hospitalName} will confirm one and send the meeting details.`,
+          <View style={{ gap: 6 }}>
+            {(iv.candidatePicks ?? []).map((s: Slot) => (
+              <Meta key={s.start} icon="calendarEvent" text={slotText(s)} />
+            ))}
           </View>
         );
 
       case "confirmed":
-        return (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Interview Details</Text>
-            <Text style={styles.detailLine}>
-              Scheduled on <Text style={styles.bold}>{formatDate(start)}</Text>
-            </Text>
-            <Text style={styles.detailLine}>
-              Time: <Text style={styles.bold}>{formatTime(start)} – {formatTime(iv.confirmedSlot?.end)}</Text>
-            </Text>
-            <Text style={styles.label}>Interviewer</Text>
-            <Text style={styles.detailLine}>
-              {[iv.interviewerName, iv.interviewerDesignation].filter(Boolean).join(", ") || "—"}
-            </Text>
-            <Text style={styles.label}>Link</Text>
+        return stageCard(
+          "calendarEvent",
+          "success",
+          "Interview scheduled",
+          `${formatDate(start)}, ${formatTime(start)} – ${formatTime(iv.confirmedSlot?.end)}`,
+          <View style={{ gap: 12 }}>
+            <View style={{ gap: 4 }}>
+              <ListRow icon="users" title="Interviewer" subtitle={[iv.interviewerName, iv.interviewerDesignation].filter(Boolean).join(", ") || "Not given yet"} chevron={false} />
+              {iv.meetingLink ? <ListRow icon="external" title="Meeting link" subtitle={iv.meetingLink} onPress={() => Linking.openURL(iv.meetingLink)} /> : null}
+            </View>
             {iv.meetingLink ? (
-              <Text style={styles.link} onPress={() => Linking.openURL(iv.meetingLink)}>{iv.meetingLink}</Text>
-            ) : (
-              <Text style={styles.detailLine}>—</Text>
-            )}
-
-            {!!iv.meetingLink && (
-              <TouchableOpacity
-                style={[styles.primaryBtn, styles.fullBtn, !joinOpen && styles.disabled]}
-                disabled={!joinOpen}
-                onPress={() => Linking.openURL(iv.meetingLink)}
-              >
-                <Text style={styles.primaryText}>Join Interview</Text>
-              </TouchableOpacity>
-            )}
-            {!joinOpen && sinceStart < 0 && (
-              <Text style={[styles.muted, { textAlign: "center" }]}>
+              <Button label="Join Interview" icon="external" disabled={!joinOpen} onPress={() => Linking.openURL(iv.meetingLink)} full size="lg" />
+            ) : null}
+            {!joinOpen && sinceStart < 0 ? (
+              <Txt v="caption" tone="muted" align="center">
                 You can join from {cfg.joinWindowBeforeMin} minutes before the start time.
-              </Text>
-            )}
-
-            {iv.rescheduleRequest?.pending && (
-              <View style={styles.infoBox}>
-                <Ionicons name="time-outline" size={16} color="#92400E" />
-                <Text style={styles.infoText}>
-                  You asked to reschedule. Your current booking stands until the hospital responds.
-                </Text>
-              </View>
-            )}
-
+              </Txt>
+            ) : null}
+            {iv.rescheduleRequest?.pending ? (
+              <Notice tone="warning" icon="time" body="You asked to reschedule. Your current booking stands until the hospital responds." />
+            ) : null}
             <View style={styles.btnRow}>
-              {sinceStart < 0 && !iv.rescheduleRequest?.pending && (
-                <TouchableOpacity style={styles.outlineBtn} onPress={() => openModal("rescheduleRequest")}>
-                  <Text style={styles.outlineText}>Request Reschedule</Text>
-                </TouchableOpacity>
-              )}
-              {sinceStart < 0 && (
-                <TouchableOpacity style={styles.dangerOutline} onPress={() => openModal("cancel")}>
-                  <Text style={styles.dangerText}>Cancel Interview</Text>
-                </TouchableOpacity>
-              )}
-              {canReportNoShow && (
-                <TouchableOpacity style={styles.outlineBtn} onPress={() => openModal("reportNoShow")}>
-                  <Text style={styles.outlineText}>Hospital Didn't Join</Text>
-                </TouchableOpacity>
-              )}
+              {sinceStart < 0 && !iv.rescheduleRequest?.pending ? (
+                <Button label="Request Reschedule" variant="secondary" size="sm" onPress={() => openModal("rescheduleRequest")} />
+              ) : null}
+              {sinceStart < 0 ? <Button label="Cancel Interview" variant="text" size="sm" onPress={() => openModal("cancel")} /> : null}
+              {canReportNoShow ? <Button label="Hospital Didn't Join" variant="secondary" size="sm" onPress={() => openModal("reportNoShow")} /> : null}
             </View>
           </View>
         );
 
       case "interviewed":
-        return (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Awaiting outcome</Text>
-            <Text style={styles.muted}>{hospitalName} will let you know the result of your interview.</Text>
-          </View>
-        );
+        return stageCard("hourglass", "well", "Awaiting outcome", `${hospitalName} will let you know the result of your interview.`);
 
       case "offered":
-        return (
-          <View style={[styles.section, styles.offerSection]}>
-            <Ionicons name="ribbon-outline" size={26} color="#059669" />
-            <Text style={styles.sectionTitle}>You've received an offer</Text>
-            <Text style={styles.muted}>
-              {hospitalName} would like to hire you as {vacancy.title ?? "this role"}. Accepting shares your phone number and email with them so they can begin onboarding.
-            </Text>
-            <View style={styles.btnRow}>
-              <TouchableOpacity style={[styles.primaryBtn, { flex: 1, backgroundColor: "#059669" }]} onPress={() => openModal("accept")}>
-                <Text style={styles.primaryText}>Accept Offer</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.dangerOutline, { flex: 1, alignItems: "center" }]} onPress={() => openModal("decline")}>
-                <Text style={styles.dangerText}>Decline</Text>
-              </TouchableOpacity>
-            </View>
+        return stageCard(
+          "certificate",
+          "success",
+          "You've received an offer",
+          `${hospitalName} would like to hire you as ${vacancy.title ?? "this role"}. Accepting shares your phone number and email with them so they can begin onboarding.`,
+          <View style={styles.btnRow}>
+            <Button label="Accept Offer" variant="primary" onPress={() => openModal("accept")} style={{ flex: 1 }} />
+            <Button label="Decline" variant="secondary" onPress={() => openModal("decline")} style={{ flex: 1 }} />
           </View>
         );
 
       case "hired":
-        return (
-          <View style={[styles.section, styles.offerSection]}>
-            <Ionicons name="checkmark-circle" size={28} color="#16A34A" />
-            <Text style={styles.sectionTitle}>You're hired</Text>
-            <Text style={styles.muted}>
-              Your contact details have been shared with {hospitalName}. They'll reach out to you to begin onboarding.
-            </Text>
-          </View>
-        );
+        return stageCard("checkCircle", "success", "You're hired", `Your contact details have been shared with ${hospitalName}. They'll reach out to you to begin onboarding.`);
 
       case "rejected":
-        return (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Not selected</Text>
-            <Text style={styles.muted}>
-              {iv.noShow?.by === "candidate"
-                ? "This application was closed because the hospital marked that you didn't attend the interview."
-                : app.rejectionReason
-                  ? `Reason given: ${reasonLabel(app.rejectionReason)}.`
-                  : "The hospital decided not to go ahead with this application."}
-            </Text>
-          </View>
+        return stageCard(
+          "info",
+          "well",
+          "Not selected",
+          iv.noShow?.by === "candidate"
+            ? "This application was closed because the hospital marked that you didn't attend the interview."
+            : app.rejectionReason
+              ? `Reason given: ${reasonLabel(app.rejectionReason)}.`
+              : "The hospital decided not to go ahead with this application."
         );
 
       case "withdrawn":
-        return (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Withdrawn</Text>
-            <Text style={styles.muted}>
-              {app.withdrawReason ? `Reason: ${reasonLabel(app.withdrawReason)}.` : "This application was withdrawn."}
-            </Text>
-          </View>
-        );
+        return stageCard("info", "well", "Withdrawn", app.withdrawReason ? `Reason: ${reasonLabel(app.withdrawReason)}.` : "This application was withdrawn.");
 
       default:
-        return (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{STAFF_STATUS_LABELS[status]}</Text>
-            <Text style={styles.muted}>
-              {status === "shortlisted"
-                ? "You've been shortlisted. The hospital will send you interview times to pick from."
-                : "Your application is with the hospital. We'll notify you when anything changes."}
-            </Text>
-          </View>
+        return stageCard(
+          "hourglass",
+          "well",
+          STAFF_STATUS_LABELS[status],
+          status === "shortlisted"
+            ? "You've been shortlisted. The hospital will send you interview times to pick from."
+            : "Your application is with the hospital. We'll notify you when anything changes."
         );
     }
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <TouchableOpacity style={styles.back} onPress={() => router.push("/medicalStaff/applications" as any)}>
-        <Ionicons name="arrow-back" size={16} color={COLORS.subText} />
-        <Text style={styles.backText}>Back to my applications</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.pageTitle}>Details</Text>
-
-      <Stepper reached={reachedStep(app)} closed={closed} done={status === "hired"} />
-
-      {renderStage()}
-      {renderNoShow()}
-      {!!actionError && <Text style={styles.errorText}>{actionError}</Text>}
-
-      <View style={styles.divider} />
-
-      <View style={styles.card}>
-        <Text style={styles.jobTitle}>{vacancy.title ?? "Vacancy"}</Text>
-        <Text style={styles.muted}>{roleLabel(vacancy.specialty)} · Applied {formatDate(app.appliedAt)}</Text>
-        {!!vacancy.description && <Text style={styles.description}>{vacancy.description}</Text>}
-        {!!vacancy.salary && (
-          <View style={styles.metaItem}>
-            <Ionicons name="cash-outline" size={15} color="#16A34A" />
-            <Text style={[styles.metaText, { color: "#16A34A" }]}>{vacancy.salary}</Text>
+    <>
+      {header}
+      <Screen testID="application-detail">
+        <Card>
+          <View style={{ gap: 14 }}>
+            <View style={styles.between}>
+              <Tag label={STAFF_STATUS_LABELS[status]} tone={APP_TONE[status] ?? "neutral"} icon={null} />
+              <Txt v="caption" tone="muted">
+                Applied {formatDate(app.appliedAt ?? app.createdAt)}
+              </Txt>
+            </View>
+            <Stepper reached={reachedStep(app)} closed={closed} done={status === "hired"} />
           </View>
-        )}
-      </View>
+        </Card>
 
-      <Text style={styles.sectionLabel}>About the Hospital</Text>
-      <View style={styles.card}>
-        <Text style={styles.jobTitle}>{hospitalName}</Text>
-        {!!vacancy.location && (
-          <View style={styles.metaItem}>
-            <Ionicons name="location-outline" size={15} color={COLORS.subText} />
-            <Text style={styles.metaText}>{vacancy.location}</Text>
+        {renderStage()}
+        {renderNoShow()}
+        {actionError ? <Notice tone="danger" body={actionError} /> : null}
+
+        <Card>
+          <View style={{ gap: 10 }}>
+            <Txt v="overline" tone="muted">The vacancy</Txt>
+            <Txt v="h3">{vacancy.title ?? "Vacancy"}</Txt>
+            {vacancy.specialty ? (
+              <Txt v="bodySm" tone="muted">
+                {roleLabel(vacancy.specialty)}
+              </Txt>
+            ) : null}
+            {vacancy.description ? (
+              <Txt v="bodySm" tone="soft" numberOfLines={6}>
+                {vacancy.description}
+              </Txt>
+            ) : null}
+            {vacancy.salary ? <Meta icon="rupee" text={salaryText(vacancy.salary)} tone="ink" /> : null}
+            <ListRow icon="hospital" title={hospitalName} subtitle={vacancy.location} chevron={false} />
           </View>
-        )}
-      </View>
+        </Card>
 
-      {canWithdraw && (
-        <TouchableOpacity style={styles.withdrawLink} onPress={() => openModal("withdraw")}>
-          <Text style={styles.dangerText}>Withdraw application</Text>
-        </TouchableOpacity>
-      )}
+        {canWithdraw ? <Button label="Withdraw application" variant="text" onPress={() => openModal("withdraw")} style={{ alignSelf: "center" }} /> : null}
+      </Screen>
 
-      {/* ── Modals ── */}
-      <ActionModal
+      <ReasonSheet
         visible={modal === "withdraw"}
         title="Withdraw application"
         message="The hospital will be notified. You can apply again later if the vacancy is still open."
@@ -499,12 +452,9 @@ export default function StaffApplicationDetail() {
         loading={busy}
         error={modalError}
         onClose={() => setModal(null)}
-        onConfirm={(reason, note) =>
-          run(() => jobAPI.withdraw(applicationId, { reason, ...(note && { reasonText: note }) }), "Could not withdraw.", true)
-        }
+        onConfirm={(reason, note) => run(() => jobAPI.withdraw(applicationId, { reason, ...(note && { reasonText: note }) }), "Could not withdraw.", true)}
       />
-
-      <ActionModal
+      <ReasonSheet
         visible={modal === "cancel"}
         title="Cancel interview"
         message="Your application goes back to shortlisted and the hospital is notified."
@@ -518,8 +468,7 @@ export default function StaffApplicationDetail() {
           run(() => jobAPI.cancelInterview(applicationId, { reason, ...(note && { reasonText: note }) }), "Could not cancel the interview.", true)
         }
       />
-
-      <ActionModal
+      <ReasonSheet
         visible={modal === "rescheduleRequest"}
         title="Request a reschedule"
         message="The hospital will see your request. Your current booking stays in place until they reschedule it."
@@ -532,19 +481,18 @@ export default function StaffApplicationDetail() {
           run(() => jobAPI.requestReschedule(applicationId, { reason, ...(note && { reasonText: note }) }), "Could not send the request.", true)
         }
       />
-
-      <ActionModal
+      <ReasonSheet
         visible={modal === "reportNoShow"}
         title="Hospital didn't join?"
         message="Let us know if the hospital never joined the interview. This doesn't affect you, and your application goes back to shortlisted."
+        showNote={false}
         confirmLabel="Report"
         loading={busy}
         error={modalError}
         onClose={() => setModal(null)}
         onConfirm={() => run(() => jobAPI.reportNoShow(applicationId), "Could not send the report.", true)}
       />
-
-      <ActionModal
+      <ReasonSheet
         visible={modal === "complaint"}
         title={canDispute ? "Dispute this no-show" : "Raise a complaint"}
         message={
@@ -562,22 +510,22 @@ export default function StaffApplicationDetail() {
         onClose={() => setModal(null)}
         onConfirm={(_, note) => sendComplaint(note)}
       />
-
-      <ActionModal
+      <ReasonSheet
         visible={modal === "accept"}
         title="Accept this offer?"
         message={`Your phone number and email will be shared with ${hospitalName} straight away. This can't be undone.`}
+        showNote={false}
         confirmLabel="Yes, Accept Offer"
         loading={busy}
         error={modalError}
         onClose={() => setModal(null)}
         onConfirm={() => run(() => jobAPI.respondToOffer(applicationId, true), "Could not accept the offer.", true)}
       />
-
-      <ActionModal
+      <ReasonSheet
         visible={modal === "decline"}
         title="Decline this offer?"
         message="Your application will be withdrawn. This can't be undone."
+        showNote={false}
         confirmLabel="Decline Offer"
         tone="danger"
         loading={busy}
@@ -585,113 +533,22 @@ export default function StaffApplicationDetail() {
         onClose={() => setModal(null)}
         onConfirm={() => run(() => jobAPI.respondToOffer(applicationId, false), "Could not decline the offer.", true)}
       />
-    </ScrollView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  center: { alignItems: "center", justifyContent: "center" },
-  content: { padding: 16, paddingBottom: 40, maxWidth: 760, width: "100%", alignSelf: "center" },
-  back: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
-  backText: { fontSize: 13, color: COLORS.subText },
-  pageTitle: { fontSize: 22, fontWeight: "800", color: COLORS.text, marginBottom: 16 },
-
-  stepper: { flexDirection: "row", marginBottom: 24 },
-  step: { flex: 1, alignItems: "center" },
-  stepTrack: { flexDirection: "row", alignItems: "center", width: "100%" },
-  stepLine: { flex: 1, height: 4, backgroundColor: "#E2E8F0" },
-  stepDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: "#CBD5E1",
-    backgroundColor: "#F1F5F9",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  stepLabel: { fontSize: 11, color: COLORS.subText, marginTop: 6, textAlign: "center" },
-
-  section: { gap: 6 },
-  offerSection: {
-    backgroundColor: "#ECFDF5",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#A7F3D0",
-    padding: 16,
-  },
-  sectionTitle: { fontSize: 17, fontWeight: "700", color: COLORS.text },
-  muted: { fontSize: 13, color: COLORS.subText, lineHeight: 19 },
-  detailLine: { fontSize: 14, color: COLORS.text },
-  bold: { fontWeight: "700" },
-  label: { fontSize: 11, color: COLORS.subText, marginTop: 8 },
-  link: { fontSize: 14, color: COLORS.primary, textDecorationLine: "underline" },
-  slotList: { gap: 8, marginVertical: 8 },
-  slot: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 10,
-    padding: 12,
-  },
-  slotActive: { borderColor: COLORS.primary, backgroundColor: "#EFF6FF" },
-  slotText: { fontSize: 14, color: COLORS.text, fontWeight: "500" },
-  slotPlain: { fontSize: 14, color: COLORS.text },
-  infoBox: {
-    flexDirection: "row",
-    gap: 8,
-    backgroundColor: "#FFFBEB",
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 10,
-  },
-  infoText: { flex: 1, fontSize: 12, color: "#92400E", lineHeight: 17 },
-  btnRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 12 },
-  primaryBtn: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  fullBtn: { marginTop: 12 },
-  primaryText: { color: "#fff", fontSize: 14, fontWeight: "700" },
-  outlineBtn: {
-    borderWidth: 1,
-    borderColor: "#BFDBFE",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  outlineText: { fontSize: 13, fontWeight: "600", color: COLORS.primary },
-  dangerOutline: {
-    borderWidth: 1,
-    borderColor: "#FECACA",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  dangerText: { fontSize: 13, fontWeight: "600", color: COLORS.red },
-  disabled: { opacity: 0.45 },
-  errorText: { fontSize: 13, color: COLORS.red, marginTop: 10 },
-  divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 20 },
-  card: {
-    backgroundColor: COLORS.white,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 16,
-    gap: 6,
-  },
-  jobTitle: { fontSize: 17, fontWeight: "700", color: COLORS.text },
-  description: { fontSize: 14, color: "#334155", lineHeight: 21, marginTop: 4 },
-  metaItem: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 },
-  metaText: { fontSize: 13, color: "#475569" },
-  sectionLabel: { fontSize: 13, fontWeight: "600", color: COLORS.subText, marginTop: 20, marginBottom: 8 },
-  withdrawLink: { alignSelf: "center", marginTop: 24, padding: 8 },
-  emptyTitle: { fontSize: 15, fontWeight: "700", color: COLORS.text, textAlign: "center" },
+  between: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  headRow: { flexDirection: "row", gap: 14, alignItems: "flex-start" },
+  btnRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  stepper: { flexDirection: "row" },
+  step: { flex: 1, alignItems: "center", gap: 6 },
+  stepTrack: { flexDirection: "row", alignItems: "center", alignSelf: "stretch" },
+  stepLine: { flex: 1, height: 3, backgroundColor: color.well },
+  stepDot: { width: 18, height: 18, borderRadius: 9, backgroundColor: color.well, alignItems: "center", justifyContent: "center" },
+  stepLabel: { fontSize: 11, lineHeight: 14, fontFamily: "Manrope_600SemiBold" },
+  slot: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: radius.input, backgroundColor: color.surface, minHeight: 56, borderWidth: 1.5, borderColor: "transparent" },
+  slotOn: { borderColor: color.primary, backgroundColor: color.well },
+  box: { width: 24, height: 24, borderRadius: 7, backgroundColor: color.ground, alignItems: "center", justifyContent: "center" },
+  boxOn: { backgroundColor: color.primary },
 });

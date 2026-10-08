@@ -1,6 +1,7 @@
+import { Theme, useTheme } from "@/ds/theme";
+import { TIcon, useThemedStyles } from "@/ds/themed";
 import { COLORS } from "@/constant/colors";
 import { Option, REASON_TEXT_MAX } from "@/constant/jobs";
-import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -49,6 +50,8 @@ export default function ActionModal({
   onConfirm,
   children,
 }: Props) {
+  const styles = use_styles();
+  const th = useTheme();
   const [reason, setReason] = useState("");
   const [note, setNote] = useState("");
 
@@ -67,7 +70,7 @@ export default function ActionModal({
       <View style={styles.overlay}>
         <View style={styles.box}>
           <TouchableOpacity style={styles.close} onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name="close" size={20} color={COLORS.subText} />
+            <TIcon ion="close" size={20} color={th.c.subText} />
           </TouchableOpacity>
 
           <Text style={styles.title}>{title}</Text>
@@ -86,10 +89,10 @@ export default function ActionModal({
                     onPress={() => setReason(r.value)}
                     activeOpacity={0.8}
                   >
-                    <Ionicons
-                      name={active ? "radio-button-on" : "radio-button-off"}
+                    <TIcon
+                      ion={active ? "radio-button-on" : "radio-button-off"}
                       size={18}
-                      color={active ? COLORS.primary : COLORS.subText}
+                      color={active ? th.c.primary : th.c.subText}
                     />
                     <Text style={styles.optionText}>{r.label}</Text>
                   </TouchableOpacity>
@@ -102,7 +105,7 @@ export default function ActionModal({
                 value={note}
                 onChangeText={(t) => setNote(t.slice(0, noteMax))}
                 placeholder={notePlaceholder}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={th.hex("#9CA3AF")}
                 multiline
               />
             )}
@@ -117,14 +120,14 @@ export default function ActionModal({
             <TouchableOpacity
               style={[
                 styles.confirmBtn,
-                tone === "danger" && { backgroundColor: COLORS.red },
+                tone === "danger" && { backgroundColor: th.hex(COLORS.red) },
                 disabled && { opacity: 0.5 },
               ]}
               onPress={() => onConfirm(reason, note.trim())}
               disabled={disabled}
             >
               {loading ? (
-                <ActivityIndicator size="small" color="#fff" />
+                <ActivityIndicator size="small" color={th.hex("#fff")} />
               ) : (
                 <Text style={styles.confirmText}>{confirmLabel}</Text>
               )}
@@ -136,7 +139,8 @@ export default function ActionModal({
   );
 }
 
-const styles = StyleSheet.create({
+const use_styles = () => useThemedStyles(make_styles as any) as any;
+const make_styles = (t: Theme) => ({
   overlay: {
     flex: 1,
     backgroundColor: "rgba(15,23,42,0.45)",
@@ -147,52 +151,52 @@ const styles = StyleSheet.create({
   box: {
     width: "100%",
     maxWidth: 440,
-    backgroundColor: COLORS.white,
+    backgroundColor: t.c.surface,
     borderRadius: 14,
     padding: 20,
   },
   close: { position: "absolute", top: 14, right: 14, zIndex: 1 },
-  title: { fontSize: 17, fontWeight: "700", color: COLORS.text, marginBottom: 6, paddingRight: 24 },
-  message: { fontSize: 13, color: COLORS.subText, lineHeight: 19, marginBottom: 12 },
+  title: { fontSize: 17, ...t.f("700"), color: t.c.text, marginBottom: 6, paddingRight: 24 },
+  message: { ...t.f(), fontSize: 13, color: t.c.subText, lineHeight: 19, marginBottom: 12 },
   option: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: t.c.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  optionActive: { borderColor: COLORS.primary, backgroundColor: "#EFF6FF" },
-  optionText: { fontSize: 13, color: COLORS.text, flex: 1 },
-  note: {
+  optionActive: { borderColor: t.c.primary, backgroundColor: t.hex("#EFF6FF") },
+  optionText: { ...t.f(), fontSize: 13, color: t.c.text, flex: 1 },
+  note: { ...t.f(),
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: t.c.border,
     borderRadius: 8,
     padding: 10,
     minHeight: 70,
     fontSize: 13,
-    color: COLORS.text,
+    color: t.c.text,
     textAlignVertical: "top",
   },
-  error: { fontSize: 12, color: COLORS.red, marginTop: 10 },
+  error: { ...t.f(), fontSize: 12, color: t.hex(COLORS.red), marginTop: 10 },
   actions: { flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 16 },
   cancelBtn: {
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: t.c.border,
   },
-  cancelText: { fontSize: 14, fontWeight: "600", color: COLORS.subText },
+  cancelText: { fontSize: 14, ...t.f("600"), color: t.c.subText },
   confirmBtn: {
     minWidth: 110,
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
-    backgroundColor: COLORS.primary,
+    backgroundColor: t.c.primary,
   },
-  confirmText: { fontSize: 14, fontWeight: "700", color: "#fff" },
-});
+  confirmText: { fontSize: 14, ...t.f("700"), color: t.hex("#fff") },
+} as const);

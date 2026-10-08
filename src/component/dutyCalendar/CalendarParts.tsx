@@ -1,5 +1,4 @@
 import { SelectSheet } from "@/component/common/FilterSheet";
-import { COLORS } from "@/constant/colors";
 import {
   addDays,
   addMonths,
@@ -12,7 +11,8 @@ import {
   weekdayHeaders,
   weekdayShort,
 } from "@/constant/dutyCalendar";
-import { Ionicons } from "@expo/vector-icons";
+import { TIcon, useThemedStyles } from "@/ds/themed";
+import { Theme, useTheme } from "@/ds/theme";
 import React, { useMemo, useRef, useState } from "react";
 import { PanResponder, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -36,6 +36,7 @@ export function useSwipe(onPrev: () => void, onNext: () => void) {
 
 // ─── Dots ───────────────────────────────────────────────────────────────────
 export function Dots({ colors, more }: { colors: string[]; more: number }) {
+  const styles = useStyles();
   return (
     <View style={styles.dots}>
       {colors.map((c, i) => (
@@ -47,6 +48,7 @@ export function Dots({ colors, more }: { colors: string[]; more: number }) {
 }
 
 export function Legend({ items }: { items: { color: string; label: string }[] }) {
+  const styles = useStyles();
   return (
     <View style={styles.legend}>
       {items.map((i) => (
@@ -81,6 +83,8 @@ export function CalendarHeader({
   prevDisabled?: boolean;
   nextDisabled?: boolean;
 }) {
+  const styles = useStyles();
+  const t = useTheme();
   const [picking, setPicking] = useState(false);
   // months between the history and horizon limits
   const months = useMemo(() => {
@@ -96,7 +100,7 @@ export function CalendarHeader({
     <View style={styles.header}>
       <TouchableOpacity style={styles.monthBtn} onPress={() => setPicking(true)} accessibilityLabel="Choose month">
         <Text style={styles.monthText}>{title}</Text>
-        <Ionicons name="chevron-down" size={16} color={COLORS.text} />
+        <TIcon ion="chevron-down" name="chevronDown" size={16} color={t.c.text} />
       </TouchableOpacity>
       <View style={styles.headerRight}>
         <TouchableOpacity style={styles.todayBtn} onPress={onToday}>
@@ -108,7 +112,7 @@ export function CalendarHeader({
           onPress={onPrev}
           accessibilityLabel="Previous"
         >
-          <Ionicons name="chevron-back" size={18} color={COLORS.text} />
+          <TIcon ion="chevron-back" name="chevronLeft" size={18} color={t.c.text} />
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.arrow, nextDisabled && styles.disabled]}
@@ -116,7 +120,7 @@ export function CalendarHeader({
           onPress={onNext}
           accessibilityLabel="Next"
         >
-          <Ionicons name="chevron-forward" size={18} color={COLORS.text} />
+          <TIcon ion="chevron-forward" name="chevronRight" size={18} color={t.c.text} />
         </TouchableOpacity>
       </View>
       <SelectSheet
@@ -147,6 +151,8 @@ export function WeekStrip({
   isDisabled?: (key: string) => boolean;
   continuation?: (key: string) => boolean;
 }) {
+  const styles = useStyles();
+  const t = useTheme();
   const today = todayKey();
   return (
     <View style={styles.week}>
@@ -165,7 +171,7 @@ export function WeekStrip({
             <Text style={[styles.weekday, on && styles.onText]}>{weekdayShort(key).charAt(0)}</Text>
             <Text style={[styles.weekNum, key === today && styles.todayNum, on && styles.onText]}>{dayNumber(key)}</Text>
             <View style={[styles.markRow, on && styles.markOn]}>{renderMarks(key)}</View>
-            {continuation?.(key) && <Ionicons name="moon" size={9} color={on ? "#fff" : "#6366F1"} style={styles.moon} />}
+            {continuation?.(key) && <View style={styles.moon}><TIcon ion="moon" name="overnight" size={9} color={on ? "#fff" : t.v2 ? t.c.primary : "#6366F1"} /></View>}
           </TouchableOpacity>
         );
       })}
@@ -191,6 +197,8 @@ export function MonthGrid({
   isDisabled?: (key: string) => boolean;
   continuation?: (key: string) => boolean;
 }) {
+  const styles = useStyles();
+  const t = useTheme();
   const today = todayKey();
   const cells = monthGrid(month, weekStart);
   const inMonth = (k: string) => k.slice(0, 7) === month.slice(0, 7);
@@ -233,7 +241,7 @@ export function MonthGrid({
                 </Text>
                 <View style={[styles.markRow, on && styles.markOn]}>{!faded && renderMarks(key)}</View>
                 {!faded && continuation?.(key) && (
-                  <Ionicons name="moon" size={9} color={on ? "#fff" : "#6366F1"} style={styles.moon} />
+                  <View style={styles.moon}><TIcon ion="moon" name="overnight" size={9} color={on ? "#fff" : t.v2 ? t.c.primary : "#6366F1"} /></View>
                 )}
               </TouchableOpacity>
             );
@@ -246,6 +254,7 @@ export function MonthGrid({
 
 // Count badge for open duties on a date
 export function CountBadge({ count }: { count: number }) {
+  const styles = useStyles();
   if (!count) return null;
   return (
     <View style={styles.badge}>
@@ -255,52 +264,55 @@ export function CountBadge({ count }: { count: number }) {
 }
 
 export function Notice({ text, tone = "info" }: { text: string; tone?: "info" | "warn" | "error" }) {
-  const t = {
-    info: { bg: "#EFF6FF", fg: "#1E40AF", icon: "information-circle-outline" },
+  const styles = useStyles();
+  const th = useTheme();
+  const tn = {
+    info: { bg: th.v2 ? th.c.well : "#EFF6FF", fg: th.v2 ? "#2A4480" : "#1E40AF", icon: "information-circle-outline" },
     warn: { bg: "#FFFBEB", fg: "#92400E", icon: "alert-circle-outline" },
     error: { bg: "#FEF2F2", fg: "#B91C1C", icon: "alert-circle-outline" },
   }[tone];
   return (
-    <View style={[styles.notice, { backgroundColor: t.bg }]}>
-      <Ionicons name={t.icon as any} size={16} color={t.fg} />
-      <Text style={[styles.noticeText, { color: t.fg }]}>{text}</Text>
+    <View style={[styles.notice, { backgroundColor: tn.bg }]}>
+      <TIcon ion={tn.icon as any} name={tone === "info" ? "info" : "warning"} size={16} color={tn.fg} />
+      <Text style={[styles.noticeText, { color: tn.fg }]}>{text}</Text>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (t: Theme) => ({
   dots: { flexDirection: "row", alignItems: "center", gap: 3, minHeight: 8 },
   dot: { width: 6, height: 6, borderRadius: 3 },
-  more: { fontSize: 9, fontWeight: "700", color: COLORS.subText },
+  more: { fontSize: 9, ...t.f("700"), color: t.c.subText },
   legend: { flexDirection: "row", flexWrap: "wrap", gap: 12, paddingTop: 8 },
   legendItem: { flexDirection: "row", alignItems: "center", gap: 5 },
-  legendText: { fontSize: 11, color: COLORS.subText },
+  legendText: { fontSize: 11, ...t.f(), color: t.c.subText },
 
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" },
   monthBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 6 },
-  monthText: { fontSize: 18, fontWeight: "800", color: COLORS.text },
+  monthText: { fontSize: 18, ...t.f("800"), color: t.c.text },
   headerRight: { flexDirection: "row", alignItems: "center", gap: 6 },
-  todayBtn: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: COLORS.white },
-  todayText: { fontSize: 13, fontWeight: "700", color: COLORS.primary },
-  arrow: { width: 34, height: 34, borderRadius: 8, borderWidth: 1, borderColor: COLORS.border, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.white },
+  todayBtn: { borderWidth: 1, borderColor: t.c.border, borderRadius: t.v2 ? 999 : 8, minHeight: t.v2 ? 40 : undefined, justifyContent: "center" as const, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: t.c.surface },
+  todayText: { fontSize: 13, ...t.f("700"), color: t.c.primary },
+  arrow: { width: t.v2 ? 40 : 34, height: t.v2 ? 40 : 34, borderRadius: t.v2 ? 20 : 8, borderWidth: 1, borderColor: t.c.border, alignItems: "center", justifyContent: "center", backgroundColor: t.c.surface },
   disabled: { opacity: 0.35 },
 
   week: { flexDirection: "row", gap: 6, marginTop: 10 },
   weekCell: {
     flex: 1,
+    minHeight: t.v2 ? 64 : undefined,
     minWidth: 0,
     alignItems: "center",
     paddingVertical: 8,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.white,
+    borderColor: t.c.border,
+    backgroundColor: t.c.surface,
     gap: 3,
   },
-  weekCellOn: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  weekday: { fontSize: 11, fontWeight: "600", color: COLORS.subText },
-  weekNum: { fontSize: 17, fontWeight: "800", color: COLORS.text },
-  todayNum: { color: COLORS.primary, textDecorationLine: "underline" },
+  weekCellOn: { backgroundColor: t.c.primary, borderColor: t.c.primary },
+  weekday: { fontSize: 11, ...t.f("600"), color: t.c.subText },
+  weekNum: { fontSize: 17, ...t.f("800"), color: t.c.text },
+  todayNum: { color: t.c.primary, textDecorationLine: "underline" },
   onText: { color: "#fff" },
   markRow: { minHeight: 16, alignItems: "center", justifyContent: "center" },
   // keeps dot colours readable on the blue selected cell
@@ -308,25 +320,28 @@ const styles = StyleSheet.create({
   moon: { position: "absolute", top: 4, right: 5 },
 
   gridHead: { flexDirection: "row", marginTop: 10, marginBottom: 4 },
-  gridHeadText: { flex: 1, textAlign: "center", fontSize: 11, fontWeight: "700", color: COLORS.subText },
+  gridHeadText: { flex: 1, textAlign: "center", fontSize: 11, ...t.f("700"), color: t.c.subText },
   gridRow: { flexDirection: "row", gap: 4, marginBottom: 4 },
   gridCell: {
     flex: 1,
+    minHeight: t.v2 ? 48 : undefined,
     minWidth: 0,
     alignItems: "center",
     paddingVertical: 6,
-    borderRadius: 10,
+    borderRadius: t.v2 ? 14 : 10,
     gap: 2,
-    backgroundColor: COLORS.white,
+    backgroundColor: t.c.surface,
     borderWidth: 1,
-    borderColor: "#F1F5F9",
+    borderColor: t.v2 ? "transparent" : "#F1F5F9",
   },
-  gridCellOn: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  gridNum: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  gridCellOn: { backgroundColor: t.c.primary, borderColor: t.c.primary },
+  gridNum: { fontSize: 14, ...t.f("700"), color: t.c.text },
 
-  badge: { minWidth: 18, height: 16, borderRadius: 8, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 },
-  badgeText: { fontSize: 10, fontWeight: "800", color: "#fff" },
+  badge: { minWidth: 18, height: 16, borderRadius: 8, backgroundColor: t.c.primary, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 },
+  badgeText: { fontSize: 10, ...t.f("800"), color: "#fff" },
 
   notice: { flexDirection: "row", gap: 8, alignItems: "flex-start", borderRadius: 10, padding: 10 },
-  noticeText: { flex: 1, fontSize: 12, lineHeight: 17 },
-});
+  noticeText: { flex: 1, fontSize: 12, lineHeight: 17, ...t.f("500") },
+} as const);
+
+const useStyles = () => useThemedStyles(makeStyles as any) as any;

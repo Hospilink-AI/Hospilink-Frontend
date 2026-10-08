@@ -1,9 +1,10 @@
+import { TIcon, useThemedStyles } from "@/ds/themed";
+import { Theme, useTheme } from "@/ds/theme";
 import { COLORS } from "@/constant/colors";
 import { baseOf, StoredNotification } from "@/constant/inAppNotifications";
 import { HEADER_CONTENT_HEIGHT } from "@/constant/layout";
 import { useInAppNotifications } from "@/context/InAppNotificationsContext";
 import { inAppNotificationAPI } from "@/service/api";
-import { Ionicons } from "@expo/vector-icons";
 import { usePathname, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
@@ -14,6 +15,8 @@ const PANEL_SIZE = 15;
 
 // Header bell: unread badge and a panel with the latest notifications.
 export default function InAppBell() {
+  const s = useSThemed();
+  const th = useTheme();
   const { unread, version, markRead, markAllRead, open } = useInAppNotifications();
   const router = useRouter();
   const pathname = usePathname();
@@ -66,7 +69,7 @@ export default function InAppBell() {
         accessibilityRole="button"
         accessibilityLabel={unread ? `Notifications, ${unread} unread` : "Notifications"}
       >
-        <Ionicons name="notifications-outline" size={22} color="#1e293b" />
+        <TIcon ion="notifications-outline" size={22} color={th.hex("#1e293b")} />
         {unread > 0 && (
           <View style={s.badge}>
             <Text style={s.badgeText}>{unread > 99 ? "99+" : unread}</Text>
@@ -90,7 +93,7 @@ export default function InAppBell() {
             </View>
             <ScrollView style={{ maxHeight: 420 }}>
               {loading && !items.length ? (
-                <ActivityIndicator color={COLORS.primary} style={{ marginVertical: 24 }} />
+                <ActivityIndicator color={th.c.primary} style={{ marginVertical: 24 }} />
               ) : error ? (
                 <Text style={s.empty}>{error}</Text>
               ) : items.length === 0 ? (
@@ -109,7 +112,7 @@ export default function InAppBell() {
   );
 }
 
-const s = StyleSheet.create({
+const make_s = (t: Theme) => ({
   bell: { padding: 6, position: "relative" },
   badge: {
     position: "absolute",
@@ -118,31 +121,32 @@ const s = StyleSheet.create({
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: "#DC2626",
+    backgroundColor: t.hex("#DC2626"),
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 4,
     borderWidth: 2,
-    borderColor: "#FFFFFF",
+    borderColor: t.hex("#FFFFFF"),
   },
-  badgeText: { color: "#fff", fontSize: 10, fontWeight: "800" },
+  badgeText: { color: t.hex("#fff"), fontSize: 10, ...t.f("800") },
   backdrop: { flex: 1, backgroundColor: "rgba(15,23,42,0.12)" },
   panel: {
     position: "absolute",
-    backgroundColor: COLORS.white,
-    borderRadius: 14,
+    backgroundColor: t.c.surface,
+    borderRadius: t.v2 ? 18 : 14,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: t.c.border,
     overflow: "hidden",
-    shadowColor: "#0F172A",
+    shadowColor: t.hex("#0F172A"),
     shadowOpacity: 0.18,
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 8 },
     elevation: 12,
   },
-  head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  title: { fontSize: 15, fontWeight: "800", color: COLORS.text },
-  link: { fontSize: 13, fontWeight: "700", color: COLORS.primary },
-  empty: { fontSize: 13, color: COLORS.subText, textAlign: "center", paddingVertical: 28 },
-  footer: { alignItems: "center", paddingVertical: 12, borderTopWidth: 1, borderTopColor: COLORS.border },
-});
+  head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: t.c.border },
+  title: { fontSize: 15, ...t.f("800"), color: t.c.text },
+  link: { fontSize: 13, ...t.f("700"), color: t.c.primary },
+  empty: { ...t.f(), fontSize: 13, color: t.c.subText, textAlign: "center", paddingVertical: 28 },
+  footer: { alignItems: "center", paddingVertical: 12, borderTopWidth: 1, borderTopColor: t.c.border },
+} as const);
+const useSThemed = () => useThemedStyles(make_s as any) as any;

@@ -1,7 +1,8 @@
+import { TIcon, useThemedStyles } from "@/ds/themed";
+import { Theme, useTheme } from "@/ds/theme";
 import { COLORS } from "@/constant/colors";
 import { useAuth } from "@/context/AuthContext";
 import { flash } from "@/service/session";
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -9,7 +10,9 @@ import BlockedAccounts from "./BlockedAccounts";
 import DeleteAccount, { DeletionResult, formatDeletionDate } from "./DeleteAccount";
 
 // Profile → Account settings (doctors and hospitals)
-export default function AccountSettingsScreen({ role }: { role: "staff" | "hospital" }) {
+export default function AccountSettingsScreen({ role, embedded = false }: { role: "staff" | "hospital"; embedded?: boolean }) {
+  const s = useSThemed();
+  const th = useTheme();
   const router = useRouter();
   const { logout } = useAuth();
   const base = role === "hospital" ? "hospital" : "medicalStaff";
@@ -30,11 +33,15 @@ export default function AccountSettingsScreen({ role }: { role: "staff" | "hospi
 
   return (
     <ScrollView style={s.page} contentContainerStyle={s.content}>
-      <TouchableOpacity onPress={() => router.replace(`/${base}/profile` as any)} style={s.back} accessibilityRole="link">
-        <Ionicons name="chevron-back" size={18} color={COLORS.primary} />
-        <Text style={s.backText}>Profile</Text>
-      </TouchableOpacity>
-      <Text style={s.title}>Account settings</Text>
+      {!embedded && (
+        <>
+          <TouchableOpacity onPress={() => router.replace(`/${base}/profile` as any)} style={s.back} accessibilityRole="link">
+            <TIcon ion="chevron-back" size={18} color={th.c.primary} />
+            <Text style={s.backText}>Profile</Text>
+          </TouchableOpacity>
+          <Text style={s.title}>Account settings</Text>
+        </>
+      )}
 
       <View style={[s.card, { marginBottom: 16, paddingVertical: 4 }]}>
         {[
@@ -47,16 +54,16 @@ export default function AccountSettingsScreen({ role }: { role: "staff" | "hospi
             onPress={() => router.push(l.href as any)}
             accessibilityRole="link"
           >
-            <Ionicons name={l.icon as any} size={20} color={COLORS.subText} />
+            <TIcon ion={l.icon as any} size={20} color={th.c.subText} />
             <Text style={s.linkText}>{l.label}</Text>
-            <Ionicons name="chevron-forward" size={18} color={COLORS.subText} />
+            <TIcon ion="chevron-forward" size={18} color={th.c.subText} />
           </TouchableOpacity>
         ))}
       </View>
 
       <View style={[s.card, { marginBottom: 16 }]}>
         <View style={s.cardHead}>
-          <Ionicons name="ban-outline" size={20} color={COLORS.text} />
+          <TIcon ion="ban-outline" size={20} color={th.c.text} />
           <Text style={s.cardTitle}>Blocked accounts</Text>
         </View>
         <BlockedAccounts role={role} />
@@ -64,7 +71,7 @@ export default function AccountSettingsScreen({ role }: { role: "staff" | "hospi
 
       <View style={s.card}>
         <View style={s.cardHead}>
-          <Ionicons name="trash-outline" size={20} color={COLORS.red} />
+          <TIcon ion="trash-outline" size={20} color={th.c.danger} />
           <Text style={s.cardTitle}>Delete account</Text>
         </View>
         <DeleteAccount role={role} onDeleted={onDeleted} />
@@ -73,15 +80,16 @@ export default function AccountSettingsScreen({ role }: { role: "staff" | "hospi
   );
 }
 
-const s = StyleSheet.create({
-  page: { flex: 1, backgroundColor: COLORS.background },
+const make_s = (t: Theme) => ({
+  page: { flex: 1, backgroundColor: t.c.background },
   content: { padding: 16, paddingBottom: 48, width: "100%", maxWidth: 720, alignSelf: "center" },
   back: { flexDirection: "row", alignItems: "center", gap: 2, marginBottom: 8, alignSelf: "flex-start" },
-  backText: { fontSize: 14, color: COLORS.primary, fontWeight: "600" },
-  title: { fontSize: 22, fontWeight: "700", color: COLORS.text, marginBottom: 16 },
-  card: { backgroundColor: COLORS.white, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: COLORS.border },
+  backText: { fontSize: 14, color: t.c.primary, ...t.f("600") },
+  title: { fontSize: 22, ...t.f("700"), color: t.c.text, marginBottom: 16 },
+  card: { backgroundColor: t.c.surface, borderRadius: t.v2 ? 16 : 12, padding: 16, borderWidth: 1, borderColor: t.c.border },
   cardHead: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
-  cardTitle: { fontSize: 17, fontWeight: "700", color: COLORS.text },
+  cardTitle: { fontSize: 17, ...t.f("700"), color: t.c.text },
   linkRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14 },
-  linkText: { flex: 1, fontSize: 15, fontWeight: "600", color: COLORS.text },
-});
+  linkText: { flex: 1, fontSize: 15, ...t.f("600"), color: t.c.text },
+} as const);
+const useSThemed = () => useThemedStyles(make_s as any) as any;

@@ -19,6 +19,7 @@ import { Platform, Pressable, StyleSheet, Text, TouchableOpacity, useWindowDimen
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "./AuthContext";
 import { useSocket } from "./SocketContext";
+import AlertToast from "@/doctor/components/AlertToast";
 
 type Live = { type?: string; payload: any };
 type Toast = { id: string; display: Display; source?: Live; count?: number };
@@ -56,7 +57,7 @@ let toastSeq = 0;
 
 export function InAppNotificationsProvider({ children }: { children: React.ReactNode }) {
   const { socket } = useSocket();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [unread, setUnread] = useState(0);
@@ -69,7 +70,8 @@ export function InAppNotificationsProvider({ children }: { children: React.React
   const pathRef = useRef(pathname);
   pathRef.current = pathname;
 
-  const enabled = INAPP_NOTIFICATIONS_ENABLED && !!token;
+  // Always on for doctors; other roles follow the flag
+  const enabled = (INAPP_NOTIFICATIONS_ENABLED || user?.role === "staff") && !!token;
   const inApp = /^\/(admin|hospital|medicalStaff)(\/|$)/.test(pathname);
 
   const refreshUnread = useCallback(async () => {
@@ -210,7 +212,7 @@ export function InAppNotificationsProvider({ children }: { children: React.React
     <InAppContext.Provider value={{ enabled, unread, version, refreshUnread, markRead, markAllRead, open: goTo }}>
       {children}
       {enabled && inApp && toasts.length > 0 && (
-        <ToastStack toasts={toasts} onOpen={openToast} onClose={closeToast} onExpire={dismiss} />
+        <ToastStack toasts={toasts} onOpen={openToast} onClose={closeToast} onExpire={dismiss} doctor={user?.role === "staff"} hospital={user?.role === "hospital"} />
       )}
     </InAppContext.Provider>
   );
@@ -221,15 +223,21 @@ function ToastStack({
   onOpen,
   onClose,
   onExpire,
+  doctor,
+  hospital,
 }: {
   toasts: Toast[];
   onOpen: (t: Toast) => void;
   onClose: (t: Toast) => void;
   onExpire: (id: string) => void;
+  doctor?: boolean;
+  hospital?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const phone = width < 768;
+  // The new toast for doctors and hospitals; the old card for admins.
+  const modern = doctor || hospital;
   return (
     <View
       pointerEvents="box-none"
@@ -240,10 +248,36 @@ function ToastStack({
         Platform.OS === "web" && ({ position: "fixed" } as any),
       ]}
     >
-      {toasts.map((t) => (
-        <ToastCard key={t.id} toast={t} onOpen={() => onOpen(t)} onClose={() => onClose(t)} onExpire={() => onExpire(t.id)} />
-      ))}
+      {toasts.map((t) =>
+        modern ? (
+          <DoctorToast key={t.id} toast={t} onOpen={() => onOpen(t)} onClose={() => onClose(t)} onExpire={() => onExpire(t.id)} />
+        ) : (
+          <ToastCard key={t.id} toast={t} onOpen={() => onOpen(t)} onClose={() => onClose(t)} onExpire={() => onExpire(t.id)} />
+        )
+      )}
     </View>
+  );
+}
+
+function DoctorToast({ toast, onOpen, onClose, onExpire }: { toast: Toast; onOpen: () => void; onClose: () => void; onExpire: () => void }) {
+  const sev: Severity = toast.display.severity ?? "info";
+  useEffect(() => {
+    const ms = TOAST_MS[sev];
+    if (ms === null) return;
+    const t = setTimeout(onExpire, ms);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return (
+    <AlertToast
+      title={toast.display.title}
+      body={toast.display.body ?? undefined}
+      category={toast.display.category}
+      severity={sev}
+      count={toast.count}
+      onOpen={onOpen}
+      onClose={onClose}
+    />
   );
 }
 

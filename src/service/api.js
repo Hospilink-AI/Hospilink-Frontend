@@ -65,7 +65,6 @@ apiAgent.interceptors.request.use(
   async (config) => {
     const token = await getToken(); // ✅ async safe
 
-    console.log("API AGENT TOKEN:", token);
     console.log("API AGENT URL:", config.url);
 
     if (token) {
@@ -145,7 +144,8 @@ apiAgent.interceptors.response.use(
       console.log("403 RESPONSE:", error.response?.data);
 
       if (message.toLowerCase().includes("suspend")) {
-        window.location.replace("/auth/accountsuspended");
+        if (Platform.OS === "web") window.location.replace("/auth/accountsuspended");
+        else require("expo-router").router.replace("/auth/accountsuspended");
         return Promise.reject(error);
       }
     }
@@ -275,20 +275,6 @@ export const profileAPI = {
 
 
 
-  createMedicalStaffProfileWithLocation: async (profileData) => {
-    const response = await api.post('/api/profile/medical-staff', {
-      fullName: profileData.fullName,
-      jobRole: profileData.jobRole,
-      city: profileData.city,
-      area: profileData.area,
-      phoneNumber: profileData.phoneNumber,
-      preCapturedLocation: profileData.preCapturedLocation,
-      profileSummary: profileData.profileSummary,
-      education: profileData.education,
-      skills: profileData.skills,
-    });
-    return response.data;
-  },
   // Create medical staff profile
   createMedicalStaffProfile: async (profileData) => {
     const response = await api.post('/api/profile/medical-staff', profileData);
@@ -351,15 +337,6 @@ export const profileAPI = {
     return response.data;
   },
 
-  // Handles both permissionGranted: true (with coords) and false (without coords)
-  checkLocationPermission: async (permissionGranted, latitude = null, longitude = null) => {
-    const payload = permissionGranted
-      ? { latitude, longitude, permissionGranted: true }
-      : { permissionGranted: false };
-
-    const response = await api.post('/api/profile/check-location-permission', payload);
-    return response.data;
-  },
 
   // Send dashboard location permission status
   // sendDashboardLocationPermission: async (permissionGranted, latitude = null, longitude = null) => {
@@ -561,41 +538,9 @@ export const dutyAPI = {
   // Get duties
   // Fetch available duties for the logged-in staff member
 
-  getAvailableDuties: async () => {
-    const getLocation = () => {
-      return new Promise((resolve) => {
-        if (typeof navigator === 'undefined' || !navigator.geolocation) {
-          resolve({ permission: "denied", location: null });
-          return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            resolve({
-              permission: "granted",
-              location: {
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-              },
-            });
-          },
-          () => {
-            resolve({ permission: "denied", location: null });
-          }
-        );
-      });
-    };
-
-    const { permission, location } = await getLocation();
-
-    const params = { locationPermission: permission };
-
-    if (permission === "granted" && location) {
-      params.currentLocation = JSON.stringify(location);
-    }
-
-    // const response = await api.get("/api/duties/available", { params });
-    const response = await api.get("/api/duties/available");
+  // GET /api/duties/available (the server uses the position the app shares over the socket)
+  getAvailableDuties: async (params = {}) => {
+    const response = await api.get("/api/duties/available", { params });
     return response.data;
   },
 
@@ -618,40 +563,20 @@ export const dutyAPI = {
     return response.data;
   },
 
+  // Raise an open duty's rate. Uses the dedicated endpoint when the server has it, else the rate edit.
+  raiseRate: async (dutyId, offeredRate) => {
+    try {
+      const response = await api.post(`/api/duties/${dutyId}/raise-rate`, { offered_rate: offeredRate });
+      return response.data;
+    } catch (err) {
+      if (err?.response?.status !== 404) throw err;
+      const response = await api.patch(`/api/duties/${dutyId}`, { offered_rate: offeredRate });
+      return response.data;
+    }
+  },
+
   // Get my upcoming duties (accepted duties)
   getMyUpcomingDuties: async () => {
-    const getLocation = () => {
-      return new Promise((resolve) => {
-        if (typeof navigator === 'undefined' || !navigator.geolocation) {
-          resolve({ permission: "denied", location: null });
-          return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            resolve({
-              permission: "granted",
-              location: {
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-              },
-            });
-          },
-          () => {
-            resolve({ permission: "denied", location: null });
-          }
-        );
-      });
-    };
-
-    const { permission, location } = await getLocation();
-
-    const params = { locationPermission: permission };
-
-    if (permission === "granted" && location) {
-      params.currentLocation = JSON.stringify(location);
-    }
-
     const response = await api.get("/api/duties/my-upcoming");
     return response.data;
   },
@@ -699,6 +624,12 @@ export const dutyAPI = {
     return response.data;
   },
 
+  // GET /api/duties/statement?startDate=&endDate= (or ?dutyId=) -> PDF
+  getStatement: async (params = {}) => {
+    const response = await api.get('/api/duties/statement', { params, responseType: 'blob' });
+    return response.data;
+  },
+
   // Get all completed duty history for staff
   getCompletedDuties: async (params = {}) => {
     const response = await api.get('/api/completed-duties', { params });
@@ -736,26 +667,9 @@ export const dutyAPI = {
     return response.data; // returns { success, cached, data: { hospital, staff } }
   },
 
-  // Live location monitoring APIs
-  updateLiveLocation: async (latitude, longitude) => {
-    const response = await api.post('/api/location/update', { latitude, longitude });
-    return response.data;
-  },
 
-  startLocationTracking: async (dutyId) => {
-    const response = await api.post(`/api/duties/${dutyId}/start-tracking`);
-    return response.data;
-  },
 
-  stopLocationTracking: async (dutyId) => {
-    const response = await api.post(`/api/duties/${dutyId}/stop-tracking`);
-    return response.data;
-  },
 
-  getStaffLiveLocation: async (staffId) => {
-    const response = await api.get(`/api/location/staff/${staffId}`);
-    return response.data;
-  },
 
   getHospitalActiveDuties: async ({ params }) => {
     const response = await api.get('api/duties/active-duties', { params })
@@ -822,29 +736,10 @@ export const vacancyAPI = {
   },
 
 
-  // GET /api/agent/v1/jobs?role=X
-  getJobsByRole: async (role, page = 1) => {
-    const response = await apiAgent.get('/v1/jobs', {
-      params: { role, page },
-    });
-    return response.data;
-  },
 
   // GET /api/agent/v1/search/stream?role=X&location=Y
   // SSE stream — returns aggregated result when complete
 
-  // GET /api/agent/v1/search/stream — AI-powered SSE, parses final result event
-  getSearchStream: async (role, location) => {
-    const response = await api.get('/api/agent/v1/search/stream', {
-      params: { role, location },
-      timeout: 60000,        // stream takes longer than default 30s
-      responseType: 'text',  // treat SSE as raw text, not JSON
-    });
-    const result = parseSSEResult(response.data);
-    if (!result) throw new Error('Stream ended without a result event');
-    return result;
-    // Returns parsed data from the final SSE `event: result` block
-  },
 
 };
 
@@ -1703,7 +1598,8 @@ export const documentAPI = {
   },
 
 
-  uploadDocument: async (documentType, fileUri, mimeType) => {
+  // replace: true swaps an already uploaded document of the same type
+  uploadDocument: async (documentType, fileUri, mimeType, replace = false) => {
     console.log("API CALLED");
 
     const token = Platform.OS === "web"
@@ -1735,7 +1631,7 @@ export const documentAPI = {
       console.log("Uploading:", { fileUri, documentType });
 
       const baseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
-      const res = await fetch(`${baseUrl}/api/documents/upload`, {
+      const res = await fetch(`${baseUrl}/api/documents/upload${replace ? '?replace=true' : ''}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

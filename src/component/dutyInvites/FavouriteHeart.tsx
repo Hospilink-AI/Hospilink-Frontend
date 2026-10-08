@@ -1,7 +1,8 @@
+import { TIcon } from "@/ds/themed";
+import { useTheme } from "@/ds/theme";
 import { DUTY_INVITES_ENABLED } from "@/constant/dutyInvites";
 import { apiError } from "@/constant/jobs";
 import { inviteAPI } from "@/service/api";
-import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, StyleProp, ViewStyle } from "react-native";
 
@@ -21,6 +22,7 @@ export default function FavouriteHeart({
   size?: number;
   style?: StyleProp<ViewStyle>;
 }) {
+  const th = useTheme();
   const [on, setOn] = useState(value);
   const [busy, setBusy] = useState(false);
 
@@ -57,9 +59,9 @@ export default function FavouriteHeart({
       style={style}
     >
       {busy ? (
-        <ActivityIndicator size="small" color="#E11D48" />
+        <ActivityIndicator size="small" color={th.hex("#E11D48")} />
       ) : (
-        <Ionicons name={on ? "heart" : "heart-outline"} size={size} color={on ? "#E11D48" : "#94A3B8"} />
+        <TIcon ion={on ? "heart" : "heart-outline"} size={size} color={on ? th.hex("#E11D48") : th.hex("#94A3B8")} />
       )}
     </Pressable>
   );

@@ -1,5 +1,6 @@
+import { Theme, ThemeProvider, useTheme } from "@/ds/theme";
+import { TIcon, useThemedStyles } from "@/ds/themed";
 import { COLORS } from "@/constant/colors";
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -7,7 +8,18 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import LegalDoc, { LegalDocument } from "./LegalDoc";
 
 // Plain page for a legal document: works signed in or out, on web and in the app
+// Legal documents use the new design everywhere.
 export default function LegalPage({ doc }: { doc: LegalDocument }) {
+  return (
+    <ThemeProvider name="v2">
+      <LegalBody doc={doc} />
+    </ThemeProvider>
+  );
+}
+
+function LegalBody({ doc }: { doc: LegalDocument }) {
+  const s = use_s();
+  const th = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   return (
@@ -19,7 +31,7 @@ export default function LegalPage({ doc }: { doc: LegalDocument }) {
           accessibilityRole="button"
           accessibilityLabel="Back"
         >
-          <Ionicons name="chevron-back" size={20} color={COLORS.primary} />
+          <TIcon ion="chevron-back" size={20} color={th.c.primary} />
           <Text style={s.backText}>Back</Text>
         </TouchableOpacity>
         <Text style={s.brand}>HospiLink</Text>
@@ -32,8 +44,9 @@ export default function LegalPage({ doc }: { doc: LegalDocument }) {
   );
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.white },
+const use_s = () => useThemedStyles(make_s as any) as any;
+const make_s = (t: Theme) => ({
+  root: { flex: 1, backgroundColor: t.c.surface },
   bar: {
     flexDirection: "row",
     alignItems: "center",
@@ -41,9 +54,9 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: t.c.border,
   },
   back: { flexDirection: "row", alignItems: "center", width: 64 },
-  backText: { color: COLORS.primary, fontSize: 15, fontWeight: "600" },
-  brand: { fontSize: 18, fontWeight: "800", color: COLORS.primary },
-});
+  backText: { color: t.c.primary, fontSize: 15, ...t.f("600") },
+  brand: { fontSize: 18, ...t.f("800"), color: t.c.primary },
+} as const);

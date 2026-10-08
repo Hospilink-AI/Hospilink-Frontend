@@ -1,10 +1,10 @@
-import { COLORS } from "@/constant/colors";
+import { color as C, ceil, font } from "@/ds/tokens";
+import { Notice } from "@/ds/States";
 import { dayNumber, formatTime, parseTime, todayKey, weekdayShort } from "@/constant/dutyCalendar";
 import { apiError, roleLabel } from "@/constant/jobs";
 import { dutyCalendarAPI } from "@/service/api";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Notice } from "./CalendarParts";
 
 export type MyDuty = {
   dutyId: string;
@@ -25,13 +25,13 @@ const HOUR_PX = 22;
 const DAY_MIN = 24 * 60;
 
 const BLOCK_COLORS: Record<string, string> = {
-  assigned: "#2563EB",
-  enroute: "#7C3AED",
-  "in-progress": "#7C3AED",
-  "pending-confirmation": "#7C3AED",
-  completed: "#16A34A",
-  incomplete: "#F59E0B",
-  cancelled: "#94A3B8",
+  assigned: C.primary,
+  enroute: C.ink,
+  "in-progress": C.ink,
+  "pending-confirmation": "#B07A10",
+  completed: C.success,
+  incomplete: C.danger,
+  cancelled: C.inkFaint,
 };
 
 // Seven columns against a time axis so overlaps and gaps show. Reads calendar-day (no Maps) for each date.
@@ -66,7 +66,7 @@ export default function ScheduleWeek({
   const today = todayKey();
   const hours = compact ? [0, 6, 12, 18] : [0, 3, 6, 9, 12, 15, 18, 21];
 
-  if (error) return <Notice tone="error" text={error} />;
+  if (error) return <Notice tone="danger" body={error} />;
 
   return (
     <View style={styles.wrap}>
@@ -75,7 +75,7 @@ export default function ScheduleWeek({
         {days.map((d) => (
           <View key={d} style={styles.colHead}>
             <Text style={styles.wd}>{weekdayShort(d).slice(0, compact ? 1 : 3)}</Text>
-            <Text style={[styles.dn, d === today && { color: COLORS.primary }]}>{dayNumber(d)}</Text>
+            <Text style={[styles.dn, d === today && { color: C.primary }]}>{dayNumber(d)}</Text>
           </View>
         ))}
       </View>
@@ -98,7 +98,7 @@ export default function ScheduleWeek({
               // overnight: the start day runs to midnight, the next day from midnight
               const top = duty.continuation ? 0 : s;
               const bottom = duty.continuation ? e : e > s ? e : DAY_MIN;
-              const color = BLOCK_COLORS[duty.status] ?? COLORS.primary;
+              const color = BLOCK_COLORS[duty.status] ?? C.primary;
               return (
                 <TouchableOpacity
                   key={`${duty.dutyId}-${duty.continuation}`}
@@ -127,7 +127,7 @@ export default function ScheduleWeek({
         ))}
         {loading && (
           <View style={styles.loading}>
-            <ActivityIndicator color={COLORS.primary} />
+            <ActivityIndicator color={C.primary} />
           </View>
         )}
       </View>
@@ -141,16 +141,16 @@ const styles = StyleSheet.create({
   headRow: { flexDirection: "row" },
   axis: { width: 34, position: "relative" },
   colHead: { flex: 1, minWidth: 0, alignItems: "center", paddingBottom: 4 },
-  wd: { fontSize: 11, color: COLORS.subText, fontWeight: "600" },
-  dn: { fontSize: 14, fontWeight: "800", color: COLORS.text },
+  wd: { fontSize: 11, color: C.inkMuted, fontFamily: font.semibold },
+  dn: { fontSize: 15, fontFamily: font.bold, color: C.ink, fontVariant: ["tabular-nums"] },
   body: { flexDirection: "row", height: 24 * HOUR_PX, position: "relative" },
-  hour: { position: "absolute", right: 4, fontSize: 9, color: COLORS.subText },
-  col: { flex: 1, minWidth: 0, borderLeftWidth: 1, borderLeftColor: "#F1F5F9", position: "relative" },
-  colToday: { backgroundColor: "#F8FAFF" },
-  gridLine: { position: "absolute", left: 0, right: 0, height: 1, backgroundColor: "#F1F5F9" },
-  block: { position: "absolute", left: 2, right: 2, borderRadius: 4, borderLeftWidth: 3, paddingHorizontal: 3, paddingVertical: 2, overflow: "hidden" },
-  blockCont: { borderStyle: "dashed", borderWidth: 1, borderColor: "#A5B4FC" },
-  blockText: { fontSize: 10, fontWeight: "700" },
+  hour: { position: "absolute", right: 4, fontSize: 9, color: C.inkMuted, fontFamily: font.medium },
+  col: { flex: 1, minWidth: 0, borderLeftWidth: 1, borderLeftColor: C.line, position: "relative" },
+  colToday: { backgroundColor: ceil[50] },
+  gridLine: { position: "absolute", left: 0, right: 0, height: 1, backgroundColor: C.line },
+  block: { position: "absolute", left: 2, right: 2, borderRadius: 6, borderLeftWidth: 3, paddingHorizontal: 3, paddingVertical: 2, overflow: "hidden" },
+  blockCont: { borderStyle: "dashed", borderWidth: 1, borderColor: ceil[300] },
+  blockText: { fontSize: 10, fontFamily: font.bold },
   loading: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.6)" },
-  note: { fontSize: 11, color: COLORS.subText, marginTop: 6 },
+  note: { fontSize: 12, color: C.inkMuted, marginTop: 8, fontFamily: font.medium },
 });

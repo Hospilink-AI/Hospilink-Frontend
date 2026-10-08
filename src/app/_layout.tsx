@@ -9,11 +9,27 @@ import { SocketProvider } from "@/context/SocketContext";
 import { NotificationProvider } from "@/context/NotificationContext";
 import { InAppNotificationsProvider } from "@/context/InAppNotificationsContext";
 import FlashHost from "@/component/common/FlashHost";
+import {
+  Manrope_400Regular,
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
+  Manrope_800ExtraBold,
+} from "@expo-google-fonts/manrope";
 
 // Icon fonts load before the first screen. An icon that mounts before its font is ready draws
 // nothing, and on a slow connection the browser's 6 s font check times out (blank icons and an
 // error). Try a few times, then carry on regardless so the app never hangs here.
-const ICON_FONTS = { ...Ionicons.font, ...Feather.font, ...MaterialIcons.font };
+const ICON_FONTS = {
+  ...Ionicons.font,
+  ...Feather.font,
+  ...MaterialIcons.font,
+  Manrope_400Regular,
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
+  Manrope_800ExtraBold,
+};
 
 function useIconFonts() {
   const [ready, setReady] = useState(false);

@@ -1,3 +1,5 @@
+import { TIcon, useThemedStyles } from "@/ds/themed";
+import { Theme, useTheme } from "@/ds/theme";
 import { COLORS } from "@/constant/colors";
 import { apiError, formatDate, formatTime } from "@/constant/jobs";
 import {
@@ -9,7 +11,6 @@ import {
   ticketStatusTone,
 } from "@/constant/support";
 import { ticketAPI } from "@/service/api";
-import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
@@ -17,6 +18,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, useW
 type Tab = "mine" | "against";
 
 export function TicketStatusPill({ status }: { status: string }) {
+  const pill = usePillThemed();
   const tone = TICKET_STATUS_COLORS[ticketStatusTone(status)];
   return (
     <View style={[pill.base, { backgroundColor: tone.bg }]}>
@@ -27,6 +29,8 @@ export function TicketStatusPill({ status }: { status: string }) {
 
 // base: "/medicalStaff/support" or "/hospital/support"
 export default function TicketList({ base }: { base: string }) {
+  const styles = useStylesThemed();
+  const th = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams<{ tab?: string }>();
   const { width } = useWindowDimensions();
@@ -71,7 +75,7 @@ export default function TicketList({ base }: { base: string }) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={[styles.content, isMobile && { padding: 16 }]}>
       <TouchableOpacity style={styles.back} onPress={() => router.push(base as any)}>
-        <Ionicons name="arrow-back" size={16} color={COLORS.subText} />
+        <TIcon ion="arrow-back" size={16} color={th.c.subText} />
         <Text style={styles.backText}>Back to Support</Text>
       </TouchableOpacity>
       <Text style={styles.title}>My Tickets</Text>
@@ -89,7 +93,7 @@ export default function TicketList({ base }: { base: string }) {
         </Text>
       )}
 
-      {loading && <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 40 }} />}
+      {loading && <ActivityIndicator size="large" color={th.c.primary} style={{ marginTop: 40 }} />}
 
       {!loading && !!error && (
         <View style={styles.state}>
@@ -102,7 +106,7 @@ export default function TicketList({ base }: { base: string }) {
 
       {!loading && !error && tickets.length === 0 && (
         <View style={styles.state}>
-          <Ionicons name="file-tray-outline" size={36} color={COLORS.subText} />
+          <TIcon ion="file-tray-outline" size={36} color={th.c.subText} />
           <Text style={styles.muted}>
             {tab === "mine" ? "You haven't raised any tickets yet." : "No one has raised a complaint about you."}
           </Text>
@@ -131,7 +135,7 @@ export default function TicketList({ base }: { base: string }) {
                 <Text style={styles.muted}>Raised {formatDate(t.createdAt)}</Text>
                 {needsReply && !!t.respondentDeadline && (
                   <View style={styles.due}>
-                    <Ionicons name="time-outline" size={14} color="#B45309" />
+                    <TIcon ion="time-outline" size={14} color={th.hex("#B45309")} />
                     <Text style={styles.dueText}>
                       Reply by {formatDate(t.respondentDeadline)}, {formatTime(t.respondentDeadline)}
                     </Text>
@@ -146,11 +150,11 @@ export default function TicketList({ base }: { base: string }) {
       {!loading && pagination && pagination.totalPages > 1 && (
         <View style={styles.pager}>
           <TouchableOpacity disabled={!pagination.hasPrevPage} style={[styles.pageBtn, !pagination.hasPrevPage && { opacity: 0.4 }]} onPress={() => load(tab, page - 1)}>
-            <Ionicons name="chevron-back" size={16} color={COLORS.primary} />
+            <TIcon ion="chevron-back" size={16} color={th.c.primary} />
           </TouchableOpacity>
           <Text style={styles.pageInfo}>{pagination.currentPage} / {pagination.totalPages}</Text>
           <TouchableOpacity disabled={!pagination.hasNextPage} style={[styles.pageBtn, !pagination.hasNextPage && { opacity: 0.4 }]} onPress={() => load(tab, page + 1)}>
-            <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
+            <TIcon ion="chevron-forward" size={16} color={th.c.primary} />
           </TouchableOpacity>
         </View>
       )}
@@ -158,33 +162,35 @@ export default function TicketList({ base }: { base: string }) {
   );
 }
 
-const pill = StyleSheet.create({
+const make_pill = (t: Theme) => ({
   base: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, alignSelf: "flex-start" },
-  text: { fontSize: 11, fontWeight: "700" },
-});
+  text: { fontSize: 11, ...t.f("700") },
+} as const);
+const usePillThemed = () => useThemedStyles(make_pill as any) as any;
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const make_styles = (t: Theme) => ({
+  container: { flex: 1, backgroundColor: t.c.background },
   content: { padding: 24, paddingBottom: 48, maxWidth: 820, width: "100%", alignSelf: "center" },
-  back: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 12 },
-  backText: { fontSize: 13, color: COLORS.subText },
-  title: { fontSize: 22, fontWeight: "800", color: COLORS.text },
+  back: { display: t.v2 ? ("none" as const) : ("flex" as const), flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 12 },
+  backText: { ...t.f(), fontSize: 13, color: t.c.subText },
+  title: { fontSize: 22, ...t.f("800"), color: t.c.text },
   tabs: { flexDirection: "row", gap: 8, marginTop: 16, marginBottom: 8 },
-  tab: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.white },
-  tabActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  tabText: { fontSize: 13, color: COLORS.text, fontWeight: "600" },
-  tabTextActive: { color: "#fff" },
-  muted: { fontSize: 13, color: COLORS.subText, lineHeight: 19 },
+  tab: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: t.c.border, backgroundColor: t.c.surface },
+  tabActive: { backgroundColor: t.c.primary, borderColor: t.c.primary },
+  tabText: { fontSize: 13, color: t.c.text, ...t.f("600") },
+  tabTextActive: { color: t.hex("#fff") },
+  muted: { ...t.f(), fontSize: 13, color: t.c.subText, lineHeight: 19 },
   state: { alignItems: "center", gap: 10, paddingVertical: 48 },
-  retry: { backgroundColor: COLORS.primary, borderRadius: 8, paddingHorizontal: 18, paddingVertical: 10 },
-  retryText: { color: "#fff", fontWeight: "700" },
-  card: { backgroundColor: COLORS.white, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, padding: 16, gap: 4 },
+  retry: { backgroundColor: t.c.primary, borderRadius: t.v2 ? 12 : 8, paddingHorizontal: 18, paddingVertical: 10 },
+  retryText: { color: t.hex("#fff"), ...t.f("700") },
+  card: { backgroundColor: t.c.surface, borderRadius: t.v2 ? 16 : 12, borderWidth: 1, borderColor: t.c.border, padding: 16, gap: 4 },
   cardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 },
-  ticketId: { fontSize: 12, fontWeight: "700", color: COLORS.subText, letterSpacing: 0.3 },
-  cardTitle: { fontSize: 15, fontWeight: "700", color: COLORS.text, marginTop: 2 },
-  due: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6, backgroundColor: "#FFFBEB", borderRadius: 8, padding: 8, alignSelf: "flex-start" },
-  dueText: { fontSize: 12, color: "#B45309", fontWeight: "600" },
+  ticketId: { fontSize: 12, ...t.f("700"), color: t.c.subText, letterSpacing: 0.3 },
+  cardTitle: { fontSize: 15, ...t.f("700"), color: t.c.text, marginTop: 2 },
+  due: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6, backgroundColor: t.hex("#FFFBEB"), borderRadius: t.v2 ? 12 : 8, padding: 8, alignSelf: "flex-start" },
+  dueText: { fontSize: 12, color: t.hex("#B45309"), ...t.f("600") },
   pager: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 14, marginTop: 16 },
-  pageBtn: { width: 36, height: 36, borderRadius: 8, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.white, alignItems: "center", justifyContent: "center" },
-  pageInfo: { fontSize: 13, fontWeight: "600", color: COLORS.text },
-});
+  pageBtn: { width: 36, height: 36, borderRadius: t.v2 ? 12 : 8, borderWidth: 1, borderColor: t.c.border, backgroundColor: t.c.surface, alignItems: "center", justifyContent: "center" },
+  pageInfo: { fontSize: 13, ...t.f("600"), color: t.c.text },
+} as const);
+const useStylesThemed = () => useThemedStyles(make_styles as any) as any;

@@ -1,6 +1,7 @@
+import { TIcon, useThemedStyles } from "@/ds/themed";
+import { Theme, useTheme } from "@/ds/theme";
 import { COLORS } from "@/constant/colors";
 import { categoryLabel } from "@/constant/support";
-import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -28,15 +29,16 @@ interface Props {
 const fmt = (n?: number | null) => (typeof n === "number" ? n.toFixed(1) : "—");
 
 export function Stars({ value, size = 18 }: { value?: number | null; size?: number }) {
+  const th = useTheme();
   const v = typeof value === "number" ? value : 0;
   return (
     <View style={{ flexDirection: "row", gap: 2 }}>
       {[1, 2, 3, 4, 5].map((i) => (
-        <Ionicons
+        <TIcon
           key={i}
-          name={v >= i ? "star" : v >= i - 0.5 ? "star-half" : "star-outline"}
+          ion={v >= i ? "star" : v >= i - 0.5 ? "star-half" : "star-outline"}
           size={size}
-          color="#F59E0B"
+          color={th.hex("#F59E0B")}
         />
       ))}
     </View>
@@ -45,6 +47,8 @@ export function Stars({ value, size = 18 }: { value?: number | null; size?: numb
 
 // Rating shown to others plus a "why is this my rating?" breakdown. Reused on every rating surface.
 export default function RatingSummary({ effectiveRating, averageRating, totalRatings, breakdown, viewer = "self", override }: Props) {
+  const styles = useStylesThemed();
+  const th = useTheme();
   const [open, setOpen] = useState(false);
   const b = breakdown ?? {};
   const count = b.reviewCount ?? totalRatings ?? 0;
@@ -62,7 +66,7 @@ export default function RatingSummary({ effectiveRating, averageRating, totalRat
       <View style={styles.wrap}>
         <View style={styles.top}>
           <View style={styles.unratedIcon}>
-            <Ionicons name="star-outline" size={22} color={COLORS.subText} />
+            <TIcon ion="star-outline" size={22} color={th.c.subText} />
           </View>
           <View style={{ gap: 2, flexShrink: 1 }}>
             <Text style={styles.unrated}>Unrated</Text>
@@ -103,7 +107,7 @@ export default function RatingSummary({ effectiveRating, averageRating, totalRat
       {!!breakdown && (
         <TouchableOpacity style={styles.toggle} onPress={() => setOpen(!open)} activeOpacity={0.8}>
           <Text style={styles.toggleText}>{you ? "Why is this my rating?" : "How this rating is worked out"}</Text>
-          <Ionicons name={open ? "chevron-up" : "chevron-down"} size={14} color={COLORS.primary} />
+          <TIcon ion={open ? "chevron-up" : "chevron-down"} size={14} color={th.c.primary} />
         </TouchableOpacity>
       )}
 
@@ -139,6 +143,7 @@ export default function RatingSummary({ effectiveRating, averageRating, totalRat
 }
 
 function Row({ label, value, strong, danger }: { label: string; value: string; strong?: boolean; danger?: boolean }) {
+  const styles = useStylesThemed();
   return (
     <View style={styles.row}>
       <Text style={[styles.rowLabel, strong && styles.strong]}>{label}</Text>
@@ -147,23 +152,24 @@ function Row({ label, value, strong, danger }: { label: string; value: string; s
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (t: Theme) => ({
   wrap: { gap: 8 },
-  setBox: { backgroundColor: "#EFF6FF", borderRadius: 8, padding: 10, gap: 2 },
-  setText: { fontSize: 12, color: "#1E3A8A", lineHeight: 17 },
+  setBox: { backgroundColor: t.hex("#EFF6FF"), borderRadius: t.v2 ? 12 : 8, padding: 10, gap: 2 },
+  setText: { ...t.f(), fontSize: 12, color: t.hex("#1E3A8A"), lineHeight: 17 },
   top: { flexDirection: "row", alignItems: "center", gap: 14 },
-  big: { fontSize: 36, fontWeight: "800", color: COLORS.text },
-  unrated: { fontSize: 18, fontWeight: "800", color: COLORS.text },
-  unratedIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#F1F5F9", alignItems: "center", justifyContent: "center" },
-  muted: { fontSize: 13, color: COLORS.subText },
+  big: { fontSize: 36, ...t.f("800"), color: t.c.text },
+  unrated: { fontSize: 18, ...t.f("800"), color: t.c.text },
+  unratedIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: t.hex("#F1F5F9"), alignItems: "center", justifyContent: "center" },
+  muted: { ...t.f(), fontSize: 13, color: t.c.subText },
   toggle: { flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start" },
-  toggleText: { fontSize: 13, fontWeight: "600", color: COLORS.primary },
-  breakdown: { backgroundColor: "#F8FAFC", borderRadius: 10, padding: 12, gap: 6 },
+  toggleText: { fontSize: 13, ...t.f("600"), color: t.c.primary },
+  breakdown: { backgroundColor: t.hex("#F8FAFC"), borderRadius: t.v2 ? 14 : 10, padding: 12, gap: 6 },
   row: { flexDirection: "row", justifyContent: "space-between", gap: 10 },
-  rowLabel: { fontSize: 13, color: COLORS.text, flexShrink: 1 },
-  rowValue: { fontSize: 13, color: COLORS.text, fontWeight: "600" },
-  strong: { fontWeight: "800" },
-  note: { fontSize: 12, color: COLORS.subText, lineHeight: 17 },
-  incident: { fontSize: 12, color: COLORS.subText },
-  divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 2 },
-});
+  rowLabel: { ...t.f(), fontSize: 13, color: t.c.text, flexShrink: 1 },
+  rowValue: { fontSize: 13, color: t.c.text, ...t.f("600") },
+  strong: { ...t.f("800") },
+  note: { ...t.f(), fontSize: 12, color: t.c.subText, lineHeight: 17 },
+  incident: { ...t.f(), fontSize: 12, color: t.c.subText },
+  divider: { height: 1, backgroundColor: t.c.border, marginVertical: 2 },
+} as const);
+const useStylesThemed = () => useThemedStyles(make_styles as any) as any;

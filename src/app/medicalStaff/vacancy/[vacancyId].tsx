@@ -1,18 +1,16 @@
-import { StatusPill } from "@/component/cards/jobs/Badges";
-import { COLORS } from "@/constant/colors";
-import {
-  ApplicationStatus,
-  STAFF_STATUS_LABELS,
-  TERMINAL_STATUSES,
-  apiError,
-  formatDate,
-  roleLabel,
-} from "@/constant/jobs";
+import { ApplicationStatus, STAFF_STATUS_LABELS, TERMINAL_STATUSES, apiError, roleLabel } from "@/constant/jobs";
 import { jobAPI } from "@/service/api";
-import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { View } from "react-native";
+import Button from "@/ds/Button";
+import { ActionBar, ListRow, Screen, ScreenHeader } from "@/ds/Layout";
+import { CardSkeleton, EmptyState, Notice, Skeleton } from "@/ds/States";
+import { Card } from "@/ds/Surface";
+import { Meta, Tag } from "@/ds/Tag";
+import Txt from "@/ds/Txt";
+import { APP_TONE } from "@/doctor/components/VacancyCards";
+import { dateOf, salaryText } from "@/doctor/format";
 
 type Gate = { message: string; action: "profile" | "resume" } | null;
 
@@ -33,23 +31,14 @@ export default function StaffVacancyDetail() {
     setLoading(true);
     setError(null);
     try {
-      const [v, mine] = await Promise.all([
-        jobAPI.getVacancy(vacancyId),
-        jobAPI.getMyApplications({ page: 1, limit: 50 }).catch(() => null),
-      ]);
+      const [v, mine] = await Promise.all([jobAPI.getVacancy(vacancyId), jobAPI.getMyApplications({ page: 1, limit: 50 }).catch(() => null)]);
       setVacancy(v.vacancy);
       const active = (mine?.data ?? []).find(
-        (a: any) =>
-          (a.vacancy?._id ?? a.vacancy) === vacancyId &&
-          (!TERMINAL_STATUSES.includes(a.status) || a.status === "hired")
+        (a: any) => (a.vacancy?._id ?? a.vacancy) === vacancyId && (!TERMINAL_STATUSES.includes(a.status) || a.status === "hired")
       );
       setExisting(active ? { id: active._id, status: active.status } : null);
     } catch (err: any) {
-      setError(
-        err?.response?.status === 404
-          ? "This vacancy is no longer open."
-          : apiError(err, "Could not load this vacancy.")
-      );
+      setError(err?.response?.status === 404 ? "This vacancy is no longer open." : apiError(err, "Could not load this vacancy."));
     } finally {
       setLoading(false);
     }
@@ -86,218 +75,113 @@ export default function StaffVacancyDetail() {
     }
   };
 
-  if (loading) {
+  const header = <ScreenHeader title="Vacancy" subtitle={vacancy?.hospitalName} fallback="/medicalStaff/vacancies" />;
+
+  if (loading && !vacancy) {
     return (
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
+      <>
+        {header}
+        <Screen>
+          <Skeleton height={28} width="70%" />
+          <CardSkeleton />
+        </Screen>
+      </>
     );
   }
 
   if (error || !vacancy) {
     return (
-      <View style={[styles.container, styles.center, { padding: 24, gap: 10 }]}>
-        <Ionicons name="briefcase-outline" size={36} color={COLORS.subText} />
-        <Text style={styles.emptyTitle}>{error ?? "Vacancy not found."}</Text>
-        <TouchableOpacity style={styles.primaryBtn} onPress={() => router.push("/medicalStaff/vacancies" as any)}>
-          <Text style={styles.primaryText}>Back to vacancies</Text>
-        </TouchableOpacity>
-      </View>
+      <>
+        {header}
+        <Screen>
+          <EmptyState icon="vacancies" title={error ?? "Vacancy not found."} action="Back to vacancies" onAction={() => router.replace("/medicalStaff/vacancies" as any)} />
+        </Screen>
+      </>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <TouchableOpacity style={styles.back} onPress={() => router.push("/medicalStaff/vacancies" as any)}>
-        <Ionicons name="arrow-back" size={16} color={COLORS.subText} />
-        <Text style={styles.backText}>Back to vacancies</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.pageTitle}>Details</Text>
-
-      <View style={styles.card}>
-        <View style={styles.iconCircle}>
-          <Ionicons name="briefcase-outline" size={20} color={COLORS.subText} />
-        </View>
-        <Text style={styles.title}>{vacancy.title}</Text>
-        <Text style={styles.sub}>{roleLabel(vacancy.specialty)} · Posted {formatDate(vacancy.createdAt)}</Text>
-
-        <Text style={styles.description}>{vacancy.description}</Text>
-
-        <View style={styles.metaList}>
-          {!!vacancy.salary && (
-            <View style={styles.metaItem}>
-              <Ionicons name="cash-outline" size={15} color="#16A34A" />
-              <Text style={[styles.metaText, { color: "#16A34A" }]}>{vacancy.salary}</Text>
-            </View>
-          )}
-          {!!vacancy.experience && (
-            <View style={styles.metaItem}>
-              <Ionicons name="briefcase-outline" size={15} color={COLORS.subText} />
-              <Text style={styles.metaText}>{vacancy.experience}</Text>
-            </View>
-          )}
-          {!!vacancy.education && (
-            <View style={styles.metaItem}>
-              <Ionicons name="school-outline" size={15} color={COLORS.subText} />
-              <Text style={styles.metaText}>{vacancy.education}</Text>
-            </View>
-          )}
+    <>
+      {header}
+      <Screen
+        footer={
+          <ActionBar>
+            {existing ? (
+              <Button label="View application" variant="secondary" full size="lg" onPress={() => router.push(`/medicalStaff/applications/${existing.id}` as any)} />
+            ) : (
+              <>
+                <Button label="Apply" onPress={handleApply} loading={applying} full size="lg" />
+                <Txt v="caption" tone="muted" align="center">
+                  {applying ? "Sending your application. This can take a few seconds." : "We'll send the resume already on your profile."}
+                </Txt>
+              </>
+            )}
+          </ActionBar>
+        }
+      >
+        <View style={{ gap: 8 }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+            <Tag label={roleLabel(vacancy.specialty)} tone="neutral" icon="role" />
+            {existing ? <Tag label={STAFF_STATUS_LABELS[existing.status]} tone={APP_TONE[existing.status]} icon={null} /> : null}
+          </View>
+          <Txt v="h1">{vacancy.title}</Txt>
+          <Txt v="bodySm" tone="muted">
+            Posted {dateOf(vacancy.createdAt)}
+          </Txt>
         </View>
 
-        {!!vacancy.skills?.length && (
-          <View style={styles.skills}>
-            {vacancy.skills.map((s: string) => (
-              <View key={s} style={styles.skill}>
-                <Text style={styles.skillText}>{s}</Text>
+        {applyError ? <Notice tone="danger" body={applyError} /> : null}
+        {gate ? (
+          <Notice tone="warning" title={gate.action === "resume" ? "Add your resume first" : "Finish your profile first"} body={gate.message}>
+            <Button
+              label={gate.action === "resume" ? "Upload Resume" : "Complete Profile"}
+              size="sm"
+              variant="dark"
+              iconRight="forward"
+              onPress={() => router.push((gate.action === "resume" ? "/medicalStaff/documents" : "/medicalStaff/edit-profile") as any)}
+              style={{ marginTop: 8 }}
+            />
+          </Notice>
+        ) : null}
+
+        <Card>
+          <View style={{ gap: 12 }}>
+            {vacancy.salary ? <Meta icon="rupee" text={salaryText(vacancy.salary)} tone="ink" /> : null}
+            {vacancy.experience ? <Meta icon="role" text={vacancy.experience} /> : null}
+            {vacancy.education ? <Meta icon="education" text={vacancy.education} /> : null}
+            {vacancy.location ? <Meta icon="nearby" text={vacancy.location} /> : null}
+          </View>
+        </Card>
+
+        {vacancy.description ? (
+          <Card>
+            <View style={{ gap: 8 }}>
+              <Txt v="overline" tone="muted">About the role</Txt>
+              <Txt v="body" tone="soft">{vacancy.description}</Txt>
+            </View>
+          </Card>
+        ) : null}
+
+        {vacancy.skills?.length ? (
+          <Card>
+            <View style={{ gap: 10 }}>
+              <Txt v="overline" tone="muted">Skills they're looking for</Txt>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                {vacancy.skills.map((s: string) => (
+                  <Tag key={s} label={s} tone="info" icon={null} />
+                ))}
               </View>
-            ))}
-          </View>
-        )}
-
-        {existing ? (
-          <View style={styles.appliedBox}>
-            <StatusPill status={existing.status} label={STAFF_STATUS_LABELS[existing.status]} />
-            <TouchableOpacity
-              style={styles.outlineBtn}
-              onPress={() => router.push(`/medicalStaff/applications/${existing.id}` as any)}
-            >
-              <Text style={styles.outlineText}>View Application</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <>
-            <TouchableOpacity style={[styles.applyBtn, applying && { opacity: 0.6 }]} onPress={handleApply} disabled={applying}>
-              {applying ? <ActivityIndicator color="#fff" /> : <Text style={styles.applyText}>Apply</Text>}
-            </TouchableOpacity>
-            <Text style={styles.hint}>
-              {applying
-                ? "Sending your application. This can take a few seconds."
-                : "We'll send the resume already on your profile."}
-            </Text>
-          </>
-        )}
-
-        {!!applyError && <Text style={styles.errorText}>{applyError}</Text>}
-
-        {!!gate && (
-          <View style={styles.gateBox}>
-            <Ionicons name="information-circle-outline" size={20} color="#92400E" />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.gateText}>{gate.message}</Text>
-              <TouchableOpacity
-                style={styles.gateBtn}
-                onPress={() =>
-                  router.push((gate.action === "resume" ? "/medicalStaff/document-manager" : "/profile/medical-staff") as any)
-                }
-              >
-                <Text style={styles.gateBtnText}>
-                  {gate.action === "resume" ? "Upload Resume" : "Complete Profile"}
-                </Text>
-                <Ionicons name="arrow-forward" size={14} color="#fff" />
-              </TouchableOpacity>
             </View>
-          </View>
-        )}
-      </View>
+          </Card>
+        ) : null}
 
-      <Text style={styles.sectionLabel}>About the Hospital</Text>
-      <View style={styles.card}>
-        <Text style={styles.hospital}>{vacancy.hospitalName || "—"}</Text>
-        {!!vacancy.location && (
-          <View style={[styles.metaItem, { marginTop: 6 }]}>
-            <Ionicons name="location-outline" size={15} color={COLORS.subText} />
-            <Text style={styles.metaText}>{vacancy.location}</Text>
+        <Card>
+          <View style={{ gap: 4 }}>
+            <Txt v="overline" tone="muted" style={{ marginBottom: 4 }}>About the hospital</Txt>
+            <ListRow icon="hospital" title={vacancy.hospitalName || "Hospital"} subtitle={vacancy.location} chevron={false} />
           </View>
-        )}
-      </View>
-    </ScrollView>
+        </Card>
+      </Screen>
+    </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  center: { alignItems: "center", justifyContent: "center" },
-  content: { padding: 16, paddingBottom: 40, maxWidth: 760, width: "100%", alignSelf: "center" },
-  back: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
-  backText: { fontSize: 13, color: COLORS.subText },
-  pageTitle: { fontSize: 22, fontWeight: "800", color: COLORS.text, marginBottom: 14 },
-  card: {
-    backgroundColor: COLORS.white,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 16,
-  },
-  iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#F1F5F9",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 10,
-  },
-  title: { fontSize: 18, fontWeight: "700", color: COLORS.text },
-  sub: { fontSize: 12, color: COLORS.subText, marginTop: 4 },
-  description: { fontSize: 14, color: "#334155", lineHeight: 21, marginTop: 12 },
-  metaList: { gap: 8, marginTop: 14 },
-  metaItem: { flexDirection: "row", alignItems: "center", gap: 6 },
-  metaText: { fontSize: 13, color: "#475569" },
-  skills: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 14 },
-  skill: { backgroundColor: "#F1F5F9", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
-  skillText: { fontSize: 12, color: "#475569" },
-  applyBtn: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 10,
-    paddingVertical: 13,
-    alignItems: "center",
-    marginTop: 18,
-  },
-  applyText: { color: "#fff", fontSize: 15, fontWeight: "700" },
-  hint: { fontSize: 12, color: COLORS.subText, textAlign: "center", marginTop: 8 },
-  appliedBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 18,
-    gap: 10,
-  },
-  outlineBtn: {
-    borderWidth: 1,
-    borderColor: "#BFDBFE",
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-  },
-  outlineText: { fontSize: 13, fontWeight: "600", color: COLORS.primary },
-  gateBox: {
-    flexDirection: "row",
-    gap: 10,
-    backgroundColor: "#FFFBEB",
-    borderWidth: 1,
-    borderColor: "#FDE68A",
-    borderRadius: 10,
-    padding: 12,
-    marginTop: 14,
-  },
-  gateText: { fontSize: 13, color: "#92400E", lineHeight: 19 },
-  gateBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    alignSelf: "flex-start",
-    backgroundColor: "#D97706",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginTop: 10,
-  },
-  gateBtnText: { color: "#fff", fontSize: 13, fontWeight: "700" },
-  errorText: { fontSize: 13, color: COLORS.red, marginTop: 10 },
-  sectionLabel: { fontSize: 13, fontWeight: "600", color: COLORS.subText, marginTop: 20, marginBottom: 8 },
-  hospital: { fontSize: 17, fontWeight: "700", color: COLORS.text },
-  emptyTitle: { fontSize: 15, fontWeight: "700", color: COLORS.text, textAlign: "center" },
-  primaryBtn: { backgroundColor: COLORS.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
-  primaryText: { color: "#fff", fontWeight: "700" },
-});

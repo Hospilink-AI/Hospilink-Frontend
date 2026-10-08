@@ -1,7 +1,8 @@
+import { TIcon, useThemedStyles } from "@/ds/themed";
+import { Theme, useTheme } from "@/ds/theme";
 import { COLORS } from "@/constant/colors";
 import { blockAPI, reviewAPI } from "@/service/api";
 import { emitBlockChange } from "@/service/blocks";
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { ActivityIndicator, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
@@ -23,6 +24,8 @@ type Props = {
 type Step = "menu" | "confirmBlock" | "blocked" | "reportReview" | "reviewReported";
 
 export default function PersonActions({ kind, id, name, dutyId, reviewId, onBlocked, color = COLORS.subText, label }: Props) {
+  const s = useSThemed();
+  const th = useTheme();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>("menu");
@@ -97,7 +100,7 @@ export default function PersonActions({ kind, id, name, dutyId, reviewId, onBloc
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         style={[s.trigger, !!label && s.triggerLabelled]}
       >
-        <Ionicons name="ellipsis-horizontal" size={label ? 16 : 20} color={color} />
+        <TIcon ion="ellipsis-horizontal" size={label ? 16 : 20} color={color} />
         {!!label && <Text style={[s.triggerText, { color }]}>{label}</Text>}
       </TouchableOpacity>
 
@@ -140,7 +143,7 @@ export default function PersonActions({ kind, id, name, dutyId, reviewId, onBloc
 
             {step === "blocked" && (
               <>
-                <Ionicons name="checkmark-circle" size={30} color="#047857" style={{ alignSelf: "center" }} />
+                <TIcon ion="checkmark-circle" size={30} color={th.hex("#047857")} style={{ alignSelf: "center" }} />
                 <Text style={[s.title, { textAlign: "center" }]}>{who} is blocked</Text>
                 {upcoming > 0 && (
                   <Text style={s.body}>
@@ -169,7 +172,7 @@ export default function PersonActions({ kind, id, name, dutyId, reviewId, onBloc
                   multiline
                   maxLength={1000}
                   placeholder="What's wrong with this review?"
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={th.hex("#94A3B8")}
                   accessibilityLabel="Reason"
                 />
                 {error && <Text style={s.error}>{error}</Text>}
@@ -179,7 +182,7 @@ export default function PersonActions({ kind, id, name, dutyId, reviewId, onBloc
 
             {step === "reviewReported" && (
               <>
-                <Ionicons name="checkmark-circle" size={30} color="#047857" style={{ alignSelf: "center" }} />
+                <TIcon ion="checkmark-circle" size={30} color={th.hex("#047857")} style={{ alignSelf: "center" }} />
                 <Text style={[s.title, { textAlign: "center" }]}>Thanks, our team will look into it</Text>
                 {ticketId && <Text style={[s.body, { textAlign: "center" }]}>Ticket {ticketId}. You can follow it in My Tickets.</Text>}
                 <TouchableOpacity onPress={() => setOpen(false)} style={[s.btn, s.btnPrimary]}>
@@ -195,57 +198,61 @@ export default function PersonActions({ kind, id, name, dutyId, reviewId, onBloc
 }
 
 function Item({ icon, label, onPress, danger }: { icon: any; label: string; onPress: () => void; danger?: boolean }) {
+  const s = useSThemed();
   const c = danger ? COLORS.red : COLORS.text;
   return (
     <TouchableOpacity style={s.item} onPress={onPress} accessibilityRole="button">
-      <Ionicons name={icon} size={20} color={c} />
+      <TIcon ion={icon} size={20} color={c} />
       <Text style={[s.itemText, { color: c }]}>{label}</Text>
     </TouchableOpacity>
   );
 }
 
 function Buttons({ busy, confirm, danger, onCancel, onConfirm }: { busy: boolean; confirm: string; danger?: boolean; onCancel: () => void; onConfirm: () => void }) {
+  const s = useSThemed();
+  const th = useTheme();
   return (
     <View style={s.row}>
       <TouchableOpacity style={[s.btn, s.btnGhost]} onPress={onCancel} disabled={busy}>
         <Text style={s.btnGhostText}>Back</Text>
       </TouchableOpacity>
       <TouchableOpacity style={[s.btn, danger ? s.btnDanger : s.btnPrimary, busy && { opacity: 0.6 }]} onPress={onConfirm} disabled={busy}>
-        {busy ? <ActivityIndicator color="#fff" /> : <Text style={s.btnPrimaryText}>{confirm}</Text>}
+        {busy ? <ActivityIndicator color={th.hex("#fff")} /> : <Text style={s.btnPrimaryText}>{confirm}</Text>}
       </TouchableOpacity>
     </View>
   );
 }
 
-const s = StyleSheet.create({
-  trigger: { padding: 4, borderRadius: 8 },
-  triggerLabelled: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", paddingHorizontal: 8, borderWidth: 1, borderColor: COLORS.border },
-  triggerText: { fontSize: 12, fontWeight: "600" },
+const make_s = (t: Theme) => ({
+  trigger: { padding: 4, borderRadius: t.v2 ? 12 : 8 },
+  triggerLabelled: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", paddingHorizontal: 8, borderWidth: 1, borderColor: t.c.border },
+  triggerText: { fontSize: 12, ...t.f("600") },
   backdrop: { flex: 1, backgroundColor: "rgba(15, 23, 42, 0.45)", alignItems: "center", justifyContent: "center", padding: 16 },
-  card: { width: "100%", maxWidth: 380, backgroundColor: COLORS.white, borderRadius: 16, padding: 20, gap: 10 },
-  title: { fontSize: 17, fontWeight: "700", color: COLORS.text },
-  body: { fontSize: 14, color: "#334155", lineHeight: 20 },
-  muted: { fontSize: 13, color: COLORS.subText, lineHeight: 18 },
-  error: { fontSize: 13, color: "#B91C1C" },
-  item: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, borderTopWidth: 1, borderTopColor: "#F1F5F9" },
-  itemText: { fontSize: 15, fontWeight: "600" },
+  card: { width: "100%", maxWidth: 380, backgroundColor: t.c.surface, borderRadius: t.v2 ? 20 : 16, padding: 20, gap: 10 },
+  title: { fontSize: 17, ...t.f("700"), color: t.c.text },
+  body: { ...t.f(), fontSize: 14, color: t.hex("#334155"), lineHeight: 20 },
+  muted: { ...t.f(), fontSize: 13, color: t.c.subText, lineHeight: 18 },
+  error: { ...t.f(), fontSize: 13, color: t.hex("#B91C1C") },
+  item: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, borderTopWidth: 1, borderTopColor: t.hex("#F1F5F9") },
+  itemText: { fontSize: 15, ...t.f("600") },
   cancel: { alignItems: "center", paddingTop: 8 },
-  cancelText: { fontSize: 14, color: COLORS.subText, fontWeight: "600" },
-  input: {
+  cancelText: { fontSize: 14, color: t.c.subText, ...t.f("600") },
+  input: { ...t.f(),
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 10,
+    borderColor: t.c.border,
+    borderRadius: t.v2 ? 14 : 10,
     padding: 10,
     minHeight: 90,
     fontSize: 14,
-    color: COLORS.text,
+    color: t.c.text,
     textAlignVertical: "top",
   },
   row: { flexDirection: "row", gap: 10, marginTop: 4 },
-  btn: { flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  btnGhost: { backgroundColor: "#F1F5F9" },
-  btnGhostText: { color: COLORS.text, fontWeight: "600", fontSize: 14 },
-  btnPrimary: { backgroundColor: COLORS.primary },
-  btnDanger: { backgroundColor: COLORS.red },
-  btnPrimaryText: { color: "#fff", fontWeight: "700", fontSize: 14 },
-});
+  btn: { flex: 1, paddingVertical: 12, borderRadius: t.v2 ? 14 : 10, alignItems: "center", justifyContent: "center" },
+  btnGhost: { backgroundColor: t.hex("#F1F5F9") },
+  btnGhostText: { color: t.c.text, ...t.f("600"), fontSize: 14 },
+  btnPrimary: { backgroundColor: t.c.primary },
+  btnDanger: { backgroundColor: t.c.danger },
+  btnPrimaryText: { color: t.hex("#fff"), ...t.f("700"), fontSize: 14 },
+} as const);
+const useSThemed = () => useThemedStyles(make_s as any) as any;

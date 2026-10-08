@@ -1,5 +1,11 @@
+import { ScreenHeader } from "@/ds/Layout";
 import ChatbotScreen from "@/component/support/ChatbotScreen";
 
 export default function StaffSupportChat() {
-  return <ChatbotScreen base="/medicalStaff/support" />;
+  return (
+    <>
+      <ScreenHeader title="Chat with Support" fallback="/medicalStaff/support" />
+      <ChatbotScreen base="/medicalStaff/support" />
+    </>
+  );
 }
