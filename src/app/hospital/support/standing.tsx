@@ -1,5 +1,11 @@
+import PhoneHeader from "@/hospital/PhoneHeader";
 import AccountStanding from "@/component/support/AccountStanding";
 
 export default function HospitalAccountStanding() {
-  return <AccountStanding base="/hospital/support" />;
+  return (
+    <>
+      <PhoneHeader title="Support" fallback="/hospital/support" />
+      <AccountStanding base="/hospital/support" />
+    </>
+  );
 }

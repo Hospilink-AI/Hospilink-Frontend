@@ -27,6 +27,16 @@ export function HospitalDashHeader() {
         </TouchableOpacity>
 
         <TouchableOpacity
+          style={styles.navyBtn}
+          onPress={() => router.push('/hospital/anesthesia' as any)}
+          accessibilityRole="button"
+          accessibilityLabel="Book an anesthetist"
+        >
+          <Ionicons name="medkit" size={16} color="#fff" />
+          <Text style={styles.primaryBtnText}>Anesthesia</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           style={styles.outlineBtn}
           onPress={() => router.push('/hospital/live-tracking')}
         >
@@ -72,8 +82,18 @@ const styles = StyleSheet.create({
   },
   buttonGroup: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: 8,
+  },
+  navyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#0E1E3A',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 6,
   },
   primaryBtn: {
     flexDirection: 'row',

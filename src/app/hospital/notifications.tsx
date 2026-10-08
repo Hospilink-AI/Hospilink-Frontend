@@ -1,3 +1,4 @@
+import PhoneHeader from "@/hospital/PhoneHeader";
 import NotificationsCenterScreen from "@/component/layout/NotificationCenter";
 import InAppCenter from "@/component/inAppNotifications/InAppCenter";
 import { INAPP_NOTIFICATIONS_ENABLED } from "@/constant/inAppNotifications";
@@ -5,9 +6,16 @@ import { View, StyleSheet } from "react-native";
 
 export default function NotificationsPage() {
   return (
-    <View style={styles.container}>
-      {INAPP_NOTIFICATIONS_ENABLED ? <InAppCenter /> : <NotificationsCenterScreen />}
-    </View>
+    <>
+      <PhoneHeader title="Notifications" fallback="/hospital/dashboard" />
+      <View style={{ flex: 1 }}>
+        {INAPP_NOTIFICATIONS_ENABLED ? (
+          <InAppCenter />
+        ) : (
+          <NotificationsCenterScreen />
+        )}
+      </View>
+    </>
   );
 }
 
