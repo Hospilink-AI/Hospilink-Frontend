@@ -1,0 +1,327 @@
+---
+// Reach console: one wide frosted panel. A daylight map on the left, the four ways an offer
+// reaches people on the right. Pick a mode (or let it play); "widens hourly" has an hour scrubber.
+import Icon from "../ui/Icon.astro";
+import { cityMap, staffDots } from "../../lib/map";
+
+const W = 960, H = 600, CX = 480, CY = 300;
+const R75 = 470; // the map's reach scale: 75 km at this radius
+const map = cityMap(W, H, 31, 44);
+const dots = staffDots(CX, CY, 64, R75, 5).map((d) => ({ ...d, km: (d.d / R75) * 75 }));
+const invited = [dots[4], dots[12], dots[21]].filter(Boolean);
+const free = [dots[2], dots[9], dots[16], dots[27]].filter(Boolean);
+
+const modes = [
+  { k: "start", f: "30 km", fs: "first reach, role-matched", icon: "radar-2", t: "Starts within 30 km", s: "The moment you post", body: "A new duty first reaches verified staff within 30 km of your hospital, filtered to the exact role you asked for. They see the total, the hours and the distance before they accept." },
+  { k: "widen", f: "+5 km / hour", fs: "until it reaches 75 km", icon: "arrows-maximize", t: "Widens 5 km every hour", s: "Up to 75 km", body: "Nobody yet? The reach grows 5 km an hour, up to 75 km. No reposting, no calling round." },
+  { k: "emergency", f: "City-wide", fs: "from the first second", icon: "urgent", t: "Emergencies go city-wide", s: "No waiting", body: "Raise an emergency request and it skips the widening. It reaches verified staff in that role across the city straight away." },
+  { k: "invite", f: "30 min · 10 min", fs: "invite window · head start for free staff", icon: "user-star", t: "People you trust go first", s: "Invites and head starts", body: "Invited staff get a 30-minute window before anyone else. Staff who have marked themselves free get a 10-minute head start on new offers." },
+];
+---
+<section id="reach" class="reach section" aria-labelledby="reach-title">
+  <div class="wrap">
+    <div class="r-head" data-reveal>
+      <h2 id="reach-title" class="h2">The offer finds the nearest hands first.</h2>
+      <p class="lead">No bulk SMS and no WhatsApp forwards. One duty goes to the right verified people, in the right order, until someone says yes. The first to accept gets it.</p>
+    </div>
+
+    <div class="console" data-console data-mode="start" style="--r:.4" data-reveal>
+      <div class="c-map">
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <defs>
+            <radialGradient id="cFill"><stop offset="0" stop-color="#5B85D7" stop-opacity=".04" /><stop offset=".9" stop-color="#5B85D7" stop-opacity=".14" /><stop offset="1" stop-color="#446EC0" stop-opacity=".28" /></radialGradient>
+            <radialGradient id="cFillE"><stop offset="0" stop-color="#D0322F" stop-opacity=".03" /><stop offset=".9" stop-color="#D0322F" stop-opacity=".1" /><stop offset="1" stop-color="#D0322F" stop-opacity=".22" /></radialGradient>
+          </defs>
+          <rect width={W} height={H} fill="#dde6f5" />
+          {map.parks.map((p) => <ellipse cx={p.cx} cy={p.cy} rx={p.rx} ry={p.ry} transform={`rotate(${p.rot} ${p.cx} ${p.cy})`} class="park" />)}
+          <path d={map.river} class="river" />
+          <g class="streets">{map.minor.map((d) => <path d={d} />)}</g>
+          <g class="arts">{map.arterial.map((d) => <path d={d} />)}</g>
+
+          {[30, 45, 60, 75].map((k) => <circle cx={CX} cy={CY} r={(k / 75) * R75} class="grid-ring" />)}
+          <circle cx={CX} cy={CY} r={R75} class="reach-fill" />
+          <circle cx={CX} cy={CY} r={R75} class="reach-ring" />
+
+          <g class="dots">
+            {dots.map((d) => <circle cx={d.x.toFixed(1)} cy={d.y.toFixed(1)} r="5" data-km={d.km.toFixed(1)} />)}
+          </g>
+          <g class="inv">
+            {invited.map((d) => <g transform={`translate(${d.x.toFixed(1)} ${d.y.toFixed(1)})`}><circle r="16" class="inv-h" /><circle r="7.5" class="inv-c" /></g>)}
+          </g>
+          <g class="free">
+            {free.map((d) => <g transform={`translate(${d.x.toFixed(1)} ${d.y.toFixed(1)})`}><circle r="13" class="free-h" /><circle r="6.5" class="free-c" /></g>)}
+          </g>
+
+          <g transform={`translate(${CX} ${CY})`} class="hosp">
+            <circle r="34" class="hosp-ring" />
+            <rect x="-19" y="-19" width="38" height="38" rx="12" />
+            <path d="M-7 0h14M0 -7v14" />
+          </g>
+        </svg>
+
+        <div class="readout glass">
+          <p class="ro-n"><span class="tnum" data-readout>30</span><small data-unit>km reach</small></p>
+          <p class="ro-s" data-sub>Hour 0 · verified, role-matched staff</p>
+        </div>
+        <div class="legend glass" aria-hidden="true">
+          <span><i class="lg-dot"></i> Verified staff in range</span>
+          <span class="lg-inv"><i></i> Invited · 30 min first</span>
+          <span class="lg-free"><i></i> Marked free · 10 min head start</span>
+        </div>
+        <span class="sample c-sample">Illustration</span>
+      </div>
+
+      <div class="c-side">
+        <div class="side-h">
+          <button class="pp" type="button" data-pp aria-pressed="false" aria-label="Pause walkthrough" title="Pause walkthrough">
+            <span class="pp-pause"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 5v14M16 5v14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" /></svg></span>
+            <span class="pp-play"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor" /></svg></span>
+          </button>
+        </div>
+        <div class="modes" role="tablist" aria-label="How a duty reaches staff" aria-orientation="vertical">
+          {modes.map((m, i) => (
+            <button class="mode" role="tab" id={`mode-${m.k}`} aria-controls="mode-panel" aria-selected={i === 0 ? "true" : "false"} tabindex={i === 0 ? 0 : -1} data-k={m.k}>
+              <span class="m-ic"><Icon name={m.icon} size={20} /></span>
+              <span class="m-t">{m.t}<small>{m.s}</small></span>
+              <span class="m-bar" aria-hidden="true"><i></i></span>
+            </button>
+          ))}
+        </div>
+        <div class="panel" id="mode-panel" role="tabpanel" aria-labelledby="mode-start" data-panel>
+          {modes.map((m, i) => (
+            <div class="p-item" data-for={m.k} hidden={i !== 0}>
+              <p class="p-fact"><span>{m.f}</span><small>{m.fs}</small></p>
+              <p class="p-body">{m.body}</p>
+            </div>
+          ))}
+          <div class="scrub" data-scrub hidden>
+            <label for="hours">Hours since you posted</label>
+            <input id="hours" type="range" min="0" max="9" step="1" value="0" data-hours />
+            <div class="scrub-scale tnum" aria-hidden="true"><span>0 h · 30 km</span><span>9 h · 75 km</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .r-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2rem 6rem; align-items: end; }
+  .r-head .lead { margin: 0; }
+
+  .console {
+    margin-top: clamp(2.5rem, 4vw, 3.5rem);
+    display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(320px, 1fr); gap: 12px;
+    padding: 12px; border-radius: 40px;
+    background: rgba(255, 255, 255, .55); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+    box-shadow: var(--glass-edge), var(--relief-high);
+  }
+
+  /* Map */
+  .c-map { position: relative; border-radius: 30px; overflow: hidden; height: min(600px, calc(100svh - 230px)); min-height: 440px; background: #dde6f5; }
+  .c-map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .park { fill: rgba(19, 128, 74, .07); }
+  .river { fill: none; stroke: rgba(91, 133, 215, .22); stroke-width: 16; stroke-linecap: round; }
+  .streets path { fill: none; stroke: #fff; stroke-width: 2.2; }
+  .arts path { fill: none; stroke: #fff; stroke-width: 6.5; stroke-linecap: round; }
+  .grid-ring { fill: none; stroke: rgba(68, 110, 192, .14); stroke-width: 1; stroke-dasharray: 2 6; }
+  .reach-fill, .reach-ring { transform-origin: 480px 300px; transform-box: view-box; transform: scale(var(--r)); transition: transform 1s var(--ease-out), fill .5s, stroke .5s; }
+  .reach-fill { fill: url(#cFill); }
+  .reach-ring { fill: none; stroke: var(--ceil-deep); stroke-width: calc(2px / var(--r)); }
+  .dots circle { fill: #a9b8d4; opacity: .55; transition: fill .5s, opacity .5s; }
+  .dots circle.on { fill: var(--ceil-deep); opacity: 1; }
+  .inv, .free { opacity: 0; transition: opacity .5s; }
+  .inv-h { fill: rgba(250, 179, 64, .28); animation: halo 1.8s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+  .inv-c { fill: var(--amber); stroke: #fff; stroke-width: 3; }
+  .free-h { fill: rgba(19, 128, 74, .22); animation: halo 1.8s ease-out infinite .6s; transform-box: fill-box; transform-origin: center; }
+  .free-c { fill: var(--green); stroke: #fff; stroke-width: 3; }
+  @keyframes halo { from { transform: scale(.6); opacity: 1; } to { transform: scale(1.7); opacity: 0; } }
+  .hosp rect { fill: #fff; filter: drop-shadow(0 8px 16px rgba(14, 30, 58, .22)); }
+  .hosp path { stroke: var(--red); stroke-width: 3.6; stroke-linecap: round; }
+  .hosp-ring { fill: none; stroke: rgba(68, 110, 192, .45); stroke-width: 1.5; animation: halo 2.6s var(--ease-out) infinite; transform-box: fill-box; transform-origin: center; }
+
+  .console[data-mode="emergency"] .reach-fill { fill: url(#cFillE); }
+  .console[data-mode="emergency"] .reach-ring { stroke: var(--red); }
+  .console[data-mode="emergency"] .dots circle.on { fill: var(--red); }
+  .console[data-mode="invite"] .inv, .console[data-mode="invite"] .free { opacity: 1; }
+  .console[data-mode="invite"] .dots circle.on { fill: #9fb1d4; opacity: .5; }
+
+  .readout { position: absolute; left: 18px; top: 18px; padding: 1rem 1.2rem .9rem; border-radius: 22px; min-width: 220px; }
+  .ro-n { display: flex; align-items: baseline; gap: .5rem; }
+  .ro-n span { font-size: clamp(2.6rem, 2rem + 2vw, 3.6rem); font-weight: 300; letter-spacing: -0.05em; line-height: 1; }
+  .ro-n small { font-size: .95rem; font-weight: 500; color: var(--ink-muted); }
+  .ro-s { margin-top: .4rem; font-size: .84rem; color: var(--ink-muted); }
+  .console[data-mode="emergency"] .ro-n span { color: var(--red); }
+  .legend { position: absolute; left: 18px; bottom: 18px; display: flex; flex-wrap: wrap; gap: .4rem 1rem; padding: .6rem .9rem; border-radius: 16px; font-size: .78rem; color: var(--ink-soft); }
+  .legend span { display: inline-flex; align-items: center; gap: .4rem; }
+  .legend i { width: 9px; height: 9px; border-radius: 50%; background: var(--ceil-deep); }
+  .lg-inv i { background: var(--amber); }
+  .lg-free i { background: var(--green); }
+  .legend .lg-inv, .legend .lg-free { display: none; }
+  .console[data-mode="invite"] .legend .lg-inv, .console[data-mode="invite"] .legend .lg-free { display: inline-flex; }
+  .c-sample { position: absolute; right: 18px; bottom: 16px; }
+
+  /* Side: modes as tabs */
+  .c-side { display: flex; flex-direction: column; gap: 12px; min-height: 0; contain: size; }
+  .side-h { display: flex; justify-content: flex-end; padding: .35rem .35rem 0; }
+  .pp { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: #fff; box-shadow: inset 0 0 0 1.5px var(--ceil-200), 0 6px 14px -8px rgba(14, 30, 58, .3); color: var(--ceil-700); transition: color .25s, box-shadow .25s; }
+  .pp:hover { box-shadow: inset 0 0 0 1.5px var(--ceil), 0 6px 14px -8px rgba(14, 30, 58, .3); }
+  .pp:hover { color: var(--navy); }
+  .pp .pp-play { display: none; }
+  .pp[aria-pressed="true"] .pp-play { display: block; }
+  .pp[aria-pressed="true"] .pp-pause { display: none; }
+  .pp span { display: grid; place-items: center; }
+  .modes { display: grid; gap: 6px; }
+  .mode {
+    position: relative; display: grid; grid-template-columns: 44px 1fr; gap: .9rem; align-items: center; text-align: left;
+    padding: .95rem 1rem; border-radius: 22px; color: var(--ink-soft); overflow: hidden;
+    transition: background-color .35s, box-shadow .35s, color .35s;
+  }
+  .mode:hover { background: rgba(255, 255, 255, .6); color: var(--navy); }
+  .mode[aria-selected="true"] { background: #fff; color: var(--navy); box-shadow: 0 1px 2px rgba(14, 30, 58, .05), 0 14px 30px -20px rgba(14, 30, 58, .35); }
+  .m-ic { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--ward); box-shadow: var(--relief-raised); color: var(--ink-muted); transition: background-color .35s, color .35s, box-shadow .35s; }
+  .mode[aria-selected="true"] .m-ic { background: var(--ceil-deep); color: #fff; box-shadow: 0 10px 20px -10px rgba(68, 110, 192, .8); }
+  .mode[data-k="emergency"][aria-selected="true"] .m-ic { background: var(--red); box-shadow: 0 10px 20px -10px rgba(208, 50, 47, .7); }
+  .m-t { font-weight: 600; font-size: 1rem; line-height: 1.25; }
+  .m-t small { display: block; font-weight: 450; font-size: .82rem; color: var(--ink-muted); margin-top: .1rem; }
+  .m-bar { position: absolute; left: 1rem; right: 1rem; bottom: 0; height: 2px; border-radius: 2px; overflow: hidden; }
+  .m-bar i { display: block; height: 100%; background: var(--ceil); transform-origin: left; transform: scaleX(0); }
+  .console.playing .mode[aria-selected="true"] .m-bar i { animation: bar 5.5s linear forwards; }
+  @keyframes bar { to { transform: scaleX(1); } }
+
+  .panel { flex: 1; min-height: 0; overflow: auto; padding: 1.3rem 1.3rem 1.2rem; border-radius: 26px; background: var(--ward); box-shadow: var(--relief-pressed); display: flex; flex-direction: column; gap: 1.2rem; }
+  .p-item { display: grid; gap: .8rem; }
+  .p-item[hidden] { display: none; }
+  .p-fact { display: grid; gap: .15rem; }
+  .p-fact span { font-size: clamp(1.9rem, 1.4rem + 1.2vw, 2.5rem); font-weight: 300; letter-spacing: -0.04em; line-height: 1.05; color: var(--navy); }
+  .p-fact small { font-size: .84rem; color: var(--ink-muted); }
+  .console[data-mode="emergency"] .p-fact span { color: var(--red); }
+  .p-body { color: var(--ink-soft); font-size: 1rem; line-height: 1.6; }
+  .scrub { display: grid; gap: .6rem; margin-top: auto; }
+  .scrub[hidden] { display: none; }
+  .scrub label { font-size: .84rem; font-weight: 600; color: var(--ink-soft); }
+  .scrub input { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 99px; background: linear-gradient(90deg, var(--ceil-deep) var(--fill, 0%), var(--line) var(--fill, 0%)); outline: none; }
+  .scrub input::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 2px 8px rgba(14, 30, 58, .25), inset 0 0 0 6px var(--ceil-deep); cursor: grab; }
+  .scrub input::-moz-range-thumb { width: 26px; height: 26px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 2px 8px rgba(14, 30, 58, .25), inset 0 0 0 6px var(--ceil-deep); cursor: grab; }
+  .scrub input:focus-visible { box-shadow: 0 0 0 3px rgba(68, 110, 192, .35); }
+  .scrub-scale { display: flex; justify-content: space-between; font-size: .76rem; color: var(--ink-muted); }
+
+  @media (max-width: 1080px) {
+    .console { grid-template-columns: minmax(0, 1fr); }
+    .c-side { contain: none; }
+    .panel { overflow: visible; }
+    .c-map { height: auto; min-height: 0; aspect-ratio: 16 / 11; }
+  }
+  @media (max-width: 760px) {
+    .r-head { grid-template-columns: minmax(0, 1fr); }
+    .console { border-radius: 30px; padding: 8px; }
+    .c-map { border-radius: 24px; aspect-ratio: 4 / 4.2; }
+    .readout { left: 10px; top: 10px; min-width: 0; padding: .7rem .85rem; }
+    .ro-n span { font-size: 2.2rem; }
+    .ro-s { font-size: .74rem; }
+    .legend { left: 10px; right: 10px; bottom: 10px; font-size: .7rem; }
+    .c-sample { display: none; }
+    .mode { padding: .8rem; }
+  }
+</style>
+
+<script>
+  const c = document.querySelector<HTMLElement>("[data-console]");
+  if (c) {
+    const tabs = Array.from(c.querySelectorAll<HTMLButtonElement>(".mode"));
+    const bodies = c.querySelectorAll<HTMLElement>(".p-item");
+    const panel = c.querySelector<HTMLElement>("[data-panel]")!;
+    const pp = c.querySelector<HTMLButtonElement>("[data-pp]")!;
+    const scrub = c.querySelector<HTMLElement>("[data-scrub]")!;
+    const hours = c.querySelector<HTMLInputElement>("[data-hours]")!;
+    const km = c.querySelector<HTMLElement>("[data-readout]")!;
+    const unit = c.querySelector<HTMLElement>("[data-unit]")!;
+    const sub = c.querySelector<HTMLElement>("[data-sub]")!;
+    const dots = c.querySelectorAll<SVGCircleElement>(".dots circle");
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const reach = (k: number) => {
+      c.style.setProperty("--r", (k / 75).toFixed(3));
+      dots.forEach((d) => d.classList.toggle("on", parseFloat(d.dataset.km!) <= k));
+    };
+    const setHours = (h: number) => {
+      hours.value = String(h);
+      hours.style.setProperty("--fill", `${(h / 9) * 100}%`);
+      const k = 30 + h * 5;
+      reach(k);
+      km.textContent = String(k);
+      unit.textContent = "km reach";
+      sub.textContent = h === 0 ? "Hour 0 · nobody has accepted yet" : `Hour ${h} · still looking, still verified only`;
+    };
+    let current = "start";
+    const select = (k: string, focus = false) => {
+      current = k;
+      c.dataset.mode = k;
+      tabs.forEach((t) => {
+        const on = t.dataset.k === k;
+        t.setAttribute("aria-selected", String(on));
+        t.tabIndex = on ? 0 : -1;
+        if (on && focus) t.focus();
+      });
+      bodies.forEach((b) => (b.hidden = b.dataset.for !== k));
+      panel.setAttribute("aria-labelledby", `mode-${k}`);
+      scrub.hidden = k !== "widen";
+      if (k === "start") { reach(30); km.textContent = "30"; unit.textContent = "km reach"; sub.textContent = "Hour 0 · verified, role-matched staff"; }
+      if (k === "widen") setHours(+hours.value || 0);
+      if (k === "emergency") { reach(75); km.textContent = "City"; unit.textContent = "wide, at once"; sub.textContent = "Emergency request · no widening, no wait"; }
+      if (k === "invite") { reach(30); km.textContent = "30 min"; unit.textContent = "invited first"; sub.textContent = "Then a 10-minute head start for staff marked free"; }
+    };
+
+    // Autoplay while in view, until the visitor takes over.
+    const order = ["start", "widen", "emergency", "invite"];
+    let timer = 0, sweep = 0, stopped = reduce, visible = false;
+    const halt = () => { clearTimeout(timer); clearInterval(sweep); c.classList.remove("playing"); };
+    const stop = () => {
+      stopped = true; halt();
+      panel.setAttribute("aria-live", "polite");
+      pp.setAttribute("aria-pressed", "true");
+    };
+    const play = () => {
+      if (stopped || !visible) return;
+      halt(); void c.offsetWidth;
+      c.classList.add("playing");
+      if (current === "widen") {
+        let h = 0; setHours(0);
+        sweep = window.setInterval(() => { h = Math.min(9, h + 1); setHours(h); if (h === 9) clearInterval(sweep); }, 550);
+      }
+      timer = window.setTimeout(() => {
+        select(order[(order.indexOf(current) + 1) % order.length]);
+        play();
+      }, 5500);
+    };
+    tabs.forEach((t, i) => {
+      t.addEventListener("click", () => { stop(); select(t.dataset.k!); });
+      t.addEventListener("keydown", (e) => {
+        const dir = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0;
+        if (e.key === "Home" || e.key === "End" || dir) {
+          e.preventDefault(); stop();
+          const n = e.key === "Home" ? 0 : e.key === "End" ? tabs.length - 1 : (i + dir + tabs.length) % tabs.length;
+          select(tabs[n].dataset.k!, true);
+        }
+      });
+    });
+    hours.addEventListener("input", () => { stop(); setHours(+hours.value); });
+    pp.addEventListener("click", () => {
+      if (stopped) {
+        stopped = false; panel.removeAttribute("aria-live");
+        pp.setAttribute("aria-pressed", "false");
+        play();
+      } else stop();
+    });
+    c.addEventListener("focusin", (e) => { if (!stopped && e.target !== pp) halt(); });
+    c.addEventListener("focusout", (e) => { if (!stopped && !c.contains(e.relatedTarget as Node)) play(); });
+    c.addEventListener("pointerenter", () => { if (!stopped) halt(); });
+    c.addEventListener("pointerleave", () => { if (!stopped) play(); });
+    new IntersectionObserver(([e]) => {
+      visible = e.isIntersecting;
+      if (visible) play(); else halt();
+    }, { threshold: 0.45 }).observe(c);
+    if (reduce) { pp.hidden = true; panel.setAttribute("aria-live", "polite"); }
+    select("start");
+  }
+</script>

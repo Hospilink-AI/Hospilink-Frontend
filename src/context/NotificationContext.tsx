@@ -3,7 +3,8 @@
 
 import React, { createContext, useCallback, useContext, useEffect } from 'react';
 import messaging, { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
-import { useRouter } from 'expo-router';
+import { usePathname, useRouter } from 'expo-router';
+import { notifyExplained } from '@/doctor/permissions';
 import { fcmService } from '@/service/fcm';
 import { inAppNotificationAPI, notificationAPI } from '@/service/api';
 import { useAuth } from './AuthContext';
@@ -25,6 +26,7 @@ const baseFor = (role?: string): Base => (role === 'admin' ? 'admin' : role === 
 export const NotificationProvider = ({ children }: { children: React.ReactNode }) => {
   const { user, token } = useAuth();
   const router = useRouter();
+  const inOnboarding = /^\/(auth|profile)(\/|$)/.test(usePathname());
   const { unread, refreshUnread } = useInAppNotifications();
 
   // Push data only carries type, notificationId and dutyId: look the notification up for where it opens
@@ -93,9 +95,11 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
       unsubscribeOpened();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, token]);
+  }, [user, token, inOnboarding]);
 
   const registerForPushNotifications = async () => {
+    // During onboarding doctors are asked on the "ready" screen, after we explain why
+    if (user?.role === 'staff' && inOnboarding && !(await notifyExplained())) return;
     const hasPermission = await fcmService.requestPermission();
     if (!hasPermission) return;
 

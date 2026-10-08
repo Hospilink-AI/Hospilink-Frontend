@@ -1,0 +1,49 @@
+---
+// Dark dispatch-field hero for inner pages. Optional right-hand visual via the "visual" slot.
+import Icon from "./Icon.astro";
+interface Crumb { name: string; href: string }
+interface Props { title: string; lead?: string; crumbs?: Crumb[]; compact?: boolean }
+const { title, lead, crumbs = [], compact = false } = Astro.props;
+const hasVisual = Astro.slots.has("visual");
+---
+<section class:list={["page-hero field-dark", compact && "compact"]}>
+  <svg class="ph-arc" viewBox="0 0 1200 500" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M-40 520 C 260 60, 940 60, 1240 520" />
+    <path d="M140 520 C 380 180, 820 180, 1060 520" />
+  </svg>
+  <div class:list={["wrap ph-grid", hasVisual && "has-visual"]}>
+    <div class="ph-copy">
+      {crumbs.length > 0 && (
+        <nav aria-label="Breadcrumb">
+          <ol class="crumbs" role="list">
+            <li><a href="/">Home</a></li>
+            {crumbs.map((c, i) => (
+              <li>
+                <Icon name="chevron-right" size={14} />
+                {i === crumbs.length - 1 ? <span aria-current="page">{c.name}</span> : <a href={c.href}>{c.name}</a>}
+              </li>
+            ))}
+          </ol>
+        </nav>
+      )}
+      <h1 class="h1" set:html={title} />
+      {lead && <p class="lead on-dark">{lead}</p>}
+      {Astro.slots.has("actions") && <div class="actions"><slot name="actions" /></div>}
+      <slot />
+    </div>
+    {hasVisual && <div class="ph-visual"><slot name="visual" /></div>}
+  </div>
+</section>
+
+<style>
+  .page-hero.compact { padding-bottom: clamp(3rem, 2rem + 3vw, 4.5rem); }
+  .crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; }
+  .crumbs li { display: inline-flex; align-items: center; gap: .35rem; }
+  .ph-arc { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+  .ph-arc path { fill: none; stroke: rgba(169, 192, 236, .16); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+  .ph-grid.has-visual { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(2rem, 5vw, 5rem); align-items: center; }
+  .ph-copy :global(h1) { max-width: 18ch; }
+  .ph-copy :global(h1 .soft) { color: var(--ceil-deep); }
+  .ph-visual { position: relative; }
+  @media (max-width: 960px) { .ph-grid.has-visual { grid-template-columns: minmax(0, 1fr); } }
+</style>

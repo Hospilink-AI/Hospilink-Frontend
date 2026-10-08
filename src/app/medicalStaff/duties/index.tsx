@@ -1,334 +1,309 @@
-import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  FlatList,
-  SafeAreaView,
-  StatusBar,
-} from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons, MaterialIcons, Feather } from "@expo/vector-icons";
-import { DutyCard, DutyStatus, UrgencyLevel } from "../../../types/duty";
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import DoctorCalendar from '@/component/dutyCalendar/DoctorCalendar';
+import { dutyAPI } from '@/service/api';
+import Button from '@/ds/Button';
+import Icon from '@/ds/Icon';
+import { CardGrid, Screen } from '@/ds/Layout';
+import { CardSkeleton, EmptyState, ErrorState } from '@/ds/States';
+import { Card } from '@/ds/Surface';
+import { SegmentedTabs } from '@/ds/Tabs';
+import { Chip } from '@/ds/Tag';
+import Txt from '@/ds/Txt';
+import { color, depth, radius } from '@/ds/tokens';
+import { useDoctor } from '@/doctor/DoctorContext';
+import { RateQueue } from '@/doctor/components/RateSheet';
+import { DutyOfferCard, DutyRow, LiveDutyCard } from '@/doctor/components/DutyCards';
+import { Duty, toDuty } from '@/doctor/duty';
+import { apiMessage } from '@/doctor/format';
+import { useDutyActions } from '@/doctor/useDutyActions';
 
-// ─── Status badge config ────────────────────────────────────────────────────
-const STATUS_CONFIG: Record<DutyStatus, { bg: string; text: string; icon: string }> = {
-  ACCEPTED: { bg: "#16A34A", text: "#fff", icon: "checkmark-circle" },
-  PENDING: { bg: "#F59E0B", text: "#fff", icon: "time" },
-  COMPLETED: { bg: "#6366F1", text: "#fff", icon: "checkmark-done-circle" },
-  ENROUTE: { bg: "#2563EB", text: "#fff", icon: "navigate" },
-};
+type Tab = 'offers' | 'upcoming' | 'ongoing' | 'history';
+type HistoryFilter = 'all' | 'torate' | 'completed' | 'cancelled' | 'incomplete';
 
-// ─── Urgency badge config ────────────────────────────────────────────────────
-const URGENCY_CONFIG: Record<UrgencyLevel, { color: string }> = {
-  LOW: { color: "#64748B" },
-  MEDIUM: { color: "#F59E0B" },
-  HIGH: { color: "#DC2626" },
-};
+const FILTERS = [
+  { key: 'near', label: 'Within 10 km', test: (d: Duty) => d.distanceKm !== null && d.distanceKm <= 10 },
+  { key: 'night', label: 'Overnight', test: (d: Duty) => d.overnight, icon: 'overnight' as const },
+  { key: 'day', label: 'Day shifts', test: (d: Duty) => !d.overnight },
+  { key: 'pay', label: '₹200+/hr', test: (d: Duty) => d.fixedPrice === null && (d.rate ?? 0) >= 200 },
+  { key: 'urgent', label: 'Urgent', test: (d: Duty) => ['high', 'emergency', 'critical'].includes(d.urgency) },
+];
 
-// ─── Duty Card Component ─────────────────────────────────────────────────────
-function DutyCardItem({ duty }: { duty: DutyCard }) {
-  const router = useRouter();
-  const status = STATUS_CONFIG[duty.status];
-  const urgency = URGENCY_CONFIG[duty.urgency];
-
-  const handleMapPress = () => {
-    router.push({
-      pathname: "/medicalStaff/duties/[id]/map" as any,
-      params: {
-        id: duty.id,
-        hospitalName: duty.hospitalName,
-      },
-    });
-  };
-
-  const handleEnroute = () => {
-    // TODO: Call mark-as-enroute API
-    console.log("Mark as enroute:", duty.id);
-  };
-
+function ViewToggle({ calendar, onChange }: { calendar: boolean; onChange: (cal: boolean) => void }) {
   return (
-    <View style={styles.card}>
-      {/* ── Row 1: Role + Status + Urgency ── */}
-      <View style={styles.cardHeader}>
-        <Text style={styles.roleText}>{duty.staffRole}</Text>
-        <View style={styles.badgeRow}>
-          {/* ACCEPTED badge */}
-          <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
-            <Ionicons
-              name={status.icon as any}
-              size={12}
-              color={status.text}
-              style={{ marginRight: 4 }}
-            />
-            <Text style={[styles.statusText, { color: status.text }]}>
-              {duty.status}
-            </Text>
-          </View>
-          {/* Urgency label */}
-          <Text style={[styles.urgencyText, { color: urgency.color }]}>
-            {duty.urgency}
-          </Text>
-        </View>
-      </View>
-
-      {/* ── Row 2: Doctor name ── */}
-      <Text style={styles.doctorName}>{duty.doctorName}</Text>
-
-      {/* ── Row 3: Distance + Time ── */}
-      <View style={styles.infoRow}>
-        <View style={styles.infoItem}>
-          <Ionicons name="navigate-outline" size={14} color="#64748B" />
-          <Text style={styles.infoText}>{duty.distance}</Text>
-        </View>
-        <View style={styles.infoItem}>
-          <Ionicons name="time-outline" size={14} color="#64748B" />
-          <Text style={styles.infoText}>
-            {duty.startTime} - {duty.endTime}
-          </Text>
-        </View>
-      </View>
-
-      {/* ── Row 4: Rate + Date ── */}
-      <View style={styles.infoRow}>
-        <View style={styles.infoItem}>
-          <MaterialIcons name="credit-card" size={14} color="#64748B" />
-          <Text style={[styles.infoText, styles.rateText]}>{duty.rate}</Text>
-        </View>
-        <View style={styles.infoItem}>
-          <Ionicons name="calendar-outline" size={14} color="#64748B" />
-          <Text style={styles.infoText}>{duty.date}</Text>
-        </View>
-      </View>
-
-      {/* ── Divider ── */}
-      <View style={styles.divider} />
-
-      {/* ── Action Buttons ── */}
-      <View style={styles.buttonRow}>
-        {/* Map button */}
-        <TouchableOpacity
-          style={styles.mapButton}
-          onPress={handleMapPress}
-          activeOpacity={0.7}
-        >
-          <Feather name="map" size={16} color="#374151" />
-          <Text style={styles.mapButtonText}>Map</Text>
-        </TouchableOpacity>
-
-        {/* Mark as Enroute button */}
-        <TouchableOpacity
-          style={styles.enrouteButton}
-          onPress={handleEnroute}
-          activeOpacity={0.85}
-        >
-          <Ionicons
-            name="play"
-            size={14}
-            color="#fff"
-            style={{ marginRight: 6 }}
-          />
-          <Text style={styles.enrouteButtonText}>Mark as Enroute</Text>
-        </TouchableOpacity>
-      </View>
+    <View style={styles.toggle} accessibilityRole="tablist">
+      {[
+        { cal: false, icon: 'duties' as const, label: 'List' },
+        { cal: true, icon: 'calendar' as const, label: 'Calendar' },
+      ].map((o) => {
+        const on = o.cal === calendar;
+        return (
+          <Pressable
+            key={o.label}
+            onPress={() => onChange(o.cal)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: on }}
+            accessibilityLabel={o.label}
+            style={(state: any) => [styles.toggleBtn, on && [styles.toggleOn, depth.raisedSm], state.focused && depth.focus]}
+          >
+            <Icon name={o.icon} size={18} color={on ? color.ink : color.inkMuted} />
+            <Txt v="label" color={on ? color.ink : color.inkMuted}>
+              {o.label}
+            </Txt>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
 
-// ─── Available Duties Screen ─────────────────────────────────────────────────
-export default function AvailableDutiesScreen() {
+function History() {
+  const router = useRouter();
+  const [filter, setFilter] = useState<HistoryFilter>('all');
+  const [items, setItems] = useState<Duty[]>([]);
+  const [page, setPage] = useState(1);
+  const [more, setMore] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(
+    async (p: number) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const status = filter === 'torate' ? 'completed' : filter;
+        const res = await dutyAPI.getCompletedDuties({ page: p, limit: 15, ...(status !== 'all' ? { status } : {}) });
+        const list = (res?.duties ?? res?.data?.duties ?? []).map(toDuty);
+        setItems((prev) => (p === 1 ? list : [...prev, ...list]));
+        setMore(!!res?.pagination?.hasNextPage);
+        setPage(p);
+      } catch (e) {
+        setError(apiMessage(e, "Your past duties didn't load."));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [filter]
+  );
+
+  useEffect(() => {
+    load(1);
+  }, [load]);
+
+  const unrated = items.filter((d) => d.status === 'completed' && !d.review);
+  const shown = filter === 'torate' ? unrated : items;
+
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
-
-      {/* Header */}
-      <View style={styles.screenHeader}>
-        <Text style={styles.screenTitle}>Available Duties</Text>
-      </View>
-
-      {/* Duty list
-      <FlatList
-        data={MOCK_DUTIES}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <DutyCardItem duty={item} />}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="calendar-outline" size={48} color="#CBD5E1" />
-            <Text style={styles.emptyText}>No duties available</Text>
-          </View>
-        }
-      /> */}
-    </SafeAreaView>
+    <View style={{ gap: 12 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+        {(
+          [
+            ['all', 'All'],
+            ['torate', unrated.length ? `To rate (${unrated.length})` : 'To rate'],
+            ['completed', 'Completed'],
+            ['cancelled', 'Cancelled'],
+            ['incomplete', 'Not completed'],
+          ] as [HistoryFilter, string][]
+        ).map(([k, l]) => (
+          <Chip key={k} label={l} selected={filter === k} onPress={() => setFilter(k)} />
+        ))}
+      </ScrollView>
+      {error ? (
+        <ErrorState message={error} onRetry={() => load(1)} />
+      ) : loading && page === 1 && !items.length ? (
+        <CardSkeleton lines={2} />
+      ) : shown.length === 0 ? (
+        <Card tone="flat">
+          {filter === 'torate' ? (
+            <EmptyState compact icon="rating" title="You're all caught up" body="You've rated every completed duty. Thank you." />
+          ) : (
+            <EmptyState compact icon="history" title="No past duties yet" body="Duties you finish, and any that were cancelled, show up here." />
+          )}
+        </Card>
+      ) : (
+        <>
+          {filter === 'all' || filter === 'completed' ? <RateQueue duties={unrated} onRated={() => load(1)} /> : null}
+          {shown.map((d) => (
+            <DutyRow key={d.id} duty={d} onPress={() => router.push(`/medicalStaff/dutyDetails/${d.id}` as any)} showMoney={d.status === 'completed'} />
+          ))}
+          {more ? <Button label="Show more" variant="secondary" onPress={() => load(page + 1)} loading={loading} style={{ alignSelf: 'center' }} /> : null}
+        </>
+      )}
+    </View>
   );
 }
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
+export default function Duties() {
+  const router = useRouter();
+  const params = useLocalSearchParams<{ tab?: Tab; view?: string }>();
+  const { duties, available, refreshDuties, verification, verify } = useDoctor();
+  const actions = useDutyActions();
+  const [tab, setTab] = useState<Tab>((params.tab as Tab) ?? 'offers');
+  const [calendar, setCalendar] = useState(params.view === 'calendar');
+  const [filters, setFilters] = useState<string[]>([]);
+  const [accepting, setAccepting] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    if (params.tab) setTab(params.tab as Tab);
+  }, [params.tab]);
+
+  const offers = useMemo(() => {
+    const active = FILTERS.filter((f) => filters.includes(f.key));
+    return duties.offers.filter((d) => active.every((f) => f.test(d)));
+  }, [duties.offers, filters]);
+
+  const open = (id: string) => router.push(`/medicalStaff/dutyDetails/${id}` as any);
+  const accept = async (id: string) => {
+    setAccepting(id);
+    const r = await actions.accept(id);
+    setAccepting(null);
+    if (r) open(id);
+  };
+
+  const header = (
+    <View style={styles.head}>
+      <Txt v="h1" accessibilityRole="header">
+        Duties
+      </Txt>
+      <ViewToggle
+        calendar={calendar}
+        onChange={(c) => {
+          setCalendar(c);
+          router.setParams({ view: c ? 'calendar' : undefined } as any);
+        }}
+      />
+    </View>
+  );
+
+  if (calendar) return <DoctorCalendar header={header} />;
+
+  const notVerified = verification !== 'verified';
+
+  return (
+    <Screen
+      wideMax
+      refreshing={refreshing}
+      onRefresh={async () => {
+        setRefreshing(true);
+        await refreshDuties();
+        setRefreshing(false);
+      }}
+      testID="doctor-duties"
+    >
+      {header}
+      <SegmentedTabs<Tab>
+        scroll
+        items={[
+          { key: 'offers', label: 'Offers', count: available ? duties.offers.length : undefined },
+          { key: 'upcoming', label: 'Upcoming', count: duties.upcoming.length },
+          { key: 'ongoing', label: 'Ongoing', count: duties.active.length },
+          { key: 'history', label: 'History' },
+        ]}
+        value={tab}
+        onChange={setTab}
+      />
+
+      {notVerified && tab !== 'history' ? (
+        <Card tone="flat">
+          <EmptyState
+            icon="verified"
+            title="Duties open up once you're verified"
+            body={verify.stage === 'review' ? "We're checking your documents. We'll let you know as soon as you can take duties." : 'Hospitals can only offer duties to verified doctors. Upload your documents to get verified.'}
+            action={verify.stage === 'review' ? 'See my documents' : 'Upload documents'}
+            onAction={() => router.push('/medicalStaff/documents' as any)}
+          />
+        </Card>
+      ) : tab === 'offers' ? (
+        <View style={{ gap: 14 }}>
+          {available && !duties.offersBlocked ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+              {FILTERS.map((f) => (
+                <Chip
+                  key={f.key}
+                  label={f.label}
+                  icon={f.icon}
+                  selected={filters.includes(f.key)}
+                  onPress={() => setFilters((x) => (x.includes(f.key) ? x.filter((k) => k !== f.key) : [...x, f.key]))}
+                />
+              ))}
+            </ScrollView>
+          ) : null}
+          {!duties.loaded ? (
+            <CardSkeleton />
+          ) : !available || duties.offersBlocked ? (
+            <Card tone="flat">
+              <EmptyState
+                icon="hourglass"
+                title="You're off duty"
+                body="Turn on availability on Home to see and accept duties near you."
+                action="Go to Home"
+                onAction={() => router.push('/medicalStaff/dashboard' as any)}
+              />
+            </Card>
+          ) : duties.offersError ? (
+            <ErrorState message={duties.offersError} onRetry={refreshDuties} />
+          ) : offers.length === 0 ? (
+            <Card tone="flat">
+              {filters.length ? (
+                <EmptyState compact icon="filter" title="No duties match these filters" action="Clear filters" onAction={() => setFilters([])} />
+              ) : (
+                <EmptyState
+                  compact
+                  icon="nearby"
+                  title="No open duties near you right now"
+                  body="We'll send you a notification the moment a hospital near you posts one."
+                  action="See the calendar"
+                  onAction={() => setCalendar(true)}
+                />
+              )}
+            </Card>
+          ) : (
+            <CardGrid>
+              {offers.map((d) => (
+                <DutyOfferCard key={d.id} duty={d} onOpen={() => open(d.id)} onAccept={() => accept(d.id)} accepting={accepting === d.id} disabled={!!accepting && accepting !== d.id} />
+              ))}
+            </CardGrid>
+          )}
+        </View>
+      ) : tab === 'upcoming' ? (
+        <View style={{ gap: 10 }}>
+          {!duties.loaded ? (
+            <CardSkeleton lines={2} />
+          ) : duties.mineError ? (
+            <ErrorState message={duties.mineError} onRetry={refreshDuties} />
+          ) : duties.upcoming.length === 0 ? (
+            <Card tone="flat">
+              <EmptyState compact icon="calendarEvent" title="Nothing coming up" body="Duties you accept show up here, with everything you need for the day." action="See offers" onAction={() => setTab('offers')} />
+            </Card>
+          ) : (
+            <CardGrid gap={10}>{duties.upcoming.map((d) => <DutyRow key={d.id} duty={d} onPress={() => open(d.id)} />)}</CardGrid>
+          )}
+        </View>
+      ) : tab === 'ongoing' ? (
+        <View style={{ gap: 14 }}>
+          {!duties.loaded ? (
+            <CardSkeleton />
+          ) : duties.active.length === 0 ? (
+            <Card tone="flat">
+              <EmptyState compact icon="role" title="No duty in progress" body="When you start a trip to a duty, you'll follow it from here." />
+            </Card>
+          ) : (
+            duties.active.map((d) => <LiveDutyCard key={d.id} duty={d} onOpen={() => open(d.id)} />)
+          )}
+        </View>
+      ) : (
+        <History />
+      )}
+    </Screen>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F1F5F9",
-  },
-
-  // Header
-  screenHeader: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 12,
-    backgroundColor: "#F1F5F9",
-  },
-  screenTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#0F172A",
-    letterSpacing: -0.3,
-  },
-
-  // List
-  listContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 32,
-    gap: 12,
-  },
-
-  // Card
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 18,
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-
-  // Card header row
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  roleText: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#0F172A",
-    letterSpacing: -0.2,
-  },
-  badgeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.3,
-  },
-  urgencyText: {
-    fontSize: 12,
-    fontWeight: "600",
-    letterSpacing: 0.3,
-  },
-
-  // Doctor name
-  doctorName: {
-    fontSize: 13,
-    color: "#64748B",
-    marginBottom: 14,
-    fontWeight: "400",
-  },
-
-  // Info rows
-  infoRow: {
-    flexDirection: "row",
-    marginBottom: 8,
-    gap: 32,
-  },
-  infoItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  infoText: {
-    fontSize: 14,
-    color: "#374151",
-    fontWeight: "500",
-  },
-  rateText: {
-    fontWeight: "700",
-    color: "#0F172A",
-  },
-
-  // Divider
-  divider: {
-    height: 1,
-    backgroundColor: "#F1F5F9",
-    marginVertical: 14,
-  },
-
-  // Buttons
-  buttonRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  mapButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 11,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: "#E2E8F0",
-    backgroundColor: "#fff",
-  },
-  mapButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#374151",
-  },
-  enrouteButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: "#2563EB",
-    shadowColor: "#2563EB",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  enrouteButtonText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#fff",
-    letterSpacing: 0.1,
-  },
-
-  // Empty state
-  emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingTop: 80,
-    gap: 12,
-  },
-  emptyText: {
-    fontSize: 15,
-    color: "#94A3B8",
-  },
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  toggle: { flexDirection: 'row', backgroundColor: color.well, borderRadius: radius.pill, padding: 4, gap: 2 },
+  toggleBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, paddingHorizontal: 12, borderRadius: radius.pill },
+  toggleOn: { backgroundColor: color.surface },
+  chips: { gap: 8, paddingVertical: 2, paddingRight: 8 },
 });

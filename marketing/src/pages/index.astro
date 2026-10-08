@@ -1,0 +1,41 @@
+---
+import Base from "../layouts/Base.astro";
+import Hero from "../components/home/Hero.astro";
+import Chain from "../components/home/Chain.astro";
+import Verified from "../components/home/Verified.astro";
+import Reach from "../components/home/Reach.astro";
+import Door from "../components/home/Door.astro";
+import Handshake from "../components/home/Handshake.astro";
+import Vacancies from "../components/home/Vacancies.astro";
+import Doors from "../components/home/Doors.astro";
+import Company from "../components/home/Company.astro";
+import CtaBand from "../components/ui/CtaBand.astro";
+
+const webSite = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "HospiLink",
+  url: "https://hospilink.in/",
+  potentialAction: {
+    "@type": "SearchAction",
+    target: "https://hospilink.in/vacancies/?q={search_term_string}",
+    "query-input": "required name=search_term_string",
+  },
+};
+---
+<Base
+  title="HospiLink · Live Staffing, Trusted Healthcare"
+  description="Hospitals post duties and permanent vacancies; verified doctors, nurses and clinical staff nearby take them. Start codes, a 100 m geofence and end codes check every shift. Starting in Pune."
+  jsonLd={webSite}
+>
+  <Hero />
+  <Chain />
+  <Verified />
+  <Reach />
+  <Door />
+  <Handshake />
+  <Vacancies />
+  <Doors />
+  <Company />
+  <CtaBand />
+</Base>

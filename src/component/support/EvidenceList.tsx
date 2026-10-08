@@ -1,7 +1,8 @@
+import { TIcon, useThemedStyles } from "@/ds/themed";
+import { Theme, useTheme } from "@/ds/theme";
 import { COLORS } from "@/constant/colors";
 import { formatDate } from "@/constant/jobs";
 import { ticketAPI } from "@/service/api";
-import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { ActivityIndicator, Linking, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -14,6 +15,8 @@ interface Props {
 
 // Ticket files with an Open link. The server gives a short-lived link per file.
 export default function EvidenceList({ ticketId, evidence, showSupplier, emptyText = "No files attached." }: Props) {
+  const styles = useStylesThemed();
+  const th = useTheme();
   const [opening, setOpening] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,7 +48,7 @@ export default function EvidenceList({ ticketId, evidence, showSupplier, emptyTe
     <View style={{ gap: 6 }}>
       {evidence.map((e: any) => (
         <View key={e._id ?? e.s3Key} style={styles.row}>
-          <Ionicons name={e.mimeType === "application/pdf" ? "document-text-outline" : "image-outline"} size={16} color={COLORS.subText} />
+          <TIcon ion={e.mimeType === "application/pdf" ? "document-text-outline" : "image-outline"} size={16} color={th.c.subText} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={styles.name} numberOfLines={1}>{e.originalFileName ?? "File"}</Text>
             <Text style={styles.meta} numberOfLines={1}>
@@ -55,7 +58,7 @@ export default function EvidenceList({ ticketId, evidence, showSupplier, emptyTe
           </View>
           {!!e._id && (
             <TouchableOpacity onPress={() => open(e)} disabled={!!opening} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-              {opening === e._id ? <ActivityIndicator size="small" color={COLORS.primary} /> : <Text style={styles.link}>Open</Text>}
+              {opening === e._id ? <ActivityIndicator size="small" color={th.c.primary} /> : <Text style={styles.link}>Open</Text>}
             </TouchableOpacity>
           )}
         </View>
@@ -65,11 +68,12 @@ export default function EvidenceList({ ticketId, evidence, showSupplier, emptyTe
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (t: Theme) => ({
   row: { flexDirection: "row", alignItems: "center", gap: 8 },
-  name: { fontSize: 13, color: COLORS.text },
-  meta: { fontSize: 11, color: COLORS.subText },
-  muted: { fontSize: 13, color: COLORS.subText },
-  link: { fontSize: 13, fontWeight: "700", color: COLORS.primary },
-  error: { fontSize: 12, color: COLORS.red },
-});
+  name: { ...t.f(), fontSize: 13, color: t.c.text },
+  meta: { ...t.f(), fontSize: 11, color: t.c.subText },
+  muted: { ...t.f(), fontSize: 13, color: t.c.subText },
+  link: { fontSize: 13, ...t.f("700"), color: t.c.primary },
+  error: { ...t.f(), fontSize: 12, color: t.c.danger },
+} as const);
+const useStylesThemed = () => useThemedStyles(make_styles as any) as any;

@@ -1,0 +1,144 @@
+---
+import Base from "../layouts/Base.astro";
+import PageHero from "../components/ui/PageHero.astro";
+import Faq from "../components/ui/Faq.astro";
+import Icon from "../components/ui/Icon.astro";
+import CtaBand from "../components/ui/CtaBand.astro";
+import { COMPANY, LINKS } from "../config";
+
+const groups = [
+  {
+    id: "general", t: "General", icon: "info-circle",
+    items: [
+      { q: "What is HospiLink?", a: "HospiLink is a healthcare staffing platform. Hospitals post short duties and permanent vacancies; verified doctors, nurses and clinical staff nearby take the duties or apply for the vacancies. It is run by Hospilink Private Limited from Pune." },
+      { q: "Who runs HospiLink?", a: `Hospilink Private Limited, a Pune company. Its directors are ${COMPANY.directors.map((d) => d.name).join(" and ")}.` },
+      { q: "Where does HospiLink work?", a: "We are starting in Pune. Mumbai is next, then the rest of India." },
+      { q: "What's the difference between a duty and a vacancy?", a: "A duty is a short shift, for example a night RMO or twelve hours of ICU nursing. A vacancy is a permanent role at a hospital, with an application, an interview and an offer." },
+      { q: "Which roles are on HospiLink?", a: "Doctors (including RMOs, DMOs, intensivists, emergency doctors, anaesthetists and specialists), nurses (ward, ICU, emergency, OT, dialysis, NICU/PICU), technicians (lab, radiology, OT, dialysis, cath lab, ICU), biomedical engineers, pharmacists, patient-support staff and hospital administration roles." },
+    ],
+  },
+  {
+    id: "hospitals", t: "Hospitals", icon: "building-hospital",
+    items: [
+      { q: "How do I register my hospital?", a: `Sign up on the <a href="${LINKS.hospitalSignUp}">HospiLink web app</a> with a hospital account, then complete your hospital profile, including your location pinned on the map.` },
+      { q: "How quickly does a duty reach staff?", a: "The moment you post it. The offer goes to verified staff in that role within 30 km of your hospital, and widens by 5 km every hour up to 75 km if nobody has accepted." },
+      { q: "What if I need someone right now?", a: "Raise an emergency request. It reaches verified staff across the city at once instead of widening hour by hour." },
+      { q: "Can I ask for people who have worked with us before?", a: "Yes. Invite staff you trust. They get a 30-minute window to accept before the duty goes to anyone else." },
+      { q: "Are there limits on duty length and rate?", a: "Duties are at least 3 hours long, and the total for a duty has to be between ₹499 and ₹9,999." },
+      { q: "How do I know the right person turned up?", a: "A duty only starts when the staff member is within 100 m of your hospital and enters the start code your duty desk reads out to them. At the end, your desk enters the end code from their phone to close the duty." },
+    ],
+  },
+  {
+    id: "staff", t: "Doctors, nurses and staff", icon: "stethoscope",
+    items: [
+      { q: "How do I start taking duties?", a: `Install the <a href="${LINKS.playStore}">HospiLink app</a>, sign up as medical staff, and get verified. Once your documents are verified, duties near you start to appear.` },
+      { q: "What do I need to get verified?", a: "Your Aadhaar for the identity check, and your medical registration, degree and licence where your role needs them. Uploads can be photos or PDFs." },
+      { q: "Will I see the rate before I accept?", a: "Yes. Every offer shows the rate, the hours, the hospital and the distance before you accept." },
+      { q: "Can I cancel a duty I accepted?", a: "Yes, up to 30 minutes before it starts. Cancelling later than that, or not turning up, counts as a no-show and affects your rating." },
+      { q: "How do I start and end a duty?", a: "From 15 minutes before the start, ask for your start code at the hospital. It goes to the duty desk, who read it out to you; you need to be within 100 m. At the end you get an end code by SMS and read it to the desk, who enter it to close the duty." },
+      { q: "Is HospiLink tracking my location all the time?", a: "No. Location is used only while the app is open: to show you duties nearby and, during a duty you've accepted, to share your position with that hospital until the duty ends. There is no background tracking." },
+      { q: "Is the app on iPhone?", a: "The app is on Android first. iPhone is planned." },
+    ],
+  },
+  {
+    id: "vacancies", t: "Permanent vacancies", icon: "briefcase-2",
+    items: [
+      { q: "How do I apply for a vacancy?", a: `Browse <a href="/vacancies/">permanent vacancies</a>, then apply in the app with your verified profile and résumé.` },
+      { q: "How will I know where my application is?", a: "In the app, it moves through: application sent, being reviewed, shortlisted, pick an interview time, interview scheduled, offer received and hired. It can also end as not selected, or you can withdraw it." },
+      { q: "How do interviews happen?", a: "The hospital offers interview slots, you pick one, and the interview takes place on a Google Meet link the hospital sends you." },
+      { q: "Can my hospital post a vacancy?", a: `Yes. Registered hospitals post vacancies from the <a href="${LINKS.hospitalSignUp}">hospital web app</a> and manage applicants and interviews there.` },
+    ],
+  },
+  {
+    id: "trust", t: "Trust and privacy", icon: "shield-check",
+    items: [
+      { q: "How are staff verified?", a: "Identity is checked through Aadhaar with our verification provider, IDfy. Medical registration, degree and licence are checked where the role needs them. Only verified staff are shown duties." },
+      { q: "What happens if something goes wrong on a duty?", a: "Start with the in-app help chat (English, Hindi or Marathi), then raise a ticket if needed. Duty disputes are decided within 14 days, with written reasons." },
+      { q: "Can I block or report someone?", a: "Yes. Hospitals and staff can both block or report anyone they have dealt with on HospiLink." },
+      { q: "Does HospiLink handle payments?", a: "Not inside the app yet. Every duty shows its rate before anyone accepts it. For how payment works for your hospital, call or write to us." },
+      { q: "How is my data handled?", a: `We process personal data in line with India's Digital Personal Data Protection Act, 2023. Read the full <a href="/privacy/">privacy policy</a>.` },
+    ],
+  },
+  {
+    id: "account", t: "Your account", icon: "user-circle",
+    items: [
+      { q: "How do I delete my account?", a: `In the app (Profile, then Account settings, then Delete account) or at <a href="${LINKS.deleteAccount}">hospilink.in/delete-account</a>. Your personal data is removed 7 days after the request.` },
+      { q: "Can I change my mind after asking to delete?", a: "Yes. Signing in during those 7 days cancels the deletion." },
+      { q: "Who do I complain to?", a: `Our Grievance Officer, ${COMPANY.grievanceOfficer}, at <a href="mailto:${COMPANY.emails.support}">${COMPANY.emails.support}</a>. We aim to resolve complaints within 30 days.` },
+    ],
+  },
+];
+
+const strip = (s: string) => s.replace(/<[^>]+>/g, "");
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: groups.flatMap((g) => g.items.map((i) => ({ "@type": "Question", name: i.q, acceptedAnswer: { "@type": "Answer", text: strip(i.a) } }))),
+};
+const crumbs = [{ name: "FAQ", href: "/faq/" }];
+---
+<Base title="Frequently asked questions" description="Answers about HospiLink for hospitals, doctors, nurses and staff: posting duties, verification, start and end codes, vacancies, privacy and your account." crumbs={crumbs} jsonLd={ld}>
+  <PageHero
+    compact
+    title={'Questions, <span class="soft">answered plainly.</span>'}
+    lead="If yours isn't here, call or write to us. A person will answer."
+    crumbs={crumbs}
+  >
+    <p class="fq-call">
+      {COMPANY.phones.map((p) => <a class="tnum" href={`tel:${p.tel}`}><Icon name="phone" size={16} /> {p.display}</a>)}
+      <a href={`mailto:${COMPANY.emails.support}`}><Icon name="mail" size={16} /> {COMPANY.emails.support}</a>
+    </p>
+  </PageHero>
+
+  <div class="wrap fq-grid section-tight">
+    <nav class="fq-nav" aria-label="Topics">
+      <ul role="list" class="relief">
+        {groups.map((g) => (
+          <li><a href={`#${g.id}`}><Icon name={g.icon} size={18} /> {g.t}<span class="fq-n tnum">{g.items.length}</span></a></li>
+        ))}
+      </ul>
+    </nav>
+    <div class="fq-groups">
+      {groups.map((g) => (
+        <section id={g.id} class="fq-group" aria-labelledby={`${g.id}-t`}>
+          <h2 id={`${g.id}-t`} class="h3"><span class="icon-tile"><Icon name={g.icon} /></span>{g.t}</h2>
+          <Faq items={g.items} schema={false} />
+        </section>
+      ))}
+    </div>
+  </div>
+
+  <CtaBand />
+</Base>
+
+<style>
+  .fq-call { display: flex; flex-wrap: wrap; gap: .6rem 1.4rem; margin-top: 1.6rem; }
+  .fq-call a { display: inline-flex; align-items: center; gap: .45rem; font-weight: 600; color: var(--navy); }
+  .fq-call a:hover { color: var(--ceil-deep); }
+  .fq-call :global(svg) { color: var(--ceil-deep); }
+  .fq-grid { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: clamp(2rem, 5vw, 5rem); align-items: start; }
+  .fq-nav { position: sticky; top: 104px; }
+  .fq-nav ul { padding: .7rem; border-radius: 22px; display: grid; gap: .15rem; }
+  .fq-nav a { display: flex; align-items: center; gap: .6rem; padding: .6rem .7rem; border-radius: 12px; font-weight: 600; font-size: .92rem; color: var(--ink-soft); transition: background-color .2s, color .2s; }
+  .fq-nav a:hover, .fq-nav a.on { background: #fff; color: var(--ceil-700); }
+  .fq-nav :global(svg) { color: var(--ceil-deep); flex: none; }
+  .fq-n { margin-left: auto; font-size: .76rem; color: var(--ink-muted); }
+  .fq-groups { display: grid; gap: 3.5rem; }
+  .fq-group { scroll-margin-top: 110px; }
+  .fq-group h2 { display: flex; align-items: center; gap: .9rem; margin-bottom: 1.3rem; }
+  .fq-group h2 :global(.icon-tile) { width: 46px; height: 46px; border-radius: 14px; }
+  @media (max-width: 900px) {
+    .fq-grid { grid-template-columns: minmax(0, 1fr); }
+    .fq-nav { position: static; }
+    .fq-nav ul { display: flex; flex-wrap: wrap; gap: .3rem; }
+    .fq-n { display: none; }
+  }
+</style>
+
+<script>
+  const links = document.querySelectorAll<HTMLAnchorElement>(".fq-nav a");
+  const io = new IntersectionObserver((es) => es.forEach((e) => {
+    if (e.isIntersecting) links.forEach((l) => l.classList.toggle("on", l.getAttribute("href") === `#${e.target.id}`));
+  }), { rootMargin: "-25% 0px -65% 0px" });
+  document.querySelectorAll(".fq-group").forEach((g) => io.observe(g));
+</script>

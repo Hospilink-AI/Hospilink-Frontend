@@ -1,8 +1,9 @@
+import { Theme, useTheme } from "@/ds/theme";
+import { TIcon, useThemedStyles } from "@/ds/themed";
 import { COLORS } from "@/constant/colors";
 import { DUTY_CALENDAR_ENABLED, FillStep, fillStepText, stepTime } from "@/constant/dutyCalendar";
 import { apiError } from "@/constant/jobs";
 import { dutyCalendarAPI } from "@/service/api";
-import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Image, StyleProp, StyleSheet, Text, TouchableOpacity, View, ViewStyle } from "react-native";
 
@@ -19,6 +20,8 @@ export default function FillProgress({
   bare?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
+  const styles = use_styles();
+  const th = useTheme();
   const [steps, setSteps] = useState<FillStep[] | null>(null);
   const [current, setCurrent] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,12 +59,12 @@ export default function FillProgress({
         <View style={styles.titleRow}>
           <Text style={styles.title}>Filling progress</Text>
           <TouchableOpacity onPress={load} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Refresh">
-            <Ionicons name="refresh" size={16} color={COLORS.subText} />
+            <TIcon ion="refresh" size={16} color={th.c.subText} />
           </TouchableOpacity>
         </View>
       )}
       {loading ? (
-        <ActivityIndicator color={COLORS.primary} style={{ marginVertical: 10 }} />
+        <ActivityIndicator color={th.c.primary} style={{ marginVertical: 10 }} />
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
       ) : (
@@ -70,12 +73,12 @@ export default function FillProgress({
             const last = i === (steps ?? []).length - 1;
             const isCurrent = last && !finished;
             const bad = ["expired", "cancelled", "unfilled_critical", "escalated_to_admins"].includes(step.key);
-            const color = step.key === "accepted" ? COLORS.green : bad ? COLORS.red : isCurrent ? COLORS.primary : "#94A3B8";
+            const color = step.key === "accepted" ? th.hex(COLORS.green) : bad ? th.hex(COLORS.red) : isCurrent ? th.c.primary : th.hex("#94A3B8");
             return (
               <View key={`${step.key}-${i}`} style={styles.step}>
                 <View style={styles.rail}>
                   <View style={[styles.node, { borderColor: color }, (!isCurrent || finished) && { backgroundColor: color }]}>
-                    {step.key === "accepted" && <Ionicons name="checkmark" size={10} color="#fff" />}
+                    {step.key === "accepted" && <TIcon ion="checkmark" size={10} color={th.hex("#fff")} />}
                   </View>
                   {!last && <View style={styles.line} />}
                 </View>
@@ -84,7 +87,7 @@ export default function FillProgress({
                     {step.key === "accepted" && step.staff?.profilePicture ? (
                       <Image source={{ uri: step.staff.profilePicture }} style={styles.avatar} />
                     ) : null}
-                    <Text style={[styles.stepText, isCurrent && { color: COLORS.primary, fontWeight: "700" }]}>
+                    <Text style={[styles.stepText, isCurrent && { color: th.c.primary, ...th.f("700") }]}>
                       {fillStepText(step)}
                     </Text>
                   </View>
@@ -95,7 +98,7 @@ export default function FillProgress({
           })}
           {!finished && (
             <View style={styles.waiting}>
-              <ActivityIndicator size="small" color={COLORS.primary} />
+              <ActivityIndicator size="small" color={th.c.primary} />
               <Text style={styles.waitingText}>Waiting for someone to accept</Text>
             </View>
           )}
@@ -105,20 +108,21 @@ export default function FillProgress({
   );
 }
 
-const styles = StyleSheet.create({
-  card: { backgroundColor: COLORS.white, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, padding: 16, marginBottom: 12 },
+const use_styles = () => useThemedStyles(make_styles as any) as any;
+const make_styles = (t: Theme) => ({
+  card: { backgroundColor: t.c.surface, borderRadius: 12, borderWidth: 1, borderColor: t.c.border, padding: 16, marginBottom: 12 },
   titleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
-  title: { fontSize: 14, fontWeight: "800", color: COLORS.text },
-  error: { fontSize: 12, color: COLORS.red },
+  title: { fontSize: 14, ...t.f("800"), color: t.c.text },
+  error: { ...t.f(), fontSize: 12, color: t.hex(COLORS.red) },
   step: { flexDirection: "row", gap: 10 },
   rail: { width: 14, alignItems: "center" },
-  node: { width: 14, height: 14, borderRadius: 7, borderWidth: 2, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.white, marginTop: 2 },
-  line: { flex: 1, width: 2, backgroundColor: COLORS.border, minHeight: 14 },
+  node: { width: 14, height: 14, borderRadius: 7, borderWidth: 2, alignItems: "center", justifyContent: "center", backgroundColor: t.c.surface, marginTop: 2 },
+  line: { flex: 1, width: 2, backgroundColor: t.c.border, minHeight: 14 },
   stepBody: { flex: 1, paddingBottom: 12 },
   stepTop: { flexDirection: "row", alignItems: "center", gap: 8 },
-  avatar: { width: 22, height: 22, borderRadius: 11, backgroundColor: COLORS.border },
-  stepText: { fontSize: 13, color: COLORS.text, flexShrink: 1 },
-  when: { fontSize: 11, color: COLORS.subText, marginTop: 2 },
+  avatar: { width: 22, height: 22, borderRadius: 11, backgroundColor: t.c.border },
+  stepText: { ...t.f(), fontSize: 13, color: t.c.text, flexShrink: 1 },
+  when: { ...t.f(), fontSize: 11, color: t.c.subText, marginTop: 2 },
   waiting: { flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 24 },
-  waitingText: { fontSize: 12, color: COLORS.subText },
-});
+  waitingText: { ...t.f(), fontSize: 12, color: t.c.subText },
+} as const);

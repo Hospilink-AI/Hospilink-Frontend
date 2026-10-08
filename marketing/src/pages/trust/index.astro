@@ -1,0 +1,319 @@
+---
+import Base from "../../layouts/Base.astro";
+import PageHero from "../../components/ui/PageHero.astro";
+import Icon from "../../components/ui/Icon.astro";
+import Faq from "../../components/ui/Faq.astro";
+import CtaBand from "../../components/ui/CtaBand.astro";
+import { COMPANY, LINKS } from "../../config";
+import "../../components/pages/b.css";
+
+const crumbs = [{ name: "Trust & safety", href: "/trust/" }];
+const statuses = [
+  { k: "Pending", c: "tag-outline", p: "Uploaded, not checked yet." },
+  { k: "Manual review", c: "tag-amber", p: "A person on the HospiLink team is checking it." },
+  { k: "Auto-verified", c: "tag-saline", p: "Matched automatically against the source." },
+  { k: "Verified", c: "tag-green", p: "Checked and accepted." },
+  { k: "Rejected", c: "tag-red", p: "Didn't pass the check. Upload it again or contact support." },
+];
+const visibility = [
+  { k: "Profile, role and rating", before: true, during: true },
+  { k: "Distance and city", before: true, during: true },
+  { k: "Approximate area", before: true, during: true },
+  { k: "Exact live position", before: false, during: true },
+  { k: "Phone number and email", before: false, during: true },
+  { k: "Street address", before: false, during: false },
+];
+const dispute = [
+  { d: "Day 0", t: "Ticket raised", p: "From the duty itself, with a reference number. Attach evidence if you have it." },
+  { d: "During", t: "Both sides heard", p: "The HospiLink team reviews the duty record and what each side says." },
+  { d: "By day 14", t: "Written decision", p: "Duty disputes are decided within 14 days, with the reasons written down." },
+  { d: "After", t: "Appeal", p: "If you disagree, you can appeal and follow it from your account standing." },
+];
+const data = [
+  { icon: "lock", t: "Encrypted in transit", p: "Data is sent over HTTPS. Passwords are stored hashed." },
+  { icon: "file-lock", t: "Documents kept private", p: "Stored privately and opened through short-lived links." },
+  { icon: "user-shield", t: "Team access by role", p: "HospiLink staff see only what their role needs, and access is recorded." },
+  { icon: "ban", t: "Never sold", p: "We do not sell your personal data." },
+  { icon: "trash", t: "Deletion in 7 days", p: "Delete your account any time; personal data is removed 7 days after the request." },
+  { icon: "scale", t: "DPDP Act, 2023", p: "Personal data is processed in line with India's Digital Personal Data Protection Act, 2023 and the IT Act, 2000." },
+];
+const faqs = [
+  { q: "Can a hospital see where I am when I'm not on a duty?", a: "No. Before you're assigned, hospitals see your area, city and distance, not your exact position or street address. Your live position is shared only with the hospital whose duty you've accepted, only during that duty, and only while the app is open." },
+  { q: "What counts against a rating?", a: "Hospitals and staff rate each other after each duty. No-shows and cancellations in the last 30 minutes before a start count against a staff member's rating." },
+  { q: "Is pending confirmation a dispute?", a: "No. It means the hospital hasn't entered the end code yet. HospiLink follows it up so the duty can be closed. It is handled separately from disputes." },
+  { q: "How do I block or report someone?", a: "Both hospitals and staff can block someone or report a user or a review from the app. Reports go to the HospiLink team to look into." },
+  { q: "Who do I complain to about my data?", a: `Our Grievance Officer, ${COMPANY.grievanceOfficer}, at <a href="mailto:${COMPANY.emails.support}">${COMPANY.emails.support}</a>. We reply within 30 days. If you're not satisfied, you can go to the Data Protection Board of India.` },
+];
+---
+<Base
+  title="Trust & safety: how HospiLink checks every duty"
+  description="Verified staff only, role as a hard filter, a start code inside a 100 m geofence, end codes your desk enters, ratings, blocks and reports, 14-day duty disputes and DPDP-aligned data handling."
+  crumbs={crumbs}
+>
+  <PageHero
+    title='Trust, shown <span class="soft">at every step.</span>'
+    lead="Hospitals let a stranger onto a ward. Staff walk into a hospital they may not know. HospiLink is built so both can check, not just hope."
+    crumbs={crumbs}
+  >
+    <Fragment slot="actions">
+      <a class="btn btn-primary btn-lg" href="#verification">How we verify <Icon name="arrow-down" /></a>
+      <a class="btn btn-white btn-lg" href="/privacy/">Privacy policy</a>
+    </Fragment>
+    <div slot="visual" class="rec" aria-hidden="true">
+      <div class="rec-card">
+        <div class="rec-h">
+          <div><p class="rec-t">Duty record</p><p class="rec-s">ICU Staff Nurse · Aranya Hospital · Tonight</p></div>
+          <span class="sample">Sample</span>
+        </div>
+        <ol class="rec-list" role="list">
+          {[
+            { t: "Identity verified", s: "Aadhaar matched with IDfy", v: "Verified" },
+            { t: "Role matched", s: "Only verified ICU nurses saw it", v: "ICU nurse" },
+            { t: "Inside the geofence", s: "42 m from the hospital pin", v: "≤ 100 m" },
+            { t: "Started with the desk's code", s: "Read out at 7:58 PM", v: "482 913" },
+            { t: "Closed by the hospital", s: "End code entered at 8:02 AM", v: "Completed" },
+            { t: "Rated both ways", s: "Visible once both sides review", v: "4.8 rating" },
+          ].map((r) => (
+            <li><span class="rec-ck"><Icon name="check" size={13} stroke={2.6} /></span><span class="rec-x">{r.t}<small>{r.s}</small></span><span class="rec-v tnum">{r.v}</span></li>
+          ))}
+        </ol>
+      </div>
+    </div>
+  </PageHero>
+
+  <!-- Verification -->
+  <section id="verification" class="section" aria-labelledby="ver-t">
+    <div class="wrap b-split top">
+      <div class="b-copy" data-reveal>
+        <h2 id="ver-t" class="h2">Verified before they see a single duty.</h2>
+        <p class="lead">Staff upload their documents once. Identity is checked through Aadhaar with IDfy, and medical registration, degree and licence are checked where the role needs them. Only verified staff are shown duties.</p>
+        <div class="b-note gate">
+          <span class="ic"><Icon name="filter" /></span>
+          <div><b>Role is a hard gate</b><p>Specialty decides who sees a duty. A request for an ICU nurse reaches verified ICU nurses and no one else.</p></div>
+        </div>
+      </div>
+      <ul class="stat-list relief-high" role="list" data-reveal style="--d:.08s">
+        {statuses.map((s) => (
+          <li><span class:list={["tag", s.c]}>{s.k}</span><span>{s.p}</span></li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <!-- At the door -->
+  <section class="section field-dark b-dark-band on-dark" aria-labelledby="door-t">
+    <div class="wrap">
+      <div class="b-head2" data-reveal>
+        <h2 id="door-t" class="h2">The duty only starts <span class="soft">when both checks pass.</span></h2>
+        <p class="lead on-dark">The start code and the geofence are checked together. Either one alone isn't enough.</p>
+      </div>
+      <div class="gate-row">
+        <div class="gate-c glass-dark" data-reveal>
+          <Icon name="map-pin-check" size={30} />
+          <h3>Within 100 m</h3>
+          <p>Measured against the hospital's pinned location on the map.</p>
+        </div>
+        <span class="plus" aria-hidden="true">+</span>
+        <div class="gate-c glass-dark" data-reveal style="--d:.06s">
+          <Icon name="password" size={30} />
+          <h3>Start code from the desk</h3>
+          <p>Requested from 15 minutes before the start. It goes to the hospital, who read it out.</p>
+        </div>
+        <span class="plus" aria-hidden="true">=</span>
+        <div class="gate-c ok" data-reveal style="--d:.12s">
+          <Icon name="player-play" size={30} />
+          <h3>Duty started</h3>
+          <p>Only with both: the right person, at the right place. The end code later closes it the same way.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Location privacy -->
+  <section class="section" aria-labelledby="loc-t">
+    <div class="wrap b-split">
+      <div class="b-copy" data-reveal>
+        <h2 id="loc-t" class="h2">What a hospital can see, and when.</h2>
+        <p class="lead">Location is used only while the app is open. There is no background tracking. Exact position and contact details are shared only with the hospital whose duty you're on, and only for that duty.</p>
+        <a class="link-arrow" href="/privacy/">Read the privacy policy <Icon name="arrow-right" /></a>
+      </div>
+      <div class="vis relief-high" data-reveal style="--d:.08s">
+        <table>
+          <caption class="sr-only">What hospitals can see about staff before and during an assigned duty</caption>
+          <thead><tr><th scope="col">About the staff member</th><th scope="col">Before assigned</th><th scope="col">During their duty</th></tr></thead>
+          <tbody>
+            {visibility.map((v) => (
+              <tr>
+                <th scope="row">{v.k}</th>
+                <td>{v.before ? <span class="yes"><Icon name="check" size={16} stroke={2.6} /><span class="sr-only">Yes</span></span> : <span class="no"><Icon name="minus" size={16} /><span class="sr-only">No</span></span>}</td>
+                <td>{v.during ? <span class="yes"><Icon name="check" size={16} stroke={2.6} /><span class="sr-only">Yes</span></span> : <span class="no"><Icon name="minus" size={16} /><span class="sr-only">No</span></span>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Ratings, blocks -->
+  <section class="section-tight" aria-labelledby="rate-t">
+    <div class="wrap">
+      <div class="b-head2" data-reveal>
+        <h2 id="rate-t" class="h2">Reliability shows up where it should.</h2>
+        <p class="lead">Every completed duty is rated by both sides. Reviews appear once both have reviewed, or 14 days after the shift, so nobody rates in reply.</p>
+      </div>
+      <div class="rate-grid">
+        <div class="b-note amber" data-reveal><span class="ic"><Icon name="clock-x" /></span><div><b>No-shows count</b><p>Staff can cancel up to 30 minutes before a start. Later than that, or not turning up, counts against their rating.</p></div></div>
+        <div class="b-note" data-reveal style="--d:.06s"><span class="ic"><Icon name="user-off" /></span><div><b>Block anyone</b><p>A hospital can block a staff member, and staff can block a hospital.</p></div></div>
+        <div class="b-note red" data-reveal style="--d:.12s"><span class="ic"><Icon name="flag" /></span><div><b>Report users or reviews</b><p>Reports go to the HospiLink team to look into.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Disputes -->
+  <section class="section" aria-labelledby="dsp-t">
+    <div class="wrap">
+      <div class="b-head2" data-reveal>
+        <h2 id="dsp-t" class="h2">When something goes wrong, there's a clock on it.</h2>
+        <p class="lead">Raise a ticket from the duty and follow it to a decision. A duty waiting for its end code is not a dispute: that's pending confirmation, and HospiLink follows it up separately.</p>
+      </div>
+      <ol class="dsp relief-high" role="list" data-reveal>
+        {dispute.map((s) => (
+          <li><span class="dsp-d">{s.d}</span><b>{s.t}</b><p>{s.p}</p></li>
+        ))}
+      </ol>
+      <p class="dsp-help" data-reveal><Icon name="message-chatbot" size={18} /> Not sure where to start? The help chat answers in English, Hindi and Marathi.</p>
+    </div>
+  </section>
+
+  <!-- Data -->
+  <section class="section-tight" aria-labelledby="data-t">
+    <div class="wrap">
+      <div class="data-panel field-saline relief-high">
+        <div class="b-head2" data-reveal>
+          <h2 id="data-t" class="h2">Your data, handled the way the law asks.</h2>
+          <p class="lead">From the HospiLink privacy policy. For every detail, including the providers we use and how long data is kept, read <a href="/privacy/">the full policy</a> and the <a href="/terms/">terms of use</a>.</p>
+        </div>
+        <ul class="data" role="list">
+          {data.map((d, i) => (
+            <li data-reveal style={`--d:${i * 0.04}s`}><Icon name={d.icon} size={22} /><b>{d.t}</b><span>{d.p}</span></li>
+          ))}
+        </ul>
+        <div class="grv" id="grievance-officer">
+          <span><b>Grievance Officer:</b> {COMPANY.grievanceOfficer}, {COMPANY.legalName}</span>
+          <a href={`mailto:${COMPANY.emails.support}`}>{COMPANY.emails.support}</a>
+          <a href={LINKS.deleteAccount}>Delete your account</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-tight" aria-labelledby="faq-t">
+    <div class="wrap b-faq">
+      <div class="head" data-reveal>
+        <h2 id="faq-t" class="h2">Safety questions</h2>
+        <p class="lead">Anything else? Write to <a href={`mailto:${COMPANY.emails.support}`}>{COMPANY.emails.support}</a>.</p>
+      </div>
+      <div data-reveal style="--d:.08s"><Faq items={faqs} /></div>
+    </div>
+  </section>
+
+  <CtaBand />
+</Base>
+
+<style>
+  .rec { position: relative; display: grid; justify-items: end; }
+  .rec-card { width: min(440px, 100%); padding: 1.3rem; border-radius: 30px; background: rgba(255, 255, 255, .72); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); box-shadow: var(--glass-edge), var(--float); }
+  .rec-h { display: flex; justify-content: space-between; align-items: start; gap: 1rem; padding: .2rem .3rem 1rem; }
+  .rec-t { font-weight: 600; font-size: 1.05rem; }
+  .rec-s { font-size: .82rem; color: var(--ink-muted); }
+  .rec-list { display: grid; gap: .45rem; }
+  .rec-list li { display: grid; grid-template-columns: 24px 1fr auto; gap: .75rem; align-items: center; padding: .7rem .8rem; border-radius: 16px; background: #fff; box-shadow: 0 1px 2px rgba(14, 30, 58, .05); }
+  .rec-ck { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--green-soft); color: var(--green-ink); }
+  .rec-x { font-weight: 600; font-size: .9rem; line-height: 1.25; }
+  .rec-x small { display: block; font-weight: 450; font-size: .76rem; color: var(--ink-muted); }
+  .rec-v { font-size: .8rem; font-weight: 600; color: var(--ceil-700); white-space: nowrap; }
+  @media (max-width: 960px) { .rec { justify-items: stretch; margin-top: 1rem; } .rec-card { width: 100%; } }
+  .seal { position: relative; width: min(420px, 100%); aspect-ratio: 1; margin-left: auto; }
+  .seal svg { width: 100%; height: 100%; }
+  .s1, .s2, .s3 { fill: none; stroke: rgba(169, 192, 236, .25); stroke-width: 1.2; }
+  .s2 { stroke-dasharray: 3 7; }
+  .s3 { fill: rgba(91, 133, 215, .14); }
+  .sh { fill: rgba(255, 255, 255, .1); stroke: #fff; stroke-width: 3; stroke-linejoin: round; }
+  .ck { fill: none; stroke: var(--green); stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 80; stroke-dashoffset: 0; }
+  .orb { position: absolute; left: 50%; top: 50%; transform: rotate(var(--a)) translate(min(170px, 40vw)) rotate(calc(-1 * var(--a))); translate: -50% -50%; padding: .45rem .8rem; border-radius: 99px; background: rgba(255, 255, 255, .7); box-shadow: var(--glass-edge), 0 6px 16px -12px rgba(14, 30, 58, .3); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); font-size: .82rem; font-weight: 600; color: var(--navy); white-space: nowrap; }
+  @media (prefers-reduced-motion: no-preference) {
+    .js .ck { stroke-dashoffset: 80; animation: ck 1.2s .5s var(--ease-out) forwards; }
+    @keyframes ck { to { stroke-dashoffset: 0; } }
+    .s2 { transform-origin: 200px 200px; animation: spin 40s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  }
+
+  .gate { margin-top: 2rem; }
+  .stat-list { padding: .6rem; display: grid; }
+  .stat-list li { display: grid; grid-template-columns: 130px 1fr; gap: 1rem; align-items: center; padding: 1rem; color: var(--ink-soft); font-weight: 600; }
+  .stat-list li + li { border-top: 1px solid var(--line); }
+  .stat-list .tag { justify-self: start; }
+
+  .gate-row { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 1rem; align-items: center; }
+  .gate-c { padding: 1.6rem; border-radius: 26px; display: grid; gap: .6rem; height: 100%; }
+  .gate-c :global(svg) { color: var(--ceil-deep); }
+  .gate-c h3 { font-size: 1.15rem; color: var(--navy); }
+  .gate-c p { color: var(--ink-soft); font-size: .95rem; }
+  .gate-c.ok { background: var(--green-soft); box-shadow: inset 0 0 0 1.5px rgba(19, 128, 74, .25), 0 20px 40px -24px rgba(19, 128, 74, .4); }
+  .gate-c.ok :global(svg) { color: var(--green); }
+  .gate-c.ok p { color: var(--green-ink); }
+  .plus { font-size: 2.2rem; font-weight: 600; color: var(--ceil-deep); }
+
+  .vis { padding: .6rem; overflow-x: auto; }
+  .vis table { width: 100%; border-collapse: collapse; }
+  .vis th, .vis td { padding: .9rem 1rem; text-align: left; }
+  .vis thead th { font-size: .82rem; font-weight: 600; color: var(--ink-muted); }
+  .vis thead th:not(:first-child), .vis td { text-align: center; }
+  .vis tbody th { font-weight: 600; }
+  .vis tbody tr + tr > * { border-top: 1px solid var(--line); }
+  .yes, .no { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; }
+  .yes { background: var(--green-soft); color: var(--green-ink); }
+  .no { background: var(--ward); color: var(--ink-faint); box-shadow: var(--relief-pressed); }
+
+  .rate-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+
+  .dsp { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: clamp(1.2rem, 2.5vw, 2rem); gap: 1.4rem; position: relative; }
+  .dsp li { display: grid; gap: .35rem; align-content: start; position: relative; padding-top: 1.6rem; }
+  .dsp li::before { content: ""; position: absolute; left: 0; right: -1.4rem; top: .45rem; height: 2px; background: var(--line); }
+  .dsp li:last-child::before { right: 0; }
+  .dsp li::after { content: ""; position: absolute; left: 0; top: 0; width: 16px; height: 16px; border-radius: 50%; background: var(--ceil-deep); box-shadow: 0 0 0 4px var(--saline); }
+  .dsp li:nth-child(3)::after { background: var(--green); box-shadow: 0 0 0 4px var(--green-soft); }
+  .dsp-d { font-size: .8rem; font-weight: 600; color: var(--ceil-deep); }
+  .dsp b { font-size: 1.05rem; font-weight: 600; }
+  .dsp p { color: var(--ink-muted); font-size: .92rem; }
+  .dsp-help { display: flex; align-items: center; gap: .5rem; margin-top: 1.2rem; font-weight: 550; color: var(--ink-soft); }
+  .dsp-help :global(svg) { color: var(--ceil-deep); }
+
+  .data-panel { padding: clamp(1.6rem, 4vw, 3.5rem); border-radius: 44px; }
+  .data-panel .lead a { color: var(--ceil-700); text-decoration: underline; text-underline-offset: 3px; }
+  .data { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+  .data li { display: grid; gap: .35rem; align-content: start; padding: 1.2rem; border-radius: 20px; background: rgba(255, 255, 255, .7); box-shadow: inset 0 0 0 1px #fff; }
+  .data :global(svg) { color: var(--ceil-deep); margin-bottom: .3rem; }
+  .data b { font-weight: 600; }
+  .data span { color: var(--ink-muted); font-size: .92rem; }
+  .grv { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1.6rem; margin-top: 1.6rem; padding-top: 1.4rem; border-top: 1px solid rgba(195, 205, 224, .7); font-size: .94rem; color: var(--ink-soft); }
+  .grv a { font-weight: 600; color: var(--ceil-700); }
+  .grv a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+  @media (max-width: 960px) {
+    .gate-row { grid-template-columns: minmax(0, 1fr); }
+    .plus { justify-self: center; line-height: 1; }
+    .rate-grid, .data { grid-template-columns: minmax(0, 1fr); }
+    .dsp { grid-template-columns: minmax(0, 1fr); }
+    .dsp li { padding: 0 0 0 2rem; }
+    .dsp li::before { left: 7px; right: auto; top: 1rem; bottom: -1.4rem; width: 2px; height: auto; }
+    .dsp li:last-child::before { display: none; }
+    .seal { margin: 1rem auto 0; width: min(340px, 86%); }
+  }
+  @media (max-width: 560px) {
+    .stat-list li { grid-template-columns: minmax(0, 1fr); gap: .4rem; }
+    .data-panel { border-radius: 30px; }
+    .orb { font-size: .7rem; padding: .35rem .6rem; transform: rotate(var(--a)) translate(36vw) rotate(calc(-1 * var(--a))); }
+  }
+</style>

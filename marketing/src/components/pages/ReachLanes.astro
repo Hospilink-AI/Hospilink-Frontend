@@ -1,0 +1,76 @@
+---
+// Who sees a duty, and when. Three lanes on one clock: invites, available staff, everyone in range.
+import Icon from "../ui/Icon.astro";
+const hours = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+---
+<figure class="lanes relief-high">
+  <figcaption class="sr-only">Timeline: invited staff get a 30-minute window, available staff get a 10-minute head start, then the offer reaches all verified staff within 30 km and widens by 5 km each hour up to 75 km. Emergency requests reach staff city-wide at once.</figcaption>
+  <div class="ln-axis" aria-hidden="true">
+    <span class="ln-name"></span>
+    <div class="ln-ticks tnum">{hours.map((h) => <span>{h === 0 ? "Post" : `${h} h`}</span>)}</div>
+  </div>
+
+  <div class="ln" aria-hidden="true">
+    <span class="ln-name"><Icon name="heart-handshake" size={18} /> Invited staff</span>
+    <div class="ln-track"><span class="bar inv" style="--s:0;--e:.055"><b>30-minute window to accept</b></span></div>
+  </div>
+  <div class="ln" aria-hidden="true">
+    <span class="ln-name"><Icon name="toggle-right" size={18} /> Marked available</span>
+    <div class="ln-track"><span class="bar free" style="--s:0;--e:.02"></span><span class="ln-lbl" style="--s:.03">10-minute head start</span></div>
+  </div>
+  <div class="ln" aria-hidden="true">
+    <span class="ln-name"><Icon name="radar-2" size={18} /> Everyone in range</span>
+    <div class="ln-track steps">
+      {hours.map((h) => (
+        <span class="stp" style={`--s:${h / 10};--k:${(30 + h * 5) / 75}`}><b class="tnum">{30 + h * 5}</b></span>
+      ))}
+    </div>
+  </div>
+  <div class="ln em" aria-hidden="true">
+    <span class="ln-name"><Icon name="urgent" size={18} /> Emergency request</span>
+    <div class="ln-track"><span class="bar emg" style="--s:0;--e:1"><b>City-wide from the first second</b></span></div>
+  </div>
+  <p class="ln-foot"><Icon name="info-circle" size={16} /> Reach in kilometres from your hospital. It stops widening the moment someone accepts.</p>
+</figure>
+
+<style>
+  .lanes { padding: clamp(1.2rem, 2.5vw, 2rem); margin: 0; }
+  .ln, .ln-axis { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 1rem; align-items: center; }
+  .ln { padding: .7rem 0; border-top: 1px solid var(--line); }
+  .ln-name { display: inline-flex; align-items: center; gap: .5rem; font-weight: 600; font-size: .9rem; }
+  .ln-name :global(svg) { color: var(--ceil-deep); flex: none; }
+  .ln.em .ln-name :global(svg) { color: var(--red); }
+  .ln-ticks { display: grid; grid-template-columns: repeat(10, 1fr); font-size: .74rem; font-weight: 600; color: var(--ink-muted); padding-bottom: .6rem; }
+  .ln-track { position: relative; height: 40px; border-radius: 12px; background: var(--ward); box-shadow: var(--relief-pressed); }
+  .bar { position: absolute; top: 5px; bottom: 5px; left: calc(var(--s) * 100% + 5px); width: max(calc((var(--e) - var(--s)) * 100%), 10px); border-radius: 9px; display: flex; align-items: center; }
+  .bar b { position: absolute; left: calc(100% + .6rem); white-space: nowrap; font-size: .8rem; font-weight: 600; color: var(--ink-soft); }
+  .bar.inv { background: var(--amber-soft); box-shadow: inset 0 0 0 1.5px rgba(250, 179, 64, .6); }
+  .bar.free { background: var(--green-soft); box-shadow: inset 0 0 0 1.5px rgba(19, 128, 74, .35); }
+  .bar.emg { background: var(--red-soft); box-shadow: inset 0 0 0 1.5px rgba(208, 50, 47, .35); width: calc(100% - 10px); }
+  .bar.emg b { position: static; padding-left: .9rem; color: #9a2421; }
+  .ln-lbl { position: absolute; left: calc(var(--s) * 100% + 1.6rem); top: 50%; translate: 0 -50%; font-size: .8rem; font-weight: 600; color: var(--ink-soft); white-space: nowrap; }
+  .steps .stp { position: absolute; top: 5px; bottom: 5px; left: calc(var(--s) * 100% + 2px); width: calc(10% - 4px); border-radius: 8px; background: rgba(91, 133, 215, calc(.08 + var(--k) * .2)); box-shadow: inset 0 0 0 1px rgba(68, 110, 192, calc(.15 + var(--k) * .3)); display: grid; place-items: center; }
+  .stp b { font-size: .78rem; font-weight: 600; color: var(--ceil-800); }
+  .ln-foot { display: flex; align-items: center; gap: .45rem; margin-top: 1rem; font-size: .84rem; color: var(--ink-muted); font-weight: 600; }
+  .ln-foot :global(svg) { color: var(--ceil-deep); flex: none; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .js .lanes .bar, .js .lanes .stp { transform-origin: left; transform: scaleX(0); transition: transform .9s var(--ease-out); }
+    .js .lanes .stp { transition-delay: calc(var(--s) * 1.4s + .3s); }
+    .js .lanes.in .bar, .js .lanes.in .stp { transform: none; }
+  }
+  @media (max-width: 720px) {
+    .ln, .ln-axis { grid-template-columns: minmax(0, 1fr); gap: .5rem; }
+    .ln-axis .ln-name { display: none; }
+    .ln-ticks span:nth-child(even) { visibility: hidden; }
+    .stp b { font-size: .62rem; }
+    .bar b { font-size: .72rem; }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>(".lanes").forEach((el) => {
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { el.classList.add("in"); io.disconnect(); } }, { threshold: 0.35 });
+    io.observe(el);
+  });
+</script>

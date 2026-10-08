@@ -1,0 +1,10 @@
+---
+import LegalPage from "../components/content/LegalPage.astro";
+import { PRIVACY_POLICY } from "../data/legal/privacyPolicy";
+---
+<LegalPage
+  doc={PRIVACY_POLICY}
+  path="/privacy/"
+  description="What personal data HospiLink collects, why, who it is shared with, how long it is kept, and your rights under India's DPDP Act."
+  other={{ label: "Terms of use", href: "/terms/" }}
+/>

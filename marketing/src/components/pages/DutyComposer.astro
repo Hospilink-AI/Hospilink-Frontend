@@ -1,0 +1,83 @@
+---
+// Hospital "post a duty" composer, rendered as an illustration. Rates and rules are the client's own (7 Oct).
+import Icon from "../ui/Icon.astro";
+---
+<div class="cmp-wrap" aria-hidden="true">
+  <div class="cmp glass">
+    <div class="cmp-h">
+      <span class="cmp-t">Post a duty</span>
+      <span class="sample">Sample</span>
+    </div>
+
+    <div class="cmp-f">
+      <span class="lbl">Role</span>
+      <div class="fld"><Icon name="stethoscope" size={18} /> RMO · Casualty <Icon name="chevron-down" size={16} class="chev" /></div>
+    </div>
+    <div class="cmp-row">
+      <div class="cmp-f">
+        <span class="lbl">When</span>
+        <div class="fld"><Icon name="calendar" size={18} /> Tonight</div>
+      </div>
+      <div class="cmp-f">
+        <span class="lbl">Hours</span>
+        <div class="fld tnum"><Icon name="clock" size={18} /> 8 PM – 4 AM</div>
+      </div>
+    </div>
+
+    <div class="cmp-f">
+      <span class="lbl">Rate for the duty</span>
+      <div class="fld rate tnum"><b>₹1,400</b><span>for 8 hours</span><span class="ok"><Icon name="check" size={14} stroke={2.6} /></span></div>
+      <div class="mkt">
+        <p>What hospitals usually pay for an RMO in casualty. Duties at this rate are taken sooner.</p>
+        <div class="mkt-chips tnum"><span class="on">₹1,400 for 8 hours</span><span>₹1,800 for 8 hours</span></div>
+      </div>
+    </div>
+
+    <div class="cmp-opts">
+      <div class="opt"><span><Icon name="heart-handshake" size={18} /> Invite your favourites first</span><span class="sw on"><i></i></span></div>
+      <div class="opt"><span><Icon name="urgent" size={18} /> Emergency, city-wide</span><span class="sw"><i></i></span></div>
+    </div>
+
+    <div class="cmp-btn">Post duty <Icon name="arrow-right" size={18} /></div>
+  </div>
+
+  <div class="cmp-float glass f1"><Icon name="radar-2" size={16} /> Reaching verified RMOs within <b class="tnum">30 km</b></div>
+  <div class="cmp-float glass f2"><Icon name="eye-check" size={16} /> Staff see your rate before they accept</div>
+</div>
+
+<style>
+  .cmp-wrap { position: relative; max-width: 660px; margin-left: auto; padding: 1.5rem 0 2.5rem; }
+  .cmp { padding: 1.4rem; border-radius: 30px; color: var(--navy); background: rgba(255, 255, 255, .84); }
+  .cmp-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+  .cmp-t { font-weight: 600; font-size: 1.2rem; letter-spacing: -0.02em; }
+  .cmp-f { display: grid; gap: .35rem; margin-top: .8rem; }
+  .lbl { font-size: .74rem; font-weight: 600; color: var(--ink-muted); }
+  .fld { display: flex; align-items: center; gap: .55rem; height: 48px; padding: 0 .9rem; border-radius: 14px; background: var(--ward); box-shadow: var(--relief-pressed); font-weight: 600; font-size: .92rem; }
+  .fld :global(svg) { color: var(--ceil-deep); flex: none; }
+  .fld :global(.chev) { margin-left: auto; color: var(--ink-faint); }
+  .cmp-row { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; }
+  .fld.rate b { font-size: 1.15rem; font-weight: 600; }
+  .fld.rate span { color: var(--ink-muted); font-size: .85rem; }
+  .fld.rate .ok { margin-left: auto; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--green); color: #fff; }
+  .fld.rate .ok :global(svg) { color: var(--navy); }
+  .mkt { margin-top: .4rem; padding: .75rem .85rem; border-radius: 14px; background: var(--saline); }
+  .mkt p { font-size: .78rem; font-weight: 550; color: var(--ceil-800); line-height: 1.4; }
+  .mkt-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .55rem; }
+  .mkt-chips span { font-size: .74rem; font-weight: 600; padding: .3rem .6rem; border-radius: 99px; background: #fff; color: var(--ceil-700); }
+  .mkt-chips span.on { background: var(--ceil-deep); color: #fff; }
+  .cmp-opts { display: grid; gap: .45rem; margin-top: 1rem; }
+  .opt { display: flex; align-items: center; justify-content: space-between; gap: .6rem; padding: .6rem .8rem; border-radius: 14px; background: #fff; font-size: .86rem; font-weight: 600; }
+  .opt > span:first-child { display: inline-flex; align-items: center; gap: .5rem; }
+  .opt :global(svg) { color: var(--ceil-deep); }
+  .sw { width: 42px; height: 24px; border-radius: 99px; background: var(--line-strong); padding: 3px; display: flex; flex: none; }
+  .sw i { width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .2); }
+  .sw.on { background: var(--ceil-deep); justify-content: flex-end; }
+  .cmp-btn { margin-top: 1.1rem; height: 52px; border-radius: 99px; background: var(--ceil-deep); color: #fff; display: flex; align-items: center; justify-content: center; gap: .5rem; font-weight: 600; box-shadow: 0 12px 26px -10px rgba(68, 110, 192, .9); }
+  .cmp-float { position: absolute; display: inline-flex; align-items: center; gap: .45rem; padding: .6rem .9rem; border-radius: 99px; font-size: .78rem; font-weight: 600; color: var(--navy); white-space: nowrap; }
+  .cmp-float :global(svg) { color: var(--ceil-deep); }
+  .f1 { left: -8%; top: -.2rem; animation: fl 6s ease-in-out infinite; }
+  .f2 { right: -4%; bottom: 0; animation: fl 7s ease-in-out infinite reverse; }
+  @keyframes fl { 50% { transform: translateY(-6px); } }
+  @media (max-width: 960px) { .cmp-wrap { margin: 0 auto; } .f1 { left: 0; top: -.2rem; } }
+  @media (max-width: 420px) { .cmp { padding: 1.1rem; } .cmp-float { white-space: normal; font-size: .72rem; } .f2 { right: 0; left: 1rem; } }
+</style>

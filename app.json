@@ -4,12 +4,12 @@
     "slug": "Hospilink",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/Images/Hospilink_icon.png",
+    "icon": "./assets/Images/brand/icon.png",
     "scheme": "hospilinkfrontend",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "icon": "./assets/expo.icon.png",
+      "icon": "./assets/Images/brand/icon.png",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "HospiLink uses your location while the app is open to show you to nearby hospitals looking for staff and, during a duty you have accepted, to share your live position with that hospital.",
         "NSCameraUsageDescription": "HospiLink uses the camera so you can take a profile photo.",
@@ -22,9 +22,9 @@
       "package": "com.hospilinkfrontend",
       "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/Images/Hospilink_icon.png",
-        "monochromeImage": "./assets/Images/Hospilink_icon.png"
+        "backgroundColor": "#0E1E3A",
+        "foregroundImage": "./assets/Images/brand/adaptive-foreground.png",
+        "monochromeImage": "./assets/Images/brand/adaptive-monochrome.png"
       },
       "googleServicesFile": "./google-services.json",
       "permissions": [
@@ -38,16 +38,16 @@
     },
     "web": {
       "output": "single",
-      "favicon": "./assets/Images/favicon.png"
+      "favicon": "./assets/Images/brand/favicon.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "image": "./assets/Images/Hospilink_icon.png",
-          "imageWidth": 76
+          "backgroundColor": "#0E1E3A",
+          "image": "./assets/Images/brand/splash.png",
+          "imageWidth": 220
         }
       ],
       "@react-native-firebase/app",

@@ -1,0 +1,12 @@
+{
+  "name": "HospiLink · Live Staffing, Trusted Healthcare",
+  "short_name": "HospiLink",
+  "description": "Hospitals post duties and permanent vacancies; verified doctors, nurses and clinical staff nearby take them.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F0F2F7",
+  "theme_color": "#0E1E3A",
+  "icons": [
+    { "src": "/app-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

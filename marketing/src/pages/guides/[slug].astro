@@ -1,0 +1,154 @@
+---
+import Base from "../../layouts/Base.astro";
+import PageHero from "../../components/ui/PageHero.astro";
+import Icon from "../../components/ui/Icon.astro";
+import CtaBand from "../../components/ui/CtaBand.astro";
+import { GUIDES, guideBySlug, type Guide } from "../../data/guides";
+import { COMPANY } from "../../config";
+
+export function getStaticPaths() {
+  return GUIDES.map((g) => ({ params: { slug: g.slug }, props: { guide: g } }));
+}
+interface Props { guide: Guide }
+const { guide } = Astro.props;
+const path = `/guides/${guide.slug}/`;
+const crumbs = [{ name: "Guides", href: "/guides/" }, { name: guide.title, href: path }];
+const related = guide.related.map(guideBySlug).filter(Boolean) as Guide[];
+const anchor = (h: string) => h.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+const allSteps = guide.sections.flatMap((s) => s.steps ?? []);
+const ld = [
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: guide.title,
+    description: guide.description,
+    url: `https://hospilink.in${path}`,
+    author: { "@type": "Organization", name: COMPANY.brand },
+    publisher: { "@type": "Organization", name: COMPANY.legalName, logo: { "@type": "ImageObject", url: "https://hospilink.in/app-icon.svg" } },
+    mainEntityOfPage: `https://hospilink.in${path}`,
+  },
+  ...(allSteps.length
+    ? [{
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        name: guide.title,
+        description: guide.description,
+        step: allSteps.map((s, i) => ({ "@type": "HowToStep", position: i + 1, name: s.t, text: s.d })),
+      }]
+    : []),
+];
+---
+<Base title={guide.title} description={guide.description} crumbs={crumbs} jsonLd={ld} type="article">
+  <PageHero compact title={guide.title} lead={guide.intro} crumbs={crumbs}>
+    <p class="g-meta">
+      <span><Icon name={guide.icon} size={16} /> {guide.audience === "Everyone" ? "Hospitals and staff" : guide.audience}</span>
+      <span><Icon name="clock" size={16} /> <span class="tnum">{guide.minutes}</span> min read</span>
+    </p>
+  </PageHero>
+
+  <div class="wrap g-grid section-tight">
+    <aside class="g-toc" aria-label="In this guide">
+      <nav class="relief">
+        <p class="toc-t">In this guide</p>
+        <ol role="list">
+          {guide.sections.map((s) => <li><a href={`#${anchor(s.h)}`}>{s.h}</a></li>)}
+        </ol>
+      </nav>
+    </aside>
+
+    <article class="g-body">
+      {guide.sections.map((s) => (
+        <section id={anchor(s.h)} class="g-sec">
+          <h2>{s.h}</h2>
+          {s.p?.map((x) => <p>{x}</p>)}
+          {s.bullets && (
+            <ul class="g-bul" role="list">
+              {s.bullets.map((b) => <li><Icon name="check" size={18} stroke={2.4} /><span>{b}</span></li>)}
+            </ul>
+          )}
+          {s.steps && (
+            <ol class="g-steps" role="list">
+              {s.steps.map((st, i) => (
+                <li>
+                  <span class="g-n tnum" aria-hidden="true">{i + 1}</span>
+                  <div><h3>{st.t}</h3><p>{st.d}</p></div>
+                </li>
+              ))}
+            </ol>
+          )}
+          {s.note && <p class="g-note"><Icon name="info-circle" size={20} /><span>{s.note}</span></p>}
+        </section>
+      ))}
+
+      <div class="g-help well">
+        <p><b>Need a hand?</b> Call <a class="tnum" href={`tel:${COMPANY.phones[0].tel}`}>{COMPANY.phones[0].display}</a> or write to <a href={`mailto:${COMPANY.emails.support}`}>{COMPANY.emails.support}</a>.</p>
+      </div>
+    </article>
+  </div>
+
+  {related.length > 0 && (
+    <section class="wrap g-rel" aria-labelledby="rel-t">
+      <h2 id="rel-t" class="h3">Related guides</h2>
+      <ul role="list">
+        {related.map((r) => (
+          <li>
+            <a href={`/guides/${r.slug}/`} class="relief-white">
+              <span class="icon-tile"><Icon name={r.icon} /></span>
+              <span class="r-t">{r.title}</span>
+              <Icon name="arrow-right" size={20} class="r-go" />
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  <CtaBand />
+</Base>
+
+<style>
+  .g-meta { display: flex; flex-wrap: wrap; gap: .6rem 1.6rem; margin-top: 1.4rem; color: var(--on-dark-soft); font-weight: 550; font-size: .92rem; }
+  .g-meta > span { display: inline-flex; align-items: center; gap: .45rem; }
+  .g-meta :global(svg) { color: var(--ceil-deep); }
+  .g-grid { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: clamp(2rem, 5vw, 5rem); align-items: start; }
+  .g-toc { position: sticky; top: 104px; }
+  .g-toc nav { padding: 1.2rem; border-radius: 22px; }
+  .toc-t { font-weight: 600; font-size: .9rem; margin-bottom: .6rem; }
+  .g-toc ol { display: grid; gap: .1rem; }
+  .g-toc a { display: block; padding: .38rem .6rem; border-radius: 10px; font-size: .88rem; font-weight: 550; color: var(--ink-soft); }
+  .g-toc a:hover { background: #fff; color: var(--ceil-700); }
+  .g-body { max-width: 70ch; }
+  .g-sec { scroll-margin-top: 110px; }
+  .g-sec + .g-sec { margin-top: 3rem; }
+  .g-sec h2 { font-size: clamp(1.4rem, 1.2rem + .9vw, 1.85rem); margin-bottom: 1rem; }
+  .g-sec > p { color: var(--ink-soft); font-size: 1.05rem; }
+  .g-sec > p + p { margin-top: .8rem; }
+  .g-bul { display: grid; gap: .7rem; margin-top: .4rem; }
+  .g-bul li { display: grid; grid-template-columns: 26px 1fr; gap: .6rem; color: var(--ink-soft); font-size: 1.02rem; }
+  .g-bul :global(svg) { color: var(--green); margin-top: 3px; }
+  .g-steps { display: grid; gap: .7rem; margin-top: 1rem; position: relative; }
+  .g-steps li { display: grid; grid-template-columns: 44px 1fr; gap: 1rem; padding: 1rem 1.2rem; background: #fff; border-radius: 20px; box-shadow: var(--relief-raised); }
+  .g-n { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--ceil-deep); color: #fff; font-weight: 600; box-shadow: 0 8px 16px -8px rgba(68, 110, 192, .8); }
+  .g-steps h3 { font-size: 1.02rem; margin-top: .55rem; }
+  .g-steps p { color: var(--ink-muted); margin-top: .25rem; font-size: .96rem; }
+  .g-note { display: grid; grid-template-columns: 24px 1fr; gap: .7rem; margin-top: 1.2rem; padding: 1rem 1.2rem; border-radius: 18px; background: var(--saline); color: var(--ceil-800); font-weight: 550; }
+  .g-note :global(svg) { color: var(--ceil-deep); margin-top: 2px; }
+  .g-help { margin-top: 3rem; padding: 1.2rem 1.4rem; border-radius: 18px; color: var(--ink-soft); }
+  .g-help a { color: var(--ceil-700); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+  .g-rel { padding-top: 1rem; }
+  .g-rel ul { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-top: 1.2rem; }
+  .g-rel a { display: grid; grid-template-columns: 52px 1fr auto; gap: 1rem; align-items: center; padding: 1rem 1.2rem; border-radius: 22px; height: 100%; transition: transform .4s var(--ease-out); }
+  .g-rel a:hover { transform: translateY(-2px); }
+  .r-t { font-weight: 600; letter-spacing: -0.01em; }
+  .g-rel :global(.r-go) { color: var(--ceil-deep); }
+  @media (max-width: 960px) {
+    .g-grid { grid-template-columns: minmax(0, 1fr); }
+    .g-toc { position: static; }
+    .g-rel ul { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 480px) {
+    .g-steps li { grid-template-columns: 36px 1fr; padding: .9rem; gap: .8rem; }
+    .g-n { width: 36px; height: 36px; border-radius: 12px; }
+    .g-steps h3 { margin-top: .3rem; }
+  }
+</style>

@@ -1,7 +1,5 @@
-import { CalendarHeader, Legend, MonthGrid, Notice, useSwipe } from "@/component/dutyCalendar/CalendarParts";
+import { CalendarHeader, Legend, MonthGrid, useSwipe } from "@/component/dutyCalendar/CalendarParts";
 import DateTimeField from "@/component/common/DateTimeField";
-import { BottomSheet } from "@/component/common/FilterSheet";
-import { COLORS } from "@/constant/colors";
 import {
   addDays,
   addMonths,
@@ -14,14 +12,28 @@ import {
   startOfMonth,
   todayKey,
 } from "@/constant/dutyCalendar";
-import { AVAILABILITY_COLORS, DayAvailability, WEEK_DAYS, WeeklyEntry } from "@/constant/dutyInvites";
+import { DayAvailability, WEEK_DAYS, WeeklyEntry } from "@/constant/dutyInvites";
 import { apiError } from "@/constant/jobs";
 import { availabilityAPI } from "@/service/api";
+import Button from "@/ds/Button";
+import { Switch } from "@/ds/Controls";
+import { Sheet } from "@/ds/Overlay";
+import { snack } from "@/ds/Snackbar";
+import { Notice, Skeleton } from "@/ds/States";
+import { Card } from "@/ds/Surface";
+import { Chip } from "@/ds/Tag";
+import Txt from "@/ds/Txt";
+import { color, radius } from "@/ds/tokens";
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 // Days can be set from today up to this far ahead (server rule)
 const MAX_AHEAD_DAYS = 180;
+
+const MARK = {
+  free: { bg: color.successSoft, fg: color.successInk, dot: color.success },
+  busy: { bg: color.ground, fg: color.inkSoft, dot: color.inkFaint },
+};
 
 const hhmm = (d: Date | null) => (d ? `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}` : "");
 const toDate = (t?: string | null) => {
@@ -44,7 +56,6 @@ export default function AvailabilityView({ openWeekly }: { openWeekly?: boolean 
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [editingWeekly, setEditingWeekly] = useState(!!openWeekly);
-  const [saved, setSaved] = useState<string | null>(null);
 
   const lastDay = addDays(today, MAX_AHEAD_DAYS);
 
@@ -74,89 +85,105 @@ export default function AvailabilityView({ openWeekly }: { openWeekly?: boolean 
   };
   const swipe = useSwipe(() => move(-1), () => move(1));
 
-  const flash = (msg: string) => {
-    setSaved(msg);
-    setTimeout(() => setSaved(null), 3000);
-  };
-
   const patternEnd = validUntil ? String(validUntil).slice(0, 10) : null;
   const patternLive = !!patternEnd && patternEnd >= today && weekly.length > 0;
 
   return (
-    <View style={{ gap: 12 }}>
-      <View style={s.card} {...swipe}>
-        <CalendarHeader
-          title={monthTitle(month)}
-          anchor={month}
-          settings={{ ...CALENDAR_DEFAULTS, historyDays: 0, bookingHorizonDays: MAX_AHEAD_DAYS }}
-          onPrev={() => move(-1)}
-          onNext={() => move(1)}
-          onToday={() => {
-            setMonth(startOfMonth(today));
-            setSelected(today);
-          }}
-          onPickMonth={(m) => setMonth(m)}
-          prevDisabled={addDays(month, -1) < today}
-          nextDisabled={addMonths(month, 1) > lastDay}
-        />
-        <MonthGrid
-          month={month}
-          weekStart={CALENDAR_DEFAULTS.weekStart}
-          selected={selected ?? ""}
-          onSelect={setSelected}
-          isDisabled={(k) => k < today || k > lastDay}
-          renderMarks={(k) => {
-            const d = days[k];
-            if (!d || d.status === "unknown") return null;
-            const c = AVAILABILITY_COLORS[d.status];
-            return (
-              <View style={[s.mark, { backgroundColor: c.bg }]}>
-                <Text style={[s.markText, { color: c.fg }]}>{d.status === "free" ? (d.from ? "Part" : "Free") : "Busy"}</Text>
-              </View>
-            );
-          }}
-        />
-        <Legend
-          items={[
-            { color: AVAILABILITY_COLORS.free.dot, label: "Free" },
-            { color: AVAILABILITY_COLORS.busy.dot, label: "Busy" },
-          ]}
-        />
-        {loading && <ActivityIndicator size="small" color={COLORS.primary} />}
-        {!!error && <Notice tone="error" text={error} />}
-      </View>
+    <View style={{ gap: 16 }}>
+      <Notice tone="info" icon="checkCircle" body="Marking yourself free gets you duty offers first. It never hides duties from you." />
 
-      <View style={s.card}>
-        <Text style={s.title}>Weekly pattern</Text>
-        {patternLive ? (
-          <Text style={s.muted}>
-            Your weekly pattern ends on {longDay(patternEnd!)}. Save it again to keep it going for another 8 weeks.
-          </Text>
-        ) : (
-          <Text style={s.muted}>
-            {weekly.length ? "Your weekly pattern has ended, so it no longer counts." : "You haven't set a weekly pattern."} Set the days
-            you're usually free; it counts for 8 weeks.
-          </Text>
-        )}
-        <TouchableOpacity style={s.secondary} onPress={() => setEditingWeekly(true)}>
-          <Text style={s.secondaryText}>{weekly.length ? "Edit weekly pattern" : "Set weekly pattern"}</Text>
-        </TouchableOpacity>
-        <Text style={s.muted}>Marking yourself free gets you duty offers first. It never hides duties from you.</Text>
-      </View>
+      <Card>
+        <View {...swipe} style={{ gap: 4 }}>
+          <CalendarHeader
+            title={monthTitle(month)}
+            anchor={month}
+            settings={{ ...CALENDAR_DEFAULTS, historyDays: 0, bookingHorizonDays: MAX_AHEAD_DAYS }}
+            onPrev={() => move(-1)}
+            onNext={() => move(1)}
+            onToday={() => {
+              setMonth(startOfMonth(today));
+              setSelected(today);
+            }}
+            onPickMonth={(m) => setMonth(m)}
+            prevDisabled={addDays(month, -1) < today}
+            nextDisabled={addMonths(month, 1) > lastDay}
+          />
+          <MonthGrid
+            month={month}
+            weekStart={CALENDAR_DEFAULTS.weekStart}
+            selected={selected ?? ""}
+            onSelect={setSelected}
+            isDisabled={(k) => k < today || k > lastDay}
+            renderMarks={(k) => {
+              const d = days[k];
+              if (!d || d.status === "unknown") return null;
+              const c = MARK[d.status as "free" | "busy"];
+              return (
+                <View style={[s.mark, { backgroundColor: c.bg }]}>
+                  <Txt style={s.markText} color={c.fg}>
+                    {d.status === "free" ? (d.from ? "Part" : "Free") : "Busy"}
+                  </Txt>
+                </View>
+              );
+            }}
+          />
+          <Legend
+            items={[
+              { color: MARK.free.dot, label: "Free" },
+              { color: MARK.busy.dot, label: "Busy" },
+            ]}
+          />
+          {loading ? <Skeleton height={4} r={2} style={{ marginTop: 6 }} /> : null}
+          {!!error && <Notice tone="danger" body={error} />}
+        </View>
+      </Card>
 
-      {!!saved && <Notice tone="info" text={saved} />}
-
-      {selected && (
+      {selected ? (
         <DayEditor
           key={selected}
           date={selected}
           current={days[selected]}
           onSaved={() => {
-            flash(`${dayTitle(selected)} saved.`);
+            snack(`${dayTitle(selected)} saved.`, { tone: "success" });
             load();
           }}
         />
+      ) : (
+        <Txt v="bodySm" tone="muted" align="center">
+          Tap a day to mark it free or busy.
+        </Txt>
       )}
+
+      <Card>
+        <View style={{ gap: 8 }}>
+          <Txt v="h3">Weekly pattern</Txt>
+          <Txt v="bodySm" tone="muted">
+            {patternLive
+              ? `Your weekly pattern ends on ${longDay(patternEnd!)}. Save it again to keep it going for another 8 weeks.`
+              : `${weekly.length ? "Your weekly pattern has ended, so it no longer counts." : "You haven't set a weekly pattern."} Set the days you're usually free; it counts for 8 weeks.`}
+          </Txt>
+          {weekly.length ? (
+            <View style={s.weekChips}>
+              {WEEK_DAYS.filter(({ day }) => weekly.some((w) => w.day === day)).map(({ day, label }) => {
+                const w = weekly.find((x) => x.day === day)!;
+                return (
+                  <View key={day} style={s.weekChip}>
+                    <Txt v="label">{label.slice(0, 3)}</Txt>
+                    <Txt v="caption" tone="muted">{w.from ? hours(w.from, w.to) : "All day"}</Txt>
+                  </View>
+                );
+              })}
+            </View>
+          ) : null}
+          <Button
+            label={weekly.length ? "Edit weekly pattern" : "Set weekly pattern"}
+            variant="tonal"
+            icon="calendar"
+            onPress={() => setEditingWeekly(true)}
+            style={{ marginTop: 4 }}
+          />
+        </View>
+      </Card>
 
       <WeeklyEditor
         visible={editingWeekly}
@@ -164,7 +191,7 @@ export default function AvailabilityView({ openWeekly }: { openWeekly?: boolean 
         onClose={() => setEditingWeekly(false)}
         onSaved={() => {
           setEditingWeekly(false);
-          flash("Weekly pattern saved for 8 weeks.");
+          snack("Weekly pattern saved for 8 weeks.", { tone: "success" });
           load();
         }}
       />
@@ -216,33 +243,33 @@ function DayEditor({ date, current, onSaved }: { date: string; current?: DayAvai
   ];
 
   return (
-    <View style={s.card}>
-      <Text style={s.title}>{longDay(date)}</Text>
-      <Text style={s.muted}>{now}</Text>
-      <View style={s.chips}>
-        {OPTIONS.map((o) => (
-          <TouchableOpacity key={o.value} style={[s.chip, choice === o.value && s.chipOn]} onPress={() => setChoice(o.value)} accessibilityState={{ selected: choice === o.value }}>
-            <Text style={[s.chipText, choice === o.value && { color: COLORS.primary }]}>{o.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      {choice === "hours" && (
-        <View style={s.row}>
-          <View style={s.col}>
-            <Text style={s.label}>From</Text>
-            <DateTimeField mode="time" value={from} onChange={setFrom} placeholder="From" />
-          </View>
-          <View style={s.col}>
-            <Text style={s.label}>To</Text>
-            <DateTimeField mode="time" value={to} onChange={setTo} placeholder="To" />
-          </View>
+    <Card>
+      <View style={{ gap: 12 }}>
+        <View style={{ gap: 2 }}>
+          <Txt v="h3">{longDay(date)}</Txt>
+          <Txt v="bodySm" tone="muted">{now}</Txt>
         </View>
-      )}
-      {!!error && <Text style={s.error}>{error}</Text>}
-      <TouchableOpacity style={[s.primary, saving && { opacity: 0.6 }]} disabled={saving} onPress={save}>
-        {saving ? <ActivityIndicator color="#fff" /> : <Text style={s.primaryText}>Save this day</Text>}
-      </TouchableOpacity>
-    </View>
+        <View style={s.chips}>
+          {OPTIONS.map((o) => (
+            <Chip key={o.value} label={o.label} selected={choice === o.value} onPress={() => setChoice(o.value)} />
+          ))}
+        </View>
+        {choice === "hours" && (
+          <View style={s.row}>
+            <View style={s.col}>
+              <Txt v="label" tone="soft">From</Txt>
+              <DateTimeField mode="time" value={from} onChange={setFrom} placeholder="From" />
+            </View>
+            <View style={s.col}>
+              <Txt v="label" tone="soft">To</Txt>
+              <DateTimeField mode="time" value={to} onChange={setTo} placeholder="To" />
+            </View>
+          </View>
+        )}
+        {!!error && <Txt v="bodySm" tone="danger">{error}</Txt>}
+        <Button label="Save this day" onPress={save} loading={saving} full />
+      </View>
+    </Card>
   );
 }
 
@@ -305,38 +332,29 @@ function WeeklyEditor({
   };
 
   return (
-    <BottomSheet
+    <Sheet
       visible={visible}
       title="Weekly pattern"
+      subtitle="The days you're usually free. A day you set on the calendar always wins."
       onClose={onClose}
-      footer={
-        <TouchableOpacity style={[s.primary, { flex: 1 }, saving && { opacity: 0.6 }]} disabled={saving} onPress={save}>
-          {saving ? <ActivityIndicator color="#fff" /> : <Text style={s.primaryText}>Save for 8 weeks</Text>}
-        </TouchableOpacity>
-      }
+      footer={<Button label="Save for 8 weeks" onPress={save} loading={saving} full size="lg" />}
     >
-      <Text style={[s.muted, { marginBottom: 6 }]}>The days you're usually free. A day you set on the calendar always wins.</Text>
       {WEEK_DAYS.map(({ day, label }) => {
         const r = rows[day];
         return (
           <View key={day} style={s.weekRow}>
             <View style={s.weekHead}>
-              <Text style={s.weekDay}>{label}</Text>
-              <Text style={s.muted}>{r?.free ? (r.hours ? "Free some hours" : "Free all day") : "Not free"}</Text>
-              <Switch
-                value={!!r?.free}
-                onValueChange={(v) => set(day, { free: v })}
-                trackColor={{ true: "#86EFAC", false: "#CBD5E1" }}
-                thumbColor={r?.free ? "#16A34A" : "#F8FAFC"}
-                {...({ activeThumbColor: "#16A34A", activeTrackColor: "#86EFAC" } as any)}
-                accessibilityLabel={`${label} free`}
-              />
+              <View style={{ flex: 1 }}>
+                <Txt v="title">{label}</Txt>
+                <Txt v="caption" tone="muted">{r?.free ? (r.hours ? "Free some hours" : "Free all day") : "Not free"}</Txt>
+              </View>
+              <Switch value={!!r?.free} onChange={(v) => set(day, { free: v })} label={`${label} free`} />
             </View>
             {r?.free && (
               <>
-                <TouchableOpacity onPress={() => set(day, { hours: !r.hours })}>
-                  <Text style={s.link}>{r.hours ? "Free all day instead" : "Only some hours"}</Text>
-                </TouchableOpacity>
+                <Pressable onPress={() => set(day, { hours: !r.hours })} accessibilityRole="button" hitSlop={8} style={{ alignSelf: "flex-start" }}>
+                  <Txt v="label" tone="primary">{r.hours ? "Free all day instead" : "Only some hours"}</Txt>
+                </Pressable>
                 {r.hours && (
                   <View style={s.row}>
                     <View style={s.col}>
@@ -352,31 +370,19 @@ function WeeklyEditor({
           </View>
         );
       })}
-      {!!error && <Text style={s.error}>{error}</Text>}
-    </BottomSheet>
+      {!!error && <Txt v="bodySm" tone="danger">{error}</Txt>}
+    </Sheet>
   );
 }
 
 const s = StyleSheet.create({
-  card: { backgroundColor: COLORS.white, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, padding: 14, gap: 8 },
-  title: { fontSize: 15, fontWeight: "800", color: COLORS.text },
-  muted: { fontSize: 12, color: COLORS.subText, lineHeight: 17 },
-  label: { fontSize: 12, fontWeight: "700", color: COLORS.text },
-  error: { fontSize: 13, color: COLORS.red },
-  link: { fontSize: 12, fontWeight: "700", color: COLORS.primary },
-  mark: { borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
-  markText: { fontSize: 9, fontWeight: "800" },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  chip: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
-  chipOn: { borderColor: COLORS.primary, backgroundColor: "#EFF6FF" },
-  chipText: { fontSize: 13, fontWeight: "600", color: COLORS.text },
+  mark: { borderRadius: 6, paddingHorizontal: 4, paddingVertical: 1 },
+  markText: { fontSize: 9, lineHeight: 12, fontFamily: "Manrope_700Bold" },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   row: { flexDirection: "row", gap: 10, flexWrap: "wrap" },
   col: { flex: 1, minWidth: 130, gap: 4 },
-  primary: { backgroundColor: COLORS.primary, borderRadius: 8, paddingVertical: 11, alignItems: "center" },
-  primaryText: { color: "#fff", fontSize: 14, fontWeight: "700" },
-  secondary: { alignSelf: "flex-start", borderWidth: 1, borderColor: COLORS.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
-  secondaryText: { fontSize: 13, fontWeight: "700", color: COLORS.primary },
-  weekRow: { borderBottomWidth: 1, borderBottomColor: "#F1F5F9", paddingVertical: 10, gap: 6 },
+  weekChips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  weekChip: { backgroundColor: color.successSoft, borderRadius: radius.md, paddingHorizontal: 10, paddingVertical: 6 },
+  weekRow: { borderBottomWidth: 1, borderBottomColor: color.line, paddingVertical: 10, gap: 8 },
   weekHead: { flexDirection: "row", alignItems: "center", gap: 10 },
-  weekDay: { width: 90, fontSize: 14, fontWeight: "700", color: COLORS.text },
 });

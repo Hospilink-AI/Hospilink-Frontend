@@ -18,6 +18,8 @@ import Svg, {
     Polyline,
     Line,
 } from "react-native-svg";
+import { useSignedInRedirect } from "@/hooks/useSignedInRedirect";
+import { MARKETING_URL, openMarketingSite } from "@/service/marketing";
 
 const NAVY  = "#0B1730";
 const BLUE  = "#3B82F6";
@@ -208,6 +210,12 @@ const features = [
 /* ─────────────── COMPONENT ─────────────── */
 
 export default function LandingPage() {
+  useSignedInRedirect();
+  // The public site replaces this page on the web when it is deployed alongside the app.
+  const [leaving] = useState(() => !!MARKETING_URL && Platform.OS === "web");
+  React.useEffect(() => {
+    if (leaving) openMarketingSite();
+  }, [leaving]);
     const router = useRouter();
     const scrollRef = useRef<ScrollView>(null);
     const { width } = useWindowDimensions();

@@ -1,0 +1,260 @@
+---
+// Vacancy detail at /vacancies/view/?id=… — rendered in the browser from the live public API.
+import Base from "../../layouts/Base.astro";
+import Icon from "../../components/ui/Icon.astro";
+import { LINKS } from "../../config";
+const crumbs = [
+  { name: "Permanent vacancies", href: "/vacancies/" },
+  { name: "Vacancy", href: "/vacancies/view/" },
+];
+---
+<Base
+  title="Vacancy details"
+  description="Details of a permanent vacancy posted by a hospital on HospiLink: role, location, experience, salary and how to apply with your verified profile."
+  crumbs={crumbs}
+>
+  <section class="vd-hero field-dark">
+    <div class="wrap">
+      <nav aria-label="Breadcrumb">
+        <ol class="crumbs" role="list">
+          <li><a href="/">Home</a></li>
+          <li><Icon name="chevron-right" size={14} /><a href="/vacancies/">Permanent vacancies</a></li>
+          <li><Icon name="chevron-right" size={14} /><span aria-current="page" data-crumb>Vacancy</span></li>
+        </ol>
+      </nav>
+      <div class="vd-head" data-head>
+        <div class="vd-head-skel" aria-hidden="true"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="vd-body">
+    <div class="wrap vd-grid">
+      <article class="vd-main relief-white" data-main aria-live="polite" aria-busy="true">
+        <div class="vd-skel" aria-hidden="true">{Array.from({ length: 7 }).map(() => <span></span>)}</div>
+      </article>
+
+      <aside class="vd-side" data-side>
+        <div class="apply glass" data-apply>
+          <h2 class="apply-t">Apply for this vacancy</h2>
+          <p class="apply-s">Applications go through the HospiLink app, with your verified profile and your résumé. You'll follow every step there, from review to offer.</p>
+          <a class="btn btn-primary btn-lg apply-btn" href={LINKS.playStore}><Icon name="brand-google-play" /> Apply in the HospiLink app</a>
+          <p class="apply-in">Already have an account? <a href={LINKS.signIn}>Sign in</a></p>
+          <ul class="apply-steps" role="list">
+            <li><Icon name="send" size={16} /> Application sent</li>
+            <li><Icon name="list-check" size={16} /> Shortlisted</li>
+            <li><Icon name="calendar-time" size={16} /> Pick an interview time</li>
+            <li><Icon name="mail-opened" size={16} /> Offer received</li>
+          </ul>
+        </div>
+        <div class="share relief">
+          <button class="btn btn-relief btn-sm" type="button" data-share><Icon name="share" /> <span data-share-label>Share this vacancy</span></button>
+          <a class="link-arrow" href="/vacancies/"><Icon name="arrow-left" /> All vacancies</a>
+        </div>
+      </aside>
+    </div>
+
+    <div class="wrap related" data-related hidden>
+      <h2 class="h3">More vacancies for this role</h2>
+      <div class="related-list" data-related-list></div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .vd-hero { padding-top: clamp(8rem, 6rem + 6vw, 10.5rem); padding-bottom: 6.5rem; border-radius: 0 0 44px 44px; }
+  .crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; font-size: .85rem; font-weight: 550; color: var(--on-dark-muted); }
+  .crumbs li { display: inline-flex; align-items: center; gap: .35rem; }
+  .crumbs a:hover { color: var(--navy); }
+  .vd-head { margin-top: 1.6rem; min-height: 9rem; }
+  :global(.vd-tags) { display: flex; flex-wrap: wrap; gap: .45rem; }
+  :global(.vd-title) { margin-top: 1rem; max-width: 22ch; }
+  :global(.vd-hosp) { display: flex; flex-wrap: wrap; gap: .4rem 1.4rem; margin-top: 1.2rem; color: var(--on-dark-soft); font-weight: 550; }
+  :global(.vd-hosp span) { display: inline-flex; align-items: center; gap: .45rem; }
+  :global(.vd-hosp svg) { color: var(--ceil-deep); }
+  .vd-head-skel span { display: block; height: 18px; border-radius: 10px; background: rgba(255, 255, 255, .1); margin-bottom: 1rem; animation: pulse 1.4s ease-in-out infinite; }
+  .vd-head-skel span:nth-child(1) { width: 140px; height: 28px; border-radius: 99px; }
+  .vd-head-skel span:nth-child(2) { width: min(560px, 90%); height: 52px; }
+  .vd-head-skel span:nth-child(3) { width: 300px; }
+  @keyframes pulse { 50% { opacity: .45; } }
+
+  .vd-body { position: relative; z-index: 2; margin-top: -3.5rem; padding-bottom: calc(var(--section) * .7); }
+  .vd-grid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 1.4rem; align-items: start; }
+  .vd-main { padding: clamp(1.4rem, 3vw, 2.4rem); border-radius: 32px; min-height: 420px; }
+  .vd-skel span { display: block; height: 14px; border-radius: 8px; margin-bottom: 1rem; background: linear-gradient(90deg, var(--ward) 0%, #e3e8f2 50%, var(--ward) 100%); background-size: 200% 100%; animation: skel 1.4s infinite linear; }
+  .vd-skel span:nth-child(1) { height: 80px; border-radius: 18px; }
+  .vd-skel span:nth-child(3n) { width: 70%; }
+  @keyframes skel { to { background-position: -200% 0; } }
+  :global(.vd-facts) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .7rem; }
+  :global(.vd-fact) { display: grid; grid-template-columns: 42px 1fr; gap: .75rem; align-items: center; padding: .85rem; border-radius: 18px; background: var(--ward); box-shadow: var(--relief-pressed); }
+  :global(.vd-fact .fi) { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; background: #fff; color: var(--ceil-deep); box-shadow: 0 2px 6px rgba(14, 30, 58, .06); }
+  :global(.vd-fact .fl) { font-size: .76rem; font-weight: 600; color: var(--ink-muted); }
+  :global(.vd-fact .fv) { font-weight: 600; font-size: .98rem; line-height: 1.3; overflow-wrap: anywhere; }
+  :global(.vd-sec) { margin-top: 2.2rem; }
+  :global(.vd-sec h2) { font-size: 1.2rem; margin-bottom: .8rem; }
+  :global(.vd-desc) { color: var(--ink-soft); white-space: pre-line; max-width: 70ch; overflow-wrap: anywhere; }
+  :global(.vd-skills) { display: flex; flex-wrap: wrap; gap: .45rem; list-style: none; padding: 0; }
+  :global(.vd-skills li) { padding: .4rem .8rem; border-radius: 99px; background: var(--saline); color: var(--ceil-700); font-weight: 600; font-size: .85rem; }
+  :global(.vd-posted) { margin-top: 2rem; padding-top: 1.2rem; border-top: 1px solid var(--line); font-size: .85rem; color: var(--ink-muted); font-weight: 550; }
+  :global(.vd-state) { display: grid; justify-items: center; text-align: center; gap: .8rem; padding: 3rem 1rem; }
+
+  .vd-side { position: sticky; top: 100px; display: grid; gap: 1rem; }
+  .vd-side[hidden] { display: none; }
+  .apply { padding: 1.5rem; border-radius: 28px; background: rgba(255, 255, 255, .85); }
+  .apply-t { font-size: 1.3rem; }
+  .apply-s { color: var(--ink-muted); margin-top: .5rem; font-size: .93rem; }
+  .apply-btn { width: 100%; margin-top: 1.3rem; }
+  .apply-in { margin-top: .8rem; text-align: center; font-size: .9rem; font-weight: 550; color: var(--ink-muted); }
+  .apply-in a { color: var(--ceil-700); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+  .apply-steps { display: grid; gap: .45rem; margin-top: 1.3rem; padding-top: 1.2rem; border-top: 1px solid var(--line); }
+  .apply-steps li { display: flex; align-items: center; gap: .55rem; font-size: .86rem; font-weight: 600; color: var(--ink-soft); }
+  .apply-steps :global(svg) { color: var(--ceil-deep); }
+  .share { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .8rem; padding: 1rem 1.1rem; border-radius: 22px; }
+
+  .related { margin-top: 3.5rem; }
+  .related-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-top: 1.2rem; }
+
+  @media (max-width: 980px) {
+    .vd-grid { grid-template-columns: minmax(0, 1fr); }
+    .vd-side { position: static; }
+    .related-list { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 560px) { :global(.vd-facts) { grid-template-columns: minmax(0, 1fr); } .vd-hero { border-radius: 0 0 28px 28px; } }
+</style>
+
+<script>
+  import { getVacancy, listVacancies, vacancyCard, postedAgo, esc, type Vacancy } from "../../lib/vacancies";
+  import { roleLabel, roleByValue } from "../../data/roles";
+
+  const svg = (d: string, s = 20) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const I = {
+    hosp: svg('<path d="M12 8v4"/><path d="M10 10h4"/><path d="M6 21v-14a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v14"/><path d="M3 21h18"/><path d="M10 21v-4h4v4"/>', 18),
+    pin: svg('<path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/><path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0"/>', 18),
+    exp: svg('<path d="M3 9a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2l0 -9"/><path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2"/>'),
+    edu: svg('<path d="M22 9l-10 -4l-10 4l10 4l10 -4v6"/><path d="M6 10.6v5.4a6 3 0 0 0 12 0v-5.4"/>'),
+    rupee: svg('<path d="M18 5h-11h3a4 4 0 0 1 0 8h-3l6 6"/><path d="M7 9l11 0"/>'),
+    role: svg('<path d="M6 4h-1a2 2 0 0 0 -2 2v3.5h0a5.5 5.5 0 0 0 11 0v-3.5a2 2 0 0 0 -2 -2h-1"/><path d="M8 15a6 6 0 1 0 12 0v-3"/><path d="M11 3v2"/><path d="M6 3v2"/><path d="M20 10m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>'),
+    search: svg('<path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/>', 26),
+    off: svg('<path d="M12 18l.01 0"/><path d="M9.172 15.172a4 4 0 0 1 5.656 0"/><path d="M6.343 12.343a7.963 7.963 0 0 1 3.864 -2.14m4.163 .155a7.965 7.965 0 0 1 3.287 2"/><path d="M3.515 9.515a12 12 0 0 1 3.544 -2.455m3.101 -.92a12 12 0 0 1 10.325 3.374"/><path d="M3 3l18 18"/>', 26),
+  };
+
+  const head = document.querySelector<HTMLElement>("[data-head]")!;
+  const main = document.querySelector<HTMLElement>("[data-main]")!;
+  const crumb = document.querySelector<HTMLElement>("[data-crumb]")!;
+  const apply = document.querySelector<HTMLElement>("[data-apply]")!;
+  const id = new URLSearchParams(location.search).get("id")?.trim() ?? "";
+
+  const fact = (icon: string, label: string, value?: string) =>
+    value ? `<div class="vd-fact"><span class="fi">${icon}</span><span><span class="fl">${label}</span><br><span class="fv">${esc(value)}</span></span></div>` : "";
+
+  function stateView(kind: "missing" | "error") {
+    const robots = document.createElement("meta");
+    robots.name = "robots"; robots.content = "noindex, follow";
+    document.head.appendChild(robots);
+    head.innerHTML = `<h1 class="h1 vd-title">${kind === "missing" ? "We couldn't find that vacancy" : "We couldn't load this vacancy"}</h1>`;
+    apply.hidden = true;
+    document.querySelector<HTMLElement>("[data-side]")!.hidden = true;
+    document.querySelector<HTMLElement>(".vd-grid")!.style.gridTemplateColumns = "minmax(0, 1fr)";
+    main.setAttribute("aria-busy", "false");
+    main.innerHTML = `<div class="vd-state">
+      <span class="state-ic">${kind === "missing" ? I.search : I.off}</span>
+      <p class="state-t">${kind === "missing" ? "It may have been filled or taken down" : "This is on our side or your connection"}</p>
+      <p class="state-s">${kind === "missing" ? "Hospitals remove vacancies once they're filled. There are more on the board." : "Try again in a moment, or go back to the board."}</p>
+      <div style="display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center">
+        ${kind === "error" ? '<button class="btn btn-dark btn-sm" type="button" data-retry>Try again</button>' : ""}
+        <a class="btn btn-relief btn-sm" href="/vacancies/">See all vacancies</a>
+      </div></div>`;
+    main.querySelector("[data-retry]")?.addEventListener("click", () => location.reload());
+  }
+
+  function parseSalary(s?: string) {
+    if (!s) return null;
+    const nums = (s.replace(/,/g, "").match(/\d+(\.\d+)?/g) ?? []).map(Number).filter((n) => n >= 1000);
+    if (!nums.length) return null;
+    const lower = s.toLowerCase();
+    const unit = /month|pm|p\.m|\/m/.test(lower) ? "MONTH" : /year|annum|pa|p\.a|lpa|lakh/.test(lower) ? "YEAR" : null;
+    if (!unit || /lakh|lpa/.test(lower)) return null;
+    const value = nums.length > 1 ? { "@type": "QuantitativeValue", minValue: Math.min(...nums), maxValue: Math.max(...nums), unitText: unit } : { "@type": "QuantitativeValue", value: nums[0], unitText: unit };
+    return { "@type": "MonetaryAmount", currency: "INR", value };
+  }
+
+  function render(v: Vacancy) {
+    const role = roleLabel(v.specialty);
+    document.title = `${v.title}${v.hospitalName ? ` at ${v.hospitalName}` : ""} · HospiLink`;
+    const desc = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    if (desc) desc.content = `${v.title} (${role})${v.location ? ` in ${v.location}` : ""}. ${v.description.slice(0, 140)}`;
+    crumb.textContent = v.title;
+    head.innerHTML = `
+      <div class="vd-tags"><span class="tag tag-ghost">${esc(role)}</span><span class="tag tag-ghost">Permanent</span></div>
+      <h1 class="h1 vd-title">${esc(v.title)}</h1>
+      <p class="vd-hosp">
+        ${v.hospitalName ? `<span>${I.hosp}${esc(v.hospitalName)}</span>` : ""}
+        ${v.location ? `<span>${I.pin}${esc(v.location)}</span>` : ""}
+      </p>`;
+    const skills = (v.skills ?? []).filter(Boolean);
+    main.setAttribute("aria-busy", "false");
+    main.innerHTML = `
+      <div class="vd-facts">
+        ${fact(I.role, "Role", roleByValue(v.specialty)?.label ?? role)}
+        ${fact(I.rupee, "Salary", v.salary || "Salary on request")}
+        ${fact(I.exp, "Experience", v.experience)}
+        ${fact(I.edu, "Education", v.education)}
+      </div>
+      <div class="vd-sec"><h2>About the role</h2><p class="vd-desc">${esc(v.description)}</p></div>
+      ${skills.length ? `<div class="vd-sec"><h2>Skills</h2><ul class="vd-skills" role="list">${skills.map((s) => `<li>${esc(s)}</li>`).join("")}</ul></div>` : ""}
+      <p class="vd-posted">${esc(postedAgo(v.createdAt))}${v.hospitalName ? ` by ${esc(v.hospitalName)}` : ""}</p>`;
+
+    const ld: Record<string, unknown> = {
+      "@context": "https://schema.org",
+      "@type": "JobPosting",
+      title: v.title,
+      description: esc(v.description).replace(/\n/g, "<br>"),
+      datePosted: v.createdAt,
+      employmentType: "FULL_TIME",
+      occupationalCategory: role,
+      identifier: { "@type": "PropertyValue", name: "HospiLink", value: v._id },
+      hiringOrganization: { "@type": "Organization", name: v.hospitalName || "Hospital on HospiLink" },
+      jobLocation: { "@type": "Place", address: { "@type": "PostalAddress", addressLocality: v.location || "Pune", addressCountry: "IN" } },
+      directApply: false,
+    };
+    if (v.education) ld.educationRequirements = v.education;
+    if (v.experience) ld.experienceRequirements = v.experience;
+    if (skills.length) ld.skills = skills.join(", ");
+    const salary = parseSalary(v.salary);
+    if (salary) ld.baseSalary = salary;
+    const s = document.createElement("script");
+    s.type = "application/ld+json";
+    s.textContent = JSON.stringify(ld);
+    document.head.appendChild(s);
+
+    loadRelated(v);
+  }
+
+  async function loadRelated(v: Vacancy) {
+    try {
+      const page = await listVacancies({ specialty: v.specialty, limit: 4 });
+      const others = page.vacancies.filter((o) => o._id !== v._id).slice(0, 3);
+      if (!others.length) return;
+      document.querySelector<HTMLElement>("[data-related-list]")!.innerHTML = others.map(vacancyCard).join("");
+      document.querySelector<HTMLElement>("[data-related]")!.hidden = false;
+    } catch { /* related list is optional */ }
+  }
+
+  if (!id) {
+    stateView("missing");
+  } else {
+    getVacancy(id).then(render).catch((e: { status?: number }) => stateView(e?.status === 404 || e?.status === 400 ? "missing" : "error"));
+  }
+
+  // Share: native sheet where available, otherwise copy the link.
+  const shareBtn = document.querySelector<HTMLButtonElement>("[data-share]");
+  const shareLabel = document.querySelector<HTMLElement>("[data-share-label]");
+  shareBtn?.addEventListener("click", async () => {
+    const url = location.href;
+    try {
+      if (navigator.share) { await navigator.share({ title: document.title, url }); return; }
+      await navigator.clipboard.writeText(url);
+      if (shareLabel) { shareLabel.textContent = "Link copied"; setTimeout(() => (shareLabel.textContent = "Share this vacancy"), 2200); }
+    } catch { /* user dismissed */ }
+  });
+</script>

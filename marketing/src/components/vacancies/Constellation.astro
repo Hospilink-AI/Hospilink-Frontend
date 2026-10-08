@@ -1,0 +1,52 @@
+---
+// One verified profile, many permanent roles. Decorative hero visual for the vacancy pages.
+import Icon from "../ui/Icon.astro";
+interface Props { roles?: string[]; center?: string; centerSub?: string }
+const {
+  roles = ["RMO", "ICU Nurse", "OT Technician", "Intensivist", "Staff Nurse", "Lab Technician", "Pharmacist", "Dialysis Nurse"],
+  center = "Your verified profile",
+  centerSub = "Apply once it's verified",
+} = Astro.props;
+const inner = roles.slice(0, 3);
+const outer = roles.slice(3);
+const place = (i: number, n: number, offset: number) => {
+  const a = (i / n) * Math.PI * 2 + offset;
+  return `--x:${(50 + Math.cos(a) * 50).toFixed(2)}%;--y:${(50 + Math.sin(a) * 50).toFixed(2)}%`;
+};
+---
+<div class="cst" aria-hidden="true">
+  <div class="ring r-out"><div class="spin s2">{outer.map((r, i) => <span class="pill" style={place(i, outer.length, -0.6)}><span class="pill-in">{r}</span></span>)}</div></div>
+  <div class="ring r-in"><div class="spin s1">{inner.map((r, i) => <span class="pill hi" style={place(i, inner.length, 0.4)}><span class="pill-in">{r}</span></span>)}</div></div>
+  <svg class="arcs" viewBox="0 0 400 400"><path d="M200 200 A 90 90 0 0 1 330 120" pathLength="1" /><path d="M200 200 A 120 120 0 0 0 60 270" pathLength="1" /></svg>
+  <div class="core glass">
+    <span class="core-av">AK<span class="core-ok"><Icon name="check" size={11} stroke={3} /></span></span>
+    <span class="core-t">{center}<small>{centerSub}</small></span>
+  </div>
+  <span class="sample cst-s">Illustration</span>
+</div>
+
+<style>
+  .cst { position: relative; width: min(100%, 520px); aspect-ratio: 1; margin-inline: auto; }
+  .ring { position: absolute; border-radius: 50%; border: 1px dashed rgba(68, 110, 192, .25); }
+  .r-out { inset: 9%; }
+  .r-in { inset: 24%; border-style: solid; border-color: rgba(68, 110, 192, .14); background: radial-gradient(closest-side, rgba(169, 192, 236, .45), transparent); }
+  .spin { position: absolute; inset: 0; }
+  .pill { position: absolute; left: var(--x); top: var(--y); translate: -50% -50%; }
+  .pill-in { display: inline-flex; align-items: center; height: 36px; padding: 0 .95rem; border-radius: 99px; white-space: nowrap; font-size: .82rem; font-weight: 600; color: var(--navy); background: rgba(255, 255, 255, .7); box-shadow: var(--glass-edge), 0 6px 16px -12px rgba(14, 30, 58, .3); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+  .pill.hi .pill-in { background: #fff; color: var(--ceil-700); box-shadow: var(--float); }
+  @media (prefers-reduced-motion: no-preference) {
+    .pill-in { animation: drift 7s ease-in-out infinite; }
+    .pill:nth-child(2n) .pill-in { animation-duration: 9s; animation-delay: -3s; }
+    .pill:nth-child(3n) .pill-in { animation-duration: 8s; animation-delay: -5s; }
+    @keyframes drift { 50% { transform: translateY(-6px); } }
+  }
+  .arcs { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .arcs path { fill: none; stroke: var(--ceil); stroke-width: 2; stroke-linecap: round; opacity: .35; }
+  .core { position: absolute; z-index: 2; left: 50%; top: 50%; translate: -50% -50%; display: flex; flex-direction: column; align-items: center; text-align: center; gap: .45rem; width: 9.5rem; padding: .9rem .7rem .8rem; border-radius: 22px; color: var(--navy); }
+  .core-av { position: relative; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: var(--saline); color: var(--ceil-700); font-weight: 600; }
+  .core-ok { position: absolute; right: -3px; bottom: -3px; width: 19px; height: 19px; border-radius: 50%; display: grid; place-items: center; background: var(--green); color: #fff; box-shadow: 0 0 0 2.5px #fff; }
+  .core-t { font-weight: 600; font-size: .86rem; line-height: 1.2; }
+  .core-t small { display: block; font-size: .74rem; font-weight: 550; color: var(--ink-muted); }
+  .cst-s { position: absolute; right: 0; bottom: 0; }
+  @media (max-width: 560px) { .r-in .pill { display: none; } .cst { width: 92%; } .r-out { inset: 13%; } .r-in { inset: 30%; } .pill-in { height: 28px; font-size: .68rem; padding: 0 .6rem; } .core { width: 7.6rem; padding: .6rem .5rem; } .core-t { font-size: .74rem; } .core-t small { font-size: .66rem; } .core-av { width: 36px; height: 36px; } }
+</style>

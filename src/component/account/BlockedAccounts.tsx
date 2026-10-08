@@ -1,8 +1,9 @@
+import { TIcon, useThemedStyles } from "@/ds/themed";
+import { Theme, useTheme } from "@/ds/theme";
 import { COLORS } from "@/constant/colors";
 import { roleLabel } from "@/constant/jobs";
 import { blockAPI } from "@/service/api";
 import { emitBlockChange } from "@/service/blocks";
-import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -10,6 +11,8 @@ type Blocked = { hospitalId?: string; staffId?: string; name?: string; city?: st
 
 // Account settings → Blocked accounts: hospitals a doctor blocked, or doctors a hospital blocked
 export default function BlockedAccounts({ role }: { role: "staff" | "hospital" }) {
+  const s = useSThemed();
+  const th = useTheme();
   const [list, setList] = useState<Blocked[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +58,7 @@ export default function BlockedAccounts({ role }: { role: "staff" | "hospital" }
         Blocked {noun} can't see you and you can't see them: no duties, offers or invites between you.
       </Text>
       {loading ? (
-        <ActivityIndicator color={COLORS.primary} style={{ marginVertical: 12 }} />
+        <ActivityIndicator color={th.c.primary} style={{ marginVertical: 12 }} />
       ) : list.length === 0 ? (
         <Text style={s.empty}>You haven't blocked any {noun}.</Text>
       ) : (
@@ -64,13 +67,13 @@ export default function BlockedAccounts({ role }: { role: "staff" | "hospital" }
           const sub = [b.jobRole ? roleLabel(b.jobRole) : null, b.city].filter(Boolean).join(" · ");
           return (
             <View key={id} style={s.row}>
-              <Ionicons name={role === "staff" ? "business-outline" : "person-outline"} size={20} color={COLORS.subText} />
+              <TIcon ion={role === "staff" ? "business-outline" : "person-outline"} size={20} color={th.c.subText} />
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={s.name} numberOfLines={1}>{b.name || (role === "staff" ? "Hospital" : "Doctor")}</Text>
                 {!!sub && <Text style={s.sub} numberOfLines={1}>{sub}</Text>}
               </View>
               <TouchableOpacity style={s.btn} onPress={() => unblock(b)} disabled={busyId === id} accessibilityRole="button" accessibilityLabel={`Unblock ${b.name ?? ""}`}>
-                {busyId === id ? <ActivityIndicator size="small" color={COLORS.primary} /> : <Text style={s.btnText}>Unblock</Text>}
+                {busyId === id ? <ActivityIndicator size="small" color={th.c.primary} /> : <Text style={s.btnText}>Unblock</Text>}
               </TouchableOpacity>
             </View>
           );
@@ -81,13 +84,14 @@ export default function BlockedAccounts({ role }: { role: "staff" | "hospital" }
   );
 }
 
-const s = StyleSheet.create({
-  help: { fontSize: 13, color: COLORS.subText, lineHeight: 18, marginBottom: 8 },
-  empty: { fontSize: 14, color: COLORS.subText, paddingVertical: 8 },
-  row: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: "#F1F5F9" },
-  name: { fontSize: 15, fontWeight: "600", color: COLORS.text },
-  sub: { fontSize: 13, color: COLORS.subText, marginTop: 2 },
-  btn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: COLORS.primary, minWidth: 84, alignItems: "center" },
-  btnText: { color: COLORS.primary, fontWeight: "700", fontSize: 13 },
-  error: { fontSize: 13, color: "#B91C1C", marginTop: 8 },
-});
+const make_s = (t: Theme) => ({
+  help: { ...t.f(), fontSize: 13, color: t.c.subText, lineHeight: 18, marginBottom: 8 },
+  empty: { ...t.f(), fontSize: 14, color: t.c.subText, paddingVertical: 8 },
+  row: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: t.hex("#F1F5F9") },
+  name: { fontSize: 15, ...t.f("600"), color: t.c.text },
+  sub: { ...t.f(), fontSize: 13, color: t.c.subText, marginTop: 2 },
+  btn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: t.v2 ? 12 : 8, borderWidth: 1, borderColor: t.c.primary, minWidth: 84, alignItems: "center" },
+  btnText: { color: t.c.primary, ...t.f("700"), fontSize: 13 },
+  error: { ...t.f(), fontSize: 13, color: t.hex("#B91C1C"), marginTop: 8 },
+} as const);
+const useSThemed = () => useThemedStyles(make_s as any) as any;

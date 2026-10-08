@@ -4,7 +4,8 @@ import * as Location from 'expo-location';
 import { useSocket } from '@/context/SocketContext';
 import { profileAPI } from '@/service/api';
 
-export function useDashboardLocationTracking() {
+// enabled: false until the doctor has seen why the app asks for location
+export function useDashboardLocationTracking({ enabled = true }: { enabled?: boolean } = {}) {
   const { socket, isConnected } = useSocket();
   const [permissionGranted, setPermissionGranted] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -105,15 +106,15 @@ export function useDashboardLocationTracking() {
 
   // Initial request on mount
   useEffect(() => {
-    if (isConnected) {
+    if (isConnected && enabled) {
       console.log('🔄 Initial location request...');
       requestAndSendLocation();
     }
-  }, [isConnected, requestAndSendLocation]);
+  }, [isConnected, enabled, requestAndSendLocation]);
 
   // Periodic updates every 30 seconds
   useEffect(() => {
-    if (permissionGranted && isConnected) {
+    if (permissionGranted && isConnected && enabled) {
       console.log('⏰ Starting 30-second interval for location updates');
       intervalRef.current = setInterval(() => {
         console.log('🔄 30-second update triggered');
@@ -128,7 +129,7 @@ export function useDashboardLocationTracking() {
         intervalRef.current = null;
       }
     };
-  }, [permissionGranted, isConnected, requestAndSendLocation]);
+  }, [permissionGranted, isConnected, enabled, requestAndSendLocation]);
 
   return { permissionGranted, requestAndSendLocation };
 }

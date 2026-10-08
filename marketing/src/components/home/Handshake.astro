@@ -1,0 +1,141 @@
+---
+import Icon from "../ui/Icon.astro";
+const states = [
+  { k: "Offer", s: "Sent to verified staff", icon: "broadcast" },
+  { k: "Assigned", s: "First to accept", icon: "user-check" },
+  { k: "En route", s: "Live on your map", icon: "navigation" },
+  { k: "In progress", s: "Started with a code", icon: "player-play" },
+  { k: "Pending confirmation", s: "Waiting for the end code", icon: "hourglass" },
+  { k: "Completed", s: "Closed by your desk", icon: "circle-check" },
+];
+---
+<section id="handshake" class="section hs" aria-labelledby="hs-title">
+  <div class="wrap">
+    <div class="hs-head" data-reveal>
+      <h2 id="hs-title" class="h2">It ends with a handshake,<br />and a record both sides can see.</h2>
+      <p class="lead">At the end of the duty the staff member gets an end code by SMS and reads it to your duty desk. Your team enters it, and the duty closes. If it isn't entered, the duty waits in pending confirmation and HospiLink follows it up.</p>
+    </div>
+
+    <div class="track relief-high" data-reveal data-track>
+      <ol role="list">
+        {states.map((s, i) => (
+          <li style={`--i:${i}`} class:list={[i === 4 && "pending"]}>
+            <span class="t-node"><Icon name={s.icon} size={20} /></span>
+            <span class="t-k">{s.k}</span>
+            <span class="t-s">{s.s}</span>
+          </li>
+        ))}
+      </ol>
+      <div class="t-line" aria-hidden="true"><span></span></div>
+      <p class="t-side"><Icon name="info-circle" size={16} /> A duty can also end as cancelled, incomplete or expired. Each one says why.</p>
+    </div>
+
+    <div class="hs-grid">
+      <article class="hs-end relief-white" data-reveal>
+        <div class="he-copy">
+          <h3 class="h3">Closed by the hospital, not by a button.</h3>
+          <p>The end code goes to the staff member's phone. Only your desk can enter it. That keeps the end time honest on both sides.</p>
+        </div>
+        <div class="he-visual" aria-hidden="true">
+          <div class="sms">
+            <span class="sms-from">HospiLink</span>
+            <p>Your end code for Aranya Hospital is <b class="tnum">730 551</b>. Read it to the duty desk.</p>
+          </div>
+          <div class="desk well">
+            <span class="desk-l">Enter end code</span>
+            <div class="desk-otp tnum">{"730551".split("").map((n) => <span>{n}</span>)}</div>
+            <span class="desk-ok"><Icon name="circle-check" size={16} /> Duty completed · 8:02 AM</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="hs-rate relief-white" data-reveal style="--d:.08s">
+        <h3 class="h3">Rated both ways.</h3>
+        <p>Hospitals rate staff. Staff rate hospitals. No-shows and late cancellations count against a rating, so reliability shows up where it should.</p>
+        <div class="stars" aria-hidden="true">
+          {[1, 2, 3, 4, 5].map((n) => <span class:list={["star", n <= 4 && "full"]} style={`--n:${n}`}><Icon name="star-filled" size={26} /></span>)}
+        </div>
+        <span class="sample">Sample rating</span>
+      </article>
+
+      <article class="hs-help relief-white" data-reveal style="--d:.14s">
+        <h3 class="h3">When something goes wrong, there's a process.</h3>
+        <ul role="list">
+          <li><Icon name="message-chatbot" /> Help chat in English, Hindi and Marathi</li>
+          <li><Icon name="ticket" /> Tickets with a reference number</li>
+          <li><Icon name="scale" /> Duty disputes decided within 14 days, with written reasons</li>
+          <li><Icon name="flag" /> Block or report anyone, from either side</li>
+        </ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hs-head { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 2rem 5rem; align-items: end; }
+  .hs-head .lead { margin: 0; }
+
+  .track { margin-top: 3.5rem; padding: 2.4rem 2rem 1.6rem; position: relative; }
+  .track ol { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1rem; position: relative; z-index: 1; }
+  .track li { display: grid; justify-items: center; text-align: center; gap: .35rem; }
+  .t-node { width: 56px; height: 56px; border-radius: 18px; display: grid; place-items: center; background: var(--ward); box-shadow: var(--relief-raised); color: var(--ink-faint); margin-bottom: .5rem; transition: background-color .5s, color .5s, box-shadow .5s; transition-delay: calc(var(--i) * .35s); }
+  .t-k { font-weight: 600; font-size: .95rem; line-height: 1.2; }
+  .t-s { font-size: .8rem; color: var(--ink-muted); font-weight: 600; }
+  .t-line { position: absolute; left: calc(2rem + 100% / 12 - 4px); right: calc(2rem + 100% / 12 - 4px); top: calc(2.4rem + 27px); height: 3px; border-radius: 3px; background: var(--line); overflow: hidden; }
+  .t-line span { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, var(--ceil-deep), var(--green)); transform-origin: left; transform: scaleX(0); transition: transform 2.2s var(--ease-in-out); }
+  .track.in .t-line span, :global(html:not(.js)) .t-line span { transform: scaleX(1); }
+  .track.in .t-node { background: var(--ceil-deep); color: #fff; box-shadow: 0 10px 20px -10px rgba(68, 110, 192, .8); }
+  .track.in li.pending .t-node { background: var(--amber); color: var(--navy); box-shadow: 0 10px 20px -10px rgba(250, 179, 64, .8); }
+  .track.in li:last-child .t-node { background: var(--green); }
+  .t-side { display: flex; align-items: center; justify-content: center; gap: .45rem; margin-top: 1.8rem; padding-top: 1.2rem; border-top: 1px solid var(--line); font-size: .86rem; color: var(--ink-muted); font-weight: 600; text-align: center; }
+  .t-side :global(svg) { color: var(--ceil-deep); flex: none; }
+
+  .hs-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 1.4rem; margin-top: 1.4rem; }
+  .hs-grid article { padding: 1.8rem; }
+  .hs-grid p { color: var(--ink-muted); margin-top: .6rem; }
+  .hs-end { grid-column: span 7; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 1.6rem; align-items: center; }
+  .hs-rate { grid-column: span 5; display: flex; flex-direction: column; }
+  .hs-help { grid-column: span 12; display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.4fr); gap: 1rem 3rem; align-items: center; }
+  .hs-help ul { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem 1.4rem; }
+  .hs-help li { display: flex; align-items: center; gap: .7rem; font-weight: 600; font-size: .95rem; }
+  .hs-help li :global(svg) { flex: none; width: 40px; height: 40px; padding: 9px; border-radius: 12px; background: var(--saline); color: var(--ceil-deep); }
+
+  .sms { background: var(--saline); border-radius: 18px 18px 18px 6px; padding: .8rem .95rem; font-size: .85rem; font-weight: 600; color: var(--ink-soft); max-width: 260px; }
+  .sms-from { display: block; font-size: .7rem; font-weight: 600; color: var(--ceil-700); margin-bottom: .2rem; }
+  .sms b { color: var(--navy); letter-spacing: .03em; }
+  .desk { margin-top: .9rem; padding: .9rem; border-radius: 18px; display: grid; gap: .55rem; }
+  .desk-l { font-size: .75rem; font-weight: 600; color: var(--ink-muted); }
+  .desk-otp { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; }
+  .desk-otp span { height: 40px; display: grid; place-items: center; background: #fff; border-radius: 10px; font-weight: 600; box-shadow: inset 0 0 0 1.5px var(--green); }
+  .desk-ok { display: flex; align-items: center; gap: .35rem; font-size: .78rem; font-weight: 600; color: var(--green-ink); }
+
+  .stars { display: flex; gap: .35rem; margin-top: auto; padding-top: 1.6rem; }
+  .star { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; background: var(--ward); box-shadow: var(--relief-raised); color: var(--line-strong); }
+  .star.full { color: var(--amber); }
+  .js .star.full { color: var(--line-strong); transition: color .3s, transform .5s var(--ease-out); transition-delay: calc(var(--n) * .12s); }
+  .js .hs-rate.in .star.full { color: var(--amber); transform: translateY(-3px); }
+  .hs-rate .sample { margin-top: .9rem; }
+
+  @media (max-width: 1000px) {
+    .hs-head { grid-template-columns: minmax(0, 1fr); }
+    .hs-end, .hs-rate, .hs-help { grid-column: span 12; }
+    .hs-help { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 760px) {
+    .track { padding: 1.4rem 1.2rem; }
+    .track ol { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .track li { grid-template-columns: 48px 1fr; justify-items: start; text-align: left; column-gap: 1rem; padding: .55rem 0; }
+    .t-node { grid-row: span 2; width: 48px; height: 48px; margin: 0; }
+    .t-line { left: calc(1.2rem + 23px); right: auto; top: 2rem; bottom: 6rem; width: 3px; height: auto; }
+    .t-line span { transform-origin: top; transform: scaleY(0); }
+    .track.in .t-line span { transform: scaleY(1); }
+    .hs-end { grid-template-columns: minmax(0, 1fr); }
+    .hs-help ul { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>
+
+<script>
+  const els = document.querySelectorAll<HTMLElement>("[data-track], .hs-rate");
+  const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: 0.45 });
+  els.forEach((el) => io.observe(el));
+</script>

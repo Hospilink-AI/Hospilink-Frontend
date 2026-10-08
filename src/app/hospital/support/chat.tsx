@@ -1,5 +1,11 @@
+import PhoneHeader from "@/hospital/PhoneHeader";
 import ChatbotScreen from "@/component/support/ChatbotScreen";
 
 export default function HospitalSupportChat() {
-  return <ChatbotScreen base="/hospital/support" />;
+  return (
+    <>
+      <PhoneHeader title="Chat with Support" fallback="/hospital/support" />
+      <ChatbotScreen base="/hospital/support" />
+    </>
+  );
 }

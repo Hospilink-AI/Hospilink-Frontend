@@ -1,5 +1,11 @@
+import PhoneHeader from "@/hospital/PhoneHeader";
 import AccountSettingsScreen from "@/component/account/AccountSettingsScreen";
 
 export default function HospitalAccount() {
-  return <AccountSettingsScreen role="hospital" />;
+  return (
+    <>
+      <PhoneHeader title="Account" fallback="/hospital/profile" />
+      <AccountSettingsScreen role="hospital" embedded />
+    </>
+  );
 }

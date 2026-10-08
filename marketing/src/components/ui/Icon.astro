@@ -1,0 +1,38 @@
+---
+// Tabler outline icons (MIT), rendered inline at build time. Brand stroke: 1.75.
+import nodes from "../../../node_modules/@tabler/icons/tabler-nodes-outline.json";
+import filledNodes from "../../../node_modules/@tabler/icons/tabler-nodes-filled.json";
+
+interface Props {
+  name: string;
+  size?: number;
+  stroke?: number;
+  class?: string;
+  label?: string;
+}
+const { name, size = 24, stroke = 1.75, class: cls, label } = Astro.props;
+const isFilled = name.endsWith("-filled");
+const shape = isFilled
+  ? (filledNodes as Record<string, [string, Record<string, string>][]>)[name.replace(/-filled$/, "")]
+  : (nodes as Record<string, [string, Record<string, string>][]>)[name];
+if (!shape) throw new Error(`Unknown Tabler icon: ${name}`);
+const inner = shape
+  .map(([tag, attrs]) => `<${tag} ${Object.entries(attrs).map(([k, v]) => `${k}="${v}"`).join(" ")}/>`)
+  .join("");
+---
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width={size}
+  height={size}
+  viewBox="0 0 24 24"
+  fill={isFilled ? "currentColor" : "none"}
+  stroke={isFilled ? "none" : "currentColor"}
+  stroke-width={isFilled ? undefined : stroke}
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class={cls}
+  aria-hidden={label ? undefined : "true"}
+  role={label ? "img" : undefined}
+  aria-label={label}
+  set:html={inner}
+/>

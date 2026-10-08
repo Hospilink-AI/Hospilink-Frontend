@@ -1,3 +1,5 @@
+import { TIcon, useThemedStyles } from "@/ds/themed";
+import { Theme, useTheme } from "@/ds/theme";
 import { COLORS } from "@/constant/colors";
 import { Category, CATEGORY_LABELS, CATEGORY_ORDER, displayOf, StoredNotification } from "@/constant/inAppNotifications";
 import { useInAppNotifications } from "@/context/InAppNotificationsContext";
@@ -11,6 +13,8 @@ type Filter = "all" | "unread" | Category;
 
 // Full notification centre: every notification, grouped by category, with filters.
 export default function InAppCenter() {
+  const s = useSThemed();
+  const th = useTheme();
   const { unread, version, markRead, markAllRead, open } = useInAppNotifications();
   const [items, setItems] = useState<StoredNotification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,7 +91,7 @@ export default function InAppCenter() {
     <ScrollView style={s.container} contentContainerStyle={s.content}>
       <View style={s.head}>
         <View>
-          <Text style={s.title}>Notifications</Text>
+          {!th.v2 && <Text style={s.title}>Notifications</Text>}
           <Text style={s.sub}>{unread ? `${unread} unread` : "You're all caught up."}</Text>
         </View>
         {unread > 0 && (
@@ -106,7 +110,7 @@ export default function InAppCenter() {
       </ScrollView>
 
       {loading ? (
-        <ActivityIndicator color={COLORS.primary} style={{ marginTop: 32 }} />
+        <ActivityIndicator color={th.c.primary} style={{ marginTop: 32 }} />
       ) : error && !items.length ? (
         <Text style={s.error}>{error}</Text>
       ) : shown.length === 0 ? (
@@ -128,30 +132,31 @@ export default function InAppCenter() {
 
       {hasMore && !loading && (
         <TouchableOpacity style={s.more} onPress={loadMore} disabled={more}>
-          {more ? <ActivityIndicator color={COLORS.primary} /> : <Text style={s.moreText}>Load older notifications</Text>}
+          {more ? <ActivityIndicator color={th.c.primary} /> : <Text style={s.moreText}>Load older notifications</Text>}
         </TouchableOpacity>
       )}
     </ScrollView>
   );
 }
 
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const make_s = (t: Theme) => ({
+  container: { flex: 1, backgroundColor: t.c.background },
   content: { padding: 16, paddingBottom: 48, gap: 12, maxWidth: 860, width: "100%", alignSelf: "center" },
   head: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" },
-  title: { fontSize: 22, fontWeight: "800", color: COLORS.text },
-  sub: { fontSize: 13, color: COLORS.subText, marginTop: 2 },
-  markAll: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: COLORS.white },
-  markAllText: { fontSize: 13, fontWeight: "700", color: COLORS.primary },
+  title: { fontSize: 22, ...t.f("800"), color: t.c.text },
+  sub: { ...t.f(), fontSize: 13, color: t.c.subText, marginTop: 2 },
+  markAll: { borderWidth: 1, borderColor: t.c.border, borderRadius: t.v2 ? 12 : 8, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: t.c.surface },
+  markAllText: { fontSize: 13, ...t.f("700"), color: t.c.primary },
   chips: { gap: 6, paddingVertical: 2 },
-  chip: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: COLORS.white },
-  chipOn: { borderColor: COLORS.primary, backgroundColor: "#EFF6FF" },
-  chipText: { fontSize: 13, fontWeight: "600", color: COLORS.text },
-  card: { backgroundColor: COLORS.white, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, overflow: "hidden" },
-  groupTitle: { fontSize: 13, fontWeight: "800", color: COLORS.text, paddingHorizontal: 12, paddingTop: 12, paddingBottom: 4 },
-  groupCount: { fontSize: 12, fontWeight: "600", color: COLORS.subText },
-  empty: { fontSize: 13, color: COLORS.subText, textAlign: "center", paddingVertical: 32 },
-  error: { fontSize: 13, color: COLORS.red, textAlign: "center", paddingVertical: 24 },
-  more: { alignSelf: "center", borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: COLORS.white, minWidth: 200, alignItems: "center" },
-  moreText: { fontSize: 13, fontWeight: "700", color: COLORS.primary },
-});
+  chip: { borderWidth: 1, borderColor: t.c.border, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: t.c.surface },
+  chipOn: { borderColor: t.c.primary, backgroundColor: t.hex("#EFF6FF") },
+  chipText: { fontSize: 13, ...t.f("600"), color: t.c.text },
+  card: { backgroundColor: t.c.surface, borderRadius: t.v2 ? 16 : 12, borderWidth: 1, borderColor: t.c.border, overflow: "hidden" },
+  groupTitle: { fontSize: 13, ...t.f("800"), color: t.c.text, paddingHorizontal: 12, paddingTop: 12, paddingBottom: 4 },
+  groupCount: { fontSize: 12, ...t.f("600"), color: t.c.subText },
+  empty: { ...t.f(), fontSize: 13, color: t.c.subText, textAlign: "center", paddingVertical: 32 },
+  error: { ...t.f(), fontSize: 13, color: t.c.danger, textAlign: "center", paddingVertical: 24 },
+  more: { alignSelf: "center", borderWidth: 1, borderColor: t.c.border, borderRadius: t.v2 ? 12 : 8, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: t.c.surface, minWidth: 200, alignItems: "center" },
+  moreText: { fontSize: 13, ...t.f("700"), color: t.c.primary },
+} as const);
+const useSThemed = () => useThemedStyles(make_s as any) as any;

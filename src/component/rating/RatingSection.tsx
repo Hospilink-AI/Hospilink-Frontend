@@ -1,3 +1,5 @@
+import { TIcon, useThemedStyles } from "@/ds/themed";
+import { Theme, useTheme } from "@/ds/theme";
 import RatingSummary, { Stars } from "@/component/rating/RatingSummary";
 import { COLORS } from "@/constant/colors";
 import { formatDate, roleLabel } from "@/constant/jobs";
@@ -10,6 +12,8 @@ const PREVIEW = 3;
 
 // Ratings & Reviews card shown inside the hospital's and the doctor's own profile.
 export default function RatingSection({ role }: { role: "hospital" | "staff" }) {
+  const styles = useStylesThemed();
+  const th = useTheme();
   const [profile, setProfile] = useState<any>(null);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,7 +51,7 @@ export default function RatingSection({ role }: { role: "hospital" | "staff" }) 
     <View style={styles.card}>
       <Text style={styles.title}>Ratings & Reviews</Text>
       {loading ? (
-        <ActivityIndicator color={COLORS.primary} style={{ alignSelf: "flex-start" }} />
+        <ActivityIndicator color={th.c.primary} style={{ alignSelf: "flex-start" }} />
       ) : failed ? (
         <Text style={styles.muted}>Couldn't load your rating right now.</Text>
       ) : (
@@ -112,16 +116,17 @@ export default function RatingSection({ role }: { role: "hospital" | "staff" }) 
   );
 }
 
-const styles = StyleSheet.create({
-  card: { backgroundColor: COLORS.white, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, padding: 18, gap: 8, marginBottom: 16 },
-  title: { fontSize: 16, fontWeight: "700", color: COLORS.text },
-  subTitle: { fontSize: 14, fontWeight: "700", color: COLORS.text },
-  muted: { fontSize: 12, color: COLORS.subText, lineHeight: 18 },
-  small: { fontSize: 12, color: COLORS.subText },
-  divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 4 },
-  review: { borderTopWidth: 1, borderTopColor: "#F1F5F9", paddingTop: 10, gap: 4 },
+const make_styles = (t: Theme) => ({
+  card: { backgroundColor: t.c.surface, borderRadius: t.v2 ? 18 : 14, borderWidth: 1, borderColor: t.c.border, padding: 18, gap: 8, marginBottom: 16 },
+  title: { fontSize: 16, ...t.f("700"), color: t.c.text },
+  subTitle: { fontSize: 14, ...t.f("700"), color: t.c.text },
+  muted: { ...t.f(), fontSize: 12, color: t.c.subText, lineHeight: 18 },
+  small: { ...t.f(), fontSize: 12, color: t.c.subText },
+  divider: { height: 1, backgroundColor: t.c.border, marginVertical: 4 },
+  review: { borderTopWidth: 1, borderTopColor: t.hex("#F1F5F9"), paddingTop: 10, gap: 4 },
   row: { flexDirection: "row", alignItems: "center", gap: 10 },
-  name: { fontSize: 13, fontWeight: "700", color: COLORS.text },
-  body: { fontSize: 13, color: COLORS.text, lineHeight: 19 },
-  link: { fontSize: 13, fontWeight: "600", color: COLORS.primary, marginTop: 4 },
-});
+  name: { fontSize: 13, ...t.f("700"), color: t.c.text },
+  body: { ...t.f(), fontSize: 13, color: t.c.text, lineHeight: 19 },
+  link: { fontSize: 13, ...t.f("600"), color: t.c.primary, marginTop: 4 },
+} as const);
+const useStylesThemed = () => useThemedStyles(make_styles as any) as any;

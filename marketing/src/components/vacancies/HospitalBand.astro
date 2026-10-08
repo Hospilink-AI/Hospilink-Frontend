@@ -1,0 +1,89 @@
+---
+import Icon from "../ui/Icon.astro";
+import { LINKS } from "../../config";
+const applicants = [
+  { n: "AK", name: "Ananya K.", meta: "Staff Nurse · 6 yrs", st: "Shortlisted", tone: "saline" },
+  { n: "RM", name: "Rahul M.", meta: "Staff Nurse · 3 yrs", st: "Slot picked", tone: "amber" },
+  { n: "SP", name: "Sneha P.", meta: "Staff Nurse · 8 yrs", st: "New", tone: "outline" },
+];
+const slots = ["Mon 11:00 AM", "Mon 3:30 PM", "Tue 10:00 AM"];
+---
+<section class="hb-sec" aria-labelledby="hb-title">
+  <div class="wrap">
+    <div class="hb field-dark">
+      <div class="hb-copy" data-reveal>
+        <h2 id="hb-title" class="h2">Hiring permanently?<br /><span class="soft">Post a vacancy.</span></h2>
+        <p class="lead on-dark">Post the role from the hospital web app. Verified staff apply with their profile and résumé, and you run the whole process in one place.</p>
+        <ul class="hb-list" role="list">
+          <li><Icon name="users" /> See every applicant, with their verified profile and documents</li>
+          <li><Icon name="calendar-plus" /> Offer interview slots; candidates pick the one that suits them</li>
+          <li><Icon name="link" /> Add your own Google Meet link for each interview</li>
+          <li><Icon name="mail-forward" /> Send the offer, and mark the hire, from the same screen</li>
+        </ul>
+        <div class="hb-actions">
+          <a class="btn btn-primary btn-lg" href={LINKS.hospitalSignUp}>Post a vacancy <Icon name="arrow-right" class="arrow" /></a>
+          <a class="link-arrow on-dark" href="/hospitals/">More for hospitals <Icon name="arrow-right" /></a>
+        </div>
+      </div>
+
+      <div class="hb-visual" data-reveal style="--d:.1s" aria-hidden="true">
+        <div class="hb-panel glass">
+          <div class="hp-head">
+            <div>
+              <p class="hp-t">Staff Nurse (Ward)</p>
+              <p class="hp-s">Applicants</p>
+            </div>
+            <span class="sample">Sample</span>
+          </div>
+          <ul class="hp-apps" role="list">
+            {applicants.map((a) => (
+              <li>
+                <span class="hp-av">{a.n}</span>
+                <span class="hp-n">{a.name}<small>{a.meta}</small></span>
+                <span class:list={["tag", a.tone === "amber" ? "tag-amber" : a.tone === "saline" ? "tag-saline" : "tag-outline"]}>{a.st}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div class="hb-slots glass">
+          <p class="hs-t"><Icon name="calendar-time" size={16} /> Interview slots offered</p>
+          <div class="hs-row">
+            {slots.map((s, i) => <span class:list={["hs-slot tnum", i === 1 && "picked"]}>{s}</span>)}
+          </div>
+          <p class="hs-meet"><Icon name="video" size={15} /> meet.google.com/… added by the hospital</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hb-sec { padding-block: calc(var(--section) * .5); }
+  .hb { position: relative; overflow: hidden; border-radius: 44px; padding: clamp(2rem, 5vw, 4.5rem); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(2rem, 5vw, 5rem); align-items: center; }
+  .hb-copy .lead { margin-top: 1.2rem; }
+  .hb-list { display: grid; gap: .8rem; margin-top: 1.8rem; }
+  .hb-list li { display: flex; gap: .7rem; align-items: start; font-weight: 550; color: var(--on-dark-soft); }
+  .hb-list :global(svg) { flex: none; width: 22px; height: 22px; color: var(--ceil-deep); margin-top: 1px; }
+  .hb-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.4rem; margin-top: 2.2rem; }
+
+  .hb-visual { position: relative; padding-bottom: 4.5rem; }
+  .hb-panel { padding: 1.2rem; border-radius: 26px; color: var(--navy); }
+  .hp-head { display: flex; justify-content: space-between; align-items: start; padding: 0 .2rem .9rem; }
+  .hp-t { font-weight: 600; font-size: 1.05rem; }
+  .hp-s { font-size: .8rem; font-weight: 550; color: var(--ink-muted); }
+  .hp-apps { display: grid; gap: .5rem; }
+  .hp-apps li { display: grid; grid-template-columns: 40px 1fr auto; gap: .75rem; align-items: center; padding: .7rem .8rem; background: #fff; border-radius: 16px; }
+  .hp-av { width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; background: var(--saline); color: var(--ceil-700); font-weight: 600; font-size: .85rem; }
+  .hp-n { font-weight: 600; font-size: .9rem; line-height: 1.25; }
+  .hp-n small { display: block; font-size: .76rem; font-weight: 600; color: var(--ink-muted); }
+  .hb-slots { position: absolute; right: -4%; bottom: 0; width: min(330px, 86%); padding: 1rem 1.1rem; border-radius: 22px; color: var(--navy); }
+  .hs-t { display: flex; align-items: center; gap: .4rem; font-weight: 600; font-size: .85rem; }
+  .hs-t :global(svg) { color: var(--ceil-deep); }
+  .hs-row { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .7rem; }
+  .hs-slot { padding: .4rem .7rem; border-radius: 99px; font-size: .76rem; font-weight: 600; background: #fff; box-shadow: inset 0 0 0 1px var(--line); }
+  .hs-slot.picked { background: var(--ceil-deep); color: #fff; box-shadow: none; }
+  .hs-meet { display: flex; align-items: center; gap: .35rem; margin-top: .7rem; font-size: .74rem; font-weight: 550; color: var(--ink-muted); }
+
+  @media (max-width: 960px) { .hb { grid-template-columns: minmax(0, 1fr); } .hb-slots { right: 0; } }
+  @media (max-width: 560px) { .hb { border-radius: 30px; } .hb-slots { position: relative; width: auto; margin-top: -1rem; margin-left: 1rem; } .hb-visual { padding-bottom: 0; } }
+</style>

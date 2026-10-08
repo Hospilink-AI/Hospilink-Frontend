@@ -1,0 +1,82 @@
+---
+import Base from "../../../layouts/Base.astro";
+import PageHero from "../../../components/ui/PageHero.astro";
+import Icon from "../../../components/ui/Icon.astro";
+import CtaBand from "../../../components/ui/CtaBand.astro";
+import Board from "../../../components/vacancies/Board.astro";
+import HowApplying from "../../../components/vacancies/HowApplying.astro";
+import Constellation from "../../../components/vacancies/Constellation.astro";
+import { ROLES, type Role } from "../../../data/roles";
+import { LINKS } from "../../../config";
+
+export function getStaticPaths() {
+  return ROLES.map((role) => ({ params: { slug: role.slug }, props: { role } }));
+}
+interface Props { role: Role }
+const { role } = Astro.props;
+const related = ROLES.filter((r) => r.group === role.group && r.slug !== role.slug);
+const crumbs = [
+  { name: "Permanent vacancies", href: "/vacancies/" },
+  { name: "Roles", href: "/vacancies/roles/" },
+  { name: role.short, href: `/vacancies/roles/${role.slug}/` },
+];
+const desc = `Open ${role.label} vacancies at hospitals on HospiLink, starting in Pune. ${role.about} Apply with your verified profile and follow every step to the offer.`;
+// Lower-case for running text, keeping acronyms (RMO, ICU, OT, NICU, HR…) intact.
+const lower = role.short.split(" ").map((w) => (w === w.toUpperCase() ? w : w.toLowerCase())).join(" ");
+const htmlShort = role.short.replace(/&/g, "&amp;");
+const orbit = [role.short, ...related.map((r) => r.short)].slice(0, 8);
+---
+<Base title={`${role.short} vacancies in Pune · HospiLink`} description={desc} crumbs={crumbs}>
+  <PageHero
+    title={`${htmlShort} <span class="soft">vacancies</span>`}
+    lead={`${role.about} These are the permanent ${lower} roles hospitals on HospiLink are hiring for right now.`}
+    crumbs={crumbs}
+  >
+    <Fragment slot="actions">
+      <a class="btn btn-primary btn-lg" href="#board-title">See open vacancies <Icon name="arrow-down" class="arrow" /></a>
+      <a class="btn btn-white btn-lg" href={LINKS.playStore}><Icon name="brand-google-play" /> Apply in the app</a>
+    </Fragment>
+    <Fragment slot="visual"><Constellation roles={orbit} centerSub={`Ready to apply as ${role.short}`} /></Fragment>
+  </PageHero>
+
+  <Board specialty={role.value} syncUrl={false} title={`Open ${role.short} vacancies`} />
+
+  <HowApplying title={`Applying as ${/^[AEIOU]/.test(role.short) ? "an" : "a"} ${role.short}`} />
+
+  <section class="section-tight" aria-labelledby="rel-title">
+    <div class="wrap">
+      <div class="rel relief-high">
+        <div class="rel-copy">
+          <h2 id="rel-title" class="h3">Other {role.group.toLowerCase()} roles</h2>
+          <p>Hospitals hire for these too. Each page lists its own open vacancies.</p>
+          <a class="link-arrow" href="/vacancies/roles/">All {ROLES.length} roles <Icon name="arrow-right" /></a>
+        </div>
+        {related.length > 0 ? (
+          <ul class="rel-list" role="list">
+            {related.map((r) => (
+              <li><a href={`/vacancies/roles/${r.slug}/`}>{r.label}<Icon name="arrow-up-right" size={18} /></a></li>
+            ))}
+          </ul>
+        ) : (
+          <p class="rel-none">This is the only role in its group. Browse <a href="/vacancies/roles/">every role</a> instead.</p>
+        )}
+      </div>
+    </div>
+  </section>
+
+  <CtaBand primary="staff" title={`Ready for your next ${lower} role?`} body="Install the HospiLink app, verify your profile once, and apply to permanent vacancies and short duties from the same place." />
+</Base>
+
+<style>
+  .rel { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 2rem 3rem; padding: clamp(1.5rem, 3vw, 2.4rem); align-items: start; }
+  .rel-copy p { color: var(--ink-muted); margin: .6rem 0 1.2rem; }
+  .rel-list { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .rel-list a { display: inline-flex; align-items: center; gap: .4rem; height: 44px; padding: 0 1rem; border-radius: 99px; background: var(--ward); box-shadow: var(--relief-raised); font-weight: 600; font-size: .92rem; color: var(--ink-soft); transition: color .2s, box-shadow .3s; }
+  .rel-list a :global(svg) { color: var(--ink-faint); transition: color .2s, transform .3s var(--ease-out); }
+  .rel-list a:hover { color: var(--navy); }
+  .rel-list a:hover :global(svg) { color: var(--ceil-deep); transform: translate(2px, -2px); }
+  .rel-list a:active { box-shadow: var(--relief-pressed); }
+  .rel-none { color: var(--ink-muted); }
+  .rel-none a { color: var(--ceil-700); text-decoration: underline; text-underline-offset: 3px; }
+  @media (max-width: 800px) { .rel { grid-template-columns: minmax(0, 1fr); } }
+</style>

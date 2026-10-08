@@ -1,0 +1,256 @@
+---
+import Base from "../../layouts/Base.astro";
+import PageHero from "../../components/ui/PageHero.astro";
+import Icon from "../../components/ui/Icon.astro";
+import Faq from "../../components/ui/Faq.astro";
+import CtaBand from "../../components/ui/CtaBand.astro";
+import OffersPhone from "../../components/pages/OffersPhone.astro";
+import { LINKS } from "../../config";
+import "../../components/pages/b.css";
+
+const crumbs = [{ name: "For staff", href: "/staff/" }];
+const docs = [
+  { n: "Aadhaar", s: "Checked with IDfy", icon: "fingerprint" },
+  { n: "Medical registration", s: "Council registration number", icon: "certificate" },
+  { n: "Degree", s: "Your qualifying degree", icon: "school" },
+  { n: "Licence", s: "Where your role needs one", icon: "license" },
+];
+const statuses = [
+  { k: "Pending", c: "tag-outline" },
+  { k: "Manual review", c: "tag-amber" },
+  { k: "Auto-verified", c: "tag-saline" },
+  { k: "Verified", c: "tag-green" },
+  { k: "Rejected", c: "tag-red" },
+];
+const day = [
+  { t: "7:10 PM", h: "An offer arrives", p: "You see the role, the hospital, the hours, the rate and how far it is. Nothing hidden until after you accept.", icon: "bell-ringing" },
+  { t: "7:12 PM", h: "Accept in one tap", p: "First to accept gets it. The hospital now sees your verified profile and can follow you on the map while your app is open.", icon: "hand-click" },
+  { t: "7:45 PM", h: "Ask for your start code", p: "From 15 minutes before the start, ask the duty desk. The code goes to them and they read it out. You need to be within 100 m of the hospital.", icon: "map-pin-check" },
+  { t: "8:00 PM", h: "On duty", p: "Enter the 6-digit code and the duty starts. Your location is shared with this hospital only for this duty.", icon: "player-play" },
+  { t: "8:00 AM", h: "Get your end code", p: "Request your end code. It comes to your phone by SMS. Read it to the duty desk and they enter it to close the duty.", icon: "message-2-code" },
+  { t: "8:05 AM", h: "Rate, and see what you earned", p: "Rate the hospital. The duty and what it paid show up in your earnings, duty by duty.", icon: "wallet" },
+];
+const faqs = [
+  { q: "Who can sign up?", a: "Doctors (including RMOs and DMOs), nurses, technicians, pharmacists, and patient-support and hospital staff. You choose your role when you sign up, and duties are matched to it." },
+  { q: "What do I need to get verified?", a: "Your Aadhaar, checked through IDfy, and the documents your role needs: medical registration, degree and licence. Each document shows its status: pending, manual review, auto-verified, verified or rejected." },
+  { q: "Can I cancel a duty I've accepted?", a: "Yes, up to 30 minutes before it starts. Cancelling later than that, or not turning up, counts as a no-show and affects your rating." },
+  { q: "Does HospiLink track my location all the time?", a: "No. Location is used only while the app is open: to show you duties nearby, and during a duty you've accepted, to share your position with that hospital until it ends. There is no background tracking." },
+  { q: "How do I get paid?", a: "Every duty shows its rate before you accept, and your earnings screen lists what each completed duty paid. Payment doesn't run through the app yet; for any question about it, write to support@hospilink.in." },
+  { q: "Can I apply for permanent jobs too?", a: "Yes. Permanent vacancies are in the same app. Apply with your verified profile and résumé, pick an interview time, and follow the application to the offer. <a href=\"/vacancies/\">Browse vacancies</a>." },
+];
+const app = {
+  "@context": "https://schema.org",
+  "@type": "MobileApplication",
+  name: "HospiLink",
+  operatingSystem: "Android",
+  applicationCategory: "BusinessApplication",
+  description: "Duties near you and permanent vacancies at hospitals, for verified doctors, nurses and clinical staff.",
+  installUrl: LINKS.playStore,
+};
+---
+<Base
+  title="For doctors, nurses and clinical staff: paid duties near you"
+  description="Get verified once, switch on when you're free, and take paid hospital duties near you with the rate and distance up front. Apply for permanent vacancies from the same Android app."
+  crumbs={crumbs}
+  jsonLd={app}
+>
+  <PageHero
+    title='Paid duties near you, <span class="soft">on your terms.</span>'
+    lead="Doctors, nurses, technicians and hospital staff: get verified once, switch on when you're free, and pick up duties at hospitals near you. Permanent vacancies are in the same app."
+    crumbs={crumbs}
+  >
+    <Fragment slot="actions">
+      <a class="btn btn-primary btn-lg" href={LINKS.playStore}><Icon name="brand-google-play" /> Get it on Google Play</a>
+      <a class="btn btn-white btn-lg" href="/vacancies/">Browse vacancies</a>
+    </Fragment>
+    <OffersPhone slot="visual" />
+  </PageHero>
+
+  <!-- Verification -->
+  <section class="section" aria-labelledby="ver-t">
+    <div class="wrap">
+      <div class="b-head2" data-reveal>
+        <h2 id="ver-t" class="h2">Get verified once. Then every hospital can see it.</h2>
+        <p class="lead">Upload your documents in the app. Once they're checked, every hospital you work with sees the same verified profile, so you never send copies over WhatsApp again.</p>
+      </div>
+      <ol class="docs" role="list">
+        {docs.map((d, i) => (
+          <li class="doc relief-white" data-reveal style={`--d:${i * 0.06}s`}>
+            <span class="doc-ic"><Icon name={d.icon} /></span>
+            <b>{d.n}</b>
+            <small>{d.s}</small>
+            <span class="doc-ok"><Icon name="circle-check" size={18} /></span>
+          </li>
+        ))}
+      </ol>
+      <div class="legend" data-reveal>
+        <span class="lg-t">Every document shows where it is:</span>
+        {statuses.map((s) => <span class:list={["tag", s.c]}>{s.k}</span>)}
+      </div>
+    </div>
+  </section>
+
+  <!-- A duty, hour by hour -->
+  <section class="section field-dark b-dark-band on-dark" aria-labelledby="day-t">
+    <div class="wrap b-split top">
+      <div class="b-copy day-copy" data-reveal>
+        <h2 id="day-t" class="h2">One night duty, <span class="soft">start to finish.</span></h2>
+        <p class="lead on-dark">This is what a duty looks like from your phone. The checks are strict on purpose: they're what makes a hospital trust a stranger at the door.</p>
+        <div class="b-note amber cancel">
+          <span class="ic"><Icon name="clock-x" /></span>
+          <div><b>Cancel up to 30 minutes before the start</b><p>Later than that, or not turning up, counts as a no-show and affects your rating.</p></div>
+        </div>
+        <p class="sample on-dark">Times are an example</p>
+      </div>
+      <ol class="day" role="list">
+        {day.map((s, i) => (
+          <li data-reveal style={`--d:${i * 0.05}s`}>
+            <span class="dy-t tnum">{s.t}</span>
+            <span class="dy-n"><Icon name={s.icon} size={20} /></span>
+            <div class="dy-c"><h3>{s.h}</h3><p>{s.p}</p></div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <!-- Earnings + ratings -->
+  <section class="section" aria-labelledby="earn-t">
+    <div class="wrap b-split">
+      <div class="earn relief-high" data-reveal aria-hidden="true">
+        <div class="er-h"><span>Earnings</span><span class="sample">Sample</span></div>
+        <p class="er-total tnum">₹6,960<small>this week · 4 duties</small></p>
+        <ul role="list">
+          <li><span>ICU Staff Nurse<small>Aranya Hospital · Mon</small></span><b class="tnum">₹2,160</b></li>
+          <li><span>OT Nurse<small>Kesar Nursing Home · Wed</small></span><b class="tnum">₹1,400</b></li>
+          <li><span>ICU Staff Nurse<small>Aranya Hospital · Fri</small></span><b class="tnum">₹2,160</b></li>
+          <li><span>Ward cover<small>Kesar Nursing Home · Sat</small></span><b class="tnum">₹1,240</b></li>
+        </ul>
+        <div class="er-rate"><span><Icon name="star-filled" size={16} /> <b class="tnum">4.8</b> your rating</span><span class="tnum">126 duties</span></div>
+      </div>
+      <div class="b-copy" data-reveal style="--d:.08s">
+        <h2 id="earn-t" class="h2">See the rate before you go. See the total when you're done.</h2>
+        <p class="lead">Every offer shows the rate and the hours. Afterwards your earnings list shows what each duty paid, and your rating grows with every duty you turn up for.</p>
+        <ul class="b-ticks" role="list">
+          <li><span class="tk"><Icon name="check" size={15} stroke={2.6} /></span><span><b>Rate both ways.</b> You rate the hospital, they rate you.</span></li>
+          <li><span class="tk"><Icon name="check" size={15} stroke={2.6} /></span><span><b>Fair reviews.</b> A review is shown once both sides have reviewed, or 14 days after the shift.</span></li>
+          <li><span class="tk"><Icon name="check" size={15} stroke={2.6} /></span><span><b>Your call.</b> Block a hospital you don't want offers from, or report a problem.</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Vacancies -->
+  <section class="section-tight" aria-labelledby="vac-t">
+    <div class="wrap-wide">
+      <div class="vac field-saline relief-high">
+        <div class="b-copy" data-reveal>
+          <h2 id="vac-t" class="h2">Looking for something permanent?</h2>
+          <p class="lead">Hospitals post permanent vacancies on HospiLink too. Apply with the profile you've already verified and your résumé, pick an interview slot, join on Google Meet, and follow every step to the offer.</p>
+          <div class="vac-actions">
+            <a class="btn btn-dark" href="/vacancies/">Browse live vacancies <Icon name="arrow-right" class="arrow" /></a>
+            <a class="link-arrow" href="/vacancies/roles/">Vacancies by role <Icon name="arrow-right" /></a>
+          </div>
+        </div>
+        <ol class="vsteps" role="list" data-reveal style="--d:.08s">
+          {["Application sent", "Being reviewed", "Shortlisted", "Pick an interview time", "Interview scheduled", "Offer received", "Hired"].map((s, i) => (
+            <li class:list={[i === 6 && "last"]}><span class="tnum">{i + 1}</span>{s}</li>
+          ))}
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- Privacy + help -->
+  <section class="section" aria-labelledby="priv-t">
+    <div class="wrap">
+      <div class="ph-grid">
+        <article class="priv relief-white" data-reveal>
+          <span class="icon-tile"><Icon name="map-pin-off" /></span>
+          <h2 id="priv-t" class="h3">Your location stays yours.</h2>
+          <p>Used only while the app is open. Before you accept, hospitals see your area and distance, not your exact position. During a duty you've accepted, that one hospital sees where you are until the duty ends. No background tracking.</p>
+          <a class="link-arrow" href="/trust/">Trust &amp; safety <Icon name="arrow-right" /></a>
+        </article>
+        <article class="help relief-white" data-reveal style="--d:.08s">
+          <span class="icon-tile"><Icon name="message-chatbot" /></span>
+          <h2 class="h3">Help in your language.</h2>
+          <p>Ask the help chat in English, Hindi or Marathi. If something goes wrong on a duty, raise a ticket from the duty itself and follow it to a written decision.</p>
+          <div class="langs" aria-hidden="true"><span>English</span><span lang="hi">हिन्दी</span><span lang="mr">मराठी</span></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-tight" aria-labelledby="faq-t">
+    <div class="wrap b-faq">
+      <div class="head" data-reveal>
+        <h2 id="faq-t" class="h2">Questions staff ask</h2>
+        <p class="lead">More in the <a href="/guides/">guides</a> and the <a href="/faq/">full FAQ</a>.</p>
+      </div>
+      <div data-reveal style="--d:.08s"><Faq items={faqs} /></div>
+    </div>
+  </section>
+
+  <CtaBand primary="staff" title="Your next duty could be 3 km away." body="Get the HospiLink app on Android, upload your documents, and switch on when you're free. Duties near you show up the moment hospitals post them." />
+</Base>
+
+<style>
+  .docs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; counter-reset: d; }
+  .doc { position: relative; display: grid; gap: .25rem; padding: 1.4rem; }
+  .doc-ic { width: 48px; height: 48px; border-radius: 15px; display: grid; place-items: center; background: var(--saline); color: var(--ceil-deep); margin-bottom: .8rem; }
+  .doc b { font-weight: 600; font-size: 1.05rem; }
+  .doc small { color: var(--ink-muted); font-weight: 600; font-size: .86rem; }
+  .doc-ok { position: absolute; top: 1.2rem; right: 1.2rem; color: var(--green); }
+  .legend { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: 1.6rem; }
+  .lg-t { font-weight: 600; font-size: .9rem; color: var(--ink-soft); margin-right: .4rem; }
+
+  .day-copy { position: sticky; top: 110px; }
+  .cancel { margin-top: 2rem; background: rgba(255, 255, 255, .95); }
+  .day-copy .sample { margin-top: 1rem; }
+  .day { position: relative; display: grid; gap: .4rem; }
+  .day::before { content: ""; position: absolute; left: 104px; top: 24px; bottom: 24px; width: 2px; background: linear-gradient(var(--ceil-300), rgba(169, 192, 236, .1)); }
+  .day li { position: relative; display: grid; grid-template-columns: 78px 50px minmax(0, 1fr); gap: 1rem; align-items: start; padding: .9rem 0; }
+  .dy-t { font-weight: 600; font-size: .92rem; color: var(--ceil-deep); padding-top: .75rem; text-align: right; }
+  .dy-n { position: relative; z-index: 1; width: 50px; height: 50px; border-radius: 16px; display: grid; place-items: center; background: rgba(255, 255, 255, .7); box-shadow: var(--glass-edge), 0 6px 16px -12px rgba(14, 30, 58, .3); color: var(--navy); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+  .dy-c h3 { font-size: 1.12rem; color: var(--navy); }
+  .dy-c p { margin-top: .3rem; color: var(--on-dark-soft); font-size: .95rem; }
+
+  .earn { padding: 1.6rem; max-width: 540px; }
+  .er-h { display: flex; justify-content: space-between; font-weight: 600; }
+  .er-total { font-size: 2.6rem; font-weight: 600; letter-spacing: -0.04em; margin-top: .6rem; line-height: 1; }
+  .er-total small { display: block; font-size: .84rem; letter-spacing: 0; color: var(--ink-muted); font-weight: 550; margin-top: .4rem; }
+  .earn ul { display: grid; gap: .45rem; margin-top: 1.2rem; }
+  .earn li { display: flex; justify-content: space-between; align-items: center; padding: .7rem .85rem; border-radius: 14px; background: var(--ward); box-shadow: var(--relief-pressed); font-weight: 600; font-size: .92rem; }
+  .earn li small { display: block; font-size: .76rem; color: var(--ink-muted); font-weight: 600; }
+  .er-rate { display: flex; justify-content: space-between; margin-top: 1rem; font-size: .86rem; font-weight: 600; color: var(--ink-muted); }
+  .er-rate span:first-child { display: inline-flex; align-items: center; gap: .35rem; }
+  .er-rate :global(svg) { color: var(--amber); }
+  .er-rate b { color: var(--navy); }
+
+  .vac { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: clamp(2rem, 5vw, 5rem); align-items: center; padding: clamp(1.8rem, 4vw, 3.5rem); border-radius: 44px; }
+  .vac-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.4rem; margin-top: 1.8rem; }
+  .vsteps { display: grid; gap: .45rem; }
+  .vsteps li { display: flex; align-items: center; gap: .8rem; padding: .7rem .9rem; border-radius: 16px; background: rgba(255, 255, 255, .7); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .9); font-weight: 600; }
+  .vsteps li span { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; background: var(--ceil-deep); color: #fff; font-size: .8rem; font-weight: 600; flex: none; }
+  .vsteps li.last span { background: var(--green); }
+
+  .ph-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.4rem; }
+  .priv, .help { padding: clamp(1.6rem, 3vw, 2.4rem); display: grid; gap: 1rem; align-content: start; }
+  .priv p, .help p { color: var(--ink-soft); }
+  .langs { display: flex; gap: .5rem; flex-wrap: wrap; }
+  .langs span { padding: .45rem .9rem; border-radius: 99px; background: var(--ward); box-shadow: var(--relief-raised); font-weight: 600; }
+
+  @media (max-width: 960px) {
+    .docs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .day-copy { position: static; }
+    .vac, .ph-grid { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 560px) {
+    .docs { grid-template-columns: minmax(0, 1fr); }
+    .day::before { left: 25px; }
+    .day li { grid-template-columns: 50px minmax(0, 1fr); column-gap: .9rem; }
+    .dy-t { grid-column: 2; text-align: left; padding: 0; order: -1; }
+    .dy-n { grid-row: 1 / span 2; grid-column: 1; }
+    .vac { border-radius: 30px; }
+  }
+</style>

@@ -1,477 +1,59 @@
-import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  useWindowDimensions,
-  View,
-} from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
-import { authAPI } from "../../service/api";
+import { useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { authAPI } from "@/service/api";
+import AuthLayout from "@/ds/AuthLayout";
+import Button from "@/ds/Button";
+import Field from "@/ds/Field";
+import { Notice } from "@/ds/States";
 
-interface ResetErrors {
-  newPassword?: string;
-  confirmPassword?: string;
-  general?: string;
-}
-
-export default function ResetPasswordScreen() {
-  // The reset link sent to email will contain the token as a query param
-  // e.g. https://yourapp.com/auth/reset-password?token=2e3f69529c...
+// The reset link in the email carries ?token=
+export default function ResetPassword() {
+  const router = useRouter();
   const { token } = useLocalSearchParams<{ token: string }>();
-
-  // Responsive: tighten things up on small phones, keep the card capped on web/tablet
-  const { width } = useWindowDimensions();
-  const isSmall = width < 400;
-
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [pw, setPw] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [errors, setErrors] = useState<{ pw?: string; confirm?: string; general?: string }>({});
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<ResetErrors>({});
-  const [success, setSuccess] = useState(false);
+  const [done, setDone] = useState(false);
 
-  const validate = (): ResetErrors => {
-    const errs: ResetErrors = {};
-
-    if (!newPassword.trim()) {
-      errs.newPassword = "New password is required.";
-    } else if (newPassword.length < 6) {
-      errs.newPassword = "Password must be at least 6 characters.";
-    } else if (!/(?=.*[A-Z])(?=.*[a-z])(?=.*\d)/.test(newPassword)) {
-      errs.newPassword = "Must include uppercase, lowercase & a number.";
-    }
-
-    if (!confirmPassword.trim()) {
-      errs.confirmPassword = "Please confirm your password.";
-    } else if (newPassword !== confirmPassword) {
-      errs.confirmPassword = "Passwords do not match.";
-    }
-
-    return errs;
-  };
-
-  const handleReset = async () => {
-    const errs = validate();
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
-      return;
-    }
-
-    if (!token) {
-      setErrors({ general: "Reset token is missing. Please use the link from your email." });
-      return;
-    }
-
-    setErrors({});
+  const submit = async () => {
+    const e: typeof errors = {};
+    if (pw.length < 6) e.pw = "Password must be at least 6 characters.";
+    else if (!/(?=.*[A-Z])(?=.*[a-z])(?=.*\d)/.test(pw)) e.pw = "Must include uppercase, lowercase & a number.";
+    if (!confirm) e.confirm = "Please confirm your password.";
+    else if (pw !== confirm) e.confirm = "Passwords do not match.";
+    if (!token) e.general = "Reset token is missing. Please use the link from your email.";
+    setErrors(e);
+    if (Object.keys(e).length) return;
     setLoading(true);
-
     try {
-      // API: POST /api/auth/reset-password
-      // Body: { token, newPassword, confirmPassword }
-      // Returns: { success: true, message: "Password reset successful. Please sign in with your new password." }
-      await authAPI.resetPassword(token, newPassword, confirmPassword);
-      setSuccess(true);
-
-      // Redirect to sign-in after a short delay so user sees success message
-      setTimeout(() => {
-        router.replace({ pathname: "/auth/login", params: { tab: "signin" } });
-      }, 2000);
-    } catch (error: any) {
-      const message =
-        error?.response?.data?.message ??
-        error?.response?.data?.error ??
-        error?.message ??
-        "Something went wrong. The reset link may have expired.";
-      setErrors({ general: message });
+      await authAPI.resetPassword(token, pw, confirm);
+      setDone(true);
+    } catch (err: any) {
+      setErrors({ general: err?.response?.data?.message ?? "Something went wrong. The reset link may have expired." });
     } finally {
       setLoading(false);
     }
   };
 
+  const toSignIn = () => router.replace({ pathname: "/auth/login", params: { tab: "signin" } });
+
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-      {/* Top App Bar — kept outside KeyboardAvoidingView so it stays fixed when the keyboard opens.
-          NOTE: if your _layout already renders a header, set headerShown: false for this route
-          or move this bar into the layout to avoid a double header. */}
-      <View style={[styles.header, { paddingHorizontal: isSmall ? 16 : 20 }]}>
-        <View style={styles.headerLeft}>
-          <View style={styles.logoBox}>
-            <Ionicons name="pulse" size={22} color="#FFFFFF" />
-          </View>
-          <Text style={styles.logoText}>Hospilink</Text>
-        </View>
-
-        <TouchableOpacity
-          style={styles.helpBtn}
-          activeOpacity={0.7}
-          onPress={() => {}}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons name="help-circle-outline" size={22} color="#94A3B8" />
-        </TouchableOpacity>
-      </View>
-
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardView}
-      >
-        <View style={[styles.content, { paddingHorizontal: isSmall ? 16 : 20 }]}>
-          {/* Main Card */}
-          <View style={[styles.card, { padding: isSmall ? 22 : 32 }]}>
-            <Text style={[styles.title, { fontSize: isSmall ? 24 : 28 }]}>
-              Reset Your Password
-            </Text>
-
-            {/* Success State */}
-            {success ? (
-              <View style={styles.successBanner}>
-                <Ionicons
-                  name="checkmark-circle-outline"
-                  size={18}
-                  color="#16a34a"
-                  style={{ marginRight: 8 }}
-                />
-                <Text style={styles.successText}>
-                  Password reset successful! Redirecting you to sign in...
-                </Text>
-              </View>
-            ) : null}
-
-            {/* General Error */}
-            {errors.general ? (
-              <View style={styles.generalError}>
-                <Ionicons
-                  name="alert-circle-outline"
-                  size={14}
-                  color="#dc2626"
-                  style={{ marginRight: 6 }}
-                />
-                <Text style={styles.generalErrorText}>{errors.general}</Text>
-              </View>
-            ) : null}
-
-            {/* New Password */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>New Password</Text>
-              <View style={[styles.passwordContainer, errors.newPassword ? styles.inputError : null]}>
-                <TextInput
-                  style={[styles.input, Platform.OS === "web" && ({ outlineStyle: "none" } as any)]}
-                  placeholder="••••••••"
-                  placeholderTextColor="#9CA3AF"
-                  value={newPassword}
-                  onChangeText={(v) => {
-                    setNewPassword(v);
-                    if (errors.newPassword) setErrors((p) => ({ ...p, newPassword: undefined }));
-                  }}
-                  secureTextEntry={!showNewPassword}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-                <TouchableOpacity
-                  onPress={() => setShowNewPassword(!showNewPassword)}
-                  activeOpacity={0.7}
-                  style={styles.eyeIcon}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Ionicons
-                    name={showNewPassword ? "eye-off-outline" : "eye-outline"}
-                    size={18}
-                    color="#9CA3AF"
-                  />
-                </TouchableOpacity>
-              </View>
-              {errors.newPassword ? (
-                <View style={styles.errorRow}>
-                  <Ionicons
-                    name="information-circle-outline"
-                    size={13}
-                    color="#dc2626"
-                    style={{ marginRight: 4 }}
-                  />
-                  <Text style={styles.errorText}>{errors.newPassword}</Text>
-                </View>
-              ) : null}
-            </View>
-
-            {/* Confirm Password */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Confirm Password</Text>
-              <View style={[styles.passwordContainer, errors.confirmPassword ? styles.inputError : null]}>
-                <TextInput
-                  style={[styles.input, Platform.OS === "web" && ({ outlineStyle: "none" } as any)]}
-                  placeholder="••••••••"
-                  placeholderTextColor="#9CA3AF"
-                  value={confirmPassword}
-                  onChangeText={(v) => {
-                    setConfirmPassword(v);
-                    if (errors.confirmPassword) setErrors((p) => ({ ...p, confirmPassword: undefined }));
-                  }}
-                  secureTextEntry={!showConfirmPassword}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-                <TouchableOpacity
-                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                  activeOpacity={0.7}
-                  style={styles.eyeIcon}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Ionicons
-                    name={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
-                    size={18}
-                    color="#9CA3AF"
-                  />
-                </TouchableOpacity>
-              </View>
-              {errors.confirmPassword ? (
-                <View style={styles.errorRow}>
-                  <Ionicons
-                    name="information-circle-outline"
-                    size={13}
-                    color="#dc2626"
-                    style={{ marginRight: 4 }}
-                  />
-                  <Text style={styles.errorText}>{errors.confirmPassword}</Text>
-                </View>
-              ) : null}
-            </View>
-
-            {/* Reset Button */}
-            <TouchableOpacity
-              style={[styles.resetBtn, (loading || success) && { opacity: 0.7 }]}
-              onPress={handleReset}
-              activeOpacity={0.8}
-              disabled={loading || success}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.resetBtnText}>Reset Password</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerSecure}>SECURE END-TO-END ENCRYPTION</Text>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+    <AuthLayout
+      title="Set a new password"
+      subtitle="Use at least 6 characters with an uppercase letter, a lowercase letter and a number."
+      testID="reset-password"
+      footer={done ? <Button label="Sign in" onPress={toSignIn} full size="lg" /> : <Button label="Save new password" onPress={submit} loading={loading} full size="lg" />}
+    >
+      {done ? (
+        <Notice tone="success" title="Password changed" body="Sign in with your new password." />
+      ) : (
+        <>
+          {errors.general ? <Notice tone="danger" body={errors.general} /> : null}
+          <Field label="New password" icon="lock" value={pw} onChangeText={setPw} error={errors.pw} secure autoCapitalize="none" autoComplete="new-password" />
+          <Field label="Confirm password" icon="lock" value={confirm} onChangeText={setConfirm} error={errors.confirm} secure autoCapitalize="none" autoComplete="new-password" />
+        </>
+      )}
+    </AuthLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F8FAFC",
-  },
-  keyboardView: {
-    flex: 1,
-  },
-
-  /* Header */
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    height: 64,
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#EEF1F5",
-    ...Platform.select({
-      web: { boxShadow: "0 1px 2px rgba(15,23,42,0.04)" } as any,
-      default: {
-        shadowColor: "#0F172A",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.04,
-        shadowRadius: 4,
-        elevation: 2,
-      },
-    }),
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  logoBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 11,
-    backgroundColor: "#2563EB",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logoText: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginLeft: 12,
-  },
-  helpBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#F1F5F9",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  /* Content + Card */
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  card: {
-    backgroundColor: "#FFFFFF",
-    width: "100%",
-    maxWidth: 440,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowRadius: 15,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
-  title: {
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 24,
-  },
-
-  /* Banners */
-  successBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f0fdf4",
-    borderWidth: 1,
-    borderColor: "#bbf7d0",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-  },
-  successText: {
-    color: "#16a34a",
-    fontSize: 13,
-    fontWeight: "500",
-    flex: 1,
-    lineHeight: 18,
-  },
-  generalError: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fef2f2",
-    borderWidth: 1,
-    borderColor: "#fecaca",
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 16,
-  },
-  generalErrorText: {
-    color: "#dc2626",
-    fontSize: 12,
-    fontWeight: "500",
-    flex: 1,
-  },
-
-  /* Inputs */
-  inputGroup: {
-    marginBottom: 18,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#334155",
-    marginBottom: 8,
-  },
-  passwordContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    height: 50,
-    borderWidth: 1.5,
-    borderColor: "#E2E8F0",
-    borderRadius: 10,
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 14,
-  },
-  inputError: {
-    borderColor: "#dc2626",
-    backgroundColor: "#fff5f5",
-  },
-  input: {
-    flex: 1,
-    height: "100%",
-    fontSize: 14,
-    color: "#1F2937",
-  },
-  eyeIcon: {
-    paddingLeft: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  errorRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 5,
-  },
-  errorText: {
-    color: "#dc2626",
-    fontSize: 11.5,
-    fontWeight: "500",
-    flex: 1,
-  },
-
-  /* Button */
-  resetBtn: {
-    backgroundColor: "#2563EB",
-    height: 52,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 6,
-    ...Platform.select({
-      web: { boxShadow: "0 4px 14px rgba(37,99,235,0.30)" } as any,
-      default: {
-        shadowColor: "#2563eb",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.28,
-        shadowRadius: 10,
-        elevation: 6,
-      },
-    }),
-  },
-  resetBtnText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-
-  /* Footer */
-  footer: {
-    marginTop: 28,
-    alignItems: "center",
-  },
-  footerSecure: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#9CA3AF",
-    letterSpacing: 0.5,
-    marginBottom: 6,
-  },
-  footerCopy: {
-    fontSize: 11,
-    color: "#9CA3AF",
-  },
-});

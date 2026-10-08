@@ -1,152 +1,119 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Pressable, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
-import React from "react";
-import {
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import AuthLayout from "@/ds/AuthLayout";
+import Button from "@/ds/Button";
+import Icon, { IconName } from "@/ds/Icon";
+import Txt from "@/ds/Txt";
+import { color, depth, radius } from "@/ds/tokens";
+import { useSignedInRedirect } from "@/hooks/useSignedInRedirect";
 
-export default function WelcomeChoiceScreen() {
-  const router = useRouter();
-
-  const choose = (accountType: "medical" | "hospital") => {
-    router.push({
-      pathname: "/auth/sign-up",
-      params: { accountType },
-    });
-  };
-
+function Choice({
+  icon,
+  title,
+  body,
+  points,
+  onPress,
+  featured,
+  testID,
+}: {
+  icon: IconName;
+  title: string;
+  body: string;
+  points: string[];
+  onPress: () => void;
+  featured?: boolean;
+  testID?: string;
+}) {
   return (
-    <SafeAreaView style={styles.screen}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={styles.title}>Welcome</Text>
-        <Text style={styles.subtitle}>How will you be using Hospilink</Text>
-
-        {/* Medical Staff */}
-        <TouchableOpacity
-          style={styles.card}
-          activeOpacity={0.85}
-          onPress={() => choose("medical")}
-        >
-          {/* Replace this placeholder with your illustration:
-              <Image source={require("../../../assets/Images/medical-staff.png")}
-                     style={styles.cardImage} resizeMode="contain" /> */}
-          <View style={[styles.illustration, { backgroundColor: "#eff6ff" }]}>
-            <Ionicons name="people" size={48} color="#2563EB" />
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${title}. ${body}`}
+      testID={testID}
+      style={(s: any) => [styles.choice, featured ? styles.choiceFeatured : styles.choicePlain, s.pressed && { transform: [{ scale: 0.99 }] }, s.focused && depth.focus]}
+    >
+      <View style={styles.choiceTop}>
+        <View style={[styles.choiceIcon, featured && { backgroundColor: color.primary }]}>
+          <Icon name={icon} size={26} color={featured ? color.onDark : color.primary} />
+        </View>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Txt v="h3" color={featured ? color.onDark : color.ink}>
+            {title}
+          </Txt>
+          <Txt v="bodySm" color={featured ? color.onDarkMuted : color.inkSoft}>
+            {body}
+          </Txt>
+        </View>
+        <View style={[styles.go, featured && { backgroundColor: color.primary }]}>
+          <Icon name="forward" size={18} color={featured ? color.onDark : color.ink} />
+        </View>
+      </View>
+      <View style={styles.points}>
+        {points.map((p) => (
+          <View key={p} style={[styles.point, featured ? styles.pointDark : styles.pointLight]}>
+            <Icon name="check" size={13} color={featured ? "#9DB8EC" : color.primary} strokeWidth={2.5} />
+            <Txt v="caption" color={featured ? color.onDark : color.inkSoft}>
+              {p}
+            </Txt>
           </View>
-
-          <Text style={styles.cardTitle}>Medical Staff</Text>
-          <Text style={styles.cardDesc}>
-            Browse nearby duties, receive instant shift alerts, and build your
-            professional profile.
-          </Text>
-        </TouchableOpacity>
-
-        {/* Hospital */}
-        <TouchableOpacity
-          style={styles.card}
-          activeOpacity={0.85}
-          onPress={() => choose("hospital")}
-        >
-          {/* Replace this placeholder with your illustration:
-              <Image source={require("../../../assets/Images/hospital.png")}
-                     style={styles.cardImage} resizeMode="contain" /> */}
-          <View style={[styles.illustration, { backgroundColor: "#f0f9ff" }]}>
-            <Ionicons name="business" size={48} color="#2563EB" />
-          </View>
-
-          <Text style={styles.cardTitle}>Hospital</Text>
-          <Text style={styles.cardDesc}>
-            Find qualified healthcare professionals, manage duty requests, and
-            optimize staffing operations.
-          </Text>
-        </TouchableOpacity>
-
-        <View style={{ flex: 1 }} />
-
-      </ScrollView>
-    </SafeAreaView>
+        ))}
+      </View>
+    </Pressable>
   );
 }
 
-const BLUE = "#2563EB";
+// First screen of the app: who are you?
+export default function RoleChoice() {
+  useSignedInRedirect();
+  const router = useRouter();
+  const choose = (accountType: "medical" | "hospital") => router.push({ pathname: "/auth/sign-up", params: { accountType } });
+
+  return (
+    <AuthLayout
+      hero="brand"
+      title="How will you use HospiLink?"
+      subtitle="Choose one to create your account."
+      testID="role-choice"
+      footer={
+        <View style={styles.signIn}>
+          <Txt v="bodySm" tone="soft">
+            Already have an account?
+          </Txt>
+          <Button label="Sign in" variant="text" onPress={() => router.push({ pathname: "/auth/login", params: { tab: "signin" } })} />
+        </View>
+      }
+    >
+      <Choice
+        featured
+        icon="role"
+        title="I'm a doctor or clinical staff"
+        body="Take duties at hospitals near you, and apply for vacancies."
+        points={["Duties near you", "Shifts that fit you", "Permanent vacancies"]}
+        onPress={() => choose("medical")}
+        testID="choose-staff"
+      />
+      <Choice
+        icon="hospital"
+        title="I represent a hospital"
+        body="Post duties and find verified staff quickly."
+        points={["Verified staff", "Emergency cover", "Vacancies"]}
+        onPress={() => choose("hospital")}
+        testID="choose-hospital"
+      />
+    </AuthLayout>
+  );
+}
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#fff" },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 48,
-    paddingBottom: 24,
-  },
-  title: {
-    fontSize: 34,
-    fontWeight: "800",
-    color: "#1F2937",
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#64748b",
-    textAlign: "center",
-    marginBottom: 36,
-  },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    padding: 24,
-    alignItems: "center",
-    marginBottom: 24,
-    ...Platform.select({
-      web: { boxShadow: "0 8px 24px rgba(100,140,200,0.10)" } as any,
-      default: {
-        shadowColor: "#90a8cc",
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.12,
-        shadowRadius: 16,
-        elevation: 4,
-      },
-    }),
-  },
-  illustration: {
-    width: "100%",
-    height: 140,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 18,
-  },
-  cardImage: { width: "100%", height: 140, marginBottom: 18 },
-  cardTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#1F2937",
-    marginBottom: 10,
-  },
-  cardDesc: {
-    fontSize: 14,
-    color: "#64748b",
-    textAlign: "center",
-    lineHeight: 21,
-  },
-  footerCopy: {
-    fontSize: 12,
-    color: "#9CA3AF",
-    textAlign: "center",
-    marginTop: 24,
-  },
+  choice: { borderRadius: radius.card, padding: 18, gap: 14 },
+  choiceFeatured: { backgroundColor: color.ink, ...depth.floating },
+  choicePlain: { backgroundColor: color.surface, borderWidth: 1, borderColor: color.line, ...depth.raisedSm },
+  choiceTop: { flexDirection: "row", alignItems: "center", gap: 14 },
+  choiceIcon: { width: 52, height: 52, borderRadius: 16, backgroundColor: color.well, alignItems: "center", justifyContent: "center" },
+  go: { width: 36, height: 36, borderRadius: 18, backgroundColor: color.well, alignItems: "center", justifyContent: "center" },
+  points: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  point: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, height: 26, borderRadius: radius.pill },
+  pointDark: { backgroundColor: "rgba(255,255,255,0.08)" },
+  pointLight: { backgroundColor: color.ground },
+  signIn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 2 },
 });

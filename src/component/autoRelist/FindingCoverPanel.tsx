@@ -1,3 +1,5 @@
+import { Theme, useTheme } from "@/ds/theme";
+import { TIcon, useThemedStyles } from "@/ds/themed";
 import ActionModal from "@/component/cards/jobs/ActionModal";
 import {
   AUTO_RELIST_DEFAULTS,
@@ -15,7 +17,6 @@ import {
 import { COLORS } from "@/constant/colors";
 import { apiError, roleLabel } from "@/constant/jobs";
 import { autoRelistAPI, dutyAPI } from "@/service/api";
-import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from "react-native";
@@ -50,6 +51,8 @@ function coverState(d: any): string {
 
 // Hospital dashboard: duties the platform re-posted after a cancellation. Shown only when there is something in it.
 export default function FindingCoverPanel() {
+  const styles = use_styles();
+  const th = useTheme();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const wide = width >= 1024;
@@ -170,7 +173,7 @@ export default function FindingCoverPanel() {
               <Text style={styles.muted}>
                 {dateText} · {d.startTime}
               </Text>
-              <Text style={[styles.countdown, mins !== null && mins < 90 && { color: "#B45309" }]}>{countdown(mins)}</Text>
+              <Text style={[styles.countdown, mins !== null && mins < 90 && { color: th.hex("#B45309") }]}>{countdown(mins)}</Text>
             </View>
           ),
           relisted: (
@@ -267,7 +270,7 @@ export default function FindingCoverPanel() {
           value={rate}
           onChangeText={(t) => { setRate(t.replace(/[^0-9]/g, "")); setError(null); }}
           placeholder="New rate per hour (₹)"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={th.hex("#9CA3AF")}
           keyboardType="number-pad"
         />
       </ActionModal>
@@ -299,6 +302,7 @@ export default function FindingCoverPanel() {
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const styles = use_styles();
   return (
     <View style={styles.field}>
       <Text style={styles.th}>{label.toUpperCase()}</Text>
@@ -308,39 +312,42 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function ActionBtn({ icon, label, onPress, danger }: { icon: any; label: string; onPress: () => void; danger?: boolean }) {
+  const th = useTheme();
+  const styles = use_styles();
   return (
     <TouchableOpacity style={[styles.btn, danger && styles.btnDanger]} onPress={onPress} activeOpacity={0.8}>
-      <Ionicons name={icon} size={14} color={danger ? COLORS.red : COLORS.primary} />
-      <Text style={[styles.btnText, danger && { color: COLORS.red }]}>{label}</Text>
+      <TIcon ion={icon} size={14} color={danger ? th.hex(COLORS.red) : th.c.primary} />
+      <Text style={[styles.btnText, danger && { color: th.hex(COLORS.red) }]}>{label}</Text>
     </TouchableOpacity>
   );
 }
 
-const styles = StyleSheet.create({
-  panel: { backgroundColor: COLORS.white, borderRadius: 12, borderWidth: 1, borderColor: "#E5E7EB", padding: 16, gap: 12, marginTop: 16 },
-  title: { fontSize: 16, fontWeight: "800", color: "#111827" },
-  sub: { fontSize: 13, color: COLORS.subText, marginTop: 2 },
-  headRow: { borderBottomWidth: 1, borderBottomColor: "#F1F5F9", paddingBottom: 8 },
+const use_styles = () => useThemedStyles(make_styles as any) as any;
+const make_styles = (t: Theme) => ({
+  panel: { backgroundColor: t.c.surface, borderRadius: 12, borderWidth: 1, borderColor: t.hex("#E5E7EB"), padding: 16, gap: 12, marginTop: 16 },
+  title: { fontSize: 16, ...t.f("800"), color: t.hex("#111827") },
+  sub: { ...t.f(), fontSize: 13, color: t.c.subText, marginTop: 2 },
+  headRow: { borderBottomWidth: 1, borderBottomColor: t.hex("#F1F5F9"), paddingBottom: 8 },
   row: { flexDirection: "row", alignItems: "center", gap: 12 },
-  th: { fontSize: 10, fontWeight: "700", color: "#94A3B8", letterSpacing: 0.5 },
-  item: { gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
-  card: { borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10, padding: 12, borderBottomColor: "#E5E7EB" },
+  th: { fontSize: 10, ...t.f("700"), color: t.hex("#94A3B8"), letterSpacing: 0.5 },
+  item: { gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: t.hex("#F1F5F9") },
+  card: { borderWidth: 1, borderColor: t.hex("#E5E7EB"), borderRadius: 10, padding: 12, borderBottomColor: t.hex("#E5E7EB") },
   cardTop: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   grid: { flexDirection: "row", flexWrap: "wrap", rowGap: 10 },
   field: { width: "50%", paddingRight: 8, gap: 3 },
-  strong: { fontSize: 13, fontWeight: "700", color: COLORS.text },
-  cell: { fontSize: 13, color: COLORS.text, lineHeight: 18 },
-  muted: { fontSize: 12, color: COLORS.subText },
-  grey: { fontSize: 12, color: "#94A3B8" },
-  struck: { fontSize: 12, color: "#94A3B8", textDecorationLine: "line-through" },
-  countdown: { fontSize: 12, fontWeight: "700", color: COLORS.primary },
+  strong: { fontSize: 13, ...t.f("700"), color: t.c.text },
+  cell: { ...t.f(), fontSize: 13, color: t.c.text, lineHeight: 18 },
+  muted: { ...t.f(), fontSize: 12, color: t.c.subText },
+  grey: { ...t.f(), fontSize: 12, color: t.hex("#94A3B8") },
+  struck: { ...t.f(), fontSize: 12, color: t.hex("#94A3B8"), textDecorationLine: "line-through" },
+  countdown: { fontSize: 12, ...t.f("700"), color: t.c.primary },
   pill: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3, alignSelf: "flex-start" },
-  pillText: { fontSize: 11, fontWeight: "700" },
+  pillText: { fontSize: 11, ...t.f("700") },
   actions: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  btn: { flexDirection: "row", alignItems: "center", gap: 5, borderWidth: 1, borderColor: COLORS.border, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
-  btnDanger: { borderColor: "#FECACA" },
-  btnText: { fontSize: 12, fontWeight: "700", color: COLORS.primary },
-  mtd: { backgroundColor: "#F8FAFC", borderRadius: 8, padding: 10 },
-  mtdText: { fontSize: 13, color: COLORS.text, lineHeight: 19 },
-  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: COLORS.text },
-});
+  btn: { flexDirection: "row", alignItems: "center", gap: 5, borderWidth: 1, borderColor: t.c.border, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
+  btnDanger: { borderColor: t.hex("#FECACA") },
+  btnText: { fontSize: 12, ...t.f("700"), color: t.c.primary },
+  mtd: { backgroundColor: t.hex("#F8FAFC"), borderRadius: 8, padding: 10 },
+  mtdText: { ...t.f(), fontSize: 13, color: t.c.text, lineHeight: 19 },
+  input: { ...t.f(), borderWidth: 1, borderColor: t.c.border, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: t.c.text },
+} as const);

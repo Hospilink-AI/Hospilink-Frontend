@@ -1,8 +1,9 @@
+import { Theme, useTheme } from "@/ds/theme";
+import { TIcon, useThemedStyles } from "@/ds/themed";
 import { COLORS } from "@/constant/colors";
 import { availabilityBadge, cardFromNearby, InviteCard, InviteGroups, MAX_INVITEES } from "@/constant/dutyInvites";
 import { apiError, roleLabel } from "@/constant/jobs";
 import { adminAPI, inviteAPI } from "@/service/api";
-import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import FavouriteHeart from "./FavouriteHeart";
@@ -40,6 +41,8 @@ export default function InvitePicker({
   selected: InviteCard[];
   onDone: (cards: InviteCard[]) => void;
 }) {
+  const s = use_s();
+  const th = useTheme();
   const [groups, setGroups] = useState<InviteGroups | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -130,24 +133,24 @@ export default function InvitePicker({
               </Text>
             </View>
             <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Close">
-              <Ionicons name="close" size={22} color={COLORS.subText} />
+              <TIcon ion="close" size={22} color={th.c.subText} />
             </TouchableOpacity>
           </View>
 
           <View style={s.search}>
-            <Ionicons name="search" size={15} color={COLORS.subText} />
+            <TIcon ion="search" size={15} color={th.c.subText} />
             <TextInput
               style={s.searchInput}
               value={query}
               onChangeText={setQuery}
               placeholder="Search by name or city"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={th.hex("#94A3B8")}
             />
           </View>
 
           <ScrollView style={{ maxHeight: 480 }} contentContainerStyle={{ paddingBottom: 8, gap: 14 }}>
             {loading ? (
-              <ActivityIndicator color={COLORS.primary} style={{ marginVertical: 24 }} />
+              <ActivityIndicator color={th.c.primary} style={{ marginVertical: 24 }} />
             ) : error ? (
               <Text style={s.error}>{error}</Text>
             ) : total === 0 ? (
@@ -221,6 +224,8 @@ export function DoctorRow({
   // hospitals only: adds Block / Report
   onBlocked?: (staffId: string) => void;
 }) {
+  const th = useTheme();
+  const s = use_s();
   const badge = availabilityBadge(card);
   const rating = typeof card.effectiveRating === "number" ? `★ ${card.effectiveRating.toFixed(1)}` : "Unrated";
   const meta = [
@@ -233,7 +238,7 @@ export function DoctorRow({
 
   return (
     <Pressable style={[s.row, on && s.rowOn]} onPress={onPress} accessibilityRole="checkbox" accessibilityState={{ checked: on }} accessibilityLabel={card.name}>
-      <Ionicons name={on ? "checkbox" : "square-outline"} size={20} color={on ? COLORS.primary : "#94A3B8"} />
+      <TIcon ion={on ? "checkbox" : "square-outline"} size={20} color={on ? th.c.primary : th.hex("#94A3B8")} />
       {card.profilePicture ? (
         <Image source={{ uri: card.profilePicture }} style={s.avatar} />
       ) : (
@@ -259,8 +264,8 @@ export function DoctorRow({
             </View>
           )}
           {card.hasClash && (
-            <View style={[s.badge, { backgroundColor: "#FEF2F2" }]}>
-              <Text style={[s.badgeText, { color: "#B91C1C" }]}>Booked at this time</Text>
+            <View style={[s.badge, { backgroundColor: th.hex("#FEF2F2") }]}>
+              <Text style={[s.badgeText, { color: th.hex("#B91C1C") }]}>Booked at this time</Text>
             </View>
           )}
         </View>
@@ -271,10 +276,11 @@ export function DoctorRow({
   );
 }
 
-const s = StyleSheet.create({
+const use_s = () => useThemedStyles(make_s as any) as any;
+const make_s = (t: Theme) => ({
   overlay: { flex: 1, backgroundColor: "rgba(15,23,42,0.45)", justifyContent: "flex-end" },
   sheet: {
-    backgroundColor: COLORS.white,
+    backgroundColor: t.c.surface,
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
     paddingHorizontal: 18,
@@ -286,28 +292,28 @@ const s = StyleSheet.create({
     gap: 10,
   },
   head: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  title: { fontSize: 17, fontWeight: "800", color: COLORS.text },
-  sub: { fontSize: 12, color: COLORS.subText, marginTop: 2 },
-  search: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingHorizontal: 10 },
-  searchInput: { flex: 1, paddingVertical: 8, fontSize: 14, color: COLORS.text },
-  groupTitle: { fontSize: 13, fontWeight: "800", color: COLORS.text },
-  groupCount: { fontSize: 12, fontWeight: "600", color: COLORS.subText },
-  muted: { fontSize: 12, color: COLORS.subText, lineHeight: 17 },
-  error: { fontSize: 13, color: COLORS.red, paddingVertical: 12 },
-  note: { fontSize: 12, color: "#92400E" },
-  row: { flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 10 },
-  rowOn: { borderColor: COLORS.primary, backgroundColor: "#F8FBFF" },
-  avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.border },
-  initials: { alignItems: "center", justifyContent: "center", backgroundColor: "#DBEAFE" },
-  initialsText: { fontSize: 14, fontWeight: "800", color: COLORS.primary },
-  name: { fontSize: 14, fontWeight: "700", color: COLORS.text },
-  meta: { fontSize: 12, color: COLORS.subText },
+  title: { fontSize: 17, ...t.f("800"), color: t.c.text },
+  sub: { ...t.f(), fontSize: 12, color: t.c.subText, marginTop: 2 },
+  search: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: t.c.border, borderRadius: 8, paddingHorizontal: 10 },
+  searchInput: { ...t.f(), flex: 1, paddingVertical: 8, fontSize: 14, color: t.c.text },
+  groupTitle: { fontSize: 13, ...t.f("800"), color: t.c.text },
+  groupCount: { fontSize: 12, ...t.f("600"), color: t.c.subText },
+  muted: { ...t.f(), fontSize: 12, color: t.c.subText, lineHeight: 17 },
+  error: { ...t.f(), fontSize: 13, color: t.hex(COLORS.red), paddingVertical: 12 },
+  note: { ...t.f(), fontSize: 12, color: t.hex("#92400E") },
+  row: { flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderColor: t.c.border, borderRadius: 10, padding: 10 },
+  rowOn: { borderColor: t.c.primary, backgroundColor: t.hex("#F8FBFF") },
+  avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: t.c.border },
+  initials: { alignItems: "center", justifyContent: "center", backgroundColor: t.hex("#DBEAFE") },
+  initialsText: { fontSize: 14, ...t.f("800"), color: t.c.primary },
+  name: { fontSize: 14, ...t.f("700"), color: t.c.text },
+  meta: { ...t.f(), fontSize: 12, color: t.c.subText },
   badges: { flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" },
   badge: { borderRadius: 999, paddingHorizontal: 7, paddingVertical: 1 },
-  badgeText: { fontSize: 10, fontWeight: "700" },
-  footer: { flexDirection: "row", gap: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: COLORS.border },
-  secondary: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: COLORS.border },
-  secondaryText: { fontSize: 14, fontWeight: "600", color: COLORS.text },
-  primary: { flex: 1, backgroundColor: COLORS.primary, borderRadius: 8, paddingVertical: 12, alignItems: "center" },
-  primaryText: { color: "#fff", fontSize: 14, fontWeight: "700" },
-});
+  badgeText: { fontSize: 10, ...t.f("700") },
+  footer: { flexDirection: "row", gap: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: t.c.border },
+  secondary: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: t.c.border },
+  secondaryText: { fontSize: 14, ...t.f("600"), color: t.c.text },
+  primary: { flex: 1, backgroundColor: t.c.primary, borderRadius: 8, paddingVertical: 12, alignItems: "center" },
+  primaryText: { color: t.hex("#fff"), fontSize: 14, ...t.f("700") },
+} as const);

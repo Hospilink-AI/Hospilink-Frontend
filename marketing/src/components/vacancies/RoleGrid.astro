@@ -1,0 +1,64 @@
+---
+import Icon from "../ui/Icon.astro";
+import { ROLES, ROLE_GROUPS, type RoleGroup } from "../../data/roles";
+
+interface Props { groups?: RoleGroup[]; current?: string; headingLevel?: 2 | 3 }
+const { groups = ROLE_GROUPS, current, headingLevel = 3 } = Astro.props;
+const groupIcon: Record<RoleGroup, string> = {
+  Doctors: "stethoscope",
+  Nurses: "heart-rate-monitor",
+  Technicians: "microscope",
+  "Patient support": "wheelchair",
+  Pharmacy: "pill",
+  "Administration & support": "building-hospital",
+};
+const H = headingLevel === 2 ? "h2" : "h3";
+---
+<div class:list={["rg", groups.length !== ROLE_GROUPS.length && "partial"]}>
+  {groups.map((g) => {
+    const roles = ROLES.filter((r) => r.group === g);
+    return (
+      <section id={`group-${g.replace(/[^a-z]/gi, "").toLowerCase()}`} class:list={["rg-panel relief", `g-${g.replace(/[^a-z]/gi, "").toLowerCase()}`]} aria-label={g}>
+        <header class="rg-head">
+          <span class="icon-tile"><Icon name={groupIcon[g]} /></span>
+          <H class="rg-t">{g}</H>
+          <span class="rg-n tnum">{roles.length} {roles.length === 1 ? "role" : "roles"}</span>
+        </header>
+        <ul class="rg-list" role="list">
+          {roles.map((r) => (
+            <li>
+              <a href={`/vacancies/roles/${r.slug}/`} aria-current={current === r.slug ? "page" : undefined}>
+                <span>{r.label}</span>
+                <Icon name="arrow-up-right" size={18} />
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    );
+  })}
+</div>
+
+<style>
+  .rg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.2rem; align-items: start; grid-template-areas: "doc doc nur" "tec pat adm" "tec pha adm"; }
+  .rg-panel { padding: 1.4rem; border-radius: 28px; scroll-margin-top: 110px; }
+  .g-doctors { grid-area: doc; } .g-nurses { grid-area: nur; } .g-technicians { grid-area: tec; } .g-patientsupport { grid-area: pat; } .g-pharmacy { grid-area: pha; } .g-administrationsupport { grid-area: adm; }
+  .rg.partial { grid-template-areas: none; } .rg.partial .rg-panel { grid-area: auto; }
+  .g-doctors .rg-list { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 1.2rem; }
+  .rg-head { display: flex; align-items: center; gap: .9rem; padding-bottom: 1rem; margin-bottom: .4rem; border-bottom: 1px solid var(--line); }
+  .rg-t { font-size: 1.2rem; letter-spacing: -0.02em; }
+  .rg-n { margin-left: auto; font-size: .8rem; font-weight: 600; color: var(--ink-muted); white-space: nowrap; }
+  .rg-list { display: grid; }
+  .rg-list a { display: flex; align-items: center; justify-content: space-between; gap: .8rem; padding: .7rem .6rem; border-radius: 14px; font-weight: 600; font-size: .95rem; color: var(--ink-soft); transition: background-color .25s, color .25s; }
+  .rg-list a :global(svg) { flex: none; color: var(--ink-faint); transition: transform .35s var(--ease-out), color .25s; }
+  .rg-list a:hover { background: #fff; color: var(--navy); }
+  .rg-list a:hover :global(svg) { color: var(--ceil-deep); transform: translate(2px, -2px); }
+  .rg-list a[aria-current="page"] { background: var(--ceil-deep); color: #fff; }
+  .rg-list a[aria-current="page"] :global(svg) { color: var(--navy); }
+  @media (max-width: 1000px) { .rg { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "doc doc" "nur tec" "pat adm" "pha adm"; } }
+  @media (max-width: 680px) {
+    .rg { grid-template-columns: minmax(0, 1fr); grid-template-areas: none; }
+    .rg-panel { grid-area: auto !important; }
+    .g-doctors .rg-list { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

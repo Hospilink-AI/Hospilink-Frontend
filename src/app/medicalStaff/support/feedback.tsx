@@ -1,5 +1,11 @@
+import { ScreenHeader } from "@/ds/Layout";
 import FeedbackScreen from "@/component/support/FeedbackScreen";
 
 export default function StaffFeedback() {
-  return <FeedbackScreen base="/medicalStaff/support" />;
+  return (
+    <>
+      <ScreenHeader title="Support" fallback="/medicalStaff/support" />
+      <FeedbackScreen base="/medicalStaff/support" />
+    </>
+  );
 }

@@ -1,5 +1,11 @@
+import PhoneHeader from "@/hospital/PhoneHeader";
 import TicketDetail from "@/component/support/TicketDetail";
 
 export default function HospitalTicketDetail() {
-  return <TicketDetail base="/hospital/support" />;
+  return (
+    <>
+      <PhoneHeader title="My Tickets" fallback="/hospital/support/tickets" />
+      <TicketDetail base="/hospital/support" />
+    </>
+  );
 }
