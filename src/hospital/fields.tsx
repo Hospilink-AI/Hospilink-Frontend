@@ -4,7 +4,7 @@ import { addDays, MIN_LEAD_MINUTES, todayKey, weekdayShort } from '@/constant/du
 import Icon, { IconName } from '@/ds/Icon';
 import Txt from '@/ds/Txt';
 import { ceil, color, depth, radius } from '@/ds/tokens';
-import { HOUR_PRESETS, MAX_HOURS, MIN_HOURS } from './pricing';
+import { HOUR_PRESETS, MAX_HOURS, MIN_HOURS, usePricing } from './pricing';
 
 const NativePicker: any = Platform.OS !== 'web' ? require('@react-native-community/datetimepicker').default : null;
 const IST_MS = 5.5 * 3600 * 1000;
@@ -210,6 +210,7 @@ function Stepper({ value, onChange, min, max, unit, label }: { value: number; on
 }
 
 export function HoursPicker({ value, onChange, presets = HOUR_PRESETS }: { value: number; onChange: (h: number) => void; presets?: number[] }) {
+  usePricing();
   return (
     <View style={{ gap: 10 }}>
       <View style={styles.wrap}>

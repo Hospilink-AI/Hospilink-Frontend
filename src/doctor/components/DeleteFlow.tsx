@@ -35,15 +35,29 @@ export default function DeleteFlow({ onDeleted, upcoming }: { onDeleted: (r: Del
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // what deleting now would do, from the server; falls back to the plain status
+  const [preview, setPreview] = useState<{ upcomingDuties?: number; dutiesUnderWay?: number; activeApplications?: number; canDeleteNow?: boolean; blockedReason?: string | null } | null>(null);
+
   useEffect(() => {
     let alive = true;
     accountAPI
-      .getDeletion()
+      .getDeletionPreview()
       .then((r: any) => {
+        const p = r && typeof r.canDeleteNow === 'boolean' ? r : r?.data;
+        // an older server has no preview: use the plain deletion status instead
+        if (!p || typeof p.canDeleteNow !== 'boolean') throw new Error('no preview');
         if (!alive) return;
-        if (typeof r?.graceDays === 'number') setGraceDays(r.graceDays);
-        if (r?.scheduled) setScheduledFor(r.scheduledFor ?? '');
+        setPreview(p);
+        if (typeof p.graceDays === 'number') setGraceDays(p.graceDays);
+        if (p.alreadyScheduled) setScheduledFor(p.scheduledFor ?? '');
       })
+      .catch(() =>
+        accountAPI.getDeletion().then((r: any) => {
+          if (!alive) return;
+          if (typeof r?.graceDays === 'number') setGraceDays(r.graceDays);
+          if (r?.scheduled) setScheduledFor(r.scheduledFor ?? '');
+        })
+      )
       .catch(() => {})
       .finally(() => alive && setLoading(false));
     return () => {
@@ -81,6 +95,9 @@ export default function DeleteFlow({ onDeleted, upcoming }: { onDeleted: (r: Del
     );
   }
 
+  const upcomingCount = preview?.upcomingDuties ?? upcoming;
+  const blocked = preview?.canDeleteNow === false;
+
   if (step === 'explain') {
     return (
       <View style={{ gap: 16 }}>
@@ -88,9 +105,12 @@ export default function DeleteFlow({ onDeleted, upcoming }: { onDeleted: (r: Del
           <Txt v="label">What happens</Txt>
           <Point icon="calendar">
             Your upcoming duties are cancelled and the hospitals are told.
-            {upcoming ? ` You have ${upcoming} coming up.` : ''}
+            {upcomingCount ? ` You have ${upcomingCount} coming up.` : ''}
           </Point>
-          <Point icon="vacancies">Your pending vacancy applications are withdrawn.</Point>
+          <Point icon="vacancies">
+            Your pending vacancy applications are withdrawn.
+            {preview?.activeApplications ? ` You have ${preview.activeApplications} open.` : ''}
+          </Point>
           <Point icon="logout">
             You're signed out now. Your account is deleted after {graceDays} days. Signing in before then cancels the deletion.
           </Point>
@@ -108,7 +128,8 @@ export default function DeleteFlow({ onDeleted, upcoming }: { onDeleted: (r: Del
           </Point>
         </View>
         <Notice tone="info" body="Can't make a duty or need a break? Turning off availability stops new offers without deleting anything." />
-        <Button label="Delete account" variant="secondary" onPress={() => setStep('confirm')} full />
+        {blocked ? <Notice tone="warning" icon="warning" title="You can't delete your account right now" body={preview?.blockedReason ?? 'A duty is under way or starts soon.'} /> : null}
+        <Button label="Delete account" variant="secondary" onPress={() => setStep('confirm')} disabled={blocked} full />
       </View>
     );
   }

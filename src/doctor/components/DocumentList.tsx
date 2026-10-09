@@ -15,13 +15,26 @@ import Txt from '@/ds/Txt';
 import { color, depth, radius } from '@/ds/tokens';
 import { apiMessage, dateOf } from '../format';
 
-type Doc = { documentId: string; documentType: string; verificationStatus: string; uploadedAt?: string; url?: string; fileName?: string };
+type Doc = {
+  documentId: string;
+  documentType: string;
+  verificationStatus: string;
+  uploadedAt?: string;
+  url?: string;
+  fileName?: string;
+  // sent only for a rejected document
+  rejectionReason?: string | null;
+  verifiedAt?: string | null;
+};
 
 export type Slot = { types: string[]; title: string; why: string; icon: IconName; need: 'required' | 'oneOf' | 'optional' };
 
+// The server blacks out the first 8 digits before saving, and takes the masked Aadhaar as it is.
+const AADHAAR_WHY = (what: string) => `${what} The masked Aadhaar from DigiLocker or UIDAI is fine; we hide the first 8 digits before saving.`;
+
 // backend/src/config/requiredDocs.js (staff)
 export const DOCTOR_DOCS: Slot[] = [
-  { types: ['aadhaar-card'], title: 'Aadhaar card', why: 'Confirms who you are.', icon: 'id', need: 'required' },
+  { types: ['aadhaar-card'], title: 'Aadhaar card', why: AADHAAR_WHY('Confirms who you are.'), icon: 'id', need: 'required' },
   { types: ['pan-card'], title: 'PAN card', why: 'Confirms your identity.', icon: 'id', need: 'required' },
   { types: ['license-permit'], title: 'Licence or permit', why: 'Your current licence to practise.', icon: 'certificate', need: 'required' },
   {
@@ -37,7 +50,7 @@ export const DOCTOR_DOCS: Slot[] = [
 
 // backend/src/config/requiredDocs.js (hospital)
 export const HOSPITAL_DOCS: Slot[] = [
-  { types: ['aadhaar-card'], title: 'Aadhaar card', why: "The authorised signatory's ID.", icon: 'id', need: 'required' },
+  { types: ['aadhaar-card'], title: 'Aadhaar card', why: AADHAAR_WHY("The authorised signatory's ID."), icon: 'id', need: 'required' },
   { types: ['pan-card'], title: 'PAN card', why: "The hospital's PAN.", icon: 'id', need: 'required' },
   { types: ['cin-certificate'], title: 'CIN certificate', why: 'Company registration.', icon: 'certificate', need: 'required' },
   { types: ['gst-certificate'], title: 'GST certificate', why: 'GST registration.', icon: 'certificate', need: 'required' },
@@ -113,6 +126,8 @@ export default function DocumentList({
     onProgress(needed.filter((s) => docs.some((d) => s.types.includes(d.documentType))).length, needed.length);
   }, [docs]);
   const [busy, setBusy] = useState<string | null>(null);
+  // the last failed upload, shown under its row (long server reasons don't fit a snackbar)
+  const [failed, setFailed] = useState<{ type: string; message: string } | null>(null);
   const [chooser, setChooser] = useState<Slot | null>(null);
   const [removing, setRemoving] = useState<Doc | null>(null);
 
@@ -129,12 +144,13 @@ export default function DocumentList({
         return;
       }
       setBusy(type);
+      setFailed(null);
       await documentAPI.uploadDocument(type, a.uri, a.mimeType ?? 'image/jpeg', replace);
       snack('Uploaded. We check documents as soon as we can.', { tone: 'success' });
       await reload();
       onChange?.();
     } catch (e) {
-      snack(apiMessage(e, "That file didn't upload. Try a clear JPG, PNG or PDF."), { tone: 'error' });
+      setFailed({ type, message: apiMessage(e, "That file didn't upload. Try a clear JPG, PNG or PDF.") });
     } finally {
       setBusy(null);
     }
@@ -185,8 +201,14 @@ export default function DocumentList({
             <>
               <Tag label={st.label} tone={st.tone} />
               <Txt v="caption" tone="muted" numberOfLines={1}>
-                {TYPE_LABEL[d.documentType] ? `${TYPE_LABEL[d.documentType]} · ` : ''}Uploaded {dateOf(d.uploadedAt)}
+                {TYPE_LABEL[d.documentType] ? `${TYPE_LABEL[d.documentType]} · ` : ''}
+                {st.ok && d.verifiedAt ? `Verified ${dateOf(d.verifiedAt)}` : `Uploaded ${dateOf(d.uploadedAt)}`}
               </Txt>
+              {d.verificationStatus === 'rejected' && d.rejectionReason ? (
+                <Txt v="bodySm" tone="danger">
+                  {d.rejectionReason}
+                </Txt>
+              ) : null}
             </>
           ) : (
             <Txt v="bodySm" tone="muted">
@@ -218,6 +240,7 @@ export default function DocumentList({
               </>
             )}
           </View>
+          {failed && slot.types.includes(failed.type) ? <Notice tone="danger" icon="warning" body={failed.message} /> : null}
         </View>
       </View>
     );

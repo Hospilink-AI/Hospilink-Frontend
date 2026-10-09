@@ -8,7 +8,7 @@ import { Sheet } from '@/ds/Overlay';
 import { Notice } from '@/ds/States';
 import Txt from '@/ds/Txt';
 import { color, depth, radius } from '@/ds/tokens';
-import { maxRateFor, MAX_TOTAL, RAISE_STEPS, totalFor } from './pricing';
+import { maxRateFor, MAX_TOTAL, RAISE_STEPS, totalFor, usePricing } from './pricing';
 
 const rs = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
@@ -40,6 +40,7 @@ export default function RaiseRate({
   onRaised: (newRate: number) => void;
   compact?: boolean;
 }) {
+  usePricing();
   const [open, setOpen] = useState(false);
   const [add, setAdd] = useState(RAISE_STEPS[1]);
   const [custom, setCustom] = useState('');

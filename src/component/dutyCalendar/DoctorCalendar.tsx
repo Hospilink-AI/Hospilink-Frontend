@@ -86,8 +86,25 @@ export default function DoctorCalendar({ header }: { header?: ReactNode }) {
     setListError(null);
     try {
       if (m === "open") {
-        const res = await dutyCalendarAPI.getAvailableOn(date);
-        setList(res?.jobs ?? []);
+        // same rule as the grid's count, without Maps calls
+        const res = await dutyCalendarAPI.getDay(date, "open");
+        setList(
+          (res?.open ?? []).map((r: any) => ({
+            _id: r.dutyId,
+            status: r.status,
+            staffRole: r.staffRole,
+            dutySubType: r.dutySubType,
+            startTime: r.startTime,
+            endTime: r.endTime,
+            isOvernightDuty: r.isOvernightDuty,
+            urgency: r.urgency,
+            offeredRate: r.offeredRate,
+            totalPayment: r.totalPayment,
+            distance: r.distanceKm,
+            date: `${date}T00:00:00+05:30`,
+            hospital: r.hospital ? { _id: r.hospital.id, hospitalLegalName: r.hospital.name, city: r.hospital.city, state: r.hospital.state } : null,
+          }))
+        );
       } else {
         const res = await dutyCalendarAPI.getDay(date);
         setMine(res?.duties ?? []);
@@ -142,7 +159,6 @@ export default function DoctorCalendar({ header }: { header?: ReactNode }) {
 
   const prevEnd = isWeek ? addDays(week, -1) : addDays(month, -1);
   const nextStart = isWeek ? addDays(week, 7) : addMonths(month, 1);
-  const badge = selected ? rows[selected]?.open ?? 0 : 0;
   const open = (id: string) => router.push(`/medicalStaff/dutyDetails/${id}` as any);
 
   return (
@@ -239,12 +255,6 @@ export default function DoctorCalendar({ header }: { header?: ReactNode }) {
                           const d = toDuty(j);
                           return <DutyOfferCard key={d.id} duty={d} onOpen={() => open(d.id)} onAccept={() => accept(d.id)} accepting={accepting === d.id} />;
                         })}
-                        {/* the count uses straight-line distance, the list uses road distance */}
-                        {badge > (list ?? []).length && (
-                          <Txt v="caption" tone="muted">
-                            The calendar counted {badge}. The rest are near the 50 km limit and further than that by road.
-                          </Txt>
-                        )}
                       </>
                     )
                   ) : (mine ?? []).length === 0 ? (

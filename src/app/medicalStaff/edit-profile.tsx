@@ -22,6 +22,10 @@ import {
   educationError,
   EXPERIENCE_OPTIONS,
   SelectField,
+  DateOfBirthField,
+  dobError,
+  dobFromIso,
+  dobToIso,
   SkillsEditor,
 } from '@/doctor/forms';
 import { apiMessage, phoneText } from '@/doctor/format';
@@ -115,6 +119,7 @@ export default function EditProfile() {
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
   const [experience, setExperience] = useState('');
+  const [dob, setDob] = useState('');
   const [address, setAddress] = useState<Address>({ currentAddress: '', city: '', state: '', pincode: '' });
   const [summary, setSummary] = useState('');
   const [education, setEducation] = useState<Education[]>([]);
@@ -128,6 +133,7 @@ export default function EditProfile() {
     setName(profile.fullName ?? user?.name ?? '');
     setRole(profile.jobRole ?? '');
     setExperience(profile.experience ?? '');
+    setDob(dobFromIso(profile.dateOfBirth));
     setAddress({ currentAddress: profile.currentAddress ?? '', city: profile.city ?? '', state: profile.state ?? '', pincode: profile.pincode ?? '' });
     setSummary(profile.profileSummary ?? '');
     setEducation(
@@ -146,6 +152,8 @@ export default function EditProfile() {
     const e: Record<string, string> = {};
     if (!name.trim()) e.name = 'Enter your name.';
     if (!role) e.role = 'Choose your role.';
+    const d = dobError(dob);
+    if (d) e.dob = d;
     if (!address.currentAddress.trim()) e.currentAddress = 'Enter your address.';
     if (!address.city.trim()) e.city = 'Enter your city.';
     if (!address.state) e.state = 'Choose your state.';
@@ -163,6 +171,8 @@ export default function EditProfile() {
         fullName: name.trim(),
         jobRole: role,
         experience: experience || undefined,
+        // a cleared date is sent as null so the server removes it
+        ...(dobToIso(dob) ? { dateOfBirth: dobToIso(dob) } : profile?.dateOfBirth ? { dateOfBirth: null } : {}),
         currentAddress: address.currentAddress.trim(),
         city: address.city.trim(),
         state: address.state,
@@ -205,6 +215,7 @@ export default function EditProfile() {
               <Field label="Full name" value={name} onChangeText={setName} error={errors.name} autoComplete="name" maxLength={100} />
               <SelectField label="Role" value={role} options={JOB_ROLES} onChange={setRole} error={errors.role} icon="role" />
               <SelectField label="Experience" value={experience} options={EXPERIENCE_OPTIONS.map((x) => ({ label: x, value: x }))} onChange={setExperience} />
+              <DateOfBirthField value={dob} onChange={setDob} error={errors.dob} />
               <Field
                 label="Short summary"
                 optional

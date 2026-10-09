@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { addMonths, endOfMonth, startOfMonth, todayKey } from '@/constant/dutyCalendar';
 import { dutyAPI, profileAPI } from '@/service/api';
@@ -25,14 +25,118 @@ type Earnings = {
   completedDutiesCount?: number;
   averagePerDuty?: number | string;
   growth?: { percent?: number; trend?: string };
+  // all time, or for the range when a period is asked for
+  paid?: number;
+  pending?: number;
+  series?: { key: string; label: string; earnings: number; duties: number }[];
 };
+
+/** Earnings per week or month, with what's been paid and what's still to come for that range. */
+function PeriodCard() {
+  const [period, setPeriod] = useState<'week' | 'month'>('week');
+  const [data, setData] = useState<Earnings | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [picked, setPicked] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    setData(null);
+    setError(null);
+    setPicked(null);
+    profileAPI
+      .getEarnings({ period })
+      .then((r: any) => alive && setData(r?.data ?? {}))
+      .catch((e: any) => alive && setError(apiMessage(e, "This chart didn't load.")));
+    return () => {
+      alive = false;
+    };
+  }, [period]);
+
+  const series = data?.series ?? [];
+  const max = Math.max(1, ...series.map((p) => p.earnings));
+  const shown = series.find((p) => p.key === picked) ?? series[series.length - 1];
+
+  return (
+    <Card testID="earnings-period">
+      <View style={{ gap: 14 }}>
+        <View style={styles.periodHead}>
+          <Txt v="title" style={{ flex: 1 }}>
+            {period === 'week' ? 'Last 8 weeks' : 'Last 6 months'}
+          </Txt>
+          <View style={styles.chips}>
+            <Chip label="Weeks" selected={period === 'week'} onPress={() => setPeriod('week')} />
+            <Chip label="Months" selected={period === 'month'} onPress={() => setPeriod('month')} />
+          </View>
+        </View>
+        {error ? (
+          <Txt v="bodySm" tone="danger">
+            {error}
+          </Txt>
+        ) : !data ? (
+          <Skeleton height={150} r={16} />
+        ) : (
+          <>
+            {shown ? (
+              <View>
+                <Txt v="caption" tone="muted">
+                  {period === 'week' ? `Week of ${shown.label}` : shown.label}
+                </Txt>
+                <Txt v="h2" style={{ fontVariant: ['tabular-nums'] }}>
+                  {rupees(shown.earnings)}
+                  <Txt v="bodySm" tone="muted">
+                    {'  '}
+                    {shown.duties} {shown.duties === 1 ? 'duty' : 'duties'}
+                  </Txt>
+                </Txt>
+              </View>
+            ) : null}
+            <View style={styles.bars} accessibilityRole="list">
+              {series.map((p) => {
+                const on = (picked ?? series[series.length - 1]?.key) === p.key;
+                return (
+                  <Pressable
+                    key={p.key}
+                    onPress={() => setPicked(p.key)}
+                    style={styles.barCol}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${p.label}: ${rupees(p.earnings)}, ${p.duties} ${p.duties === 1 ? 'duty' : 'duties'}`}
+                    accessibilityState={{ selected: on }}
+                  >
+                    <View style={styles.barTrack}>
+                      <View style={[styles.bar, { height: `${Math.max(p.earnings ? 4 : 0, (p.earnings / max) * 100)}%`, backgroundColor: on ? color.primary : color.wellStrong }]} />
+                    </View>
+                    <Txt v="caption" tone={on ? 'ink' : 'muted'} numberOfLines={1} style={styles.barLabel}>
+                      {period === 'month' ? p.label.split(' ')[0] : p.label}
+                    </Txt>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <View style={styles.split2}>
+              <View style={{ flex: 1 }}>
+                <Txt v="caption" tone="muted">Paid</Txt>
+                <Txt v="title" color={color.successInk} style={{ fontVariant: ['tabular-nums'] }}>{rupees(data.paid ?? 0)}</Txt>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Txt v="caption" tone="muted">To be paid</Txt>
+                <Txt v="title" color={color.warningInk} style={{ fontVariant: ['tabular-nums'] }}>{rupees(data.pending ?? 0)}</Txt>
+              </View>
+            </View>
+            <Txt v="caption" tone="muted">
+              "To be paid" is duties where the hospital chose to pay later or hasn't confirmed payment.
+            </Txt>
+          </>
+        )}
+      </View>
+    </Card>
+  );
+}
 
 function StatementCard() {
   const thisMonth = startOfMonth(todayKey());
   const months = [thisMonth, addMonths(thisMonth, -1), addMonths(thisMonth, -2)];
   const [month, setMonth] = useState(thisMonth);
   const [busy, setBusy] = useState(false);
-  const { available } = useDoctor();
 
   const download = async () => {
     setBusy(true);
@@ -66,12 +170,7 @@ function StatementCard() {
             <Chip key={m} label={monthName(m)} selected={m === month} onPress={() => setMonth(m)} />
           ))}
         </View>
-        <Button label="Download PDF" icon="download" variant="tonal" onPress={download} loading={busy} disabled={!available} full />
-        {!available ? (
-          <Txt v="caption" tone="muted" align="center">
-            Statements are available while your availability is on.
-          </Txt>
-        ) : null}
+        <Button label="Download PDF" icon="download" variant="tonal" onPress={download} loading={busy} full />
       </View>
     </Card>
   );
@@ -191,6 +290,8 @@ export default function EarningsScreen() {
             </Card>
           </View>
 
+          <PeriodCard />
+
           <Notice tone="info" icon="info" body="Hospitals pay you directly for each duty. The payment method they record is shown on each completed duty." />
 
           <StatementCard />
@@ -227,4 +328,11 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   tile: { width: 44, height: 44, borderRadius: radius.icon, backgroundColor: color.well, alignItems: 'center', justifyContent: 'center' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  periodHead: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
+  bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 140 },
+  barCol: { flex: 1, height: '100%', alignItems: 'center', gap: 6 },
+  barTrack: { flex: 1, width: '100%', maxWidth: 36, justifyContent: 'flex-end' },
+  bar: { width: '100%', borderTopLeftRadius: 8, borderTopRightRadius: 8, borderBottomLeftRadius: 3, borderBottomRightRadius: 3 },
+  barLabel: { fontVariant: ['tabular-nums'] },
+  split2: { flexDirection: 'row', gap: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: color.line },
 });

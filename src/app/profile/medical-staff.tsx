@@ -13,6 +13,9 @@ import Txt from "@/ds/Txt";
 import {
   Address,
   AddressFields,
+  DateOfBirthField,
+  dobError,
+  dobToIso,
   cleanEducation,
   Education,
   EducationEditor,
@@ -38,6 +41,7 @@ export default function DoctorProfileWizard() {
   const [phoneOk, setPhoneOk] = useState(false);
   const [role, setRole] = useState("");
   const [experience, setExperience] = useState("");
+  const [dob, setDob] = useState("");
   const [address, setAddress] = useState<Address>({ currentAddress: "", city: "", state: "", pincode: "" });
   const [education, setEducation] = useState<Education[]>([]);
   const [skills, setSkills] = useState<string[]>([]);
@@ -52,6 +56,8 @@ export default function DoctorProfileWizard() {
       if (!phoneOk) e.phone = "Verify your mobile number to continue.";
       if (!role) e.role = "Choose your role.";
       if (!experience) e.experience = "Choose your experience.";
+      const d = dobError(dob);
+      if (d) e.dob = d;
     }
     if (n === 2) {
       if (!address.currentAddress.trim()) e.currentAddress = "Enter your address.";
@@ -79,6 +85,7 @@ export default function DoctorProfileWizard() {
         phoneNumber: formatPhone(phone),
         jobRole: role,
         experience,
+        ...(dobToIso(dob) ? { dateOfBirth: dobToIso(dob) } : {}),
         currentAddress: address.currentAddress.trim(),
         city: address.city.trim(),
         state: address.state,
@@ -147,6 +154,7 @@ export default function DoctorProfileWizard() {
             icon="time"
             placeholder="How many years?"
           />
+          <DateOfBirthField value={dob} onChange={setDob} error={errors.dob} />
         </>
       ) : step === 2 ? (
         <AddressFields value={address} onChange={setAddress} errors={errors as any} />

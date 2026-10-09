@@ -313,6 +313,18 @@ export const profileAPI = {
     return response.data;
   },
 
+  // Doctor preferences: { notifications: { offers, reminders, support, marketing }, language: 'en'|'hi'|'mr', maxDistanceKm | null }
+  getPreferences: async () => {
+    const response = await api.get('/api/profile/preferences');
+    return response.data;
+  },
+
+  // only the fields sent are saved; maxDistanceKm: null removes the limit
+  updatePreferences: async (changes) => {
+    const response = await api.patch('/api/profile/preferences', changes);
+    return response.data;
+  },
+
   // Check profile completion status
   checkProfileStatus: async () => {
     const response = await api.get('/api/profile/status');
@@ -355,8 +367,9 @@ export const profileAPI = {
   },
 
   // Get earnings data for dashboard
-  getEarnings: async () => {
-    const response = await api.get('/api/dashboard/earnings');
+  // params: { period: 'week' | 'month', from?: 'YYYY-MM-DD', to?: 'YYYY-MM-DD' } adds a series and paid/pending for the range
+  getEarnings: async (params) => {
+    const response = await api.get('/api/dashboard/earnings', params ? { params } : undefined);
     return response.data;
   },
 
@@ -486,6 +499,13 @@ export const profileAPI = {
 
 // Duty API calls
 export const dutyAPI = {
+  // Price limits and market rates for hospitals:
+  // { minTotal, maxTotal, minHours, maxHours, recommendations: { rmo: { casualty: { total, hours }, icu: {...} } } }
+  getPricing: async () => {
+    const response = await api.get('/api/hospitals/current/pricing');
+    return response.data;
+  },
+
   // Create duty (for hospitals)
   createDuty: async (dutyData) => {
     const response = await api.post('/api/hospitals/current/duties', dutyData);
@@ -493,17 +513,19 @@ export const dutyAPI = {
     return response.data;
   },
 
-  requestStartOtp: async (dutyId) => {
-    const response = await api.post(`/api/duties/${dutyId}/request-start-otp`);
+  // coords: { latitude, longitude } from the phone, used when the live position is missing or stale
+  requestStartOtp: async (dutyId, coords) => {
+    const response = await api.post(`/api/duties/${dutyId}/request-start-otp`, coords ? { latitude: coords.latitude, longitude: coords.longitude } : undefined);
     return response.data;
   },
  
   // POST /api/duties/:id/verify-start-otp
   // Body: { otp: "123456" }
   // On success, backend should flip duty status to "in-progress".
-  verifyStartOtp: async (dutyId, otp) => {
+  verifyStartOtp: async (dutyId, otp, coords) => {
     const response = await api.post(`/api/duties/${dutyId}/verify-start-otp`, {
       otp,
+      ...(coords ? { latitude: coords.latitude, longitude: coords.longitude } : {}),
     });
     return response.data;
   },
@@ -1336,8 +1358,9 @@ export const dutyCalendarAPI = {
   //   isOvernightDuty, continuation, slots, filled, duties: [{ dutyId, status, urgency, offeredRate, relistCount, staff | null }] }] }
   // Staff -> { date, duties: [{ dutyId, status, staffRole, dutySubType, startTime, endTime, isOvernightDuty,
   //   continuation, urgency, offeredRate, totalPayment, hospital: { id, name, address, city, state } }] }
-  getDay: async (date) => {
-    const response = await api.get('/api/duties/calendar-day', { params: { date } });
+  // include 'open' (staff) adds open: [{ dutyId, staffRole, ..., distanceKm (straight line), hospital }] for that date
+  getDay: async (date, include) => {
+    const response = await api.get('/api/duties/calendar-day', { params: include ? { date, include } : { date } });
     return response.data;
   },
 
@@ -1535,6 +1558,13 @@ export const demoAccountAPI = {
 export const accountAPI = {
   // GET /api/account/deletion -> { scheduled, requestedAt, scheduledFor, graceDays }
   // token: for the public delete-account page, which signs in without saving a session
+  // GET /api/account/deletion/preview -> { upcomingDuties, dutiesUnderWay, activeApplications, openVacancies,
+  //   canDeleteNow, blockedReason, alreadyScheduled, scheduledFor, graceDays } (changes nothing)
+  getDeletionPreview: async () => {
+    const response = await api.get('/api/account/deletion/preview');
+    return response.data;
+  },
+
   getDeletion: async (token) => {
     const response = await api.get('/api/account/deletion', token ? { headers: { Authorization: `Bearer ${token}` }, skipAuthRedirect: true } : {});
     return response.data;
@@ -1829,6 +1859,28 @@ export const adminAPI = {
 
 
   // Get a single medical staff member by their ID
+  // Identity checks: whether a doctor's or hospital's documents agree with each other and the profile
+  /** @param {{ status?: string, severity?: string, role?: string, page?: number, limit?: number }} [opts] */
+  getIdentityChecks: async ({ status = 'flagged', severity = undefined, role = undefined, page = 1, limit = 20 } = {}) => {
+    const response = await api.get('/api/admin/identity-checks', { params: { status, severity, role, page, limit } });
+    return response.data;
+  },
+
+  getIdentityCheck: async (userId) => {
+    const response = await api.get(`/api/admin/identity-checks/${userId}`);
+    return response.data;
+  },
+
+  recheckIdentity: async (userId) => {
+    const response = await api.post(`/api/admin/identity-checks/${userId}/recheck`);
+    return response.data;
+  },
+
+  dismissIdentityCheck: async (userId, note) => {
+    const response = await api.post(`/api/admin/identity-checks/${userId}/dismiss`, { note });
+    return response.data;
+  },
+
   getMedicalStaffById: async (id) => {
     const response = await api.get(`/api/admin/medical-staff/${id}`);
     return response.data;

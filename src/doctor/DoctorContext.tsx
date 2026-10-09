@@ -1,7 +1,6 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
-import { addDays, todayKey } from '@/constant/dutyCalendar';
-import { documentAPI, dutyAPI, dutyCalendarAPI, profileAPI } from '@/service/api';
+import { documentAPI, dutyAPI, profileAPI } from '@/service/api';
 import { snack } from '@/ds/Snackbar';
 import { useDashboardLocationTracking } from '@/hooks/useDashboardLocationTracking';
 import { useLocationTracker } from '@/hooks/useLocationTracker';
@@ -15,6 +14,12 @@ export type Verification = 'pending' | 'verified' | 'rejected' | null;
 export type DoctorProfile = {
   id?: string;
   fullName?: string;
+  // "YYYY-MM-DD" or null; only in the doctor's own profile
+  dateOfBirth?: string | null;
+  isPhoneVerified?: boolean;
+  // only when the profile is rejected
+  rejectionReason?: string | null;
+  verifiedAt?: string | null;
   profilePicture?: string | null;
   jobRole?: string;
   currentAddress?: string;
@@ -81,45 +86,6 @@ const DoctorContext = createContext<Ctx | null>(null);
 const EMPTY: DutyBuckets = { offers: [], upcoming: [], active: [], loaded: false, offersError: null, mineError: null, offersBlocked: false };
 
 const isAvailabilityBlock = (err: any) => err?.response?.status === 403 && /availability/i.test(err?.response?.data?.message ?? '');
-
-// While availability is off the server refuses my-upcoming and ongoing, but the doctor still has
-// accepted duties. The calendar works with availability off, so read them from there.
-async function mineFromCalendar(): Promise<Duty[]> {
-  const from = addDays(todayKey(), -1);
-  const to = addDays(todayKey(), 60);
-  const res = await dutyCalendarAPI.getCounts(from, to);
-  const rows: any[] = res?.days ?? res?.data ?? [];
-  const dates = rows
-    .filter((r) => (r?.mine?.assigned ?? 0) + (r?.mine?.active ?? 0) > 0)
-    .map((r) => r.date)
-    .slice(0, 12);
-  const days = await Promise.all(dates.map((d) => dutyCalendarAPI.getDay(d).catch(() => null)));
-  const out: Duty[] = [];
-  days.forEach((day: any, i) => {
-    for (const r of day?.duties ?? day?.data?.duties ?? []) {
-      if (r.continuation) continue;
-      out.push(
-        toDuty({
-          _id: r.dutyId,
-          status: r.status,
-          staffRole: r.staffRole,
-          dutySubType: r.dutySubType,
-          startTime: r.startTime,
-          endTime: r.endTime,
-          isOvernightDuty: r.isOvernightDuty,
-          urgency: r.urgency,
-          offeredRate: r.offeredRate,
-          totalPayment: r.totalPayment,
-          date: `${dates[i]}T00:00:00+05:30`,
-          hospital: r.hospital
-            ? { _id: r.hospital.id, hospitalLegalName: r.hospital.name, currentAddress: r.hospital.address, city: r.hospital.city }
-            : null,
-        })
-      );
-    }
-  });
-  return out;
-}
 
 const byStart = (a: Duty, b: Duty) => (a.start?.getTime() ?? 0) - (b.start?.getTime() ?? 0);
 
@@ -203,16 +169,8 @@ export function DoctorProvider({ children }: { children: ReactNode }) {
           mine.push(d);
         }
       }
-      const blocked = [upcomingR, ongoingR].some((r) => r.status === 'rejected' && isAvailabilityBlock(r.reason));
-      if (blocked) {
-        try {
-          const fromCal = await mineFromCalendar();
-          const ids = new Set(mine.map((d) => d.id));
-          mine = [...mine, ...fromCal.filter((d) => !ids.has(d.id))];
-        } catch (e) {
-          mineError = apiMessage(e, "Your duties didn't load.");
-        }
-      } else if (upcomingR.status === 'rejected' && ongoingR.status === 'rejected') {
+      // availability only stops new offers; accepted and ongoing duties always load (server rule since 9 Oct)
+      if (upcomingR.status === 'rejected' && ongoingR.status === 'rejected') {
         mineError = apiMessage(upcomingR.reason, "Your duties didn't load.");
       }
 

@@ -3,6 +3,10 @@ import { autoRelistAPI, dutyAPI } from '@/service/api';
 import { snack } from '@/ds/Snackbar';
 import { useDoctor } from './DoctorContext';
 import { dutyErrorMessage } from './duty';
+import { currentPosition } from './permissions';
+
+// The phone's position for the start code (the server falls back to it when the live one is old).
+const here = () => currentPosition().catch(() => null);
 
 type Busy = null | 'accept' | 'enroute' | 'startOtp' | 'verifyStart' | 'endOtp' | 'resend' | 'cancel';
 
@@ -35,10 +39,9 @@ export function useDutyActions(onChange?: () => void) {
       run(
         'startOtp',
         async () => {
-          // the server checks a position no older than 90 s, so send one now
-          await shareLocationNow().catch(() => {});
-          await new Promise((r) => setTimeout(r, 600));
-          return dutyAPI.requestStartOtp(id);
+          const coords = await here();
+          shareLocationNow().catch(() => {});
+          return dutyAPI.requestStartOtp(id, coords ?? undefined);
         },
         'Code sent to the duty desk. Ask them to read it to you.',
         "The code wasn't sent."
@@ -46,7 +49,7 @@ export function useDutyActions(onChange?: () => void) {
     verifyStartOtp: async (id: string, otp: string) => {
       setBusy('verifyStart');
       try {
-        await dutyAPI.verifyStartOtp(id, otp);
+        await dutyAPI.verifyStartOtp(id, otp, (await here()) ?? undefined);
         snack("You're on duty. The hospital has been told.", { tone: 'success' });
         await refreshDuties();
         onChange?.();

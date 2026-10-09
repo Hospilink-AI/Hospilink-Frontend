@@ -98,6 +98,7 @@ const ION_TO_TABLER: Record<string, IconName> = {
   'globe-outline': 'nearby',
   'business': 'hospital',
   'navigate': 'navigate',
+  'id-card-outline': 'id',
   'add-circle': 'plus',
   'checkmark-done-outline': 'check',
   'checkmark-done-circle': 'checkCircle',

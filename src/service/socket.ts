@@ -101,6 +101,9 @@ class SocketService {
         reconnection: true,
         reconnectionAttempts: RECONNECTION_ATTEMPTS,
         reconnectionDelay: RECONNECTION_DELAY,
+        // spread reconnects after a server deploy
+        randomizationFactor: 1,
+        reconnectionDelayMax: 30000,
         timeout: 20000,
         forceNew: false,
         upgrade: true,

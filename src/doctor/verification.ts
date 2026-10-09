@@ -48,7 +48,8 @@ export function summarize(docs: Doc[] | null, verification: 'pending' | 'verifie
 }
 
 /** One line for the reminder strip and the hero, by stage. */
-export function verifyHeadline(v: VerifySummary): { title: string; body: string; action?: string } {
+/** `reason`: the profile's rejection reason from the server, shown in place of the general line. */
+export function verifyHeadline(v: VerifySummary, reason?: string | null): { title: string; body: string; action?: string } {
   switch (v.stage) {
     case 'docs': {
       const n = v.missing + v.rejected;
@@ -72,7 +73,7 @@ export function verifyHeadline(v: VerifySummary): { title: string; body: string;
     case 'rejected':
       return {
         title: 'Your verification needs changes',
-        body: 'Open your documents to see what to change, then upload again.',
+        body: reason?.trim() ? reason.trim() : 'Open your documents to see what to change, then upload again.',
         action: 'See what to change',
       };
     default:

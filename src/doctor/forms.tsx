@@ -117,6 +117,50 @@ export function SelectField({
   );
 }
 
+// Date of birth: typed as DD/MM/YYYY, sent as YYYY-MM-DD (the server accepts ages 18 to 80).
+export const dobFromIso = (iso?: string | null) => {
+  const m = iso ? /^(\d{4})-(\d{2})-(\d{2})/.exec(iso) : null;
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : '';
+};
+
+export const dobToIso = (dmy: string) => {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(dmy.trim());
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : null;
+};
+
+/** Error for a typed date of birth, or null when it's empty (optional) or valid. */
+export function dobError(dmy: string): string | null {
+  if (!dmy.trim()) return null;
+  const iso = dobToIso(dmy);
+  const d = iso ? new Date(`${iso}T00:00:00Z`) : null;
+  if (!iso || !d || isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== iso) return 'Enter a real date as DD/MM/YYYY.';
+  const age = (Date.now() - d.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+  if (age < 18 || age > 80) return 'Check the year: you need to be between 18 and 80.';
+  return null;
+}
+
+export function DateOfBirthField({ value, onChange, error }: { value: string; onChange: (dmy: string) => void; error?: string | null }) {
+  const type = (t: string) => {
+    const d = t.replace(/\D/g, '').slice(0, 8);
+    onChange([d.slice(0, 2), d.slice(2, 4), d.slice(4)].filter(Boolean).join('/'));
+  };
+  return (
+    <Field
+      label="Date of birth"
+      optional
+      icon="calendar"
+      placeholder="DD/MM/YYYY"
+      value={value}
+      onChangeText={type}
+      keyboardType="number-pad"
+      maxLength={10}
+      error={error}
+      hint={error ? undefined : 'As on your Aadhaar and PAN. Only HospiLink sees it; hospitals never do.'}
+      autoComplete="birthdate-full"
+    />
+  );
+}
+
 export type Address = { currentAddress: string; city: string; state: string; pincode: string };
 
 /** Home address, with a search and "use where I am" that fill the fields from the backend's map lookup. */
