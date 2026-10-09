@@ -1,7 +1,6 @@
 import { TIcon, useThemedStyles } from "@/ds/themed";
 import { Theme, useTheme } from "@/ds/theme";
 import RatingSummary, { Stars } from "@/component/rating/RatingSummary";
-import { COLORS } from "@/constant/colors";
 import { formatDate, roleLabel } from "@/constant/jobs";
 import { profileAPI, reviewAPI } from "@/service/api";
 import PersonActions from "@/component/safety/PersonActions";

@@ -7,7 +7,6 @@ import { color } from "@/ds/tokens";
 import { TIcon, useThemedStyles } from "@/ds/themed";
 import { Theme, useTheme } from "@/ds/theme";
 import GrievanceOfficerCard from "@/component/support/GrievanceOfficerCard";
-import { COLORS } from "@/constant/colors";
 import { chatbotAPI } from "@/service/api";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";

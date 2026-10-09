@@ -1,7 +1,6 @@
 import { TIcon, useThemedStyles } from "@/ds/themed";
 import { Theme, useTheme } from "@/ds/theme";
 import EvidencePicker from "@/component/support/EvidencePicker";
-import { COLORS } from "@/constant/colors";
 import { apiError, formatDate, formatTime } from "@/constant/jobs";
 import { BOT_STARTERS, CHAT_LANGUAGES, CHAT_UI, PickedFile, TICKET_TEXT_MAX, splitButton } from "@/constant/support";
 import { chatbotAPI } from "@/service/api";

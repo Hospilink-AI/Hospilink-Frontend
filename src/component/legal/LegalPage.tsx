@@ -1,6 +1,5 @@
 import { Theme, ThemeProvider, useTheme } from "@/ds/theme";
 import { TIcon, useThemedStyles } from "@/ds/themed";
-import { COLORS } from "@/constant/colors";
 import { useRouter } from "expo-router";
 import React from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";

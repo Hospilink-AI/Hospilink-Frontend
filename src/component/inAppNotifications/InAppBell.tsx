@@ -1,6 +1,5 @@
 import { TIcon, useThemedStyles } from "@/ds/themed";
 import { Theme, useTheme } from "@/ds/theme";
-import { COLORS } from "@/constant/colors";
 import { baseOf, StoredNotification } from "@/constant/inAppNotifications";
 import { HEADER_CONTENT_HEIGHT } from "@/constant/layout";
 import { useInAppNotifications } from "@/context/InAppNotificationsContext";

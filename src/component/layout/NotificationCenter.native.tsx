@@ -13,6 +13,8 @@ import {
 } from "react-native";
 import { adminAPI } from "@/service/api";
 import { useSocket } from "../../context/SocketContext";
+import { TIcon, useThemedStyles } from "@/ds/themed";
+import { Theme, useTheme } from "@/ds/theme";
 
 // ─── Constants ────────────────────────────────────────────────────
 const PAGE_SIZE = 10;
@@ -131,6 +133,8 @@ const TABS: { key: TabKey; label: string }[] = [
 
 // ─── Component ────────────────────────────────────────────────────
 export default function NotificationsCenterScreen() {
+  const styles = useStylesThemed();
+  const th = useTheme();
   const { socket } = useSocket();
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -321,15 +325,15 @@ export default function NotificationsCenterScreen() {
             disabled={markingAll || unreadCount === 0}
           >
             {markingAll ? (
-              <ActivityIndicator size="small" color="#2563eb" />
+              <ActivityIndicator size="small" color={th.hex("#2563eb")} />
             ) : (
               <>
-                <Ionicons
-                  name="checkmark-done-outline"
+                <TIcon
+                  ion="checkmark-done-outline"
                   size={14}
-                  color={unreadCount === 0 ? "#cbd5e1" : "#2563eb"}
+                  color={unreadCount === 0 ? th.hex("#cbd5e1") : th.hex("#2563eb")}
                 />
-                <Text style={[styles.actionBtnText, unreadCount === 0 && { color: "#cbd5e1" }]}>
+                <Text style={[styles.actionBtnText, unreadCount === 0 && { color: th.hex("#cbd5e1") }]}>
                   Mark All as Read
                 </Text>
               </>
@@ -337,7 +341,7 @@ export default function NotificationsCenterScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.actionBtn, styles.actionBtnDanger]} onPress={handleClearAll}>
-            <Ionicons name="trash-outline" size={14} color="#dc2626" />
+            <TIcon ion="trash-outline" size={14} color={th.hex("#dc2626")} />
             <Text style={styles.actionBtnDangerText}>Clear All</Text>
           </TouchableOpacity>
         </View>
@@ -367,12 +371,12 @@ export default function NotificationsCenterScreen() {
         {/* ── Notification list ── */}
         {loading ? (
           <View style={styles.centeredState}>
-            <ActivityIndicator size="large" color="#2563eb" />
+            <ActivityIndicator size="large" color={th.hex("#2563eb")} />
             <Text style={styles.stateText}>Loading notifications…</Text>
           </View>
         ) : error ? (
           <View style={styles.centeredState}>
-            <Ionicons name="cloud-offline-outline" size={32} color="#94a3b8" />
+            <TIcon ion="cloud-offline-outline" size={32} color={th.hex("#94a3b8")} />
             <Text style={styles.stateText}>{error}</Text>
             <TouchableOpacity onPress={() => fetchNotifications(true, 0)} style={styles.retryBtn}>
               <Text style={styles.retryText}>Retry</Text>
@@ -380,7 +384,7 @@ export default function NotificationsCenterScreen() {
           </View>
         ) : filteredNotifications.length === 0 ? (
           <View style={styles.centeredState}>
-            <Ionicons name="notifications-off-outline" size={36} color="#cbd5e1" />
+            <TIcon ion="notifications-off-outline" size={36} color={th.hex("#cbd5e1")} />
             <Text style={styles.stateText}>No notifications here</Text>
           </View>
         ) : (
@@ -410,7 +414,7 @@ export default function NotificationsCenterScreen() {
                     {isPending ? (
                       <ActivityIndicator size="small" color={priority.color} />
                     ) : (
-                      <Ionicons name={priority.icon} size={11} color={priority.color} />
+                      <TIcon ion={priority.icon} size={11} color={priority.color} />
                     )}
                     <Text style={[styles.priorityText, { color: priority.color }]}>
                       {priority.label}
@@ -435,7 +439,7 @@ export default function NotificationsCenterScreen() {
                 disabled={loadingMore}
               >
                 {loadingMore ? (
-                  <ActivityIndicator size="small" color="#64748b" />
+                  <ActivityIndicator size="small" color={th.hex("#64748b")} />
                 ) : (
                   <Text style={styles.loadMoreText}>Load older notifications</Text>
                 )}
@@ -450,10 +454,10 @@ export default function NotificationsCenterScreen() {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────
-const styles = StyleSheet.create({
+const make_styles = (t: Theme) => ({
   screen: {
     flex: 1,
-    backgroundColor: "#f5f6fa",
+    backgroundColor: t.hex("#f5f6fa"),
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -464,13 +468,13 @@ const styles = StyleSheet.create({
   // ── Page header ──
   pageTitle: {
     fontSize: 24,
-    fontWeight: "800",
-    color: "#0f172a",
+    ...t.f("800"),
+    color: t.hex("#0f172a"),
     marginBottom: 4,
   },
-  pageSub: {
+  pageSub: { ...t.f(),
     fontSize: 13,
-    color: "#64748b",
+    color: t.hex("#64748b"),
     lineHeight: 18,
     marginBottom: 20,
   },
@@ -478,8 +482,8 @@ const styles = StyleSheet.create({
   // ── Section label ──
   sectionLabel: {
     fontSize: 13,
-    fontWeight: "700",
-    color: "#0f172a",
+    ...t.f("700"),
+    color: t.hex("#0f172a"),
     marginBottom: 10,
   },
 
@@ -491,40 +495,40 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: t.hex("#fff"),
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: t.hex("#e2e8f0"),
     ...Platform.select({
-      ios:     { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
+      ios:     { shadowColor: t.hex("#000"), shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
       android: { elevation: 2 },
       web:     { boxShadow: "0 1px 4px rgba(0,0,0,0.05)" } as any,
     }),
   },
   statNum: {
     fontSize: 30,
-    fontWeight: "800",
-    color: "#0f172a",
+    ...t.f("800"),
+    color: t.hex("#0f172a"),
     marginBottom: 4,
   },
   statCardLabel: {
     fontSize: 11,
-    fontWeight: "600",
-    color: "#64748b",
+    ...t.f("600"),
+    color: t.hex("#64748b"),
     letterSpacing: 0.4,
   },
 
   // ── Availability card ──
   availCard: {
-    backgroundColor: "#2563eb",
+    backgroundColor: t.hex("#2563eb"),
     borderRadius: 16,
     padding: 18,
     marginBottom: 14,
   },
   availLabel: {
     fontSize: 10,
-    fontWeight: "700",
+    ...t.f("700"),
     color: "rgba(255,255,255,0.7)",
     letterSpacing: 0.8,
     marginBottom: 8,
@@ -537,10 +541,10 @@ const styles = StyleSheet.create({
   },
   availNum: {
     fontSize: 34,
-    fontWeight: "800",
-    color: "#fff",
+    ...t.f("800"),
+    color: t.hex("#fff"),
   },
-  availChange: {
+  availChange: { ...t.f(),
     fontSize: 12,
     color: "rgba(255,255,255,0.75)",
   },
@@ -553,10 +557,10 @@ const styles = StyleSheet.create({
   },
   availBarFill: {
     height: "100%",
-    backgroundColor: "#fff",
+    backgroundColor: t.hex("#fff"),
     borderRadius: 3,
   },
-  availNote: {
+  availNote: { ...t.f(),
     fontSize: 12,
     color: "rgba(255,255,255,0.85)",
     lineHeight: 18,
@@ -576,23 +580,23 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: "#fff",
+    backgroundColor: t.hex("#fff"),
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: t.hex("#e2e8f0"),
   },
   actionBtnText: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#2563eb",
+    ...t.f("600"),
+    color: t.hex("#2563eb"),
   },
   actionBtnDanger: {
-    borderColor: "#fecaca",
-    backgroundColor: "#fef2f2",
+    borderColor: t.hex("#fecaca"),
+    backgroundColor: t.hex("#fef2f2"),
   },
   actionBtnDangerText: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#dc2626",
+    ...t.f("600"),
+    color: t.hex("#dc2626"),
   },
 
   // ── Tabs ──
@@ -613,12 +617,12 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 14,
-    color: "#94a3b8",
-    fontWeight: "500",
+    color: t.hex("#94a3b8"),
+    ...t.f("500"),
   },
   tabTextActive: {
-    color: "#2563eb",
-    fontWeight: "700",
+    color: t.hex("#2563eb"),
+    ...t.f("700"),
   },
   tabUnderline: {
     position: "absolute",
@@ -626,7 +630,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 2,
-    backgroundColor: "#2563eb",
+    backgroundColor: t.hex("#2563eb"),
     borderRadius: 1,
   },
 
@@ -635,20 +639,20 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   notifCard: {
-    backgroundColor: "#fff",
+    backgroundColor: t.hex("#fff"),
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: t.hex("#e2e8f0"),
     position: "relative",
     ...Platform.select({
-      ios:     { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4 },
+      ios:     { shadowColor: t.hex("#000"), shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4 },
       android: { elevation: 2 },
       web:     { boxShadow: "0 1px 4px rgba(0,0,0,0.06)" } as any,
     }),
   },
   notifCardUnread: {
-    backgroundColor: "#fafbff",
+    backgroundColor: t.hex("#fafbff"),
   },
   unreadDot: {
     position: "absolute",
@@ -657,7 +661,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#2563eb",
+    backgroundColor: t.hex("#2563eb"),
   },
   priorityBadge: {
     flexDirection: "row",
@@ -671,39 +675,39 @@ const styles = StyleSheet.create({
   },
   priorityText: {
     fontSize: 11,
-    fontWeight: "700",
+    ...t.f("700"),
     letterSpacing: 0.4,
   },
   notifTitle: {
     fontSize: 15,
-    fontWeight: "700",
-    color: "#0f172a",
+    ...t.f("700"),
+    color: t.hex("#0f172a"),
     marginBottom: 4,
   },
-  notifMsg: {
+  notifMsg: { ...t.f(),
     fontSize: 13,
-    color: "#64748b",
+    color: t.hex("#64748b"),
     lineHeight: 19,
     marginBottom: 8,
   },
-  notifTime: {
+  notifTime: { ...t.f(),
     fontSize: 12,
-    color: "#94a3b8",
+    color: t.hex("#94a3b8"),
   },
 
   // ── Load more ──
   loadMoreBtn: {
     alignItems: "center",
     paddingVertical: 14,
-    backgroundColor: "#fff",
+    backgroundColor: t.hex("#fff"),
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: t.hex("#e2e8f0"),
   },
   loadMoreText: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#64748b",
+    ...t.f("600"),
+    color: t.hex("#64748b"),
   },
 
   // ── States ──
@@ -712,25 +716,26 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 10,
     paddingVertical: 48,
-    backgroundColor: "#fff",
+    backgroundColor: t.hex("#fff"),
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: t.hex("#e2e8f0"),
   },
-  stateText: {
+  stateText: { ...t.f(),
     fontSize: 13,
-    color: "#94a3b8",
+    color: t.hex("#94a3b8"),
     textAlign: "center",
   },
   retryBtn: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: "#eff6ff",
+    backgroundColor: t.hex("#eff6ff"),
     borderRadius: 8,
   },
   retryText: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#2563eb",
+    ...t.f("600"),
+    color: t.hex("#2563eb"),
   },
 });
+const useStylesThemed = () => useThemedStyles(make_styles as any) as any;

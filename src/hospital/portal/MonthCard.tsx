@@ -2,16 +2,16 @@ import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Dots, MonthGrid } from '@/component/dutyCalendar/CalendarParts';
-import { addDays, addMonths, DOT_COLORS, DUTY_CALENDAR_ENABLED, endOfMonth, hospitalDots, HospitalDayRow, monthTitle, startOfMonth, todayKey } from '@/constant/dutyCalendar';
+import { addDays, addMonths, DUTY_CALENDAR_ENABLED, endOfMonth, hospitalDots, HospitalDayRow, monthTitle, startOfMonth, todayKey } from '@/constant/dutyCalendar';
 import { useCalendarCounts } from '@/hooks/useCalendarCounts';
 import Icon from '@/ds/Icon';
 import Txt from '@/ds/Txt';
 import { color, depth, radius } from '@/ds/tokens';
 
 const LEGEND = [
-  { c: DOT_COLORS.filled, label: 'Filled' },
-  { c: DOT_COLORS.open, label: 'Open' },
-  { c: DOT_COLORS.urgent, label: 'Open, starts within 24 h' },
+  { c: color.success, label: 'Filled' },
+  { c: color.warning, label: 'Open' },
+  { c: color.danger, label: 'Open, starts within 24 h' },
 ];
 
 /** The month at a glance on the portal Overview: fill dots per day; a day opens the full calendar there. */

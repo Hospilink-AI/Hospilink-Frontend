@@ -1,8 +1,9 @@
-import { COLORS } from "@/constant/colors";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useState } from "react";
 import { Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { TIcon, useThemedStyles } from "@/ds/themed";
+import { Theme, useTheme } from "@/ds/theme";
 
 interface Props {
   mode: "date" | "time";
@@ -36,6 +37,8 @@ const merge = (mode: "date" | "time", base: Date | null, picked: Date) => {
 };
 
 export default function DateTimeField({ mode, value, onChange, placeholder, minimumDate, error }: Props) {
+  const styles = useStylesThemed();
+  const th = useTheme();
   const [show, setShow] = useState(false);
   const [temp, setTemp] = useState<Date>(value ?? new Date());
   const icon = mode === "date" ? "calendar-outline" : "time-outline";
@@ -66,8 +69,8 @@ export default function DateTimeField({ mode, value, onChange, placeholder, mini
             }}
             style={{
               flex: 1, border: "none", outline: "none", fontSize: 13,
-              color: value ? COLORS.text : "#9CA3AF", background: "transparent",
-              fontFamily: "inherit", minWidth: 0, width: "100%",
+              color: value ? th.c.text : th.hex("#9CA3AF"), background: "transparent",
+              fontFamily: th.v2 ? (th.f().fontFamily as string) : "inherit", minWidth: 0, width: "100%",
             }}
           />
         </View>
@@ -89,7 +92,7 @@ export default function DateTimeField({ mode, value, onChange, placeholder, mini
         <Text style={[styles.valueText, !value && styles.placeholder]}>
           {value ? displayValue(mode, value) : hint}
         </Text>
-        <Ionicons name={icon} size={16} color={COLORS.subText} />
+        <TIcon ion={icon} size={16} color={th.c.subText} />
       </TouchableOpacity>
       {!!error && <Text style={styles.errorText}>{error}</Text>}
 
@@ -131,7 +134,7 @@ export default function DateTimeField({ mode, value, onChange, placeholder, mini
               minimumDate={minimumDate}
               minuteInterval={mode === "time" ? 15 : undefined}
               onChange={(_e: any, picked?: Date) => picked && setTemp(picked)}
-              style={{ backgroundColor: "#fff" }}
+              style={{ backgroundColor: th.hex("#fff") }}
             />
           </View>
         </View>
@@ -140,33 +143,34 @@ export default function DateTimeField({ mode, value, onChange, placeholder, mini
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (t: Theme) => ({
   input: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: t.c.border,
     borderRadius: 8,
-    backgroundColor: COLORS.white,
+    backgroundColor: t.c.surface,
     paddingHorizontal: 12,
     height: 42,
   },
-  inputError: { borderColor: COLORS.red },
-  valueText: { fontSize: 13, color: COLORS.text },
-  placeholder: { color: "#9CA3AF" },
-  errorText: { fontSize: 11, color: COLORS.red, marginTop: 4 },
+  inputError: { borderColor: t.c.danger },
+  valueText: { ...t.f(), fontSize: 13, color: t.c.text },
+  placeholder: { color: t.hex("#9CA3AF") },
+  errorText: { ...t.f(), fontSize: 11, color: t.c.danger, marginTop: 4 },
   overlay: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.35)" },
-  sheet: { backgroundColor: "#fff", borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingBottom: 24 },
+  sheet: { backgroundColor: t.hex("#fff"), borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingBottom: 24 },
   sheetHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: t.c.border,
   },
-  sheetTitle: { fontSize: 15, fontWeight: "600", color: COLORS.text },
-  cancel: { fontSize: 15, color: COLORS.subText },
-  done: { fontSize: 15, fontWeight: "700", color: COLORS.primary },
+  sheetTitle: { fontSize: 15, ...t.f("600"), color: t.c.text },
+  cancel: { ...t.f(), fontSize: 15, color: t.c.subText },
+  done: { fontSize: 15, ...t.f("700"), color: t.c.primary },
 });
+const useStylesThemed = () => useThemedStyles(make_styles as any) as any;

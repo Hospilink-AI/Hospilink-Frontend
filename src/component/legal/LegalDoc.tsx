@@ -1,6 +1,5 @@
 import { Theme, useTheme } from "@/ds/theme";
 import { useThemedStyles } from "@/ds/themed";
-import { COLORS } from "@/constant/colors";
 import React from "react";
 import { Linking, StyleSheet, Text, View } from "react-native";
 

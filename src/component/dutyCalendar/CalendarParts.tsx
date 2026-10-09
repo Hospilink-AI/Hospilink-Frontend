@@ -37,10 +37,11 @@ export function useSwipe(onPrev: () => void, onNext: () => void) {
 // ─── Dots ───────────────────────────────────────────────────────────────────
 export function Dots({ colors, more }: { colors: string[]; more: number }) {
   const styles = useStyles();
+  const t = useTheme();
   return (
     <View style={styles.dots}>
       {colors.map((c, i) => (
-        <View key={i} style={[styles.dot, { backgroundColor: c }]} />
+        <View key={i} style={[styles.dot, { backgroundColor: t.hex(c) }]} />
       ))}
       {more > 0 && <Text style={styles.more}>+{more}</Text>}
     </View>
@@ -49,11 +50,12 @@ export function Dots({ colors, more }: { colors: string[]; more: number }) {
 
 export function Legend({ items }: { items: { color: string; label: string }[] }) {
   const styles = useStyles();
+  const t = useTheme();
   return (
     <View style={styles.legend}>
       {items.map((i) => (
         <View key={i.label} style={styles.legendItem}>
-          <View style={[styles.dot, { backgroundColor: i.color }]} />
+          <View style={[styles.dot, { backgroundColor: t.hex(i.color) }]} />
           <Text style={styles.legendText}>{i.label}</Text>
         </View>
       ))}
@@ -232,7 +234,7 @@ export function MonthGrid({
                 <Text
                   style={[
                     styles.gridNum,
-                    faded && { color: "#CBD5E1" },
+                    faded && { color: t.hex("#CBD5E1") },
                     key === today && styles.todayNum,
                     on && styles.onText,
                   ]}
@@ -268,8 +270,8 @@ export function Notice({ text, tone = "info" }: { text: string; tone?: "info" | 
   const th = useTheme();
   const tn = {
     info: { bg: th.v2 ? th.c.well : "#EFF6FF", fg: th.v2 ? "#2A4480" : "#1E40AF", icon: "information-circle-outline" },
-    warn: { bg: "#FFFBEB", fg: "#92400E", icon: "alert-circle-outline" },
-    error: { bg: "#FEF2F2", fg: "#B91C1C", icon: "alert-circle-outline" },
+    warn: { bg: th.hex("#FFFBEB"), fg: th.hex("#92400E"), icon: "alert-circle-outline" },
+    error: { bg: th.hex("#FEF2F2"), fg: th.hex("#B91C1C"), icon: "alert-circle-outline" },
   }[tone];
   return (
     <View style={[styles.notice, { backgroundColor: tn.bg }]}>

@@ -1,6 +1,5 @@
 import { TIcon, useThemedStyles } from "@/ds/themed";
 import { Theme, useTheme } from "@/ds/theme";
-import { COLORS } from "@/constant/colors";
 import { CATEGORY_LABELS, displayOf, iconFor, SEVERITY_STYLE, StoredNotification, timeAgo } from "@/constant/inAppNotifications";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";

@@ -16,6 +16,8 @@ import { useSocket } from "../../context/SocketContext";
 import { usePathname, useRouter } from "expo-router";
 import { notificationRoute, notificationTitle, supportNotificationConfig } from "@/constant/notificationLinks";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { TIcon, useThemedStyles } from "@/ds/themed";
+import { Theme, useTheme } from "@/ds/theme";
 
 // ─── Constants ────────────────────────────────────────────────────
 const PAGE_SIZE = 10;
@@ -181,6 +183,8 @@ const formatTime = (iso: string): string => {
 // ─── Component ────────────────────────────────────────────────────
 
 export default function NotificationsCenterScreen() {
+  const styles = useStylesThemed();
+  const th = useTheme();
   const { socket } = useSocket();
   // phones: header stacks, list takes the full width, summary sidebar is left out
   const { width } = useWindowDimensions();
@@ -470,13 +474,13 @@ export default function NotificationsCenterScreen() {
             disabled={markingAll || unreadCount === 0}
           >
             {markingAll ? (
-              <ActivityIndicator size="small" color="#2563eb" />
+              <ActivityIndicator size="small" color={th.hex("#2563eb")} />
             ) : (
               <>
-                <Ionicons
-                  name="checkmark-done-outline"
+                <TIcon
+                  ion="checkmark-done-outline"
                   size={14}
-                  color={unreadCount === 0 ? "#cbd5e1" : "#2563eb"}
+                  color={unreadCount === 0 ? th.hex("#cbd5e1") : th.hex("#2563eb")}
                 />
                 <Text
                   style={[
@@ -493,7 +497,7 @@ export default function NotificationsCenterScreen() {
             style={[styles.btn, styles.btnDanger]}
             onPress={handleClearAll}
           >
-            <Ionicons name="trash-outline" size={14} color="#a32d2d" />
+            <TIcon ion="trash-outline" size={14} color={th.hex("#a32d2d")} />
             <Text style={styles.btnTextDanger}>Clear All</Text>
           </TouchableOpacity>
         </View>
@@ -508,10 +512,10 @@ export default function NotificationsCenterScreen() {
             <View style={styles.urgentBanner}>
               <View style={styles.bannerLeft}>
                 <View style={styles.bannerTag}>
-                  <Ionicons
-                    name="warning-outline" as any
+                  <TIcon
+                    ion="warning-outline"
                     size={11}
-                    color="#fff"
+                    color={th.hex("#fff")}
                   />
                   <Text style={styles.bannerTagText}>
                     URGENT ACTION &nbsp;·&nbsp;{" "}
@@ -562,12 +566,12 @@ export default function NotificationsCenterScreen() {
           {/* Notifications list */}
           {loading ? (
             <View style={styles.centeredState}>
-              <ActivityIndicator size="large" color="#2563eb" />
+              <ActivityIndicator size="large" color={th.hex("#2563eb")} />
               <Text style={styles.stateText}>Loading notifications…</Text>
             </View>
           ) : error ? (
             <View style={styles.centeredState}>
-              <Ionicons name="cloud-offline-outline" size={32} color="#94a3b8" />
+              <TIcon ion="cloud-offline-outline" size={32} color={th.hex("#94a3b8")} />
               <Text style={styles.stateText}>{error}</Text>
               <TouchableOpacity
                 onPress={() => fetchNotifications(true, 0)}
@@ -578,10 +582,10 @@ export default function NotificationsCenterScreen() {
             </View>
           ) : filteredNotifications.length === 0 ? (
             <View style={styles.centeredState}>
-              <Ionicons
-                name="notifications-off-outline"
+              <TIcon
+                ion="notifications-off-outline"
                 size={36}
-                color="#cbd5e1"
+                color={th.hex("#cbd5e1")}
               />
               <Text style={styles.stateText}>No notifications here</Text>
             </View>
@@ -619,19 +623,19 @@ export default function NotificationsCenterScreen() {
                     <View
                       style={[
                         styles.iconWrap,
-                        { backgroundColor: config.bg },
+                        { backgroundColor: th.hex(config.bg) },
                       ]}
                     >
                       {isPending ? (
                         <ActivityIndicator
                           size="small"
-                          color={config.color}
+                          color={th.hex(config.color)}
                         />
                       ) : (
-                        <Ionicons
-                          name={config.icon}
+                        <TIcon
+                          ion={config.icon}
                           size={18}
-                          color={config.color}
+                          color={th.hex(config.color)}
                         />
                       )}
                     </View>
@@ -642,13 +646,13 @@ export default function NotificationsCenterScreen() {
                         <View
                           style={[
                             styles.badge,
-                            { backgroundColor: config.bg },
+                            { backgroundColor: th.hex(config.bg) },
                           ]}
                         >
                           <Text
                             style={[
                               styles.badgeText,
-                              { color: config.color },
+                              { color: th.hex(config.color) },
                             ]}
                           >
                             {config.label}
@@ -666,10 +670,10 @@ export default function NotificationsCenterScreen() {
                       </Text>
                       {item.payload.duty?.staffRole && (
                         <View style={styles.roleChip}>
-                          <Ionicons
-                            name="person-outline"
+                          <TIcon
+                            ion="person-outline"
                             size={10}
-                            color="#64748b"
+                            color={th.hex("#64748b")}
                           />
                           <Text style={styles.roleChipText}>
                             {item.payload.duty.staffRole
@@ -693,7 +697,7 @@ export default function NotificationsCenterScreen() {
                   disabled={loadingMore}
                 >
                   {loadingMore ? (
-                    <ActivityIndicator size="small" color="#64748b" />
+                    <ActivityIndicator size="small" color={th.hex("#64748b")} />
                   ) : (
                     <Text style={styles.loadMoreText}>
                       Load older notifications
@@ -747,10 +751,10 @@ export default function NotificationsCenterScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const make_styles = (t: Theme) => ({
   screen: {
     flex: 1,
-    backgroundColor: "#f5f6fa",
+    backgroundColor: t.hex("#f5f6fa"),
     paddingHorizontal: 20,
     paddingVertical: 20,
   },
@@ -767,12 +771,12 @@ const styles = StyleSheet.create({
   headerLeft: { flex: 1 },
   headerTitle: {
     fontSize: 22,
-    fontWeight: "700",
-    color: "#0f172a",
+    ...t.f("700"),
+    color: t.hex("#0f172a"),
   },
-  headerSub: {
+  headerSub: { ...t.f(),
     fontSize: 13,
-    color: "#64748b",
+    color: t.hex("#64748b"),
     marginTop: 2,
   },
   headerActions: {
@@ -788,23 +792,23 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 8,
     borderWidth: 0.5,
-    borderColor: "#cbd5e1",
-    backgroundColor: "#fff",
+    borderColor: t.hex("#cbd5e1"),
+    backgroundColor: t.hex("#fff"),
   },
   btnText: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#2563eb",
+    ...t.f("600"),
+    color: t.hex("#2563eb"),
   },
-  btnTextDisabled: { color: "#cbd5e1" },
+  btnTextDisabled: { color: t.hex("#cbd5e1") },
   btnDanger: {
-    borderColor: "#fca5a5",
-    backgroundColor: "#fef2f2",
+    borderColor: t.hex("#fca5a5"),
+    backgroundColor: t.hex("#fef2f2"),
   },
   btnTextDanger: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#a32d2d",
+    ...t.f("600"),
+    color: t.hex("#a32d2d"),
   },
 
   // ── Body layout ──
@@ -828,7 +832,7 @@ const styles = StyleSheet.create({
 
   // ── Urgent banner ──
   urgentBanner: {
-    backgroundColor: "#e53e2a",
+    backgroundColor: t.hex("#e53e2a"),
     borderRadius: 14,
     padding: 18,
     flexDirection: "row",
@@ -850,23 +854,23 @@ const styles = StyleSheet.create({
   },
   bannerTagText: {
     fontSize: 10,
-    fontWeight: "600",
-    color: "#fff",
+    ...t.f("600"),
+    color: t.hex("#fff"),
     letterSpacing: 0.3,
   },
   bannerTitle: {
     fontSize: 16,
-    fontWeight: "700",
-    color: "#fff",
+    ...t.f("700"),
+    color: t.hex("#fff"),
     marginBottom: 4,
   },
-  bannerDesc: {
+  bannerDesc: { ...t.f(),
     fontSize: 12,
     color: "rgba(255,255,255,0.85)",
     lineHeight: 17,
   },
   bannerBtn: {
-    backgroundColor: "#fff",
+    backgroundColor: t.hex("#fff"),
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 9,
@@ -874,8 +878,8 @@ const styles = StyleSheet.create({
   },
   bannerBtnText: {
     fontSize: 13,
-    fontWeight: "700",
-    color: "#e53e2a",
+    ...t.f("700"),
+    color: t.hex("#e53e2a"),
   },
 
   // ── Tabs ──
@@ -891,12 +895,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   tabActive: {
-    backgroundColor: "#fff",
+    backgroundColor: t.hex("#fff"),
     borderWidth: 0.5,
-    borderColor: "#e2e8f0",
+    borderColor: t.hex("#e2e8f0"),
     ...Platform.select({
       ios: {
-        shadowColor: "#000",
+        shadowColor: t.hex("#000"),
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.06,
         shadowRadius: 3,
@@ -904,25 +908,25 @@ const styles = StyleSheet.create({
       android: { elevation: 2 },
     }),
   },
-  tabText: {
+  tabText: { ...t.f(),
     fontSize: 13,
-    color: "#64748b",
+    color: t.hex("#64748b"),
   },
   tabTextActive: {
-    fontWeight: "600",
-    color: "#0f172a",
+    ...t.f("600"),
+    color: t.hex("#0f172a"),
   },
 
   // ── Notification list ──
   notifList: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: t.hex("#fff"),
     borderRadius: 14,
     borderWidth: 0.5,
-    borderColor: "#e2e8f0",
+    borderColor: t.hex("#e2e8f0"),
     ...Platform.select({
       ios: {
-        shadowColor: "#000",
+        shadowColor: t.hex("#000"),
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
         shadowRadius: 6,
@@ -935,12 +939,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 14,
     borderBottomWidth: 0.5,
-    borderBottomColor: "#f8fafc",
+    borderBottomColor: t.hex("#f8fafc"),
     alignItems: "flex-start",
     gap: 10,
   },
   notifItemUnread: {
-    backgroundColor: "#fafbff",
+    backgroundColor: t.hex("#fafbff"),
   },
   dotCol: {
     width: 8,
@@ -952,7 +956,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#2563eb",
+    backgroundColor: t.hex("#2563eb"),
   },
   iconWrap: {
     width: 36,
@@ -976,21 +980,21 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 9,
-    fontWeight: "700",
+    ...t.f("700"),
     letterSpacing: 0.4,
   },
-  timeText: {
+  timeText: { ...t.f(),
     fontSize: 10,
-    color: "#94a3b8",
+    color: t.hex("#94a3b8"),
   },
   notifTitle: {
     fontSize: 13,
-    fontWeight: "700",
-    color: "#1e293b",
+    ...t.f("700"),
+    color: t.hex("#1e293b"),
   },
-  notifMsg: {
+  notifMsg: { ...t.f(),
     fontSize: 12,
-    color: "#64748b",
+    color: t.hex("#64748b"),
     lineHeight: 17,
   },
   roleChip: {
@@ -1001,8 +1005,8 @@ const styles = StyleSheet.create({
   },
   roleChipText: {
     fontSize: 9,
-    color: "#64748b",
-    fontWeight: "600",
+    color: t.hex("#64748b"),
+    ...t.f("600"),
     letterSpacing: 0.3,
   },
 
@@ -1011,12 +1015,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 14,
     borderTopWidth: 0.5,
-    borderTopColor: "#f1f5f9",
+    borderTopColor: t.hex("#f1f5f9"),
   },
   loadMoreText: {
     fontSize: 12,
-    fontWeight: "600",
-    color: "#64748b",
+    ...t.f("600"),
+    color: t.hex("#64748b"),
   },
 
   // ── States ──
@@ -1026,40 +1030,40 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 10,
     paddingVertical: 40,
-    backgroundColor: "#fff",
+    backgroundColor: t.hex("#fff"),
     borderRadius: 14,
     borderWidth: 0.5,
-    borderColor: "#e2e8f0",
+    borderColor: t.hex("#e2e8f0"),
   },
-  stateText: {
+  stateText: { ...t.f(),
     fontSize: 13,
-    color: "#94a3b8",
+    color: t.hex("#94a3b8"),
     textAlign: "center",
   },
   retryBtn: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: t.hex("#f1f5f9"),
     borderRadius: 8,
   },
   retryText: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#2563eb",
+    ...t.f("600"),
+    color: t.hex("#2563eb"),
   },
 
   // ── Sidebar cards ──
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: t.hex("#fff"),
     borderRadius: 14,
     borderWidth: 0.5,
-    borderColor: "#e2e8f0",
+    borderColor: t.hex("#e2e8f0"),
     padding: 16,
   },
   cardTitle: {
     fontSize: 10,
-    fontWeight: "700",
-    color: "#94a3b8",
+    ...t.f("700"),
+    color: t.hex("#94a3b8"),
     letterSpacing: 0.6,
     marginBottom: 12,
   },
@@ -1069,20 +1073,20 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
-    backgroundColor: "#f8fafc",
+    backgroundColor: t.hex("#f8fafc"),
     borderRadius: 10,
     padding: 12,
     alignItems: "center",
   },
   statNum: {
     fontSize: 26,
-    fontWeight: "700",
-    color: "#0f172a",
+    ...t.f("700"),
+    color: t.hex("#0f172a"),
   },
   statLabel: {
     fontSize: 10,
-    fontWeight: "600",
-    color: "#64748b",
+    ...t.f("600"),
+    color: t.hex("#64748b"),
     letterSpacing: 0.3,
     marginTop: 2,
     textAlign: "center",
@@ -1091,13 +1095,13 @@ const styles = StyleSheet.create({
 
   // ── Availability card ──
   availCard: {
-    backgroundColor: "#2563eb",
+    backgroundColor: t.hex("#2563eb"),
     borderRadius: 14,
     padding: 16,
   },
   availLabel: {
     fontSize: 10,
-    fontWeight: "700",
+    ...t.f("700"),
     color: "rgba(255,255,255,0.7)",
     letterSpacing: 0.6,
     marginBottom: 8,
@@ -1110,10 +1114,10 @@ const styles = StyleSheet.create({
   },
   availNum: {
     fontSize: 30,
-    fontWeight: "700",
-    color: "#fff",
+    ...t.f("700"),
+    color: t.hex("#fff"),
   },
-  availChange: {
+  availChange: { ...t.f(),
     fontSize: 12,
     color: "rgba(255,255,255,0.75)",
   },
@@ -1126,10 +1130,10 @@ const styles = StyleSheet.create({
   },
   availBarFill: {
     height: "100%",
-    backgroundColor: "#fff",
+    backgroundColor: t.hex("#fff"),
     borderRadius: 2,
   },
-  availNote: {
+  availNote: { ...t.f(),
     fontSize: 12,
     color: "rgba(255,255,255,0.85)",
     lineHeight: 17,
@@ -1147,14 +1151,15 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     flexShrink: 0,
   },
-  typeLabel: {
+  typeLabel: { ...t.f(),
     flex: 1,
     fontSize: 12,
-    color: "#64748b",
+    color: t.hex("#64748b"),
   },
   typeCount: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#0f172a",
+    ...t.f("600"),
+    color: t.hex("#0f172a"),
   },
 });
+const useStylesThemed = () => useThemedStyles(make_styles as any) as any;

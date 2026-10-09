@@ -1,6 +1,5 @@
 import { TIcon, useThemedStyles } from "@/ds/themed";
 import { Theme, useTheme } from "@/ds/theme";
-import { COLORS } from "@/constant/colors";
 import { apiError, formatDate } from "@/constant/jobs";
 import { FEEDBACK_AREAS, TICKET_TEXT_MAX } from "@/constant/support";
 import { feedbackAPI } from "@/service/api";

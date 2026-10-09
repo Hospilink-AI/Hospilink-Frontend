@@ -97,7 +97,7 @@ export default function TicketList({ base }: { base: string }) {
 
       {!loading && !!error && (
         <View style={styles.state}>
-          <Text style={[styles.muted, { color: COLORS.red }]}>{error}</Text>
+          <Text style={[styles.muted, { color: th.c.danger }]}>{error}</Text>
           <TouchableOpacity style={styles.retry} onPress={() => load(tab, page)}>
             <Text style={styles.retryText}>Retry</Text>
           </TouchableOpacity>

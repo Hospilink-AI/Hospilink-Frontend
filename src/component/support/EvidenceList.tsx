@@ -1,6 +1,5 @@
 import { TIcon, useThemedStyles } from "@/ds/themed";
 import { Theme, useTheme } from "@/ds/theme";
-import { COLORS } from "@/constant/colors";
 import { formatDate } from "@/constant/jobs";
 import { ticketAPI } from "@/service/api";
 import React, { useState } from "react";

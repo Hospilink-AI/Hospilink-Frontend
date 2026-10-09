@@ -1,6 +1,5 @@
 import { TIcon, useThemedStyles } from "@/ds/themed";
 import { Theme, useTheme } from "@/ds/theme";
-import { COLORS } from "@/constant/colors";
 import { roleLabel } from "@/constant/jobs";
 import { blockAPI } from "@/service/api";
 import { emitBlockChange } from "@/service/blocks";

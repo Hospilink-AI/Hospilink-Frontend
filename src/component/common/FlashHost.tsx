@@ -1,14 +1,15 @@
-import { COLORS } from "@/constant/colors";
 import { FlashTone, onFlash } from "@/service/session";
-import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Icon, { IconName } from "@/ds/Icon";
+import Txt from "@/ds/Txt";
+import { color, depth, radius } from "@/ds/tokens";
 
-const TONES: Record<FlashTone, { bg: string; fg: string; icon: any }> = {
-  info: { bg: "#EFF6FF", fg: "#1E40AF", icon: "information-circle" },
-  success: { bg: "#ECFDF5", fg: "#047857", icon: "checkmark-circle" },
-  warning: { bg: "#FFFBEB", fg: "#92400E", icon: "alert-circle" },
+const TONES: Record<FlashTone, { bg: string; fg: string; icon: IconName }> = {
+  info: { bg: color.well, fg: color.primary, icon: "info" },
+  success: { bg: color.successSoft, fg: color.success, icon: "checkCircle" },
+  warning: { bg: color.warningSoft, fg: color.warningInk, icon: "warning" },
 };
 
 // One-line banner at the top of the app for messages that outlive a screen change
@@ -39,16 +40,17 @@ export default function FlashHost() {
   if (!msg) return null;
   const t = TONES[msg.tone];
   return (
-    <View
-      pointerEvents="box-none"
-      style={[s.wrap, { top: insets.top + 8 }, Platform.OS === "web" && ({ position: "fixed" } as any)]}
-    >
-      <View style={[s.banner, { backgroundColor: t.bg, borderColor: t.fg }]} accessibilityRole="alert">
-        <Ionicons name={t.icon} size={18} color={t.fg} />
-        <Text style={[s.text, { color: t.fg }]}>{msg.text}</Text>
-        <TouchableOpacity onPress={() => setMsg(null)} accessibilityLabel="Close message" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Ionicons name="close" size={18} color={t.fg} />
-        </TouchableOpacity>
+    <View pointerEvents="box-none" style={[s.wrap, { top: insets.top + 8 }, Platform.OS === "web" && ({ position: "fixed" } as any)]}>
+      <View style={[s.banner, depth.raised]} accessibilityRole="alert">
+        <View style={[s.icon, { backgroundColor: t.bg }]}>
+          <Icon name={t.icon} size={18} color={t.fg} />
+        </View>
+        <Txt v="bodySm" style={{ flex: 1 }}>
+          {msg.text}
+        </Txt>
+        <Pressable onPress={() => setMsg(null)} accessibilityRole="button" accessibilityLabel="Close message" hitSlop={8} style={(st: any) => [s.close, st.focused && depth.focus]}>
+          <Icon name="close" size={18} color={color.inkMuted} />
+        </Pressable>
       </View>
     </View>
   );
@@ -59,19 +61,15 @@ const s = StyleSheet.create({
   banner: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    maxWidth: 640,
+    gap: 12,
+    maxWidth: 560,
     width: "100%",
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    backgroundColor: COLORS.white,
-    shadowColor: "#0F172A",
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
+    borderRadius: radius.card,
+    paddingLeft: 10,
+    paddingRight: 8,
+    paddingVertical: 10,
+    backgroundColor: color.surface,
   },
-  text: { flex: 1, fontSize: 14, fontWeight: "600", lineHeight: 20 },
+  icon: { width: 36, height: 36, borderRadius: radius.icon, alignItems: "center", justifyContent: "center" },
+  close: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
 });
