@@ -12,12 +12,25 @@ import { DutyStepper, DutyTags, RateBlock, ShiftBar, TripGlance } from './DutyPa
 
 const INVITE_WINDOW_MS = 30 * 60 * 1000;
 
-/** When an invite stops being yours alone. Only invites have a known deadline. */
+/** When an invite stops being yours alone. */
 function inviteDeadline(d: Duty): Date | null {
+  if (!d.invited) return null;
+  if (d.offerExpiresAt) return d.offerExpiresAt;
   const at = d.raw?.offer?.nextActionAt ?? d.raw?.inviteExpiresAt;
-  if (!d.invited || !at) return null;
+  if (!at) return null;
   const t = new Date(at);
   return isFinite(t.getTime()) ? t : null;
+}
+
+const CLOSING_SOON_MS = 3 * 60 * 60 * 1000;
+
+/** "Closes in 45 min" for an ordinary offer whose start is near; invites count down on the button. */
+function closingSoon(d: Duty, now: number): string | null {
+  if (d.invited || !d.offerExpiresAt) return null;
+  const left = d.offerExpiresAt.getTime() - now;
+  if (left <= 0 || left > CLOSING_SOON_MS) return null;
+  const min = Math.ceil(left / 60000);
+  return min >= 60 ? `Closes in ${Math.floor(min / 60)} h ${min % 60} min` : `Closes in ${min} min`;
 }
 
 function useNow(active: boolean, every = 1000) {
@@ -44,13 +57,20 @@ export function DutyOfferCard({
   disabled?: boolean;
 }) {
   const deadline = inviteDeadline(duty);
-  const now = useNow(!!deadline);
+  const now = useNow(!!deadline || !!duty.offerExpiresAt, deadline ? 1000 : 30000);
   const left = deadline ? deadline.getTime() - now : 0;
+  const closing = closingSoon(duty, now);
+  const place = [duty.hospitalArea, duty.distanceLabel].filter(Boolean).join(' · ');
 
   return (
     <Card onPress={onOpen} accessibilityLabel={`${duty.roleTitle} at ${duty.hospitalName}, ${whenLine(duty)}, ${priceWords(duty)}`} testID={`offer-${duty.id}`}>
       <View style={styles.offer}>
-        <DutyTags duty={duty} />
+        <View style={styles.tagRow}>
+          <DutyTags duty={duty} />
+          {duty.spotsTotal && duty.spotsTotal > 1 && duty.spotsOpen !== null ? (
+            <Tag label={`${duty.spotsOpen} of ${duty.spotsTotal} spots open`} tone="neutral" icon="users" />
+          ) : null}
+        </View>
         <View style={{ gap: 6 }}>
           <Txt v="h2">{duty.roleTitle}</Txt>
           <View style={styles.between}>
@@ -59,10 +79,24 @@ export function DutyOfferCard({
               <Txt v="bodySm" tone="soft" numberOfLines={1} style={{ flexShrink: 1 }}>
                 {duty.hospitalName}
               </Txt>
+              {duty.hospitalVerified ? <Icon name="verified" size={15} color={color.primary} label="Verified hospital" /> : null}
+              {duty.hospitalRating !== null ? (
+                <View style={styles.rating} accessibilityLabel={`Rated ${duty.hospitalRating.toFixed(1)} by ${duty.hospitalRatingCount} staff`}>
+                  <Icon name="ratingFilled" size={13} color={color.warning} />
+                  <Txt v="label" tone="soft" style={{ fontVariant: ['tabular-nums'] }}>
+                    {duty.hospitalRating.toFixed(1)}
+                  </Txt>
+                </View>
+              ) : null}
             </View>
-            {duty.distanceLabel ? <Meta icon="nearby" text={duty.distanceLabel} /> : null}
           </View>
+          {place ? <Meta icon="nearby" text={place} /> : null}
           <Meta icon="time" text={whenLine(duty)} />
+          {closing ? (
+            <Txt v="label" tone="warning">
+              {closing}
+            </Txt>
+          ) : null}
         </View>
         <ShiftBar duty={duty} />
         <RateBlock duty={duty} />
@@ -199,6 +233,8 @@ export function DutyRow({ duty, onPress, showMoney = true, note }: { duty: Duty;
 }
 
 const styles = StyleSheet.create({
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 },
+  rating: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   offer: { gap: 14 },
   between: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   hospital: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 },

@@ -20,11 +20,11 @@ const LINE: Record<DocLine['state'], { icon: IconName; fg: string; bg: string; w
 /** Home's first card until the doctor is verified: what's in, what's missing, and the one thing to do next. */
 export function VerifyHero() {
   const router = useRouter();
-  const { verify } = useDoctor();
+  const { verify, profile } = useDoctor();
   const { width } = useWindowDimensions();
   if (verify.stage === 'verified') return null;
   if (verify.stage === 'loading') return <Skeleton height={260} r={24} />;
-  const head = verifyHeadline(verify);
+  const head = verifyHeadline(verify, profile?.rejectionReason);
   const ready = verify.required.filter((d) => d.state === 'ok' || d.state === 'checking').length;
   const total = verify.required.length;
   const twoCols = width >= 360;
@@ -94,7 +94,7 @@ export function VerifyStrip() {
   const router = useRouter();
   const { verify, profile } = useDoctor();
   if (!profile?.id || verify.stage === 'verified' || verify.stage === 'loading') return null;
-  const head = verifyHeadline(verify);
+  const head = verifyHeadline(verify, profile?.rejectionReason);
   const urgent = verify.stage === 'docs' || verify.stage === 'rejected';
   return (
     <Pressable

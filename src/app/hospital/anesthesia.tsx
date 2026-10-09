@@ -15,7 +15,7 @@ import { color, radius } from '@/ds/tokens';
 import { clearDraft, readDraft, useDraft } from '@/hospital/draft';
 import { dutyError, FormError } from '@/hospital/errors';
 import { ChoicePills, clockLabel, DayPicker, endOf, HoursPicker, ShiftSummary, StartPicker, startsTooSoon } from '@/hospital/fields';
-import { MIN_HOURS } from '@/hospital/pricing';
+import { MIN_HOURS, usePricing } from '@/hospital/pricing';
 
 const rs = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
@@ -23,6 +23,7 @@ const rs = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 // Until the backend stores the new fields it gets an anesthetist duty whose hourly rate adds up to the price,
 // with the case written into the description, so doctors on any app version see the right details.
 function Anesthesia() {
+  usePricing();
   const router = useRouter();
   const DRAFT = 'hospital-anesthesia';
   const [draft] = useState(() => readDraft<any>(DRAFT));

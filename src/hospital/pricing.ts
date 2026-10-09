@@ -1,11 +1,15 @@
-// Duty pricing rules for hospitals (client decision, 7 Oct 2026). The backend should enforce the same.
+import { useEffect, useState } from 'react';
+import { dutyAPI } from '@/service/api';
+
+// Duty pricing rules for hospitals (client decision, 7 Oct 2026). The server enforces them and sends
+// the current values (Super Admin settings); these are the defaults until it answers.
 
 /** A duty's total pay must be within this range. */
-export const MIN_TOTAL = 499;
-export const MAX_TOTAL = 9999;
+export let MIN_TOTAL = 499;
+export let MAX_TOTAL = 9999;
 /** Shortest duty a hospital can post. */
-export const MIN_HOURS = 3;
-export const MAX_HOURS = 24;
+export let MIN_HOURS = 3;
+export let MAX_HOURS = 24;
 
 export const HOUR_PRESETS = [6, 8, 12];
 export const RATE_PRESETS = [150, 200, 250, 300, 400];
@@ -15,9 +19,57 @@ export const RAISE_STEPS = [25, 50, 100];
 type Rec = { total: number; hours: number };
 
 // Market rates HospiLink recommends, as a total for a standard shift.
-const RECOMMENDED: Record<string, Record<string, Rec>> = {
+let RECOMMENDED: Record<string, Record<string, Rec>> = {
   rmo: { casualty: { total: 1400, hours: 8 }, icu: { total: 1800, hours: 8 } },
 };
+
+const num = (v: unknown, fallback: number) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : fallback);
+
+let loading: Promise<boolean> | null = null;
+
+/** Loads the server's limits and market rates once per session. Resolves true when they changed. */
+export function loadPricing(): Promise<boolean> {
+  if (!loading) {
+    loading = dutyAPI
+      .getPricing()
+      .then((r: any) => {
+        const p = r?.data ?? r;
+        if (!p) return false;
+        MIN_TOTAL = num(p.minTotal, MIN_TOTAL);
+        MAX_TOTAL = num(p.maxTotal, MAX_TOTAL);
+        MIN_HOURS = num(p.minHours, MIN_HOURS);
+        MAX_HOURS = num(p.maxHours, MAX_HOURS);
+        const recs = p.recommendations;
+        if (recs && typeof recs === 'object') {
+          const next: typeof RECOMMENDED = {};
+          for (const [role, subs] of Object.entries(recs as Record<string, Record<string, Rec>>)) {
+            for (const [sub, rec] of Object.entries(subs ?? {})) {
+              if (rec && rec.total > 0 && rec.hours > 0) (next[role] ??= {})[sub] = { total: rec.total, hours: rec.hours };
+            }
+          }
+          if (Object.keys(next).length) RECOMMENDED = next;
+        }
+        return true;
+      })
+      .catch(() => {
+        loading = null; // try again next time; the defaults stay
+        return false;
+      });
+  }
+  return loading;
+}
+
+/** Re-renders once the server's pricing arrives. Use in screens that show limits or market rates. */
+export function usePricing() {
+  const [, bump] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    loadPricing().then((changed) => alive && changed && bump((n) => n + 1));
+    return () => {
+      alive = false;
+    };
+  }, []);
+}
 
 export function recommendation(role: string, subType?: string | null): { perHour: number; total: number; hours: number } | null {
   const r = subType ? RECOMMENDED[role]?.[subType] : undefined;

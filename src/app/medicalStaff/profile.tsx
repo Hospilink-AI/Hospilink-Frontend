@@ -135,6 +135,7 @@ export default function Profile() {
               <Txt v="overline" tone="muted" style={{ marginBottom: 6 }}>
                 Account
               </Txt>
+              <ListRow icon="alerts" title="Preferences" subtitle="Notifications, distance, language" onPress={() => router.push('/medicalStaff/preferences' as any)} />
               <ListRow icon="settings" title="Account settings" subtitle="Blocked hospitals, privacy, delete account" onPress={() => router.push('/medicalStaff/account' as any)} />
               <ListRow icon="mail" title="Email" subtitle={profile?.email ?? user?.email} chevron={false} />
               <ListRow icon="phone" title="Phone" subtitle={phoneText(profile?.phoneNumber)} chevron={false} />

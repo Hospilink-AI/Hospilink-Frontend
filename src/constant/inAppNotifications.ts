@@ -92,6 +92,7 @@ const ICONS: Record<string, IoniconName> = {
   shield: "shield-outline",
   key: "key-outline",
   "file-check": "document-text-outline",
+  "id-card": "id-card-outline",
   "file-x": "document-outline",
   "file-text": "document-text-outline",
   "badge-check": "ribbon-outline",
@@ -192,7 +193,7 @@ export function routeFor(n: { type?: string; payload?: any }, base: Base, pathna
     case "account_standing":
       return base === "admin" ? "/admin/patterns" : `/${base}/support/standing`;
     case "documents":
-      return base === "medicalStaff" ? "/medicalStaff/document-manager" : base === "hospital" ? "/hospital/profile" : "/admin/document-verification";
+      return base === "medicalStaff" ? "/medicalStaff/documents" : base === "hospital" ? "/hospital/documents" : "/admin/document-verification";
     case "profile":
     case "settings":
     case "reviews":

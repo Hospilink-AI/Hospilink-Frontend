@@ -68,7 +68,23 @@ export type Duty = {
   hospitalReview: { rating: number; review?: string } | null;
   paymentMethod: string | null;
   isPaid: boolean | null;
+  /** When accepting closes: the end of an invite window, otherwise the duty's start. */
+  offerExpiresAt: Date | null;
+  /** Multi-slot posts: how many spots and how many are still open. */
+  spotsTotal: number | null;
+  spotsOpen: number | null;
+  /** Hospital facts on the offer card. */
+  hospitalArea: string;
+  hospitalVerified: boolean;
+  hospitalRating: number | null;
+  hospitalRatingCount: number;
   raw: any;
+};
+
+const dateOrNull = (v: unknown) => {
+  if (!v) return null;
+  const d = new Date(v as string);
+  return isFinite(d.getTime()) ? d : null;
 };
 
 /** Short card title: "RMO", "ICU Nurse", "Staff Nurse". */
@@ -153,6 +169,13 @@ export function toDuty(job: any): Duty {
     hospitalReview: job?.hospitalReview ?? null,
     paymentMethod: job?.paymentMethod ?? null,
     isPaid: typeof job?.isPaid === 'boolean' ? job.isPaid : null,
+    offerExpiresAt: dateOrNull(job?.offerExpiresAt),
+    spotsTotal: typeof job?.spotsTotal === 'number' ? job.spotsTotal : null,
+    spotsOpen: typeof job?.spotsOpen === 'number' ? job.spotsOpen : null,
+    hospitalArea: typeof h?.area === 'string' ? h.area : '',
+    hospitalVerified: h?.verificationStatus === 'verified',
+    hospitalRating: typeof h?.effectiveRating === 'number' && h?.totalRatings ? h.effectiveRating : null,
+    hospitalRatingCount: typeof h?.totalRatings === 'number' ? h.totalRatings : 0,
     raw: job,
   };
 }

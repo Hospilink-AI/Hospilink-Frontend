@@ -22,7 +22,7 @@ import { clearDraft, readDraft, useDraft } from '@/hospital/draft';
 import { InviteDoctorsCard, KeepFilledCard } from '@/hospital/DutyExtras';
 import { dutyError, FormError } from '@/hospital/errors';
 import { ChoicePills, clockLabel, DayPicker, endOf, HoursPicker, minutesUntilStart, NumberStepper, ShiftSummary, StartPicker, startsTooSoon } from '@/hospital/fields';
-import { MAX_TOTAL, MIN_TOTAL, priceProblem, RATE_PRESETS, recommendation, totalFor } from '@/hospital/pricing';
+import { MAX_TOTAL, MIN_TOTAL, priceProblem, RATE_PRESETS, recommendation, totalFor, usePricing } from '@/hospital/pricing';
 
 const ROLES: { label: string; value: string }[] = [
   { label: 'RMO (Resident Medical Officer)', value: 'rmo' },
@@ -148,6 +148,7 @@ const hoursBetween = (s: string, e: string) => {
 };
 
 export function CreateDuty({ emergency = false }: { emergency?: boolean }) {
+  usePricing();
   const router = useRouter();
   const { dutyId, mode, date } = useLocalSearchParams<{ dutyId: string; mode: string; date?: string }>();
   const asked = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date) && date >= todayKey() ? date : null;
