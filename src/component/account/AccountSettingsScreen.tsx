@@ -1,6 +1,5 @@
 import { TIcon, useThemedStyles } from "@/ds/themed";
 import { Theme, useTheme } from "@/ds/theme";
-import { COLORS } from "@/constant/colors";
 import { useAuth } from "@/context/AuthContext";
 import { flash } from "@/service/session";
 import { useRouter } from "expo-router";
@@ -50,7 +49,7 @@ export default function AccountSettingsScreen({ role, embedded = false }: { role
         ].map((l, i) => (
           <TouchableOpacity
             key={l.href}
-            style={[s.linkRow, i > 0 && { borderTopWidth: 1, borderTopColor: "#F1F5F9" }]}
+            style={[s.linkRow, i > 0 && { borderTopWidth: 1, borderTopColor: th.hex("#F1F5F9") }]}
             onPress={() => router.push(l.href as any)}
             accessibilityRole="link"
           >

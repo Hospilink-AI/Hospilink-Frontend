@@ -1,6 +1,5 @@
 import { TIcon, useThemedStyles } from "@/ds/themed";
 import { Theme, useTheme } from "@/ds/theme";
-import { COLORS } from "@/constant/colors";
 import { blockAPI, reviewAPI } from "@/service/api";
 import { emitBlockChange } from "@/service/blocks";
 import { useRouter } from "expo-router";
@@ -23,9 +22,10 @@ type Props = {
 
 type Step = "menu" | "confirmBlock" | "blocked" | "reportReview" | "reviewReported";
 
-export default function PersonActions({ kind, id, name, dutyId, reviewId, onBlocked, color = COLORS.subText, label }: Props) {
+export default function PersonActions({ kind, id, name, dutyId, reviewId, onBlocked, color: colorProp, label }: Props) {
   const s = useSThemed();
   const th = useTheme();
+  const color = colorProp ?? th.c.subText;
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>("menu");
@@ -199,7 +199,8 @@ export default function PersonActions({ kind, id, name, dutyId, reviewId, onBloc
 
 function Item({ icon, label, onPress, danger }: { icon: any; label: string; onPress: () => void; danger?: boolean }) {
   const s = useSThemed();
-  const c = danger ? COLORS.red : COLORS.text;
+  const th = useTheme();
+  const c = danger ? th.c.danger : th.c.text;
   return (
     <TouchableOpacity style={s.item} onPress={onPress} accessibilityRole="button">
       <TIcon ion={icon} size={20} color={c} />

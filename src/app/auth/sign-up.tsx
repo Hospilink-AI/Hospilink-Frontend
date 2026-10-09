@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { authAPI } from "@/service/api";
-import AuthLayout from "@/ds/AuthLayout";
+import AuthLayout, { HOSPITAL_POINTS } from "@/ds/AuthLayout";
 import Button from "@/ds/Button";
 import { Checkbox } from "@/ds/Controls";
 import Field from "@/ds/Field";
@@ -63,6 +63,7 @@ export default function SignUp() {
       back
       title="Create your account"
       subtitle={isHospital ? "For hospitals posting duties and vacancies." : "For doctors, nurses and clinical staff."}
+      points={isHospital ? HOSPITAL_POINTS : undefined}
       testID="sign-up"
       footer={<Button label="Create account" onPress={submit} loading={loading} full size="lg" />}
     >

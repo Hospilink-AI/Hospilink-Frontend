@@ -1,6 +1,5 @@
 import { TIcon, useThemedStyles } from "@/ds/themed";
 import { Theme, useTheme } from "@/ds/theme";
-import { COLORS } from "@/constant/colors";
 import { categoryLabel } from "@/constant/support";
 import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -143,11 +142,12 @@ export default function RatingSummary({ effectiveRating, averageRating, totalRat
 }
 
 function Row({ label, value, strong, danger }: { label: string; value: string; strong?: boolean; danger?: boolean }) {
+  const th = useTheme();
   const styles = useStylesThemed();
   return (
     <View style={styles.row}>
       <Text style={[styles.rowLabel, strong && styles.strong]}>{label}</Text>
-      <Text style={[styles.rowValue, strong && styles.strong, danger && { color: COLORS.red }]}>{value}</Text>
+      <Text style={[styles.rowValue, strong && styles.strong, danger && { color: th.c.danger }]}>{value}</Text>
     </View>
   );
 }

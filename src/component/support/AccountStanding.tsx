@@ -1,6 +1,5 @@
 import { TIcon, useThemedStyles } from "@/ds/themed";
 import { Theme, useTheme } from "@/ds/theme";
-import { COLORS } from "@/constant/colors";
 import { apiError, formatDate, formatTime } from "@/constant/jobs";
 import {
   FLAG_RAISES_LABELS,
@@ -74,7 +73,7 @@ export default function AccountStanding({ base }: { base: string }) {
 
       {!loading && !!error && (
         <View style={styles.state}>
-          <Text style={[styles.muted, { color: COLORS.red }]}>{error}</Text>
+          <Text style={[styles.muted, { color: th.c.danger }]}>{error}</Text>
           <TouchableOpacity style={styles.primaryBtn} onPress={load}>
             <Text style={styles.primaryText}>Retry</Text>
           </TouchableOpacity>

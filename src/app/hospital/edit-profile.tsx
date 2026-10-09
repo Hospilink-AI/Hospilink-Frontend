@@ -11,19 +11,9 @@ import { Card } from '@/ds/Surface';
 import { Chip } from '@/ds/Tag';
 import Txt from '@/ds/Txt';
 import { ThemeProvider } from '@/ds/theme';
+import { SelectField } from '@/doctor/forms';
+import { HOSPITAL_SERVICES, staffCountOptions } from '@/hospital/onboarding';
 
-const SERVICES = [
-  'Emergency Care',
-  'General Surgery',
-  'Cardiology',
-  'Neurology',
-  'Orthopedics',
-  'Pediatrics',
-  'Obstetrics & Gynecology',
-  'Internal Medicine',
-  'Radiology',
-  'Laboratory Services',
-];
 
 // Edit the hospital's details (same fields and payload as the old profile editor).
 function EditHospital() {
@@ -107,7 +97,7 @@ function EditHospital() {
             <Card>
               <View style={{ gap: 14 }}>
                 <Field label="Hospital name" value={name} onChangeText={setName} error={tried ? problems.name : null} />
-                <Field label="Number of staff" optional value={staffCount} onChangeText={(t) => setStaffCount(t.replace(/[^\d]/g, '').slice(0, 5))} keyboardType="number-pad" />
+                <SelectField label="Staff at the hospital" value={staffCount} options={staffCountOptions(staffCount)} onChange={setStaffCount} icon="users" placeholder="How many staff?" />
                 <Field label="About the hospital" optional value={about} onChangeText={setAbout} multiline maxLength={1000} placeholder="Beds, specialities, what staff should know" />
               </View>
             </Card>
@@ -127,7 +117,7 @@ function EditHospital() {
                   Staff see these on your duties.
                 </Txt>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                  {SERVICES.map((s) => (
+                  {[...HOSPITAL_SERVICES, ...services.filter((x) => !HOSPITAL_SERVICES.includes(x))].map((s) => (
                     <Chip key={s} label={s} selected={services.includes(s)} onPress={() => setServices((x) => (x.includes(s) ? x.filter((y) => y !== s) : [...x, s]))} />
                   ))}
                 </View>

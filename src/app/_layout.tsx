@@ -9,6 +9,7 @@ import { SocketProvider } from "@/context/SocketContext";
 import { NotificationProvider } from "@/context/NotificationContext";
 import { InAppNotificationsProvider } from "@/context/InAppNotificationsContext";
 import FlashHost from "@/component/common/FlashHost";
+import { color } from "@/ds/tokens";
 import {
   Manrope_400Regular,
   Manrope_500Medium,
@@ -71,12 +72,12 @@ export default function RootLayout() {
           width: "100%",
           maxWidth: isLargeScreen ? "100%" : "100%",
           alignSelf: "center",
-          backgroundColor: "#dce6f5",   // match light theme page bg
+          backgroundColor: color.ground,
         }}
       >
         {!iconsReady ? (
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-            <ActivityIndicator size="large" color="#2563EB" />
+            <ActivityIndicator size="large" color={color.primary} />
           </View>
         ) : (
         <AuthProvider>
@@ -86,7 +87,7 @@ export default function RootLayout() {
               <Stack
                 screenOptions={{
                   headerShown: false,
-                  contentStyle: { backgroundColor: "#dce6f5" },
+                  contentStyle: { backgroundColor: color.ground },
                 }}
               />
               <FlashHost />

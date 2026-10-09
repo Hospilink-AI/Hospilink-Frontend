@@ -1,7 +1,6 @@
 import { TIcon, useThemedStyles } from "@/ds/themed";
 import { Theme, useTheme } from "@/ds/theme";
 import EvidencePicker from "@/component/support/EvidencePicker";
-import { COLORS } from "@/constant/colors";
 import { apiError, formatDate, roleLabel } from "@/constant/jobs";
 import {
   PickedFile,
@@ -215,8 +214,8 @@ export default function RaiseTicketForm({ base, role }: { base: string; role: "s
                 onPress={() => pickDomain(d.value)}
                 activeOpacity={0.85}
               >
-                <TIcon ion={d.icon as any} size={18} color={active ? COLORS.primary : COLORS.subText} />
-                <Text style={[styles.domainText, active && { color: COLORS.primary }]}>{d.label}</Text>
+                <TIcon ion={d.icon as any} size={18} color={active ? th.c.primary : th.c.subText} />
+                <Text style={[styles.domainText, active && { color: th.c.primary }]}>{d.label}</Text>
               </TouchableOpacity>
             );
           })}
@@ -238,7 +237,7 @@ export default function RaiseTicketForm({ base, role }: { base: string; role: "s
                     <TIcon
                       ion={active ? "radio-button-on" : "radio-button-off"}
                       size={18}
-                      color={active ? COLORS.primary : COLORS.subText}
+                      color={active ? th.c.primary : th.c.subText}
                     />
                     <Text style={styles.optionText}>{cat.label}</Text>
                   </TouchableOpacity>
@@ -274,7 +273,7 @@ export default function RaiseTicketForm({ base, role }: { base: string; role: "s
                       <TIcon
                         ion={active ? "radio-button-on" : "radio-button-off"}
                         size={18}
-                        color={active ? COLORS.primary : COLORS.subText}
+                        color={active ? th.c.primary : th.c.subText}
                       />
                       <View style={{ flex: 1 }}>
                         <Text style={styles.optionText}>{s.label}</Text>

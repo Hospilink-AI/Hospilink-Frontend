@@ -4,7 +4,6 @@ import ActionModal from "@/component/cards/jobs/ActionModal";
 import EvidenceList from "@/component/support/EvidenceList";
 import EvidencePicker from "@/component/support/EvidencePicker";
 import { TicketStatusPill } from "@/component/support/TicketList";
-import { COLORS } from "@/constant/colors";
 import { apiError, formatDate, formatTime } from "@/constant/jobs";
 import {
   OPEN_TICKET_STATUSES,

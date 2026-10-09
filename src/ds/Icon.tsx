@@ -80,6 +80,34 @@ import IconUsers from '@tabler/icons-react-native/IconUsers';
 import IconWallet from '@tabler/icons-react-native/IconWallet';
 import IconWifiOff from '@tabler/icons-react-native/IconWifiOff';
 import IconX from '@tabler/icons-react-native/IconX';
+import IconInbox from '@tabler/icons-react-native/IconInbox';
+import IconSpeakerphone from '@tabler/icons-react-native/IconSpeakerphone';
+import IconBellOff from '@tabler/icons-react-native/IconBellOff';
+import IconUserPlus from '@tabler/icons-react-native/IconUserPlus';
+import IconUserMinus from '@tabler/icons-react-native/IconUserMinus';
+import IconArrowsLeftRight from '@tabler/icons-react-native/IconArrowsLeftRight';
+import IconSquareCheck from '@tabler/icons-react-native/IconSquareCheck';
+import IconSquare from '@tabler/icons-react-native/IconSquare';
+import IconChevronUp from '@tabler/icons-react-native/IconChevronUp';
+import IconActivity from '@tabler/icons-react-native/IconActivity';
+import IconCircle from '@tabler/icons-react-native/IconCircle';
+import IconCircleDot from '@tabler/icons-react-native/IconCircleDot';
+import IconDeviceMobile from '@tabler/icons-react-native/IconDeviceMobile';
+import IconArchive from '@tabler/icons-react-native/IconArchive';
+import IconKey from '@tabler/icons-react-native/IconKey';
+import IconLink from '@tabler/icons-react-native/IconLink';
+import IconGift from '@tabler/icons-react-native/IconGift';
+import IconTrophy from '@tabler/icons-react-native/IconTrophy';
+import IconTag from '@tabler/icons-react-native/IconTag';
+import IconTool from '@tabler/icons-react-native/IconTool';
+import IconPlayerPlay from '@tabler/icons-react-native/IconPlayerPlay';
+import IconPlayerPause from '@tabler/icons-react-native/IconPlayerPause';
+import IconPlayerStop from '@tabler/icons-react-native/IconPlayerStop';
+import IconClipboard from '@tabler/icons-react-native/IconClipboard';
+import IconList from '@tabler/icons-react-native/IconList';
+import IconPin from '@tabler/icons-react-native/IconPin';
+import IconCreditCard from '@tabler/icons-react-native/IconCreditCard';
+import IconBolt from '@tabler/icons-react-native/IconBolt';
 import { color } from './tokens';
 
 const TABLER = {
@@ -164,6 +192,34 @@ const TABLER = {
   trendUp: IconTrendingUp,
   trendDown: IconTrendingDown,
   offline: IconWifiOff,
+  inbox: IconInbox,
+  announce: IconSpeakerphone,
+  alertsOff: IconBellOff,
+  userPlus: IconUserPlus,
+  userMinus: IconUserMinus,
+  swap: IconArrowsLeftRight,
+  checkbox: IconSquareCheck,
+  square: IconSquare,
+  chevronUp: IconChevronUp,
+  pulse: IconActivity,
+  radioOff: IconCircle,
+  radioOn: IconCircleDot,
+  device: IconDeviceMobile,
+  archive: IconArchive,
+  key: IconKey,
+  link: IconLink,
+  gift: IconGift,
+  trophy: IconTrophy,
+  tag: IconTag,
+  tool: IconTool,
+  play: IconPlayerPlay,
+  pause: IconPlayerPause,
+  stop: IconPlayerStop,
+  clipboard: IconClipboard,
+  list: IconList,
+  pin: IconPin,
+  card: IconCreditCard,
+  flash: IconBolt,
 } as const;
 
 export type IconName = keyof typeof TABLER | 'overnight' | 'hourlyRate';

@@ -1,6 +1,5 @@
 import { TIcon, useThemedStyles } from "@/ds/themed";
 import { Theme, useTheme } from "@/ds/theme";
-import { COLORS } from "@/constant/colors";
 import { Category, CATEGORY_LABELS, CATEGORY_ORDER, displayOf, StoredNotification } from "@/constant/inAppNotifications";
 import { useInAppNotifications } from "@/context/InAppNotificationsContext";
 import { inAppNotificationAPI } from "@/service/api";
@@ -104,7 +103,7 @@ export default function InAppCenter() {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips}>
         {FILTERS.map((f) => (
           <TouchableOpacity key={f.key} style={[s.chip, filter === f.key && s.chipOn]} onPress={() => setFilter(f.key)} accessibilityState={{ selected: filter === f.key }}>
-            <Text style={[s.chipText, filter === f.key && { color: COLORS.primary }]}>{f.label}</Text>
+            <Text style={[s.chipText, filter === f.key && { color: th.c.primary }]}>{f.label}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>

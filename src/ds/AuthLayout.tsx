@@ -10,10 +10,26 @@ import { ceil, color, depth, radius, space } from './tokens';
 
 const SPLIT = 900;
 
-const POINTS: { icon: IconName; title: string; body: string }[] = [
+export type AuthPoint = { icon: IconName; title: string; body: string };
+
+const POINTS: AuthPoint[] = [
   { icon: 'nearby', title: 'Duties near you, live', body: 'Offers from hospitals around you, the moment they are posted.' },
   { icon: 'verified', title: 'Verified on both sides', body: 'Hospitals and doctors are checked before the first duty.' },
   { icon: 'security', title: 'Start and end with a code', body: 'A start code at the desk and an end code by SMS keep every duty on record.' },
+];
+
+// hospital sign-up and verification
+export const HOSPITAL_POINTS: AuthPoint[] = [
+  { icon: 'duties', title: 'Post a duty in a minute', body: 'Pick the role, the time and the rate. Verified staff nearby get it straight away.' },
+  { icon: 'verified', title: 'Verified on both sides', body: 'Hospitals and doctors are checked before the first duty.' },
+  { icon: 'security', title: 'Start and end with a code', body: 'A start code at the desk and an end code by SMS keep every duty on record.' },
+];
+
+// admin sign-in
+export const ADMIN_POINTS: AuthPoint[] = [
+  { icon: 'mail', title: 'A code every time', body: 'After your password, we email a one-time code to your admin address.' },
+  { icon: 'users', title: 'Access by role', body: 'Super Admin, Operations and Tech Support each see only their own tools.' },
+  { icon: 'history', title: 'Every action on record', body: 'Admin actions are kept in the activity log.' },
 ];
 
 function HeroButton({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
@@ -58,6 +74,7 @@ export default function AuthLayout({
   step,
   hideBrand,
   hero = 'title',
+  points = POINTS,
   testID,
 }: {
   title?: string;
@@ -68,6 +85,8 @@ export default function AuthLayout({
   step?: { at: number; of: number };
   hideBrand?: boolean;
   hero?: 'title' | 'brand';
+  /** what the brand panel says on wide screens */
+  points?: AuthPoint[];
   testID?: string;
 }) {
   const router = useRouter();
@@ -103,7 +122,7 @@ export default function AuthLayout({
           <View style={{ gap: 40, maxWidth: 420 }}>
             <StackedLockup width={300} tone="white" />
             <View style={{ gap: 22 }}>
-              {POINTS.map((p) => (
+              {points.map((p) => (
                 <View key={p.title} style={styles.point}>
                   <View style={styles.pointIcon}>
                     <Icon name={p.icon} size={20} color={color.onDark} />

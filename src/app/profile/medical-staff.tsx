@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { useState } from "react";
+import { View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { JOB_ROLES } from "@/constant/jobs";
 import { useAuth } from "@/context/AuthContext";
@@ -7,12 +7,9 @@ import { profileAPI } from "@/service/api";
 import AuthLayout from "@/ds/AuthLayout";
 import Button from "@/ds/Button";
 import Field from "@/ds/Field";
-import Icon from "@/ds/Icon";
-import OtpInput from "@/ds/OtpInput";
 import { Notice } from "@/ds/States";
 import { Card } from "@/ds/Surface";
 import Txt from "@/ds/Txt";
-import { color } from "@/ds/tokens";
 import {
   Address,
   AddressFields,
@@ -21,123 +18,13 @@ import {
   EducationEditor,
   educationError,
   EXPERIENCE_OPTIONS,
+  formatPhone,
+  Locked,
+  PhoneVerify,
   SelectField,
   SkillsEditor,
 } from "@/doctor/forms";
 import { apiMessage } from "@/doctor/format";
-
-const formatPhone = (raw: string) => {
-  const d = raw.replace(/\D/g, "");
-  return d.startsWith("91") && d.length === 12 ? `+${d}` : `+91${d}`;
-};
-
-function Locked({ label, value, icon }: { label: string; value: string; icon: any }) {
-  return (
-    <View style={styles.locked}>
-      <Icon name={icon} size={20} color={color.inkMuted} />
-      <View style={{ flex: 1 }}>
-        <Txt v="caption" tone="muted">
-          {label}
-        </Txt>
-        <Txt v="title" numberOfLines={1}>
-          {value || "—"}
-        </Txt>
-      </View>
-      <Icon name="lock" size={16} color={color.inkFaint} />
-    </View>
-  );
-}
-
-function PhoneVerify({ phone, setPhone, verified, setVerified, error }: { phone: string; setPhone: (p: string) => void; verified: boolean; setVerified: (v: boolean) => void; error?: string }) {
-  const [sent, setSent] = useState(false);
-  const [code, setCode] = useState("");
-  const [busy, setBusy] = useState<"send" | "verify" | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
-  const [state, setState] = useState<"idle" | "error" | "success">("idle");
-  const [wait, setWait] = useState(0);
-
-  useEffect(() => {
-    if (wait <= 0) return;
-    const id = setTimeout(() => setWait((w) => w - 1), 1000);
-    return () => clearTimeout(id);
-  }, [wait]);
-
-  const send = async () => {
-    if (phone.replace(/\D/g, "").length !== 10) {
-      setMsg("Enter your 10-digit mobile number.");
-      return;
-    }
-    setBusy("send");
-    setMsg(null);
-    try {
-      await profileAPI.sendPhoneOTP(formatPhone(phone));
-      setSent(true);
-      setCode("");
-      setState("idle");
-      setWait(45);
-    } catch (e) {
-      setMsg(apiMessage(e, "The code wasn't sent. Try again."));
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const verify = async (v = code) => {
-    if (v.length !== 6) return;
-    setBusy("verify");
-    setMsg(null);
-    try {
-      const r = await profileAPI.verifyPhoneOTP(formatPhone(phone), v);
-      if (r?.success === false) throw { response: { data: r } };
-      setVerified(true);
-      setState("success");
-    } catch (e) {
-      setState("error");
-      setMsg(apiMessage(e, "That code didn't work."));
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  return (
-    <View style={{ gap: 12 }}>
-      <Field
-        label="Mobile number"
-        prefix="+91"
-        value={phone}
-        onChangeText={(t) => {
-          setPhone(t.replace(/\D/g, "").slice(0, 10));
-          if (verified || sent) {
-            setVerified(false);
-            setSent(false);
-          }
-        }}
-        keyboardType="phone-pad"
-        autoComplete="tel"
-        error={error}
-        success={verified}
-        hint={verified ? "Verified" : "Hospitals call this number about your duties. We'll text you a code."}
-        right={
-          !verified ? (
-            <View style={styles.prefixWrap}>
-              <Button label={sent ? (wait > 0 ? `0:${String(wait).padStart(2, "0")}` : "Resend") : "Send code"} size="sm" variant="tonal" onPress={send} loading={busy === "send"} disabled={sent && wait > 0} />
-            </View>
-          ) : undefined
-        }
-      />
-      {sent && !verified ? (
-        <View style={{ gap: 8 }}>
-          <Txt v="label" tone="soft" align="center">
-            Enter the code we texted to +91 {phone}
-          </Txt>
-          <OtpInput value={code} onChange={(v) => { setCode(v); if (state !== "idle") setState("idle"); }} onComplete={verify} state={state} autoFocus label="Phone code" />
-          <Button label="Verify number" onPress={() => verify()} loading={busy === "verify"} disabled={code.length !== 6} variant="secondary" full />
-        </View>
-      ) : null}
-      {msg ? <Notice tone="danger" body={msg} /> : null}
-    </View>
-  );
-}
 
 export default function DoctorProfileWizard() {
   const router = useRouter();
@@ -277,7 +164,3 @@ export default function DoctorProfileWizard() {
   );
 }
 
-const styles = StyleSheet.create({
-  locked: { flexDirection: "row", alignItems: "center", gap: 12, padding: 10 },
-  prefixWrap: { marginRight: -6 },
-});

@@ -1,6 +1,5 @@
 import { TIcon, useThemedStyles } from "@/ds/themed";
 import { Theme, useTheme } from "@/ds/theme";
-import { COLORS } from "@/constant/colors";
 import { EVIDENCE_MAX_FILES, EVIDENCE_TYPES, PickedFile, evidenceError } from "@/constant/support";
 import * as DocumentPicker from "expo-document-picker";
 import React, { useState } from "react";

@@ -17,7 +17,7 @@ import {
     useWindowDimensions,
     View
 } from 'react-native';
-import EndDutyOtpVerification from '../hospital/endDutyOtpVerification';
+import EndDutyOtpVerification from '@/component/admin/EndDutyOtpVerification';
 
 
 const isWeb = typeof window !== 'undefined' && !!window.document;

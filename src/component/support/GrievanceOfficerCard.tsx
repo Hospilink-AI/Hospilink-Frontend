@@ -1,6 +1,5 @@
 import { TIcon, useThemedStyles } from "@/ds/themed";
 import { Theme, useTheme } from "@/ds/theme";
-import { COLORS } from "@/constant/colors";
 import { GRIEVANCE_OFFICER } from "@/constant/support";
 import React from "react";
 import { Linking, StyleSheet, Text, TouchableOpacity, View } from "react-native";
