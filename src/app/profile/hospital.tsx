@@ -1,1061 +1,171 @@
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  useWindowDimensions,
-  View,
-} from "react-native";
-import { mapsAPI, profileAPI } from "../../service/api";
-import { useLocalSearchParams } from "expo-router";
+import { useState } from "react";
+import { StyleSheet, View } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useAuth } from "@/context/AuthContext";
+import { profileAPI } from "@/service/api";
+import AuthLayout, { HOSPITAL_POINTS } from "@/ds/AuthLayout";
+import Button from "@/ds/Button";
+import Field from "@/ds/Field";
+import { Notice } from "@/ds/States";
+import { Card } from "@/ds/Surface";
+import { Chip } from "@/ds/Tag";
+import Txt from "@/ds/Txt";
+import { Address, AddressFields, formatPhone, Locked, PhoneVerify, SelectField } from "@/doctor/forms";
+import { apiMessage } from "@/doctor/format";
+import { HOSPITAL_SERVICES, STAFF_COUNT_OPTIONS } from "@/hospital/onboarding";
 
-// Lazy import so web build doesn't choke if not installed yet
-let WebView: any = null;
-if (Platform.OS !== "web") {
-  try {
-    WebView = require("react-native-webview").WebView;
-  } catch (_) { }
-}
+const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 
-// ─── Indian States ──────────────────────────────────────────────────────────
-const INDIAN_STATES = [
-  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
-  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
-  'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur',
-  'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
-  'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
-  'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
-  'Andaman and Nicobar Islands', 'Chandigarh',
-  'Dadra and Nagar Haveli and Daman and Diu',
-  'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry',
-];
-
-// ─── Leaflet HTML ──────────────────────────────────────────────────────────
-const getMapHTML = (lat: number, lng: number) => `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #f0f4f8; }
-    #map { width: 100%; height: 100%; }
-    .leaflet-control-attribution { font-size: 9px !important; }
-  </style>
-</head>
-<body>
-  <div id="map"></div>
-  <script>
-    var map = L.map('map', { zoomControl: true, attributionControl: true })
-               .setView([${lat}, ${lng}], 14);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 19
-    }).addTo(map);
-
-    var icon = L.divIcon({
-      html: '<div style="width:20px;height:20px;background:#2563eb;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 2px 8px rgba(37,99,235,0.5)"></div>',
-      iconSize: [20, 20],
-      iconAnchor: [10, 20],
-      className: ''
-    });
-
-    var marker = L.marker([${lat}, ${lng}], { draggable: true, icon: icon }).addTo(map);
-    marker.bindPopup('<b style="font-size:12px;color:#1d4ed8">📍 Hospital Location</b><br/><small style="color:#475569">Drag pin or tap map to reposition</small>').openPopup();
-
-    function sendLocation(latlng) {
-      var msg = JSON.stringify({ lat: latlng.lat, lng: latlng.lng });
-      if (window.ReactNativeWebView) {
-        window.ReactNativeWebView.postMessage(msg);
-      } else {
-        window.parent.postMessage(msg, '*');
-      }
-    }
-
-    marker.on('dragend', function(e) {
-      sendLocation(e.target.getLatLng());
-      marker.openPopup();
-    });
-
-    map.on('click', function(e) {
-      marker.setLatLng(e.latlng);
-      sendLocation(e.latlng);
-      marker.openPopup();
-    });
-
-    window.updateMarker = function(lat, lng) {
-      var ll = L.latLng(lat, lng);
-      marker.setLatLng(ll);
-      map.flyTo(ll, 14, { duration: 1.2 });
-      setTimeout(function() { marker.openPopup(); }, 1300);
-    };
-  </script>
-</body>
-</html>
-`;
-
-// ─── Constants ─────────────────────────────────────────────────────────────
-const DEFAULT_LAT = 18.5642;
-const DEFAULT_LNG = 73.9530;
-
-const STAFF_OPTIONS = [
-  { label: "2 - 10 employees", value: "2-10" },
-  { label: "11 - 50 employees", value: "11-50" },
-  { label: "51 - 100 employees", value: "51-100" },
-  { label: "100+ employees", value: "100+" },
-];
-
-const ALL_SERVICES = [
-  'Emergency Care', 'General Surgery', 'Cardiology', 'Neurology',
-  'Orthopedics', 'Pediatrics', 'Obstetrics & Gynecology', 'Internal Medicine',
-  'Radiology', 'Laboratory Services', 'Pharmacy', 'Physical Therapy',
-  'Mental Health', 'Oncology', 'Dermatology', 'Ophthalmology',
-  'ENT (Ear, Nose, Throat)', 'Urology', 'Gastroenterology', 'Pulmonology',
-];
-
-function MapComponent({
-  lat, lng, onLocationChange, webViewRef,
-}: {
-  lat: number; lng: number;
-  onLocationChange: (lat: number, lng: number) => void;
-  webViewRef: React.MutableRefObject<any>;
-}) {
-  const htmlContent = getMapHTML(lat, lng);
-
-  if (Platform.OS === "web") {
-    const iframeRef = useRef<HTMLIFrameElement>(null);
-
-    useEffect(() => {
-      if (Platform.OS !== "web") return;
-      const handler = (e: MessageEvent) => {
-        try {
-          const data = JSON.parse(e.data);
-          if (typeof data.lat === "number" && typeof data.lng === "number") {
-            onLocationChange(data.lat, data.lng);
-          }
-        } catch { }
-      };
-      window.addEventListener("message", handler);
-      return () => { window.removeEventListener("message", handler); };
-    }, [onLocationChange]);
-
-    useEffect(() => {
-      webViewRef.current = {
-        injectJavaScript: (code: string) => {
-          (iframeRef.current?.contentWindow as any)?.eval(code);
-        },
-      };
-    }, []);
-
-
-
-    return (
-      <iframe
-        ref={iframeRef}
-        srcDoc={htmlContent}
-        style={{ width: "100%", height: 200, border: "none", borderRadius: 10, display: "block" }}
-        sandbox="allow-scripts allow-same-origin"
-        title="Hospital Location Map"
-      />
-    );
-  }
-
-  if (!WebView) {
-    return (
-      <View style={styles.mapFallback}>
-        <Ionicons name="map-outline" size={28} color="#cbd5e1" />
-        <Text style={styles.mapFallbackText}>Run: npx expo install react-native-webview</Text>
-      </View>
-    );
-  }
-
-  return (
-    <WebView
-      ref={webViewRef}
-      source={{ html: htmlContent }}
-      style={{ height: 200, borderRadius: 10 }}
-      originWhitelist={["*"]}
-      onMessage={(e: any) => {
-        try {
-          const { lat: newLat, lng: newLng } = JSON.parse(e.nativeEvent.data);
-          onLocationChange(newLat, newLng);
-        } catch { }
-      }}
-      javaScriptEnabled
-      domStorageEnabled
-      scrollEnabled={false}
-    />
-  );
-}
-
-// ─── Main Screen ───────────────────────────────────────────────────────────
-export default function HospitalProfile() {
-  const { width } = useWindowDimensions();
-  const isDesktop = Platform.OS === "web" && width > 768;
+// Hospital sign-up, after the email code: details, address, services. Documents come next.
+export default function HospitalProfileWizard() {
   const router = useRouter();
-
-  // const params = useLocalSearchParams();
-  // const signupName = Array.isArray(params.signupName)
-  //   ? params.signupName[0]
-  //   : (params.signupName as string) ?? "";
-
-  // // ── NEW: prefill email from signup params ──
-  // const signupEmail = Array.isArray(params.email)
-  //   ? params.email[0]
-  //   : (params.email as string) ?? "";
-
+  const { user } = useAuth();
   const params = useLocalSearchParams();
-  const signupName = Array.isArray(params.signupName)
-    ? params.signupName[0]
-    : (params.signupName as string) ?? "";
+  const email = one(params.prefillEmail as any) || one(params.email as any) || user?.email || "";
 
-  const prefillName = Array.isArray(params.prefillName)
-    ? params.prefillName[0]
-    : (params.prefillName as string) ?? "";
+  const [step, setStep] = useState(1);
+  const [name, setName] = useState(one(params.prefillName as any) || one(params.signupName as any) || user?.name || "");
+  const [phone, setPhone] = useState("");
+  const [phoneOk, setPhoneOk] = useState(false);
+  const [staffCount, setStaffCount] = useState("");
+  const [address, setAddress] = useState<Address>({ currentAddress: "", city: "", state: "", pincode: "" });
+  const [services, setServices] = useState<string[]>([]);
+  const [about, setAbout] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [general, setGeneral] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  const signupEmail = Array.isArray(params.email)
-    ? params.email[0]
-    : (params.email as string) ?? "";
-
-  const prefillEmail = Array.isArray(params.prefillEmail)
-    ? params.prefillEmail[0]
-    : (params.prefillEmail as string) ?? "";
-
-  // ── Form state
-  // const [hospitalName, setHospitalName] = useState(signupName);
-  const [hospitalName, setHospitalName] = useState(prefillName || signupName || "");
-  // const [email] = useState(signupEmail);                // ← prefilled, non-editable (no setter exposed)
-  const [email] = useState(prefillEmail || signupEmail || "");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [address, setAddress] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
-  const [pincode, setPincode] = useState("");
-  const [staffCount, setStaffCount] = useState(STAFF_OPTIONS[2]);
-  const [showStaffDropdown, setShowStaffDropdown] = useState(false);
-  const [showStateDropdown, setShowStateDropdown] = useState(false);
-  const [showServiceDropdown, setShowServiceDropdown] = useState(false);
-  const [selectedServices, setSelectedServices] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [description, setDescription] = useState("");
-
-
-  const [showOTP, setShowOTP] = useState(false);
-  const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
-  const otpRefs = useRef<any[]>([]);
-  const [sendingOtp, setSendingOtp] = useState(false);
-  const [verifyingOtp, setVerifyingOtp] = useState(false);
-  const [phoneVerified, setPhoneVerified] = useState(false);
-  const [otpError, setOtpError] = useState("");
-  const [resendCountdown, setResendCountdown] = useState(0);
-
-  // ── Dynamic completion percentage ──
-  // 9 tracked fields: email & staffCount always count (prefilled/defaulted)
-  const completionPercent = Math.round(
-    ([
-      true,                              // email — always prefilled
-      true,                              // staffCount — always has a default
-      hospitalName.trim().length > 0,
-      phoneNumber.trim().length > 0,
-      address.trim().length > 0,
-      city.trim().length > 0,
-      pincode.trim().length === 6,
-      state.trim().length > 0,
-      description.trim().length > 0,
-      selectedServices.length > 0,
-    ].filter(Boolean).length /
-      9) *
-    100
-  );
-
-  // ── Map state
-  const [mapLat, setMapLat] = useState(DEFAULT_LAT);
-  const [mapLng, setMapLng] = useState(DEFAULT_LNG);
-  const [isGeocoding, setIsGeocoding] = useState(false);
-  const [pinnedLabel, setPinnedLabel] = useState("Pune, Maharashtra");
-  const [mapNotice, setMapNotice] = useState("");
-  const webViewRef = useRef<any>(null);
-  const geocodeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const showAlert = (title: string, message: string) => {
-    if (Platform.OS === "web" && typeof window !== "undefined") {
-      window.alert(`${title}\n\n${message}`);
-    } else {
-      Alert.alert(title, message);
+  const checkStep = (n: number) => {
+    const e: Record<string, string> = {};
+    if (n === 1) {
+      if (!name.trim()) e.name = "Enter the hospital's registered name.";
+      if (!phoneOk) e.phone = "Verify the hospital's mobile number to continue.";
+      if (!staffCount) e.staffCount = "Choose how many staff you have.";
     }
+    if (n === 2) {
+      if (!address.currentAddress.trim()) e.currentAddress = "Enter the hospital's address.";
+      if (!address.city.trim()) e.city = "Enter the city.";
+      if (!address.state) e.state = "Choose the state.";
+      if (!/^[1-9]\d{5}$/.test(address.pincode)) e.pincode = "Enter a 6-digit pincode.";
+    }
+    if (n === 3 && !services.length) e.services = "Choose at least one service.";
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
-  // Messages for the backend map endpoints; other failures leave the form as it is.
-  const mapErrorNotice = (err: any) => {
-    const status = err?.response?.status;
-    if (status === 503) return "Map search is unavailable, enter the address manually.";
-    if (status === 429) return err?.response?.data?.message || "Too many map searches. Wait a minute and try again.";
-    if (status === 404) return "No match found. Drag the pin to your location.";
-    return "";
-  };
-
-  const formatPhone = (raw: string) => `+91 ${raw.replace(/\D/g, "").slice(0, 10)}`;
-
-  const geocode = useCallback(
-    (addressVal: string, cityVal: string, stateVal: string) => {
-      if (geocodeTimer.current) clearTimeout(geocodeTimer.current);
-      if (!addressVal && !cityVal && !stateVal) return;
-      geocodeTimer.current = setTimeout(async () => {
-        const q = [addressVal, cityVal, stateVal].filter(Boolean).join(", ").slice(0, 200);
-        if (q.trim().length < 3) return;
-        setIsGeocoding(true);
-        try {
-          const data = await mapsAPI.geocode(q);
-          const newLat = Number(data?.latitude);
-          const newLng = Number(data?.longitude);
-          if (Number.isFinite(newLat) && Number.isFinite(newLng)) {
-            setMapLat(newLat);
-            setMapLng(newLng);
-            setPinnedLabel(String(data?.formattedAddress ?? q).split(",").slice(0, 2).join(",").trim());
-            webViewRef.current?.injectJavaScript(
-              `window.updateMarker(${newLat}, ${newLng}); true;`
-            );
-            setMapNotice("");
-          }
-        } catch (err) { setMapNotice(mapErrorNotice(err)); }
-        setIsGeocoding(false);
-      }, 800);
-    },
-    []
-  );
-
-  const handleAddressChange = (val: string) => { setAddress(val); geocode(val, city, state); };
-  const handleCityChange = (val: string) => { setCity(val); geocode(address, val, state); };
-  const handleStateSelect = (val: string) => {
-    setState(val);
-    setShowStateDropdown(false);
-    geocode(address, city, val);
-  };
-
-  const handleLocationChange = (lat: number, lng: number) => {
-    setMapLat(lat);
-    setMapLng(lng);
-    mapsAPI
-      .reverseGeocode(lat, lng)
-      .then((d: any) => {
-        setMapNotice("");
-        if (d && (d.street || d.city || d.state || d.pincode)) {
-          const street = d.street || "";
-          const cityName = d.city || "";
-          const stateName = d.state || "";
-          const pin = String(d.pincode || "").replace(/\D/g, "").slice(0, 6);
-          if (street) setAddress(street);
-          if (cityName) setCity(cityName);
-          if (stateName) setState(stateName);
-          if (pin.length === 6) setPincode(pin);
-          setPinnedLabel([street || cityName, stateName].filter(Boolean).slice(0, 2).join(", "));
-        }
-      })
-      .catch((err: any) => setMapNotice(mapErrorNotice(err)));
-  };
-
-  const toggleService = (service: string) => {
-    setSelectedServices((prev) =>
-      prev.includes(service) ? prev.filter((s) => s !== service) : [...prev, service]
-    );
-  };
-
-  const handleFinishSetup = async () => {
-    if (!hospitalName.trim()) { showAlert("Missing Field", "Please enter the hospital legal name."); return; }
-    if (!phoneNumber.trim()) { showAlert("Missing Field", "Please enter the phone number."); return; }
-    if (!phoneVerified) { showAlert("Phone Not Verified", "Please verify your phone number with the OTP first."); return; }
-    if (!address.trim()) { showAlert("Missing Field", "Please enter the current address."); return; }
-    if (!city.trim()) { showAlert("Missing Field", "Please enter the city."); return; }
-    if (!state.trim()) { showAlert("Missing Field", "Please select a state."); return; }
-    if (!pincode.trim()) { showAlert("Missing Field", "Please enter the pincode."); return; }
-    if (selectedServices.length === 0) { showAlert("Missing Field", "Please select at least one service."); return; }
-
-    const fullAddress = [address.trim(), city.trim(), state.trim()].filter(Boolean).join(", ");
-
-    const payload = {
-      hospitalLegalName: hospitalName.trim(),
-      email: email.trim(),
-      phoneNumber: formatPhone(phoneNumber),
-      // phoneNumber: `+91 ${phoneNumber}`,
-      currentAddress: fullAddress,
-      city: city.trim(),
-      state: state,
-      pincode: pincode.trim(),
-      servicesAvailable: selectedServices,
-      // location: city.trim(),
-      staffCount: staffCount.value,
-      description: description.trim(),
-    };
-
-    console.log("📤 Submitting hospital profile:", payload);
-    setLoading(true);
-
+  const submit = async () => {
+    if (!checkStep(3)) return;
+    setSaving(true);
+    setGeneral(null);
     try {
-      const response = await profileAPI.createHospitalProfile(payload);
-      console.log("✅ Hospital profile saved:", response);
-      // router.replace("/hospital/dashboard");
-      router.replace("/profile/upload-document")
-    } catch (error: any) {
-      console.error("❌ Hospital profile error:", error?.response?.data);
-      showAlert("Error", error?.response?.data?.message || error?.message || "Failed to save profile.");
+      await profileAPI.createHospitalProfile({
+        hospitalLegalName: name.trim(),
+        email: email.trim(),
+        phoneNumber: formatPhone(phone),
+        // the full line, as sign-up has always sent it (the server finds the hospital from it)
+        currentAddress: [address.currentAddress.trim(), address.city.trim(), address.state].filter(Boolean).join(", "),
+        city: address.city.trim(),
+        state: address.state,
+        pincode: address.pincode,
+        servicesAvailable: services,
+        staffCount,
+        description: about.trim(),
+      });
+      router.replace("/profile/upload-document" as any);
+    } catch (e: any) {
+      const m = apiMessage(e, "Your hospital's details weren't saved. Try again.");
+      // a profile made earlier: carry on to documents
+      if (e?.response?.status === 409 && /already exists/i.test(m)) router.replace("/profile/upload-document" as any);
+      else setGeneral(m);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  const handleSendOtp = async () => {
-    const digits = phoneNumber.replace(/\D/g, "");
-    if (digits.length < 10) {
-      showAlert("Invalid Phone", "Please enter a valid 10-digit phone number.");
-      return;
-    }
-    setOtpError("");
-    setSendingOtp(true);
-    try {
-      const res = await profileAPI.sendPhoneOTP(formatPhone(phoneNumber));
-      if (res?.success) {
-        setShowOTP(true);
-        setOtp(["", "", "", "", "", ""]);
-        setResendCountdown(45);
-        setTimeout(() => otpRefs.current[0]?.focus(), 100);
-      } else {
-        setOtpError(res?.message || "Failed to send OTP.");
-      }
-    } catch (error: any) {
-      setOtpError(
-        error?.response?.data?.message ?? error?.message ?? "Failed to send OTP."
-      );
-    } finally {
-      setSendingOtp(false);
-    }
+  const next = () => {
+    if (!checkStep(step)) return;
+    if (step < 3) setStep(step + 1);
+    else submit();
   };
 
-
-  const handleVerifyOtp = async () => {
-    const code = otp.join("");
-    if (code.length < 6) {
-      setOtpError("Please enter all 6 digits.");
-      return;
-    }
-    setOtpError("");
-    setVerifyingOtp(true);
-    try {
-      const res = await profileAPI.verifyPhoneOTP(formatPhone(phoneNumber), code);
-      if (res?.success) {
-        setPhoneVerified(true);
-        setShowOTP(false);
-      } else {
-        setOtpError(res?.message || "Invalid OTP. Please try again.");
-      }
-    } catch (error: any) {
-      setOtpError(
-        error?.response?.data?.message ?? error?.message ?? "Verification failed."
-      );
-    } finally {
-      setVerifyingOtp(false);
-    }
-  };
-
-  useEffect(() => {
-    if (resendCountdown <= 0) return;
-    const t = setInterval(() => setResendCountdown((c) => c - 1), 1000);
-    return () => clearInterval(t);
-  }, [resendCountdown]);
+  const titles = [
+    { t: "Tell us about your hospital", s: "Staff see these details on every duty you post." },
+    { t: "Where is the hospital?", s: "Duties go to staff near this address, and staff check in here when a duty starts." },
+    { t: "What does it offer?", s: "Pick every department that's running. You can change these later." },
+  ][step - 1];
 
   return (
-    <View style={styles.outerContainer}>
+    <AuthLayout
+      back={step > 1 ? () => setStep(step - 1) : () => router.replace({ pathname: "/auth/welcome-choice", params: { email, signupName: name, accountType: "hospital" } })}
+      step={{ at: step, of: 4 }}
+      title={titles.t}
+      subtitle={titles.s}
+      points={HOSPITAL_POINTS}
+      testID="hospital-wizard"
+      footer={<Button label={step < 3 ? "Continue" : "Save and add documents"} onPress={next} loading={saving} full size="lg" iconRight="forward" />}
+    >
+      {general ? <Notice tone="danger" body={general} /> : null}
 
-      {/* ── NAVBAR ── */}
-      <View style={styles.navbar}>
-        <View style={styles.navLeft}>
-          <View style={styles.logoBox}>
-            <Ionicons name="pulse" size={18} color="#fff" />
-          </View>
-          <Text style={styles.logoText}>HospiLink</Text>
-        </View>
-        <View style={styles.navRight}>
-          <Text style={styles.adminPortalText}>Admin Portal</Text>
-          <View style={styles.avatarCircle}>
-            <Ionicons name="person" size={18} color="#94a3b8" />
-          </View>
-        </View>
-      </View>
-
-      {/* ── SCROLLABLE BODY ── */}
-      <ScrollView
-        style={styles.scrollWrapper}
-        contentContainerStyle={[styles.scrollContent, isDesktop && { paddingHorizontal: 60 }]}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-
-        {/* ── PROGRESS CARD ── */}
-        <View style={styles.progressCard}>
-          <View style={styles.progressHeader}>
-            <View style={{ flex: 1, marginRight: 16 }}>
-              <Text style={styles.title}>Hospital Profile Setup</Text>
-              <Text style={styles.subtitle}>
-                Complete your facility's operational information to go live.
-              </Text>
+      {step === 1 ? (
+        <>
+          <Card tone="flat" pad={6}>
+            <Locked label="Account email" value={email} icon="mail" />
+          </Card>
+          <Field
+            label="Registered hospital name"
+            hint="As it appears on your registration and GST certificates."
+            icon="hospital"
+            value={name}
+            onChangeText={setName}
+            error={errors.name}
+            maxLength={150}
+            autoComplete="organization"
+          />
+          <PhoneVerify
+            phone={phone}
+            setPhone={setPhone}
+            verified={phoneOk}
+            setVerified={setPhoneOk}
+            error={phoneOk ? undefined : errors.phone}
+            label="Hospital mobile number"
+            hint="A number someone at the hospital answers. We'll text it a code."
+          />
+          <SelectField label="Staff at the hospital" value={staffCount} options={STAFF_COUNT_OPTIONS} onChange={setStaffCount} error={errors.staffCount} icon="users" placeholder="How many staff?" />
+        </>
+      ) : step === 2 ? (
+        <AddressFields value={address} onChange={setAddress} errors={errors as any} place="hospital" />
+      ) : (
+        <>
+          <View style={{ gap: 10 }}>
+            <View style={styles.servicesHead}>
+              <Txt v="h3">Services</Txt>
+              <Txt v="label" tone={services.length ? "primary" : "muted"} style={{ fontVariant: ["tabular-nums"] }}>
+                {services.length} chosen
+              </Txt>
             </View>
-            <View style={styles.percentBox}>
-              <Text style={styles.percent}>{completionPercent}%</Text>
-              <Text style={styles.percentLabel}>COMPLETION</Text>
-            </View>
-          </View>
-          <View style={styles.progressBarWrapper}>
-            <View style={[styles.progressFill, { width: `${completionPercent}%` as any }]} />
-          </View>
-          <View style={styles.noticeRow}>
-            <Ionicons name="information-circle" size={16} color="#2563eb" />
-            <Text style={styles.noticeText}>
-              {"  "}Almost there! Just a few more details needed to verify your account.
-            </Text>
-          </View>
-        </View>
-
-        {/* ── TWO CARDS ROW ── */}
-        <View style={[styles.cardsRow, !isDesktop && { flexDirection: "column" }]}>
-
-          {/* ── LEFT CARD: Identity & Location ── */}
-          <View style={[styles.card, !isDesktop && { marginBottom: 16 }]}>
-            <View style={styles.cardTitleRow}>
-              <Ionicons name="grid-outline" size={18} color="#3b82f6" />
-              <Text style={styles.cardTitle}>  Identity & Location</Text>
-            </View>
-            <View style={styles.dividerLine} />
-
-            {/* Hospital Legal Name */}
-            <Text style={styles.label}>Hospital Legal Name</Text>
-            <View style={styles.inputRow}>
-              <TextInput
-                placeholder="e.g. Hospital Name"
-                placeholderTextColor="#b0bec5"
-                style={styles.inputInner}
-                value={hospitalName}
-                onChangeText={setHospitalName}
-              />
-            </View>
-
-            {/* ── NEW: Email (prefilled, non-editable) ── */}
-            <Text style={styles.label}>Email Address</Text>
-            <View style={[styles.inputRow, styles.inputRowDisabled]}>
-              {/* <Ionicons name="mail-outline" size={15} color="#94a3b8" style={{ marginRight: 8 }} /> */}
-              <TextInput
-                style={[styles.inputInner, styles.inputDisabled]}
-                value={email}
-                editable={false}
-                selectTextOnFocus={false}
-                placeholderTextColor="#b0bec5"
-                placeholder="email@hospital.com"
-              />
-              <Ionicons name="lock-closed" size={13} color="#cbd5e1" />
-            </View>
-
-            {/* ── NEW: Phone Number ── */}
-            <Text style={styles.label}>Phone Number</Text>
-            {/* <View style={styles.inputRow}>
-              <Ionicons name="call-outline" size={15} color="#94a3b8" style={{ marginRight: 8 }} />
-              <TextInput
-                placeholder="+91 98765 43210"
-                placeholderTextColor="#b0bec5"
-                style={styles.inputInner}
-                value={phoneNumber}
-                onChangeText={(v) => setPhoneNumber(v.replace(/[^0-9+\-\s()]/g, '').slice(0, 15))}
-                keyboardType="phone-pad"
-                maxLength={15}
-              />
-            </View> */}
-
-            {/* <View style={styles.inputRow}> */}
-            {/* <Ionicons name="call-outline" size={15} color="#94a3b8" style={{ marginRight: 8 }} /> */}
-            {/* <View style={styles.phonePrefix}>
-                <Text style={styles.phonePrefixText}>+91</Text>
-              </View>
-              <View style={styles.phoneDivider} />
-              <TextInput
-                placeholder="98765 43210"
-                placeholderTextColor="#b0bec5"
-                style={styles.inputInner}
-                value={phoneNumber}
-                onChangeText={(v) => setPhoneNumber(v.replace(/\D/g, "").slice(0, 10))}
-                keyboardType="number-pad"
-                maxLength={10}
-              />
-            </View> */}
-
-            <View style={styles.inputRow}>
-              <View style={styles.phonePrefix}>
-                <Text style={styles.phonePrefixText}>+91</Text>
-              </View>
-              <View style={styles.phoneDivider} />
-              <TextInput
-                placeholder="98765 43210"
-                placeholderTextColor="#b0bec5"
-                style={styles.inputInner}
-                value={phoneNumber}
-                onChangeText={(v) => {
-                  setPhoneNumber(v.replace(/\D/g, "").slice(0, 10));
-                  setShowOTP(false);
-                  setPhoneVerified(false);
-                  setOtp(["", "", "", "", "", ""]);
-                }}
-                keyboardType="number-pad"
-                maxLength={10}
-                editable={!phoneVerified}
-              />
-              {phoneVerified ? (
-                <Ionicons name="checkmark-circle" size={18} color="#16a34a" />
-              ) : (
-                <TouchableOpacity
-                  style={styles.sendOtpBtn}
-                  onPress={handleSendOtp}
-                  disabled={sendingOtp || (showOTP && resendCountdown > 0)}
-                  activeOpacity={0.85}
-                >
-                  {sendingOtp ? (
-                    <ActivityIndicator size="small" color="#2563eb" />
-                  ) : (
-                    <Text style={styles.sendOtpBtnText}>
-                      {showOTP
-                        ? resendCountdown > 0
-                          ? `Resend ${resendCountdown}s`
-                          : "Resend"
-                        : "Send OTP"}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {showOTP && !phoneVerified && (
-              <View style={styles.otpSection}>
-                <Text style={styles.otpHint}>Enter the code sent to your phone number.</Text>
-                <View style={styles.otpRow}>
-                  {otp.map((digit, i) => (
-                    <TextInput
-                      key={i}
-                      ref={(r) => { otpRefs.current[i] = r as any; }}
-                      style={[styles.otpBox, digit !== "" && styles.otpBoxFilled]}
-                      value={digit}
-                      onChangeText={(v) => {
-                        const val = v.replace(/\D/g, "").slice(-1);
-                        const updated = [...otp];
-                        updated[i] = val;
-                        setOtp(updated);
-                        if (val && i < 5) otpRefs.current[i + 1]?.focus();
-                      }}
-                      onKeyPress={({ nativeEvent }) => {
-                        if (nativeEvent.key === "Backspace" && !otp[i] && i > 0) {
-                          otpRefs.current[i - 1]?.focus();
-                        }
-                      }}
-                      keyboardType="number-pad"
-                      maxLength={1}
-                      textAlign="center"
-                    />
-                  ))}
-                  <TouchableOpacity
-                    style={styles.verifyOtpBtn}
-                    onPress={handleVerifyOtp}
-                    disabled={verifyingOtp}
-                    activeOpacity={0.85}
-                  >
-                    {verifyingOtp ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <Text style={styles.verifyOtpBtnText}>Verify</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-                {otpError ? <Text style={styles.otpErrorText}>{otpError}</Text> : null}
-              </View>
-            )}
-
-            {/* Current Address */}
-            <Text style={styles.label}>Current Address</Text>
-            <View style={styles.inputRow}>
-              <TextInput
-                placeholder="123 Medical Plaza, Suite 400"
-                placeholderTextColor="#b0bec5"
-                style={styles.inputInner}
-                value={address}
-                onChangeText={handleAddressChange}
-              />
-            </View>
-
-            {/* City + Pincode row */}
-            <View style={styles.twoColRow}>
-              <View style={styles.twoColItem}>
-                <Text style={styles.label}>City</Text>
-                <View style={styles.inputRow}>
-                  <TextInput
-                    placeholder="Nagpur"
-                    placeholderTextColor="#b0bec5"
-                    style={styles.inputInner}
-                    value={city}
-                    onChangeText={handleCityChange}
-                  />
-                </View>
-              </View>
-              <View style={[styles.twoColItem, { marginLeft: 12 }]}>
-                <Text style={styles.label}>Pincode</Text>
-                <View style={styles.inputRow}>
-                  <TextInput
-                    placeholder="440015"
-                    placeholderTextColor="#b0bec5"
-                    style={styles.inputInner}
-                    value={pincode}
-                    onChangeText={(v) => setPincode(v.replace(/\D/g, '').slice(0, 6))}
-                    keyboardType="number-pad"
-                    maxLength={6}
-                  />
-                </View>
-              </View>
-            </View>
-
-            {/* ── State Dropdown ── */}
-            <Text style={styles.label}>State</Text>
-            <TouchableOpacity
-              style={styles.inputRow}
-              onPress={() => {
-                setShowStateDropdown(!showStateDropdown);
-                setShowStaffDropdown(false);
-              }}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.dropdownText, !state && { color: "#b0bec5" }]}>
-                {state || "Select State"}
-              </Text>
-              <Ionicons
-                name={showStateDropdown ? "chevron-up" : "chevron-down"}
-                size={16}
-                color="#64748b"
-              />
-            </TouchableOpacity>
-
-            {showStateDropdown && (
-              <View style={styles.dropdownList}>
-                <ScrollView style={{ maxHeight: 220 }} nestedScrollEnabled showsVerticalScrollIndicator>
-                  {INDIAN_STATES.map((st) => (
-                    <TouchableOpacity
-                      key={st}
-                      style={[styles.dropdownItem, state === st && styles.dropdownItemActive]}
-                      onPress={() => handleStateSelect(st)}
-                    >
-                      <Text style={[styles.dropdownItemText, state === st && styles.dropdownItemTextActive]}>
-                        {st}
-                      </Text>
-                      {state === st && <Ionicons name="checkmark" size={14} color="#2563eb" />}
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-            )}
-
-            <Text style={styles.label}>Hospital Description</Text>
-            <View style={[styles.inputRow, { height: 'auto', alignItems: 'flex-start', paddingVertical: 10 }]}>
-              <TextInput
-                placeholder="e.g. A premier multispeciality hospital providing quality healthcare..."
-                placeholderTextColor="#b0bec5"
-                style={[styles.inputInner, { minHeight: 90, textAlignVertical: 'top' }]}
-                value={description}
-                onChangeText={setDescription}
-                multiline
-                numberOfLines={4}
-              />
+            {errors.services ? <Notice tone="danger" body={errors.services} /> : null}
+            <View style={styles.chips} accessibilityRole="list">
+              {HOSPITAL_SERVICES.map((s) => (
+                <Chip key={s} label={s} selected={services.includes(s)} onPress={() => setServices((x) => (x.includes(s) ? x.filter((y) => y !== s) : [...x, s]))} />
+              ))}
             </View>
           </View>
-          {/* ── Description ── */}
-
-
-          {/* ── RIGHT CARD: Capacity & Services ── */}
-          <View style={[styles.card, isDesktop && { marginLeft: 16 }]}>
-            <View style={styles.cardTitleRow}>
-              <Ionicons name="people-outline" size={18} color="#3b82f6" />
-              <Text style={styles.cardTitle}>  Capacity & Services</Text>
-            </View>
-            <View style={styles.dividerLine} />
-
-            <Text style={styles.label}>Total Staff Count</Text>
-            <TouchableOpacity
-              style={styles.inputRow}
-              onPress={() => {
-                setShowStaffDropdown(!showStaffDropdown);
-                setShowStateDropdown(false);
-              }}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.dropdownText}>{staffCount.label}</Text>
-              <Ionicons
-                name={showStaffDropdown ? "chevron-up" : "chevron-down"}
-                size={16}
-                color="#64748b"
-              />
-            </TouchableOpacity>
-
-            {showStaffDropdown && (
-              <View style={styles.dropdownList}>
-                {STAFF_OPTIONS.map((opt) => (
-                  <TouchableOpacity
-                    key={opt.value}
-                    style={[styles.dropdownItem, staffCount.value === opt.value && styles.dropdownItemActive]}
-                    onPress={() => { setStaffCount(opt); setShowStaffDropdown(false); }}
-                  >
-                    <Text style={[styles.dropdownItemText, staffCount.value === opt.value && styles.dropdownItemTextActive]}>
-                      {opt.label}
-                    </Text>
-                    {staffCount.value === opt.value && <Ionicons name="checkmark" size={14} color="#2563eb" />}
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-
-            <Text style={styles.label}>Available Clinical Services</Text>
-            <View style={styles.servicesBox}>
-              <View style={styles.tagContainer}>
-                {selectedServices.length === 0 && (
-                  <Text style={styles.servicesEmptyHint}>No services selected yet.</Text>
-                )}
-                {selectedServices.map((service) => (
-                  <TouchableOpacity
-                    key={service}
-                    style={styles.tag}
-                    onPress={() => toggleService(service)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.tagText}>{service}</Text>
-                    <Ionicons name="close" size={13} color="#fff" style={{ marginLeft: 4 }} />
-                  </TouchableOpacity>
-                ))}
-                <TouchableOpacity
-                  style={styles.addServiceBtn}
-                  onPress={() => setShowServiceDropdown(!showServiceDropdown)}
-                >
-                  <Ionicons name="add" size={14} color="#64748b" />
-                  <Text style={styles.addServiceText}> Add Service</Text>
-                </TouchableOpacity>
-              </View>
-
-              {showServiceDropdown && (
-                <View style={styles.serviceDropdown}>
-                  <View style={styles.serviceDropdownHeader}>
-                    <Text style={styles.serviceDropdownTitle}>Select Services</Text>
-                    <TouchableOpacity onPress={() => setShowServiceDropdown(false)}>
-                      <Ionicons name="close" size={16} color="#64748b" />
-                    </TouchableOpacity>
-                  </View>
-                  <ScrollView style={styles.serviceDropdownList} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-                    {ALL_SERVICES.map((service) => {
-                      const active = selectedServices.includes(service);
-                      return (
-                        <TouchableOpacity
-                          key={service}
-                          style={[styles.serviceDropdownItem, active && styles.serviceDropdownItemActive]}
-                          onPress={() => toggleService(service)}
-                          activeOpacity={0.75}
-                        >
-                          <Text style={[styles.serviceDropdownItemText, active && styles.serviceDropdownItemTextActive]}>
-                            {service}
-                          </Text>
-                          {active
-                            ? <Ionicons name="checkmark-circle" size={16} color="#2563eb" />
-                            : <Ionicons name="add-circle-outline" size={16} color="#cbd5e1" />
-                          }
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                </View>
-              )}
-
-              <Text style={styles.servicesHint}>
-                Select all specialized departments active in your facility.
-              </Text>
-            </View>
-
-            {/* ── MAP (moved here from left card) ── */}
-            <View style={styles.mapContainer}>
-              <MapComponent
-                lat={mapLat}
-                lng={mapLng}
-                onLocationChange={handleLocationChange}
-                webViewRef={webViewRef}
-              />
-              <View style={styles.mapInfoBar}>
-                <Ionicons name="location" size={12} color="#2563eb" />
-                <Text style={styles.mapInfoText} numberOfLines={1}>
-                  {isGeocoding ? "Locating…" : pinnedLabel}
-                </Text>
-                <Text style={styles.mapCoords}>
-                  {mapLat.toFixed(4)}, {mapLng.toFixed(4)}
-                </Text>
-              </View>
-              <Text style={[styles.mapHint, mapNotice ? { color: "#b45309" } : null]}>
-                {mapNotice || "Tap map or drag pin to adjust location"}
-              </Text>
-            </View>
-
-            <View style={styles.verificationBox}>
-              <View style={styles.verificationHeader}>
-                <Ionicons name="shield-checkmark" size={16} color="#2563eb" />
-                <Text style={styles.verificationTitle}>{"  "}Verification Pending</Text>
-              </View>
-              <Text style={styles.verificationText}>
-                Once you finish setup, our compliance team will verify these credentials within 24 hours.
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* ── DIVIDER ── */}
-        <View style={styles.footerDivider} />
-
-        {/* ── BOTTOM ROW ── */}
-        <View style={[styles.bottomRow, !isDesktop && styles.bottomRowMobile]}>
-          <TouchableOpacity>
-            <Text style={styles.saveDraft}>Save Draft</Text>
-          </TouchableOpacity>
-          <View style={styles.bottomBtns}>
-            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-              <Text style={styles.backText}>Back</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.primaryButton, loading && { opacity: 0.7 }]}
-              activeOpacity={0.85}
-              onPress={handleFinishSetup}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.primaryText}>Finish Setup  →</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <Text style={styles.footer}>
-          © 2024 HospiLink Medical Management Systems. Built for clinical excellence.
-        </Text>
-      </ScrollView>
-    </View>
+          <Field
+            label="About the hospital"
+            optional
+            value={about}
+            onChangeText={setAbout}
+            multiline
+            maxLength={1000}
+            placeholder="Beds, specialities, what staff should know before a duty"
+          />
+        </>
+      )}
+    </AuthLayout>
   );
 }
 
-/* ─── Styles ─────────────────────────────────────────────────────────────── */
 const styles = StyleSheet.create({
-  outerContainer: { flex: 1, backgroundColor: "#f0f4f8" },
-  phonePrefix: { paddingRight: 8 },
-  phonePrefixText: { color: "#0f172a", fontSize: 14, fontWeight: "400" },
-  phoneDivider: { width: 1, height: 20, backgroundColor: "#e2e8f0", marginRight: 10 },
-  navbar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 28, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "#e2e8f0", backgroundColor: "#ffffff" },
-  navLeft: { flexDirection: "row", alignItems: "center" },
-  logoBox: { width: 32, height: 32, backgroundColor: "#2563eb", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 10 },
-  logoText: { color: "#0f172a", fontSize: 16, fontWeight: "700", letterSpacing: 0.3 },
-  navRight: { flexDirection: "row", alignItems: "center", gap: 14 },
-  adminPortalText: { color: "#64748b", fontSize: 14, fontWeight: "500" },
-  avatarCircle: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#f1f5f9", borderWidth: 1, borderColor: "#e2e8f0", justifyContent: "center", alignItems: "center" },
-
-  scrollWrapper: { flex: 1 },
-  scrollContent: { padding: 24, paddingBottom: 40 },
-
-  sendOtpBtn: { paddingHorizontal: 12, height: 32, borderRadius: 8, borderWidth: 1.5, borderColor: "#2563eb", justifyContent: "center", alignItems: "center", marginLeft: 6 },
-  sendOtpBtnText: { color: "#2563eb", fontSize: 12, fontWeight: "700" },
-  otpSection: { marginTop: 12 },
-  otpHint: { fontSize: 12, color: "#64748b", marginBottom: 10 },
-  otpRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  otpBox: { width: 40, height: 44, borderRadius: 9, borderWidth: 1.5, borderColor: "#e2e8f0", backgroundColor: "#f8fafc", fontSize: 16, fontWeight: "700", color: "#0f172a", textAlign: "center" },
-  otpBoxFilled: { borderColor: "#2563eb", backgroundColor: "#eff6ff" },
-  verifyOtpBtn: { backgroundColor: "#2563eb", paddingHorizontal: 16, height: 44, borderRadius: 9, justifyContent: "center", alignItems: "center", marginLeft: 4 },
-  verifyOtpBtnText: { color: "#fff", fontSize: 13, fontWeight: "700" },
-  otpErrorText: { fontSize: 12, color: "#ef4444", marginTop: 8, fontWeight: "500" },
-
-  progressCard: { backgroundColor: "#ffffff", padding: 24, borderRadius: 14, marginBottom: 20, borderWidth: 1, borderColor: "#e2e8f0", ...Platform.select({ web: { boxShadow: "0 4px 20px rgba(100,140,200,0.10)" }, default: { elevation: 3 } }) },
-  progressHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 },
-  title: { fontSize: 22, color: "#0f172a", fontWeight: "800", letterSpacing: 0.2, marginBottom: 6 },
-  subtitle: { color: "#64748b", fontSize: 13, lineHeight: 20 },
-  percentBox: { alignItems: "flex-end" },
-  percent: { color: "#2563eb", fontWeight: "800", fontSize: 32, lineHeight: 36 },
-  percentLabel: { color: "#2563eb", fontSize: 10, letterSpacing: 1.5, fontWeight: "600", opacity: 0.7 },
-  progressBarWrapper: { height: 6, backgroundColor: "#e2e8f0", borderRadius: 10, marginBottom: 14, overflow: "hidden" },
-  progressFill: { height: "100%", backgroundColor: "#2563eb", borderRadius: 10 },
-  noticeRow: { flexDirection: "row", alignItems: "center" },
-  noticeText: { color: "#2563eb", fontSize: 13, flex: 1 },
-
-  cardsRow: { flexDirection: "row", marginBottom: 20 },
-  card: { flex: 1, backgroundColor: "#ffffff", padding: 22, borderRadius: 14, borderWidth: 1, borderColor: "#e2e8f0", ...Platform.select({ web: { boxShadow: "0 4px 20px rgba(100,140,200,0.10)" }, default: { elevation: 3 } }) },
-  cardTitleRow: { flexDirection: "row", alignItems: "center", marginBottom: 14 },
-  cardTitle: { color: "#0f172a", fontWeight: "700", fontSize: 16 },
-  dividerLine: { height: 1, backgroundColor: "#e2e8f0", marginBottom: 14 },
-
-  label: { color: "#475569", fontSize: 12, fontWeight: "500", marginBottom: 7, marginTop: 14 },
-  inputRow: { flexDirection: "row", alignItems: "center", backgroundColor: "#f8fafc", borderRadius: 8, borderWidth: 1, borderColor: "#e2e8f0", paddingHorizontal: 14, height: 44 },
-  inputInner: { flex: 1, color: "#0f172a", fontSize: 14, ...Platform.select({ web: { outlineStyle: "none" } as any }) },
-
-  // ── NEW: disabled/prefilled input styles ──
-  inputRowDisabled: { backgroundColor: "#f1f5f9", borderColor: "#e2e8f0" },
-  inputDisabled: { color: "#64748b" },
-
-  twoColRow: { flexDirection: "row", marginTop: 0 },
-  twoColItem: { flex: 1 },
-
-  mapContainer: { marginTop: 14, borderRadius: 10, overflow: "hidden", borderWidth: 1, borderColor: "#e2e8f0" },
-  mapInfoBar: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 7, backgroundColor: "#ffffff", borderTopWidth: 1, borderTopColor: "#e2e8f0", gap: 6 },
-  mapInfoText: { flex: 1, color: "#0f172a", fontSize: 12, fontWeight: "500" },
-  mapCoords: { color: "#94a3b8", fontSize: 10, fontFamily: Platform.OS === "web" ? "monospace" : undefined },
-  mapHint: { textAlign: "center", color: "#94a3b8", fontSize: 11, paddingVertical: 5, backgroundColor: "#f8fafc", borderTopWidth: 1, borderTopColor: "#f1f5f9" },
-  mapFallback: { height: 200, backgroundColor: "#f1f5f9", justifyContent: "center", alignItems: "center", gap: 8 },
-  mapFallbackText: { color: "#94a3b8", fontSize: 12, textAlign: "center", paddingHorizontal: 20 },
-
-  dropdownText: { flex: 1, color: "#0f172a", fontSize: 14 },
-  dropdownList: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 8, marginTop: 4, overflow: "hidden", ...Platform.select({ web: { boxShadow: "0 8px 24px rgba(100,140,200,0.15)" }, default: { elevation: 8 } }) },
-  dropdownItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 11, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: "#f1f5f9" },
-  dropdownItemActive: { backgroundColor: "#eff6ff" },
-  dropdownItemText: { color: "#64748b", fontSize: 13 },
-  dropdownItemTextActive: { color: "#1d4ed8", fontWeight: "600" },
-
-  servicesBox: { backgroundColor: "#f8fafc", borderRadius: 10, borderWidth: 1, borderColor: "#e2e8f0", padding: 14, marginTop: 0 },
-  tagContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10 },
-  tag: { flexDirection: "row", alignItems: "center", backgroundColor: "#2563eb", paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20 },
-  tagText: { color: "#ffffff", fontSize: 12, fontWeight: "600" },
-  addServiceBtn: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: "#e2e8f0", backgroundColor: "#ffffff" },
-  addServiceText: { color: "#64748b", fontSize: 12, fontWeight: "500" },
-  servicesHint: { color: "#94a3b8", fontSize: 12, fontStyle: "italic", marginTop: 2 },
-  servicesEmptyHint: { color: "#94a3b8", fontSize: 12, fontStyle: "italic" },
-
-  verificationBox: { backgroundColor: "#eff6ff", padding: 16, borderRadius: 10, marginTop: 16, borderWidth: 1, borderColor: "#bfdbfe" },
-  verificationHeader: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
-  verificationTitle: { color: "#1d4ed8", fontWeight: "700", fontSize: 14 },
-  verificationText: { color: "#475569", fontSize: 12, lineHeight: 18 },
-
-  footerDivider: { height: 1, backgroundColor: "#e2e8f0", marginBottom: 20 },
-  bottomRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 },
-  bottomRowMobile: { flexDirection: "column", gap: 16, alignItems: "stretch" },
-  saveDraft: { color: "#64748b", fontSize: 14, fontWeight: "500" },
-  bottomBtns: { flexDirection: "row", gap: 10 },
-  backButton: { borderWidth: 1, borderColor: "#e2e8f0", paddingVertical: 12, paddingHorizontal: 24, borderRadius: 10, backgroundColor: "#ffffff" },
-  backText: { color: "#0f172a", fontSize: 14, fontWeight: "600" },
-  primaryButton: { backgroundColor: "#2563eb", paddingVertical: 12, paddingHorizontal: 28, borderRadius: 10, minWidth: 140, alignItems: "center", ...Platform.select({ web: { boxShadow: "0 4px 14px rgba(37,99,235,0.30)" }, default: { elevation: 4 } }) },
-  primaryText: { color: "#ffffff", fontWeight: "700", fontSize: 14, letterSpacing: 0.3 },
-  footer: { textAlign: "center", color: "#94a3b8", fontSize: 12, letterSpacing: 0.3 },
-
-  serviceDropdown: { marginTop: 10, marginBottom: 4, borderRadius: 10, borderWidth: 1, borderColor: "#e2e8f0", backgroundColor: "#ffffff", overflow: "hidden", ...Platform.select({ web: { boxShadow: "0 6px 20px rgba(100,140,200,0.12)" }, default: { elevation: 6 } }) },
-  serviceDropdownHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#f1f5f9", backgroundColor: "#f8fafc" },
-  serviceDropdownTitle: { fontSize: 12, fontWeight: "700", color: "#475569", letterSpacing: 0.5, textTransform: "uppercase" },
-  serviceDropdownList: { maxHeight: 220 },
-  serviceDropdownItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: "#f8fafc" },
-  serviceDropdownItemActive: { backgroundColor: "#eff6ff" },
-  serviceDropdownItemText: { fontSize: 13, color: "#64748b" },
-  serviceDropdownItemTextActive: { color: "#1d4ed8", fontWeight: "600" },
+  servicesHead: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 });

@@ -94,8 +94,24 @@ export function useDoctorDocuments() {
 }
 
 /** Upload state for each required document, with the reason we ask for it. */
-export default function DocumentList({ onChange, compact, slots = DOCTOR_DOCS }: { onChange?: () => void; compact?: boolean; slots?: Slot[] }) {
+export default function DocumentList({
+  onChange,
+  onProgress,
+  compact,
+  slots = DOCTOR_DOCS,
+}: {
+  onChange?: () => void;
+  /** uploaded and needed counts for the required slots, after each load */
+  onProgress?: (uploaded: number, needed: number) => void;
+  compact?: boolean;
+  slots?: Slot[];
+}) {
   const { docs, error, reload } = useDoctorDocuments();
+  useEffect(() => {
+    if (!docs || !onProgress) return;
+    const needed = slots.filter((s) => s.need !== 'optional');
+    onProgress(needed.filter((s) => docs.some((d) => s.types.includes(d.documentType))).length, needed.length);
+  }, [docs]);
   const [busy, setBusy] = useState<string | null>(null);
   const [chooser, setChooser] = useState<Slot | null>(null);
   const [removing, setRemoving] = useState<Doc | null>(null);

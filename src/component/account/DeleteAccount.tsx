@@ -1,6 +1,5 @@
 import { TIcon, useThemedStyles } from "@/ds/themed";
 import { Theme, useTheme } from "@/ds/theme";
-import { COLORS } from "@/constant/colors";
 import { accountAPI } from "@/service/api";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
@@ -169,7 +168,7 @@ export default function DeleteAccount({ role, token, onDeleted }: Props) {
         accessibilityRole="checkbox"
         accessibilityState={{ checked: confirmed }}
       >
-        <TIcon ion={confirmed ? "checkbox" : "square-outline"} size={22} color={confirmed ? COLORS.red : COLORS.subText} />
+        <TIcon ion={confirmed ? "checkbox" : "square-outline"} size={22} color={confirmed ? th.c.danger : th.c.subText} />
         <Text style={s.checkText}>I understand my account will be deleted after {graceDays} days.</Text>
       </TouchableOpacity>
 
@@ -208,23 +207,25 @@ const make_s = (t: Theme) => ({
   dot: { ...t.f(), fontSize: 14, color: t.c.subText, lineHeight: 20 },
   bulletText: { ...t.f(), flex: 1, fontSize: 14, color: t.hex("#334155"), lineHeight: 20 },
   label: { fontSize: 13, ...t.f("600"), color: t.c.text, marginTop: 16, marginBottom: 6 },
+  // v2: filled fields and a pill button, as in the rest of the new design
   input: { ...t.f(),
-    borderWidth: 1,
+    borderWidth: t.v2 ? 0 : 1,
     borderColor: t.c.border,
-    borderRadius: t.v2 ? 14 : 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
+    borderRadius: t.v2 ? 16 : 10,
+    paddingHorizontal: t.v2 ? 16 : 12,
+    paddingVertical: t.v2 ? 14 : 10,
+    fontSize: t.v2 ? 16 : 14,
     color: t.c.text,
-    backgroundColor: t.c.surface,
+    backgroundColor: t.v2 ? t.c.background : t.c.surface,
   },
   pwRow: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1,
+    borderWidth: t.v2 ? 0 : 1,
     borderColor: t.c.border,
-    borderRadius: t.v2 ? 14 : 10,
-    backgroundColor: t.c.surface,
+    borderRadius: t.v2 ? 16 : 10,
+    backgroundColor: t.v2 ? t.c.background : t.c.surface,
+    minHeight: t.v2 ? 52 : undefined,
   },
   check: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 16 },
   checkText: { ...t.f(), flex: 1, fontSize: 14, color: t.c.text },
@@ -235,8 +236,8 @@ const make_s = (t: Theme) => ({
   btn: {
     marginTop: 18,
     backgroundColor: t.c.danger,
-    borderRadius: t.v2 ? 14 : 10,
-    paddingVertical: 13,
+    borderRadius: t.v2 ? 999 : 10,
+    paddingVertical: t.v2 ? 15 : 13,
     alignItems: "center",
   },
   btnText: { color: t.hex("#fff"), fontSize: 15, ...t.f("700") },

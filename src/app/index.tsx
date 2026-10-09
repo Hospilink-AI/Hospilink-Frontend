@@ -1,9 +1,9 @@
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
-import { ActivityIndicator, Platform, View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 import { resolveLanding } from "@/service/landing";
-import { openMarketingSite } from "@/service/marketing";
+import { goToSignedOutStart } from "@/service/marketing";
 import { Mark } from "@/ds/brand/Brand";
 import { color } from "@/ds/tokens";
 
@@ -14,8 +14,7 @@ export default function Index() {
   useEffect(() => {
     if (isLoading) return;
     if (!token || !user) {
-      if (openMarketingSite()) return;
-      router.replace(Platform.OS === "web" ? "/auth/home" : "/auth/role-choice");
+      goToSignedOutStart(router);
       return;
     }
     let alive = true;

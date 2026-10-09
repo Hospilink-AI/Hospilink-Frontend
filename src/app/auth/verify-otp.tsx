@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { Platform, View } from "react-native";
+import { View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { adminLandingRoute } from "@/constant/adminCapabilities";
 import { useAuth } from "@/context/AuthContext";
 import { adminAPI, authAPI } from "@/service/api";
 import { storeSession } from "@/service/landing";
-import AuthLayout from "@/ds/AuthLayout";
+import AuthLayout, { ADMIN_POINTS, HOSPITAL_POINTS } from "@/ds/AuthLayout";
 import Button from "@/ds/Button";
 import Icon from "@/ds/Icon";
 import OtpInput from "@/ds/OtpInput";
@@ -47,9 +47,7 @@ export default function VerifyOtp() {
 
   const afterVerify = () => {
     if (accountType === "hospital") {
-      // hospitals keep their own onboarding
-      if (Platform.OS === "web") router.replace({ pathname: "/auth/welcome-choice", params: { email, signupName, accountType } });
-      else router.replace({ pathname: "/auth/onboardingH", params: { prefillName: signupName, prefillEmail: email } });
+      router.replace({ pathname: "/auth/welcome-choice", params: { email, signupName, accountType } });
       return;
     }
     router.replace({ pathname: "/profile/medical-staff", params: { prefillName: signupName, prefillEmail: email } });
@@ -118,6 +116,7 @@ export default function VerifyOtp() {
       back
       title="Check your email"
       subtitle={email ? `We sent a 6-digit code to ${email}.` : "We sent a 6-digit code to your email."}
+      points={isAdmin ? ADMIN_POINTS : accountType === "hospital" ? HOSPITAL_POINTS : undefined}
       testID="verify-otp"
       footer={<Button label="Verify" onPress={() => verify()} loading={loading} disabled={code.length !== 6} full size="lg" />}
     >

@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { mapsAPI } from '@/service/api';
+import { mapsAPI, profileAPI } from '@/service/api';
 import Button, { IconButton } from '@/ds/Button';
 import Field from '@/ds/Field';
-import Icon from '@/ds/Icon';
+import Icon, { IconName } from '@/ds/Icon';
+import OtpInput from '@/ds/OtpInput';
 import { Sheet } from '@/ds/Overlay';
 import { Notice } from '@/ds/States';
 import Txt from '@/ds/Txt';
@@ -119,7 +120,19 @@ export function SelectField({
 export type Address = { currentAddress: string; city: string; state: string; pincode: string };
 
 /** Home address, with a search and "use where I am" that fill the fields from the backend's map lookup. */
-export function AddressFields({ value, onChange, errors = {} }: { value: Address; onChange: (a: Address) => void; errors?: Partial<Record<keyof Address, string>> }) {
+export function AddressFields({
+  value,
+  onChange,
+  errors = {},
+  place = 'home',
+}: {
+  value: Address;
+  onChange: (a: Address) => void;
+  errors?: Partial<Record<keyof Address, string>>;
+  /** whose address: a doctor's home or a hospital's building */
+  place?: 'home' | 'hospital';
+}) {
+  const hospital = place === 'hospital';
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState<'search' | 'here' | null>(null);
   const [note, setNote] = useState<string | null>(null);
@@ -133,7 +146,7 @@ export function AddressFields({ value, onChange, errors = {} }: { value: Address
       state,
       pincode: r?.pincode || value.pincode,
     });
-    setNote('Check the address and add your house or flat number.');
+    setNote(hospital ? 'Check the address and add the building name or number.' : 'Check the address and add your house or flat number.');
   };
 
   const search = async () => {
@@ -178,7 +191,7 @@ export function AddressFields({ value, onChange, errors = {} }: { value: Address
       <View style={{ gap: 8 }}>
         <Field
           icon="search"
-          placeholder="Search your area or a landmark"
+          placeholder={hospital ? 'Search the hospital name or area' : 'Search your area or a landmark'}
           value={q}
           onChangeText={setQ}
           onSubmitEditing={search}
@@ -189,7 +202,7 @@ export function AddressFields({ value, onChange, errors = {} }: { value: Address
         <Button label="Use where I am now" icon="myLocation" variant="text" size="sm" onPress={here} loading={busy === 'here'} />
         {note ? <Notice tone="info" body={note} /> : null}
       </View>
-      <Field label="House, street and area" value={value.currentAddress} onChangeText={set('currentAddress')} error={errors.currentAddress} maxLength={300} autoComplete="street-address" />
+      <Field label={hospital ? 'Building, street and area' : 'House, street and area'} value={value.currentAddress} onChangeText={set('currentAddress')} error={errors.currentAddress} maxLength={300} autoComplete="street-address" />
       <View style={styles.pair}>
         <Field label="City" value={value.city} onChangeText={set('city')} error={errors.city} style={{ flex: 1 }} maxLength={100} />
         <Field
@@ -297,6 +310,142 @@ export function SkillsEditor({ skills, onChange }: { skills: string[]; onChange:
     </View>
   );
 }
+
+export const formatPhone = (raw: string) => {
+  const d = raw.replace(/\D/g, "");
+  return d.startsWith("91") && d.length === 12 ? `+${d}` : `+91${d}`;
+};
+
+/** A detail carried over from sign-up that can't be changed here. */
+export function Locked({ label, value, icon }: { label: string; value: string; icon: IconName }) {
+  return (
+    <View style={formStyles.locked}>
+      <Icon name={icon} size={20} color={color.inkMuted} />
+      <View style={{ flex: 1 }}>
+        <Txt v="caption" tone="muted">
+          {label}
+        </Txt>
+        <Txt v="title" numberOfLines={1}>
+          {value || "—"}
+        </Txt>
+      </View>
+      <Icon name="lock" size={16} color={color.inkFaint} />
+    </View>
+  );
+}
+
+/** Indian mobile number with a texted code; `verified` turns true once the code checks out. */
+export function PhoneVerify({
+  phone,
+  setPhone,
+  verified,
+  setVerified,
+  error,
+  label = 'Mobile number',
+  hint = "Hospitals call this number about your duties. We'll text you a code.",
+}: {
+  phone: string;
+  setPhone: (p: string) => void;
+  verified: boolean;
+  setVerified: (v: boolean) => void;
+  error?: string;
+  label?: string;
+  hint?: string;
+}) {
+  const [sent, setSent] = useState(false);
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState<"send" | "verify" | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [state, setState] = useState<"idle" | "error" | "success">("idle");
+  const [wait, setWait] = useState(0);
+
+  useEffect(() => {
+    if (wait <= 0) return;
+    const id = setTimeout(() => setWait((w) => w - 1), 1000);
+    return () => clearTimeout(id);
+  }, [wait]);
+
+  const send = async () => {
+    if (phone.replace(/\D/g, "").length !== 10) {
+      setMsg("Enter your 10-digit mobile number.");
+      return;
+    }
+    setBusy("send");
+    setMsg(null);
+    try {
+      await profileAPI.sendPhoneOTP(formatPhone(phone));
+      setSent(true);
+      setCode("");
+      setState("idle");
+      setWait(45);
+    } catch (e) {
+      setMsg(apiMessage(e, "The code wasn't sent. Try again."));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const verify = async (v = code) => {
+    if (v.length !== 6) return;
+    setBusy("verify");
+    setMsg(null);
+    try {
+      const r = await profileAPI.verifyPhoneOTP(formatPhone(phone), v);
+      if (r?.success === false) throw { response: { data: r } };
+      setVerified(true);
+      setState("success");
+    } catch (e) {
+      setState("error");
+      setMsg(apiMessage(e, "That code didn't work."));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <View style={{ gap: 12 }}>
+      <Field
+        label={label}
+        prefix="+91"
+        value={phone}
+        onChangeText={(t) => {
+          setPhone(t.replace(/\D/g, "").slice(0, 10));
+          if (verified || sent) {
+            setVerified(false);
+            setSent(false);
+          }
+        }}
+        keyboardType="phone-pad"
+        autoComplete="tel"
+        error={error}
+        success={verified}
+        hint={verified ? "Verified" : hint}
+        right={
+          !verified ? (
+            <View style={formStyles.prefixWrap}>
+              <Button label={sent ? (wait > 0 ? `0:${String(wait).padStart(2, "0")}` : "Resend") : "Send code"} size="sm" variant="tonal" onPress={send} loading={busy === "send"} disabled={sent && wait > 0} />
+            </View>
+          ) : undefined
+        }
+      />
+      {sent && !verified ? (
+        <View style={{ gap: 8 }}>
+          <Txt v="label" tone="soft" align="center">
+            Enter the code we texted to +91 {phone}
+          </Txt>
+          <OtpInput value={code} onChange={(v) => { setCode(v); if (state !== "idle") setState("idle"); }} onComplete={verify} state={state} autoFocus label="Phone code" />
+          <Button label="Verify number" onPress={() => verify()} loading={busy === "verify"} disabled={code.length !== 6} variant="secondary" full />
+        </View>
+      ) : null}
+      {msg ? <Notice tone="danger" body={msg} /> : null}
+    </View>
+  );
+}
+
+const formStyles = StyleSheet.create({
+  locked: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10 },
+  prefixWrap: { marginRight: -6 },
+});
 
 const styles = StyleSheet.create({
   select: {
