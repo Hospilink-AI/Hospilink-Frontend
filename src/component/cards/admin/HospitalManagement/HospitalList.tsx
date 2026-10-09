@@ -18,6 +18,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { IdentityBadge, IdentityCheckCard, IdentityDetail, IdentitySummary } from '@/component/admin/IdentityCheck';
 // import { exportHospitalReport } from '@/path/to/hospitalReportExport';
 import { exportHospitalReport } from './exportHospitalReport';
 
@@ -57,6 +58,9 @@ interface PaginationInfo {
 
 interface Hospital {
   id: string;
+  userId?: string;
+  identityCheck?: IdentitySummary;
+  identityDetail?: IdentityDetail | null;
   name: string;
   hospitalId: string;
   location: string;
@@ -169,6 +173,8 @@ const mapHospital = (h: any): Hospital => {
     licenseStatus,
     verificationStatus: rawStatus,
     isDemo: !!h?.isDemo,
+    userId: safeStr(h?.userId ?? h?.user?._id ?? h?.user?.id ?? h?.user, ''),
+    identityCheck: h?.identityCheck ?? null,
     iconBg: '#EEF2FF',
     iconEmoji: '🏥',
     totalDuties,
@@ -179,6 +185,8 @@ const mapHospital = (h: any): Hospital => {
 };
 
 const mapHospitalDetail = (data: any): Partial<Hospital> => ({
+  userId: safeStr(data?.user?.id ?? data?.user?._id ?? data?.userId, ''),
+  identityDetail: data?.identityCheck ?? null,
   legalName: safeStr(data?.hospitalLegalName ?? data?.name),
   // currentAddress: safeStr(data?.currentAddress),
   currentAddress: [
@@ -1161,6 +1169,15 @@ function HospitalReviewModal({ visible, hospital, onClose, onApprove, onReject, 
                   </View>
                 </View>
 
+                <View style={rm.section}>
+                  <Text style={rm.sectionLabel}>IDENTITY CHECK</Text>
+                  {detailData ? (
+                    <IdentityCheckCard userId={detailData.userId || hospital?.userId || null} initial={detailData.identityDetail ?? null} />
+                  ) : (
+                    <Text style={rm.sectionLabel}>Loading…</Text>
+                  )}
+                </View>
+
                 {!!rating && (
                   <View style={rm.section}>
                     <Text style={rm.sectionLabel}>RATING</Text>
@@ -1474,6 +1491,7 @@ function HospitalRow({ h, onDotsPress }: HospitalRowProps) {
         <View style={{ flex: 1 }}>
           <Text style={hr.name} numberOfLines={1}>{h.name}{h.isDemo && <DemoBadge />}</Text>
           <Text style={hr.hid}>{h.hospitalId}</Text>
+          <IdentityBadge summary={h.identityCheck} />
         </View>
       </View>
       <View style={[hr.cell, hr.colLoc, { flexDirection: 'row', alignItems: 'center', gap: 5 }]}>

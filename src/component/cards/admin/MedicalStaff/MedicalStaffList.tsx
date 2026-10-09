@@ -21,6 +21,7 @@ import {
   View,
 } from 'react-native';
 import { exportStaffReport } from './staffreportExport';
+import { IdentityBadge, IdentityCheckCard, IdentitySummary } from '@/component/admin/IdentityCheck';
 
 // ─── Types & Config ───────────────────────────────────────────────────────────
 type AvailabilityStatus = 'AVAILABLE' | 'UNAVAILABLE';
@@ -28,6 +29,7 @@ type VerificationStatus = 'verified' | 'pending' | 'rejected' | 'auto-verified' 
 
 interface MedicalStaff {
   userId: string;
+  identityCheck?: IdentitySummary;
   staffId: string;
   fullName: string;
   jobRole: string;
@@ -100,6 +102,7 @@ const formatJobRole = (role: string): string => {
 
 const mapStaff = (s: any): MedicalStaff => ({
   userId: s.userId ?? s.userid ?? '',
+  identityCheck: s.identityCheck ?? null,
   staffId: s.staffId ?? s._id ?? '',
   fullName: s.fullName || 'Unknown',
   isDemo: !!s.isDemo,
@@ -1158,6 +1161,11 @@ function StaffProfileModal({ visible, staffId, onClose, onRefresh }: StaffProfil
                 </View>
 
                 <View style={pm.section}>
+                  <Text style={pm.sectionLabel}>IDENTITY CHECK</Text>
+                  <IdentityCheckCard userId={staffDetails.userId ?? (staffDetails as any).userid} initial={(staffDetails as any).identityCheck ?? null} />
+                </View>
+
+                <View style={pm.section}>
                   <Text style={pm.sectionLabel}>RATING</Text>
                   <RatingSummary
                     viewer="admin"
@@ -1485,6 +1493,7 @@ function StaffRow({ staff, onDotsPress }: StaffRowProps) {
         <View style={{ flex: 1 }}>
           <Text style={sr.name} numberOfLines={1}>{staff.fullName || '—'}{staff.isDemo && <DemoBadge />}</Text>
           <Text style={sr.uid}>{staff.staffId ? `ID: ${staff.staffId.slice(-6).toUpperCase()}` : 'No ID'}</Text>
+          <IdentityBadge summary={staff.identityCheck} />
         </View>
       </View>
 

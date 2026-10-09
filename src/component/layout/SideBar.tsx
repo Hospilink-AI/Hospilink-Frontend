@@ -64,6 +64,7 @@ const NavConfig: NavConfigType = {
     { label: "Hospital Management",  icon: "business-outline",         route: "/admin/hospital-management", capability: "hospital.view" },
     { label: "Medical Staff",        icon: "people-outline",           route: "/admin/medical-staff", capability: "staff.view" },
     { label: "Document Verification",icon: "shield-checkmark-outline", route: "/admin/document-verification", capability: "document.view" },
+    { label: "Identity Checks",      icon: "id-card-outline",          route: "/admin/identity-checks" as any, capability: "document.view" },
     { label: "Duty Tracking",        icon: "calendar-outline",         route: "/admin/duty-overnight", capability: "duty.view" },
     { label: "Live Tracking",        icon: "locate-outline",           route: "/admin/live-tracking", capability: "duty.view" },
     { label: "Live Monitoring",      icon: "eye-outline",              route: "/admin/live-monitoring", capability: "duty.view" },

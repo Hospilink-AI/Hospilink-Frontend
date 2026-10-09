@@ -103,6 +103,7 @@ const ADMIN_ROUTE_CAPABILITIES: [string, AdminCapability][] = [
   ['/admin/hospital-management', 'hospital.view'],
   ['/admin/medical-staff', 'staff.view'],
   ['/admin/document-verification', 'document.view'],
+  ['/admin/identity-checks', 'document.view'],
   ['/admin/create-duty', 'duty.manage'],
   ['/admin/emergency', 'duty.manage'],
   ['/admin/emergency-request-all', 'duty.view'],
